@@ -5,7 +5,7 @@ enum IBDMethod {
     HeaderFirst
 }
 
-enum P2P_ProtocolVersion {
+enum ProtocolVersionP2P {
     V70015,
     V70014,
     V70013,
@@ -24,7 +24,8 @@ enum P2P_ProtocolVersion {
 }
 
 pub struct Settings {
-    IpAddr: DNS_address, //Es la dirección IP del DNS de donde obtendremos las IP addresses de otros nodos
-    P2P_ProtocolVersion: p2p_protocol_version,  // Es la versión del protocolo peer to peer que se planea utilizar
-    IBDMethod: ibd_method //El método usado para el initial blocks download
+    dns_address: IpAddr, //Es la dirección IP del DNS de donde obtendremos las IP addresses de otros nodos
+    p2p_protocol_version: ProtocolVersionP2P, // Es la versión del protocolo peer to peer que se planea utilizar
+    ibd_method: IBDMethod, //El método usado para el initial blocks download
+    filepath_log: String //La ruta al archivo en donde vamos a escribir el log
 }
