@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use crate::p2p_protocol::ProtocolVersionP2P;
 use crate::ibd_methods::IBDMethod;
 
+#[derive(Debug)]
 ///Struct que representa la configuración incial de nuestro programa
 pub struct Settings {
     dns_address: IpAddr, //Es la dirección IP del DNS de donde obtendremos las IP addresses de otros nodos

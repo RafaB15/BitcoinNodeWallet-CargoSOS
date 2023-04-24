@@ -1,5 +1,5 @@
 use std::io::{Error, ErrorKind};
-
+#[derive(Debug)]
 ///Enum que representa la versión del protocolo P2P que se va a utilizar
 pub enum ProtocolVersionP2P {
     V70015,

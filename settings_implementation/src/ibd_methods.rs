@@ -1,5 +1,5 @@
 use std::io::{Error, ErrorKind};
-
+#[derive(Debug)]
 ///Enum que representa el método de Initial Block Download que se va a utilizar
 pub enum IBDMethod {
     BlocksFirst,
