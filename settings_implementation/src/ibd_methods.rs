@@ -5,7 +5,7 @@ pub enum IBDMethod {
     BlocksFirst,
     HeaderFirst
 }
-
+///Implementación del trait que permite hacer parse
 impl std::str::FromStr for IBDMethod {
     type Err = Error;
 

@@ -18,7 +18,7 @@ pub enum ProtocolVersionP2P {
     V209,
     V106
 }
-
+///Implementación del trait que permite hacer parse
 impl std::str::FromStr for ProtocolVersionP2P {
     type Err = Error;
 

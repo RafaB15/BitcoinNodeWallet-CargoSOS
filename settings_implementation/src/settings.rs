@@ -17,7 +17,7 @@ pub struct Settings {
 
 ///Bloque de implementación de Settings
 impl Settings {
-
+    ///Función asociada a Settings que crea un nuevo objeto en base al contenido de un archivo de texto
     pub fn new(file_path: &str) -> Result<Self, Error> {
         let settings_dictionary = Self::create_setting_dictionary(file_path)?;
 
@@ -37,6 +37,7 @@ impl Settings {
         Ok(Settings {dns_address, p2p_protocol_version, ibd_method, filepath_log})
     }
 
+    ///Crea un HashMap con los campos del struct como llaves y el contenido como valores
     fn create_setting_dictionary(file_path: &str) -> Result<HashMap<String, String>, Error> {
         let settings_file = File::open(file_path)?;
         let settings_reader = BufReader::new(settings_file);
@@ -60,6 +61,7 @@ impl Settings {
               }
     }
 
+    ///Lee el contenido de una línea del archivo de configuración y guarda los contenidos en un HashMap
     fn read_line_config(current_line: &str, settings_dictionary: &mut HashMap<String, String>) -> Result<(), Error> {
         let mut current_line_split = current_line.split(":");
 
