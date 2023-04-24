@@ -1,9 +1,9 @@
 use std::io::{Error, ErrorKind};
-#[derive(Debug)]
+#[derive(Debug, std::cmp::PartialEq)]
 ///Enum que representa el método de Initial Block Download que se va a utilizar
 pub enum IBDMethod {
     BlocksFirst,
-    HeaderFirst
+    HeaderFirst,
 }
 ///Implementación del trait que permite hacer parse
 impl std::str::FromStr for IBDMethod {
@@ -16,7 +16,7 @@ impl std::str::FromStr for IBDMethod {
             _ => Err(Error::new(
                 ErrorKind::InvalidInput,
                 "El método proporcionado para la descarga inicial de bloques no es válido.",
-            ))
+            )),
         }
     }
 }
