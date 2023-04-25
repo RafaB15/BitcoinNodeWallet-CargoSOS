@@ -41,7 +41,7 @@ impl std::str::FromStr for ProtocolVersionP2P {
             "V106" => Ok(ProtocolVersionP2P::V106),
             _ => Err(Error::new(
                 ErrorKind::InvalidInput,
-                "La versión proporcionada para el protocolo P2P no es válida.",
+                "The provided version for the P2P protocol is not valid.",
             )),
         }
     }

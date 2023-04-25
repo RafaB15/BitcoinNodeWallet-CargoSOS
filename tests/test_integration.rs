@@ -16,7 +16,7 @@ mod test_integration {
             dns_address: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
             p2p_protocol_version: ProtocolVersionP2P::V70015,
             ibd_method: IBDMethod::HeaderFirst,
-            filepath_log: "settings_implementation/log_prueba".to_string(),
+            filepath_log: "tests/common/log_prueba.txt".to_string(),
         };
 
         assert_eq!(setting, configuration.unwrap());

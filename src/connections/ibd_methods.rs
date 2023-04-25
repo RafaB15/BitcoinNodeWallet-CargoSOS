@@ -15,7 +15,7 @@ impl std::str::FromStr for IBDMethod {
             "HeaderFirst" => Ok(IBDMethod::HeaderFirst),
             _ => Err(Error::new(
                 ErrorKind::InvalidInput,
-                "El método proporcionado para la descarga inicial de bloques no es válido.",
+                "The provided method for the initial block download is not valid.",
             )),
         }
     }

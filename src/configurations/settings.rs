@@ -29,7 +29,7 @@ impl Settings {
             Err(_) => {
                 return Err(Error::new(
                     ErrorKind::InvalidInput,
-                    "La dirección IP proporcionada para el servidor DNS no es válida",
+                    "The IP address provided for the DNS server is not valid.",
                 ))
             }
         };
@@ -67,7 +67,7 @@ impl Settings {
                 true => Ok(settings_dictionary),
                 false => Err(Error::new(
                     ErrorKind::InvalidInput,
-                    "Uno de los campos necesarios no está presente. Revisar documentación para ver lista de campos necesarios.",
+                    "One of the necessary fields is not present. Check documentation for a list of all necessary fields.",
                 ))
               }
     }
@@ -84,7 +84,7 @@ impl Settings {
             _ => {
                 return Err(Error::new(
                     ErrorKind::NotFound,
-                    "Las líneas del archivo no tienen el formato correcto",
+                    "One of the lines in the file does not have the correct format. The correct format is <field>:<value>",
                 ))
             }
         };
@@ -92,7 +92,7 @@ impl Settings {
         if settings_dictionary.contains_key(key) {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
-                "Uno de los campos ingresados está especificado más de una vez",
+                "One of the fields present is specified more than once.",
             ));
         }
 
@@ -108,4 +108,83 @@ impl std::cmp::PartialEq for Settings {
             && self.ibd_method == other.ibd_method
             && self.filepath_log == other.filepath_log
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::net::{IpAddr, Ipv4Addr};
+
+    #[test]
+    fn test01_accept_valid_input() {
+        let path = "tests/common/valid_configuration.txt";
+        let configuration = Settings::new(path);
+
+        let setting = Settings {
+            dns_address: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
+            p2p_protocol_version: ProtocolVersionP2P::V70015,
+            ibd_method: IBDMethod::HeaderFirst,
+            filepath_log: "tests/common/log_prueba.txt".to_string(),
+        };
+
+        assert_eq!(setting, configuration.unwrap());
+    }
+
+    #[test]
+    fn test02_accepts_input_with_empty_spaces() {
+        let path = "tests/common/configuration_with_empty_spaces.txt";
+        let configuration = Settings::new(path);
+
+        let setting = Settings {
+            dns_address: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
+            p2p_protocol_version: ProtocolVersionP2P::V70015,
+            ibd_method: IBDMethod::HeaderFirst,
+            filepath_log: "tests/common/log_prueba.txt".to_string(),
+        };
+
+        assert_eq!(setting, configuration.unwrap());
+    }
+
+    #[test]
+    fn test03_does_not_accept_input_with_missing_fields() {
+        let path = "tests/common/configuration_with_missing_field.txt";
+        let configuration = Settings::new(path);
+        assert_eq!(configuration.err().unwrap().to_string().as_str(), "One of the necessary fields is not present. Check documentation for a list of all necessary fields.");
+    }
+
+    #[test]
+    fn test04_does_not_accept_input_with_missing_values() {
+        let path = "tests/common/configuration_with_missing_value.txt";
+        let configuration = Settings::new(path);
+        assert_eq!(configuration.err().unwrap().to_string().as_str(), "One of the lines in the file does not have the correct format. The correct format is <field>:<value>");
+    }
+
+    #[test]
+    fn test05_does_not_accept_input_with_invalid_ibd() {
+        let path = "tests/common/configuration_with_invalid_ibd.txt";
+        let configuration = Settings::new(path);
+        assert_eq!(configuration.err().unwrap().to_string().as_str(), "The provided method for the initial block download is not valid.");
+    }
+
+    #[test]
+    fn test06_does_not_accept_input_with_invalid_p2p_protocol_version() {
+        let path = "tests/common/configuration_with_invalid_p2p_version.txt";
+        let configuration = Settings::new(path);
+        assert_eq!(configuration.err().unwrap().to_string().as_str(), "The provided version for the P2P protocol is not valid.");
+    }
+
+    #[test]
+    fn test07_does_not_accept_input_with_invalid_ip_address() {
+        let path = "tests/common/configuration_with_invalid_ip_address.txt";
+        let configuration = Settings::new(path);
+        assert_eq!(configuration.err().unwrap().to_string().as_str(), "The IP address provided for the DNS server is not valid.");
+    }
+
+    #[test]
+    fn test08_does_not_accept_input_with_duplicate_value() {
+        let path = "tests/common/configuration_with_duplicate_value.txt";
+        let configuration = Settings::new(path);
+        assert_eq!(configuration.err().unwrap().to_string().as_str(), "One of the fields present is specified more than once.");
+    }
+
 }
