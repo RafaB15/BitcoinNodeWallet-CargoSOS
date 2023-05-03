@@ -30,7 +30,7 @@ fn create_property_value_dictionary(
     let mut config_dictionary: HashMap<String, String> = HashMap::new();
 
     for line in text {
-        if !line.contains(":") {
+        if !line.contains(':') {
             continue;
         }
 
@@ -46,7 +46,7 @@ fn create_property_value_dictionary(
     Ok(config_dictionary)
 }
 
-fn slit_linea(text_line: &String) -> Result<(String, String), ParseError> {
+fn slit_linea(text_line: &str) -> Result<(String, String), ParseError> {
     let mut split_line = text_line.split(':');
 
     match (split_line.next(), split_line.next()) {

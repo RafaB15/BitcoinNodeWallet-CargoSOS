@@ -9,7 +9,7 @@ pub fn deserialize<V: FromStr>(
     if let Some(value) = settings_dictionary.get(name) {
         match value.parse::<V>() {
             Ok(parse_value) => Ok(parse_value),
-            _ => return Err(ParseError::ErrorIncompleteConfiguration),
+            _ => Err(ParseError::ErrorIncompleteConfiguration),
         }
     } else {
         Err(ParseError::ErrorIncompleteConfiguration)

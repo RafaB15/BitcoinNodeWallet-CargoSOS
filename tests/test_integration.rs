@@ -2,7 +2,7 @@
 mod test_integration {
 
     use cargosos_bitcoin::configurations::{
-        config::config, connection_config::ConnectionConfig, log_config::LogConfig,
+        configuration::config, connection_config::ConnectionConfig, log_config::LogConfig,
     };
     use cargosos_bitcoin::connections::{ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P};
 

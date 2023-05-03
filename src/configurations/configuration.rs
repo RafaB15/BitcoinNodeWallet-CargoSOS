@@ -65,11 +65,11 @@ pub mod config {
         Ok(config_dictionary)
     }
 
-    fn find_titles(text: &Vec<String>) -> Vec<usize> {
+    fn find_titles(text: &[String]) -> Vec<usize> {
         let mut positions: Vec<usize> = Vec::new();
 
         for (i, line) in text.iter().enumerate() {
-            if line.contains("[") && line.contains("]") {
+            if line.contains('[') && line.contains(']') {
                 positions.push(i);
             }
         }
