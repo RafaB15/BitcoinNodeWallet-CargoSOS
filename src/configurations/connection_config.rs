@@ -1,10 +1,9 @@
+use super::deserializable::Deserializable;
+use super::estructura_deserializable::EstructuraDeserializable;
 use crate::connections::{ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P};
 use crate::errors::parse_error::ErroresParseo;
 use std::collections::HashMap;
-use super::deserializable::Deserializable;
-use std::net::IpAddr;
-
-const DNS_ADDRESS: &str = "dns_addres";
+use std::net::{IpAddr, Ipv4Addr};
 
 #[derive(Debug)]
 pub struct ConnectionConfig {
@@ -16,15 +15,36 @@ pub struct ConnectionConfig {
     pub ibd_method: IBDMethod,
 }
 
-impl ConnectionConfig {
-    pub fn new<'d>(settings_dictionary: &'d HashMap<String, String>) -> Result<Self, ErroresParseo> {
+impl Default for ConnectionConfig {
+    fn default() -> Self {
+        Self {
+            dns_address: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
+            p2p_protocol_version: ProtocolVersionP2P::V70015,
+            ibd_method: IBDMethod::HeaderFirst,
+        }
+    }
+}
 
-        let mut connection_config: ConnectionConfig;
+impl<'d> EstructuraDeserializable<'d> for ConnectionConfig {
+    type Valor = ConnectionConfig;
 
-        connection_config.p2p_protocol_version.deserializar(settings_dictionary)?;
-        connection_config.ibd_method.deserializar(settings_dictionary)?;
-        connection_config.dns_address.deserializar(settings_dictionary)?;
+    fn new(settings_dictionary: HashMap<String, String>) -> Result<Self, ErroresParseo> {
+        let connection_config: ConnectionConfig = ConnectionConfig::default();
+
+        connection_config
+            .p2p_protocol_version
+            .deserializar(&settings_dictionary)?;
+        connection_config
+            .ibd_method
+            .deserializar(&settings_dictionary)?;
+        connection_config
+            .dns_address
+            .deserializar(&settings_dictionary)?;
 
         Ok(connection_config)
+    }
+
+    fn nombre() -> String {
+        "Connection".to_string()
     }
 }

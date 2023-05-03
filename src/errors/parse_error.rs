@@ -1,22 +1,25 @@
-use std::io::Error;
 use std::net::AddrParseError;
+use std::io::Error;
 
 pub enum ErroresParseo {
-    ParseoIncorrectoDeInformacion,
-    NoSuficientesValores,
-    ParseoValorNoReconocido,
-    CategoriaNoReconocida,
-    ConfiguracionIncompleta,
+    ErrorParseoIncorrectoDeInformacion,
+    ErrorNoSuficientesValores,
+    ErrorParseoValorNoReconocido,
+    ErrorCategoriaNoReconocida,
+    ErrorConfiguracionIncompleta,
+    ErrorNoHayCategorias,
+    ErrorCategoriaAparareceMasDeUnaVez,
+    ErrorFormatoIncorrecto,
 }
 
 impl std::convert::From<AddrParseError> for ErroresParseo {
     fn from(_: AddrParseError) -> Self {
-        ErroresParseo::ParseoIncorrectoDeInformacion
+        ErroresParseo::ErrorParseoIncorrectoDeInformacion
     }
 }
 
 impl std::convert::From<Error> for ErroresParseo {
     fn from(_: Error) -> Self {
-        ErroresParseo::ParseoIncorrectoDeInformacion
+        ErroresParseo::ErrorParseoIncorrectoDeInformacion
     }
 }

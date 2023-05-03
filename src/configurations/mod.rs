@@ -7,4 +7,5 @@ pub mod connection_config;
 pub mod log_config;
 
 pub mod deserializable;
-mod Deserializable;
+
+pub mod estructura_deserializable;

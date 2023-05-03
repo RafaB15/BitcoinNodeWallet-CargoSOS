@@ -13,10 +13,10 @@ pub trait Deserializable<'d> {
         if let Some(valor) = settings_dictionary.get(nombre) {
             match valor.parse::<Self::Valor>() {
                 Ok(resultado) => Ok(resultado),
-                _ => return Err(ErroresParseo::ConfiguracionIncompleta),
+                _ => return Err(ErroresParseo::ErrorConfiguracionIncompleta),
             }
         } else {
-            Err(ErroresParseo::ConfiguracionIncompleta)
+            Err(ErroresParseo::ErrorConfiguracionIncompleta)
         }
     }
 }
