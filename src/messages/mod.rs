@@ -1,4 +1,4 @@
-pub mod network_message;
-pub mod message_header;
-pub mod message_payload;
+pub mod message;
 pub mod version_message;
+pub mod deserializable;
+pub mod serializable;
