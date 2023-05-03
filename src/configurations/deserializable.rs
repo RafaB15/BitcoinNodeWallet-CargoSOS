@@ -1,5 +1,5 @@
 use crate::connections::{ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P};
-use crate::errors::parse_error::ErroresParseo;
+use super::parse_error::ErroresParseo;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::net::IpAddr;

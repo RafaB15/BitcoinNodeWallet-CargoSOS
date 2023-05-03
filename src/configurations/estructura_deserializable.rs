@@ -1,4 +1,4 @@
-use crate::errors::parse_error::ErroresParseo;
+use super::parse_error::ErroresParseo;
 use std::collections::HashMap;
 
 pub trait EstructuraDeserializable<'d> {

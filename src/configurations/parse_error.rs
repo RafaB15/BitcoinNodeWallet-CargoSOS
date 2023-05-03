@@ -1,15 +1,17 @@
 use std::net::AddrParseError;
 use std::io::Error;
 
+#[derive(Debug, std::cmp::PartialEq)]
 pub enum ErroresParseo {
     ErrorParseoIncorrectoDeInformacion,
     ErrorNoSuficientesValores,
     ErrorParseoValorNoReconocido,
     ErrorCategoriaNoReconocida,
     ErrorConfiguracionIncompleta,
-    ErrorNoHayCategorias,
+    ErrorNoHayCategoria,
     ErrorCategoriaAparareceMasDeUnaVez,
     ErrorFormatoIncorrecto,
+    ErrorNoExisteArchivo,
 }
 
 impl std::convert::From<AddrParseError> for ErroresParseo {

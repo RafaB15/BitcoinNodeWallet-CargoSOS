@@ -1,11 +1,11 @@
 use super::deserializable::Deserializable;
 use super::estructura_deserializable::EstructuraDeserializable;
 use crate::connections::{ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P};
-use crate::errors::parse_error::ErroresParseo;
+use super::parse_error::ErroresParseo;
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr};
 
-#[derive(Debug)]
+#[derive(Debug, std::cmp::PartialEq)]
 pub struct ConnectionConfig {
     ///Es la dirección IP del DNS de donde obtendremos las IP addresses de otros nodos
     pub dns_address: IpAddr,

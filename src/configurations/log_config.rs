@@ -1,9 +1,9 @@
 use super::estructura_deserializable::EstructuraDeserializable;
 use super::deserializable::Deserializable;
-use crate::errors::parse_error::ErroresParseo;
+use super::parse_error::ErroresParseo;
 use std::collections::HashMap;
 
-#[derive(Debug, std::default::Default)]
+#[derive(Debug, std::default::Default, std::cmp::PartialEq)]
 pub struct LogConfig {
     ///La ruta al archivo en donde vamos a escribir el log
     pub filepath_log: String,
