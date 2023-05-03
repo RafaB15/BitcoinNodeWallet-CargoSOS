@@ -13,9 +13,9 @@ pub mod config {
     const LOGS_CONFIG: &str = "Logs";
 
     /// Returns all the configurations given a readable value
-    /// 
+    ///
     /// ### Errors
-    ///  * `ErrorReadableError`: It will appear when there given readable gives an error when read 
+    ///  * `ErrorReadableError`: It will appear when there given readable gives an error when read
     ///  * `ErrorIncompleteConfiguration`: It will appear when there isn't a configuration at all
     ///  * `ErrorConfigurationNoFount`: It will appear when there isn't a structure with a given property name
     pub fn new<R: Read>(configuration: R) -> Result<Configuraciones, ParseError> {
@@ -30,9 +30,9 @@ pub mod config {
     }
 
     /// Returns the structure of the configurations
-    /// 
+    ///
     /// ### Errors
-    ///  * `ErrorReadableError`: It will appear when there given readable gives an error when read 
+    ///  * `ErrorReadableError`: It will appear when there given readable gives an error when read
     ///  * `ErrorIncompleteConfiguration`: It will appear when there isn't a configuration at all
     fn create_config_dictionary<R: Read>(
         mut settings_reader: R,
@@ -75,7 +75,7 @@ pub mod config {
         Ok(config_dictionary)
     }
 
-    /// Return the position of the titles of every structure 
+    /// Return the position of the titles of every structure
     fn find_titles(text: &[String]) -> Vec<usize> {
         let mut positions: Vec<usize> = Vec::new();
 
@@ -238,9 +238,6 @@ mod tests {
         let configuration = "".as_bytes();
         let config_result = config::new(configuration);
 
-        assert_eq!(
-            config_result,
-            Err(ParseError::ErrorIncompleteConfiguration)
-        );
+        assert_eq!(config_result, Err(ParseError::ErrorIncompleteConfiguration));
     }
 }

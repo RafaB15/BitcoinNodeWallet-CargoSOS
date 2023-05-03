@@ -16,7 +16,7 @@ pub enum ParseError {
     /// It will appear when the line of the configuration isn't given by the format `key: value`
     ErrorInvalidFormat,
 
-    /// It will appear when there given readable gives an error when read 
+    /// It will appear when there given readable gives an error when read
     ErrorReadableError,
 
     /// It will appear when there isn't a structure with a given property name
