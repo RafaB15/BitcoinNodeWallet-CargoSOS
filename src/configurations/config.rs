@@ -8,56 +8,51 @@ pub mod config {
         parse_error::ErroresParseo,
     };
     use std::collections::HashMap;
-    use std::fs::File;
-    use std::io::{BufRead, BufReader};
+    use std::io::Read;
 
     pub type Configuraciones = (LogConfig, ConnectionConfig);
 
-    pub fn new(file_path: &str) -> Result<Configuraciones, ErroresParseo> {
-        let settings_file: File = match File::open(file_path) {
-            Ok(file) => file,
-            _ => { return Err(ErroresParseo::ErrorNoExisteArchivo); }
-        };
-        let settings_reader = BufReader::new(settings_file);
-
+    pub fn new<R: Read>(configuration: R) -> Result<Configuraciones, ErroresParseo> {
         let config_dictionary: HashMap<String, Vec<String>> =
-            create_config_dictionary(settings_reader)?;
+            create_config_dictionary(configuration)?;
 
-        let log_config: LogConfig = LogConfig::default();
-        let connection_config: ConnectionConfig = ConnectionConfig::default();
-
-        log_config.deserializar(&config_dictionary)?;
-        connection_config.deserializar(&config_dictionary)?;
+        let log_config: LogConfig = LogConfig::deserializar(&config_dictionary)?;
+        let connection_config: ConnectionConfig = ConnectionConfig::deserializar(&config_dictionary)?;
 
         Ok((log_config, connection_config))
     }
 
-    fn create_config_dictionary(
-        settings_reader: BufReader<File>,
+    fn create_config_dictionary<R: Read>(
+        mut settings_reader: R
     ) -> Result<HashMap<String, Vec<String>>, ErroresParseo> {
         let mut config_dictionary: HashMap<String, Vec<String>> = HashMap::new();
-        let mut text: Vec<String> = Vec::new();
-
-        for line in settings_reader.lines() {
-            let current_line = line?;
-            text.push(current_line);
-        }
-
-        let ubicacion_titulos: Vec<usize> = encontrar_titulos(&text);
-        if ubicacion_titulos.len() == 0 {
+        
+        let mut full_text: String = String::new();
+        let _ = match settings_reader.read_to_string(&mut full_text) {
+            Ok(len) => len,
+            _ => { return Err(ErroresParseo::ErrorNoExisteArchivo); }
+        };
+        
+        let text: Vec<String> = full_text.split('\n').map(|valor| valor.to_string()).collect();
+        if text.len() <= 1 {
             return Err(ErroresParseo::ErrorNoHayCategoria);
         }
 
-        let ubicacion_final: usize = text.len();
+        let ubicacion_titulos: Vec<usize> = encontrar_titulos(&text);
+        if ubicacion_titulos.is_empty() {
+            return Err(ErroresParseo::ErrorNoHayCategoria);
+        }
+
+        let ultima_posicion: usize = text.len();
         for (i, ubicacion) in ubicacion_titulos.clone().into_iter().enumerate() {
-            let ubicacion_siguiente = ubicacion_titulos.get(i + 1).unwrap_or(&ubicacion_final);
+            let ubicacion_siguiente = *ubicacion_titulos.get(i + 1).unwrap_or(&ultima_posicion);
             
             let titulo: String = match text.get(ubicacion) {
                 Some(titulo) => titulo.to_owned(),
                 _ => { return Err(ErroresParseo::ErrorNoHayCategoria); }
             };
 
-            let informacion: Vec<String> = text[ubicacion + 1..ubicacion_siguiente - 1].to_vec(); 
+            let informacion: Vec<String> = text[ubicacion + 1..ubicacion_siguiente].to_vec(); 
             config_dictionary.insert(titulo.trim().to_string(), informacion);    
         }
 
@@ -94,20 +89,17 @@ mod tests {
     use std::net::{IpAddr, Ipv4Addr};
 
     #[test]
-    fn test00_file_not_existing() {
-        let path = "tests/common/random_name.txt";
-        let resultado_config = config::new(path);
-
-        assert_eq!(Err(ErroresParseo::ErrorNoExisteArchivo), resultado_config);
-    }
-
-    #[test]
     fn test01_accept_valid_input() {
-        let path = "tests/common/valid_configuration.txt";
-        let resultado_config = config::new(path);
+        let configuration = "[Connection]
+            dns_address:127.0.0.1
+            p2p_protocol_version:V70015
+            ibd_method:HeaderFirst
+            [Logs]
+            filepath_log:log_prueba.txt".as_bytes();
+        let resultado_config = config::new(configuration);
 
         let config_log = LogConfig {
-            filepath_log: "tests/common/log_prueba.txt".to_string(),
+            filepath_log: "log_prueba.txt".to_string(),
         };
 
         let config_connection = ConnectionConfig {
@@ -119,13 +111,19 @@ mod tests {
         assert_eq!(Ok((config_log, config_connection)), resultado_config);
     }
 
+
     #[test]
     fn test02_accepts_input_with_empty_spaces() {
-        let path = "tests/common/configuration_with_empty_spaces.txt";
-        let resultado_config = config::new(path);
+        let configuration = "[Connection]
+            dns_address      :127.0.0.1
+            p2p_protocol_version:  V70015
+            ibd_method            :       HeaderFirst
+            [Logs]
+            filepath_log:         log_prueba.txt".as_bytes();
+        let resultado_config = config::new(configuration);
 
         let config_log = LogConfig {
-            filepath_log: "tests/common/log_prueba.txt".to_string(),
+            filepath_log: "log_prueba.txt".to_string(),
         };
 
         let config_connection = ConnectionConfig {
@@ -139,59 +137,80 @@ mod tests {
 
     #[test]
     fn test03_does_not_accept_input_with_missing_fields() {
-        let path = "tests/common/configuration_with_missing_field.txt";
-        let resultado_config = config::new(path);
+        let configuration = "[Connection]
+            dns_address:127.0.0.1
+            p2p_protocol_version:V70015
+            ibd_method:HeaderFirst
+            [Logs]".as_bytes();
+        let resultado_config = config::new(configuration);
 
-        assert_eq!(resultado_config, Err(ErroresParseo::ErrorNoHayCategoria));
+        assert_eq!(resultado_config, Err(ErroresParseo::ErrorConfiguracionIncompleta));
     }
 
-    /*
     #[test]
     fn test04_does_not_accept_input_with_missing_values() {
-        let path = "tests/common/configuration_with_missing_value.txt";
-        let configuration = Settings::new(path);
-        assert_eq!(configuration.err().unwrap().to_string().as_str(), "One of the lines in the file does not have the correct format. The correct format is <field>:<value>");
-    }
+        let configuration = "[Connection]
+            dns_address:127.0.0.1
+            p2p_protocol_version:V70015
+            ibd_method:
+            [Logs]
+            filepath_log:tests/common/log_prueba.txt".as_bytes();
+        let resultado_config = config::new(configuration);
 
+        assert_eq!(resultado_config, Err(ErroresParseo::ErrorConfiguracionIncompleta));
+    }
+    
     #[test]
     fn test05_does_not_accept_input_with_invalid_ibd() {
-        let path = "tests/common/configuration_with_invalid_ibd.txt";
-        let configuration = Settings::new(path);
-        assert_eq!(
-            configuration.err().unwrap().to_string().as_str(),
-            "The provided method for the initial block download is not valid."
-        );
-    }
+        let configuration = "[Connection]
+            dns_address:127.0.0.1
+            p2p_protocol_version:V70015
+            ibd_method:ChismeFirst
+            [Logs]
+            filepath_log:tests/common/log_prueba.txt".as_bytes();
+        let resultado_config = config::new(configuration);
 
+        assert_eq!(resultado_config, Err(ErroresParseo::ErrorConfiguracionIncompleta));
+    }
+    
     #[test]
     fn test06_does_not_accept_input_with_invalid_p2p_protocol_version() {
-        let path = "tests/common/configuration_with_invalid_p2p_version.txt";
-        let configuration = Settings::new(path);
-        assert_eq!(
-            configuration.err().unwrap().to_string().as_str(),
-            "The provided version for the P2P protocol is not valid."
-        );
-    }
+        let configuration = "[Connection]
+            dns_address:127.0.0.1
+            p2p_protocol_version:JK2000
+            ibd_method:HeaderFirst
+            [Logs]
+            filepath_log:tests/common/log_prueba.txt".as_bytes();
+        let resultado_config = config::new(configuration);
 
+        assert_eq!(resultado_config, Err(ErroresParseo::ErrorConfiguracionIncompleta));
+    }
+    
     #[test]
     fn test07_does_not_accept_input_with_invalid_ip_address() {
-        let path = "tests/common/configuration_with_invalid_ip_address.txt";
-        let configuration = Settings::new(path);
-        assert_eq!(
-            configuration.err().unwrap().to_string().as_str(),
-            "The IP address provided for the DNS server is not valid."
-        );
-    }
+        let configuration = "[Connection]
+            dns_address:No soy un address muy válido que digamos
+            p2p_protocol_version:V70015
+            ibd_method:HeaderFirst
+            [Logs]
+            filepath_log:log_prueba.txt".as_bytes();
+        let resultado_config = config::new(configuration);
 
+        assert_eq!(resultado_config, Err(ErroresParseo::ErrorConfiguracionIncompleta));
+    }
+             
+    
     #[test]
     fn test08_does_not_accept_input_with_duplicate_value() {
-        let path = "tests/common/configuration_with_duplicate_value.txt";
-        let configuration = Settings::new(path);
-        assert_eq!(
-            configuration.err().unwrap().to_string().as_str(),
-            "One of the fields present is specified more than once."
-        );
-    }
+        let configuration = "[Connection]
+            dns_address:127.0.0.1
+            p2p_protocol_version:V70015
+            ibd_method:HeaderFirst
+            ibd_method:BlockFirst
+            [Logs]
+            filepath_log:log_prueba.txt".as_bytes();
+        let resultado_config = config::new(configuration);
 
-     */
+        assert_eq!(resultado_config, Err(ErroresParseo::ErrorCategoriaAparareceMasDeUnaVez));
+    }    
 }

@@ -4,7 +4,7 @@ use std::collections::HashMap;
 pub trait EstructuraDeserializable<'d> {
     type Valor;
 
-    fn deserializar(&self, estructura_dictionary: &'d HashMap<String, Vec<String>>) -> Result<Self::Valor, ErroresParseo> {
+    fn deserializar(estructura_dictionary: &'d HashMap<String, Vec<String>>) -> Result<Self::Valor, ErroresParseo> {
         let nombre = format!("[{}]", Self::nombre());
 
         if let Some(valor) = estructura_dictionary.get(nombre.as_str()) {
@@ -28,6 +28,10 @@ fn create_property_value_dictionary(
     let mut config_dictionary: HashMap<String, String> = HashMap::new();
 
     for line in file_files {
+        if !line.contains(":") {
+            continue;
+        }
+
         let (key, value) = slit_linea(line)?;
 
         if config_dictionary.contains_key(&key) {
@@ -43,12 +47,8 @@ fn create_property_value_dictionary(
 fn slit_linea(file_line: &String) -> Result<(String, String), ErroresParseo> {
     let mut split_line = file_line.split(':');
 
-    let (key, value) = match (split_line.next(), split_line.next()) {
-        (Some(key), Some(value)) => (key, value),
-        _ => {
-            return Err(ErroresParseo::ErrorFormatoIncorrecto);
-        }
-    };
-
-    Ok((key.trim().to_string(), value.trim().to_string()))
+    match (split_line.next(), split_line.next()) {
+        (Some(key), Some(value)) => Ok((key.trim().to_string(), value.trim().to_string())),
+        _ => Err(ErroresParseo::ErrorFormatoIncorrecto)
+    }    
 }

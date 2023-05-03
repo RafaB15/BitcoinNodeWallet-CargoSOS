@@ -1,9 +1,15 @@
-use super::deserializable::Deserializable;
+use super::deserializable::deserializar;
 use super::estructura_deserializable::EstructuraDeserializable;
 use crate::connections::{ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P};
 use super::parse_error::ErroresParseo;
 use std::collections::HashMap;
-use std::net::{IpAddr, Ipv4Addr};
+use std::net::IpAddr;
+
+const CONNECTION_CONFIG: &str = "Connection";
+
+const DNS_ADDRESS: &str = "dns_address";
+const P2P_PROTOCOL_VERSION: &str = "p2p_protocol_version";
+const IBD_METHOD: &str = "ibd_method";
 
 #[derive(Debug, std::cmp::PartialEq)]
 pub struct ConnectionConfig {
@@ -15,36 +21,18 @@ pub struct ConnectionConfig {
     pub ibd_method: IBDMethod,
 }
 
-impl Default for ConnectionConfig {
-    fn default() -> Self {
-        Self {
-            dns_address: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
-            p2p_protocol_version: ProtocolVersionP2P::V70015,
-            ibd_method: IBDMethod::HeaderFirst,
-        }
-    }
-}
-
 impl<'d> EstructuraDeserializable<'d> for ConnectionConfig {
     type Valor = ConnectionConfig;
 
     fn new(settings_dictionary: HashMap<String, String>) -> Result<Self, ErroresParseo> {
-        let connection_config: ConnectionConfig = ConnectionConfig::default();
-
-        connection_config
-            .p2p_protocol_version
-            .deserializar(&settings_dictionary)?;
-        connection_config
-            .ibd_method
-            .deserializar(&settings_dictionary)?;
-        connection_config
-            .dns_address
-            .deserializar(&settings_dictionary)?;
-
-        Ok(connection_config)
+        Ok(ConnectionConfig { 
+            dns_address: deserializar::<IpAddr>(DNS_ADDRESS, &settings_dictionary)?,
+            p2p_protocol_version: deserializar::<ProtocolVersionP2P>(P2P_PROTOCOL_VERSION, &settings_dictionary)?,
+            ibd_method: deserializar::<IBDMethod>(IBD_METHOD, &settings_dictionary)?,
+        })
     }
 
     fn nombre() -> String {
-        "Connection".to_string()
+        CONNECTION_CONFIG.to_string()
     }
 }
