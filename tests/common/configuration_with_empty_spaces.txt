@@ -1,4 +1,0 @@
-dns_address  :     127.0.0.1
-p2p_protocol_version:V70015 
-ibd_method:             HeaderFirst
-         filepath_log:tests/common/log_prueba.txt

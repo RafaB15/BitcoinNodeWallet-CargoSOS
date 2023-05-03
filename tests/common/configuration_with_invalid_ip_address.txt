@@ -1,4 +1,0 @@
-dns_address:No soy un address muy válido que digamos
-p2p_protocol_version:V70015
-ibd_method:HeaderFirst
-filepath_log:tests/common/log_prueba.txt
