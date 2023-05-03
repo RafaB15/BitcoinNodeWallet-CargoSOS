@@ -1,5 +1,3 @@
-pub mod settings;
-
 pub mod config;
 
 pub mod connection_config;
