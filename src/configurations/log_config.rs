@@ -1,7 +1,6 @@
 use crate::errors::parse_error::ErroresParseo;
 use std::collections::HashMap;
-
-const FILEPATH_LOG: &str = "filepath_log";
+use super::deserializable::Deserializable;
 
 #[derive(Debug)]
 pub struct LogConfig {
@@ -10,22 +9,12 @@ pub struct LogConfig {
 }
 
 impl LogConfig {
-    pub fn new(settings_dictionary: HashMap<String, String>) -> Result<Self, ErroresParseo> {
-        let mut filepath_log: Option<String> = None;
+    pub fn new<'d>(settings_dictionary: &'d HashMap<String, String>) -> Result<Self, ErroresParseo> {
+        let mut log_config: LogConfig;
 
-        for (key, value) in settings_dictionary {
-            match key.as_str() {
-                FILEPATH_LOG => filepath_log = Some(value),
-                _ => {
-                    return Err(ErroresParseo::ParseoValorNoReconocido);
-                }
-            }
-        }
+        log_config.filepath_log.deserializar(settings_dictionary)?;
 
-        if let Some(filepath_log) = filepath_log {
-            Ok(LogConfig { filepath_log })
-        } else {
-            Err(ErroresParseo::NoSuficientesValores)
-        }
+        Ok(log_config)
     }
 }
+

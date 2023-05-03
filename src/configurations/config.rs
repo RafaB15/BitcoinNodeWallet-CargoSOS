@@ -41,7 +41,16 @@ pub mod Config {
 
     fn create_config_dictionary(
         settings_reader: BufReader<File>,
-    ) -> Result<HashMap<String, Vec<String>>, Error> {
+    ) -> Result<HashMap<String, Vec<String>>, ErroresParseo> {
+        let config_dictionary: HashMap<String, Vec<String>> = HashMap::new();
+        let mut text: Vec<String> = Vec::new();
+
+        for line in settings_reader.lines() {
+            let current_line = line?;
+            text.push(current_line);
+        }
+
+        Ok(config_dictionary)
     }
 
     fn create_property_value_dictionary(
