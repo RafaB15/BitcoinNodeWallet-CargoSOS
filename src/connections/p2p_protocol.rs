@@ -1,4 +1,5 @@
-use std::io::{Error, ErrorKind};
+use super::connection_error::ConnectionError;
+
 #[derive(Debug, std::cmp::PartialEq)]
 ///Enum que representa la versión del protocolo P2P que se va a utilizar
 pub enum ProtocolVersionP2P {
@@ -20,7 +21,7 @@ pub enum ProtocolVersionP2P {
 }
 ///Implementación del trait que permite hacer parse
 impl std::str::FromStr for ProtocolVersionP2P {
-    type Err = Error;
+    type Err = ConnectionError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
@@ -39,10 +40,7 @@ impl std::str::FromStr for ProtocolVersionP2P {
             "V311" => Ok(ProtocolVersionP2P::V311),
             "V209" => Ok(ProtocolVersionP2P::V209),
             "V106" => Ok(ProtocolVersionP2P::V106),
-            _ => Err(Error::new(
-                ErrorKind::InvalidInput,
-                "The provided version for the P2P protocol is not valid.",
-            )),
+            _ => Err(ConnectionError::ErrorInvalidInputParse),
         }
     }
 }

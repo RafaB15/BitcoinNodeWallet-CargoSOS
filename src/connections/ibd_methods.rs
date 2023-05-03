@@ -1,4 +1,5 @@
-use std::io::{Error, ErrorKind};
+use super::connection_error::ConnectionError;
+
 #[derive(Debug, std::cmp::PartialEq)]
 ///Enum que representa el método de Initial Block Download que se va a utilizar
 pub enum IBDMethod {
@@ -7,16 +8,13 @@ pub enum IBDMethod {
 }
 ///Implementación del trait que permite hacer parse
 impl std::str::FromStr for IBDMethod {
-    type Err = Error;
+    type Err = ConnectionError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "BlocksFirst" => Ok(IBDMethod::BlocksFirst),
             "HeaderFirst" => Ok(IBDMethod::HeaderFirst),
-            _ => Err(Error::new(
-                ErrorKind::InvalidInput,
-                "The provided method for the initial block download is not valid.",
-            )),
+            _ => Err(ConnectionError::ErrorInvalidInputParse),
         }
     }
 }
