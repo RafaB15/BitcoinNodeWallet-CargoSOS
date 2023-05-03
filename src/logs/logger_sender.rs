@@ -34,7 +34,7 @@ impl LoggerSender {
     /// ### Errores
     ///  * `Error::ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
     pub fn log_node(&self, mensaje: String) -> Result<(), ErrorLog> {
-        self.loggear(Nivel::NODE, mensaje)?;
+        self.log(Nivel::NODE, mensaje)?;
         Ok(())
     }
 
@@ -43,7 +43,7 @@ impl LoggerSender {
     /// ### Errores
     ///  * `Error::ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
     pub fn log_wallet(&self, mensaje: String) -> Result<(), ErrorLog> {
-        self.loggear(Nivel::WALLET, mensaje)?;
+        self.log(Nivel::WALLET, mensaje)?;
         Ok(())
     }
 
@@ -52,7 +52,7 @@ impl LoggerSender {
     /// ### Errores
     ///  * `Error::ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
     pub fn log_transaction(&self, mensaje: String) -> Result<(), ErrorLog> {
-        self.loggear(Nivel::TRANSACTION, mensaje)?;
+        self.log(Nivel::TRANSACTION, mensaje)?;
         Ok(())
     }
 
@@ -61,7 +61,7 @@ impl LoggerSender {
     /// ### Errores
     ///  * `Error::ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
     pub fn log_configuration(&self, mensaje: String) -> Result<(), ErrorLog> {
-        self.loggear(Nivel::CONFIGURATION, mensaje)?;
+        self.log(Nivel::CONFIGURATION, mensaje)?;
         Ok(())
     }
 
@@ -70,7 +70,7 @@ impl LoggerSender {
     /// ### Errores
     ///  * `Error::ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
     pub fn log_connection(&self, mensaje: String) -> Result<(), ErrorLog> {
-        self.loggear(Nivel::CONNECTION, mensaje)?;
+        self.log(Nivel::CONNECTION, mensaje)?;
         Ok(())
     }
 }
