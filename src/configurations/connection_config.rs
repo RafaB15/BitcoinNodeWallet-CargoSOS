@@ -1,7 +1,7 @@
-use super::deserializable::deserializar;
-use super::estructura_deserializable::EstructuraDeserializable;
+use super::deserializable::deserialize;
+use super::deserializable_structure::DeserializeStructure;
+use super::parse_error::ParseError;
 use crate::connections::{ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P};
-use super::parse_error::ErroresParseo;
 use std::collections::HashMap;
 use std::net::IpAddr;
 
@@ -21,18 +21,21 @@ pub struct ConnectionConfig {
     pub ibd_method: IBDMethod,
 }
 
-impl<'d> EstructuraDeserializable<'d> for ConnectionConfig {
-    type Valor = ConnectionConfig;
+impl<'d> DeserializeStructure<'d> for ConnectionConfig {
+    type Value = ConnectionConfig;
 
-    fn new(settings_dictionary: HashMap<String, String>) -> Result<Self, ErroresParseo> {
-        Ok(ConnectionConfig { 
-            dns_address: deserializar::<IpAddr>(DNS_ADDRESS, &settings_dictionary)?,
-            p2p_protocol_version: deserializar::<ProtocolVersionP2P>(P2P_PROTOCOL_VERSION, &settings_dictionary)?,
-            ibd_method: deserializar::<IBDMethod>(IBD_METHOD, &settings_dictionary)?,
+    fn new(settings_dictionary: HashMap<String, String>) -> Result<Self, ParseError> {
+        Ok(ConnectionConfig {
+            dns_address: deserialize::<IpAddr>(DNS_ADDRESS, &settings_dictionary)?,
+            p2p_protocol_version: deserialize::<ProtocolVersionP2P>(
+                P2P_PROTOCOL_VERSION,
+                &settings_dictionary,
+            )?,
+            ibd_method: deserialize::<IBDMethod>(IBD_METHOD, &settings_dictionary)?,
         })
     }
 
-    fn nombre() -> String {
+    fn name() -> String {
         CONNECTION_CONFIG.to_string()
     }
 }

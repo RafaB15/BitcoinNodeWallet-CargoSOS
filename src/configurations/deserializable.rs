@@ -1,14 +1,17 @@
-use super::parse_error::ErroresParseo;
+use super::parse_error::ParseError;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-pub fn deserializar<V : FromStr>(nombre: &str, settings_dictionary: &HashMap<String, String>) -> Result<V, ErroresParseo> {
-    if let Some(valor) = settings_dictionary.get(nombre) {
-        match valor.parse::<V>() {
-            Ok(resultado) => Ok(resultado),
-            _ => return Err(ErroresParseo::ErrorConfiguracionIncompleta),
+pub fn deserialize<V: FromStr>(
+    name: &str,
+    settings_dictionary: &HashMap<String, String>,
+) -> Result<V, ParseError> {
+    if let Some(value) = settings_dictionary.get(name) {
+        match value.parse::<V>() {
+            Ok(parse_value) => Ok(parse_value),
+            _ => return Err(ParseError::ErrorIncompleteConfiguration),
         }
     } else {
-        Err(ErroresParseo::ErrorConfiguracionIncompleta)
+        Err(ParseError::ErrorIncompleteConfiguration)
     }
 }

@@ -2,21 +2,16 @@
 mod test_integration {
 
     use cargosos_bitcoin::configurations::{
-        config::config,
-        log_config::LogConfig, 
-        connection_config::ConnectionConfig
+        config::config, connection_config::ConnectionConfig, log_config::LogConfig,
     };
-    use cargosos_bitcoin::connections::{
-        ibd_methods::IBDMethod,
-        p2p_protocol::ProtocolVersionP2P,
-    };
+    use cargosos_bitcoin::connections::{ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P};
 
-    use std::net::{IpAddr, Ipv4Addr};
     use std::fs::File;
-    use std::io::{Error, BufReader};
+    use std::io::{BufReader, Error};
+    use std::net::{IpAddr, Ipv4Addr};
 
     #[test]
-    fn test01_se_lee_correctamente_la_configuracion() -> Result<(), Error>  {
+    fn test01_configuration_accepted() -> Result<(), Error> {
         let file_path = "tests/common/valid_configuration.txt";
         let settings_file = File::open(file_path)?;
         let configuration = BufReader::new(settings_file);

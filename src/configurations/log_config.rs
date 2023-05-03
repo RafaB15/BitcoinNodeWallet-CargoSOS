@@ -1,6 +1,6 @@
-use super::estructura_deserializable::EstructuraDeserializable;
-use super::deserializable::deserializar;
-use super::parse_error::ErroresParseo;
+use super::deserializable::deserialize;
+use super::deserializable_structure::DeserializeStructure;
+use super::parse_error::ParseError;
 use std::collections::HashMap;
 
 const LOGS_CONFIG: &str = "Logs";
@@ -13,16 +13,16 @@ pub struct LogConfig {
     pub filepath_log: String,
 }
 
-impl<'d> EstructuraDeserializable<'d> for LogConfig {
-    type Valor = LogConfig;
+impl<'d> DeserializeStructure<'d> for LogConfig {
+    type Value = LogConfig;
 
-    fn new(settings_dictionary: HashMap<String, String>) -> Result<Self, ErroresParseo> {
-        Ok(LogConfig { 
-            filepath_log: deserializar::<String>(FILEPATH_LOG, &settings_dictionary)? 
+    fn new(settings_dictionary: HashMap<String, String>) -> Result<Self, ParseError> {
+        Ok(LogConfig {
+            filepath_log: deserialize::<String>(FILEPATH_LOG, &settings_dictionary)?,
         })
     }
 
-    fn nombre() -> String {
+    fn name() -> String {
         LOGS_CONFIG.to_string()
     }
 }

@@ -6,6 +6,6 @@ pub mod log_config;
 
 pub mod deserializable;
 
-pub mod estructura_deserializable;
+pub mod deserializable_structure;
 
 pub mod parse_error;
