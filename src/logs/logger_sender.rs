@@ -10,7 +10,7 @@ use super::level::Level;
 ///  * `Error::ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
 #[derive(Debug, Clone)]
 pub struct LoggerSender {
-    sender: <MessageLog>,
+    sender: MessageLog,
 }
 
 impl LoggerSender {
@@ -33,7 +33,7 @@ impl LoggerSender {
     /// 
     /// ### Errores
     ///  * `Error::ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
-    pub fn log_fatal(&self, mensaje: String) -> Result<(), ErrorLog> {
+    pub fn log_node(&self, mensaje: String) -> Result<(), ErrorLog> {
         self.loggear(Nivel::NODE, mensaje)?;
         Ok(())
     }
@@ -42,7 +42,7 @@ impl LoggerSender {
     /// 
     /// ### Errores
     ///  * `Error::ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
-    pub fn log_error(&self, mensaje: String) -> Result<(), ErrorLog> {
+    pub fn log_wallet(&self, mensaje: String) -> Result<(), ErrorLog> {
         self.loggear(Nivel::WALLET, mensaje)?;
         Ok(())
     }
@@ -51,7 +51,7 @@ impl LoggerSender {
     /// 
     /// ### Errores
     ///  * `Error::ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
-    pub fn log_advertencia(&self, mensaje: String) -> Result<(), ErrorLog> {
+    pub fn log_transaction(&self, mensaje: String) -> Result<(), ErrorLog> {
         self.loggear(Nivel::TRANSACTION, mensaje)?;
         Ok(())
     }
@@ -60,7 +60,7 @@ impl LoggerSender {
     /// 
     /// ### Errores
     ///  * `Error::ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
-    pub fn log_info(&self, mensaje: String) -> Result<(), ErrorLog> {
+    pub fn log_configuration(&self, mensaje: String) -> Result<(), ErrorLog> {
         self.loggear(Nivel::CONFIGURATION, mensaje)?;
         Ok(())
     }
@@ -69,9 +69,8 @@ impl LoggerSender {
     /// 
     /// ### Errores
     ///  * `Error::ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
-    pub fn log_debug(&self, mensaje: String) -> Result<(), ErrorLog> {
+    pub fn log_connection(&self, mensaje: String) -> Result<(), ErrorLog> {
         self.loggear(Nivel::CONNECTION, mensaje)?;
         Ok(())
     }
-
 }

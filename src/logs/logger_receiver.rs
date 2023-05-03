@@ -24,7 +24,7 @@ impl LoggerReceiver {
     /// 
     /// ### Errores
     ///  * `Error::ErrorFileNotFound`: Este error va a aparecer cuando el archivo pasado no se exista
-    pub(crate) fn new(logger_file: &Path, receiver: <MessageLog>) -> Result<Self, ErrorLog> {
+    pub(crate) fn new(logger_file: &Path, receiver: MessageLog) -> Result<Self, ErrorLog> {
         let resulting_file = OpenOptions::new().append(true).open(logger_file);
 
         let file = match resulting_file {
