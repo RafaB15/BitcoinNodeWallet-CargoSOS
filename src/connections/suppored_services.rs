@@ -17,6 +17,6 @@ impl std::str::FromStr for SupportedServices {
     type Err = ConnectionError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        todo!();
+        Err(ConnectionError::ErrorInvalidInputParse)
     }
 }

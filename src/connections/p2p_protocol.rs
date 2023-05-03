@@ -40,7 +40,7 @@ impl std::str::FromStr for ProtocolVersionP2P {
             "V311" => Ok(ProtocolVersionP2P::V311),
             "V209" => Ok(ProtocolVersionP2P::V209),
             "V106" => Ok(ProtocolVersionP2P::V106),
-            _ => todo!(),
+            _ => Err(ConnectionError::ErrorInvalidInputParse),
         }
     }
 }

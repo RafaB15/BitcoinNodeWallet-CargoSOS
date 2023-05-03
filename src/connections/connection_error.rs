@@ -1,5 +1,5 @@
 
 
 pub enum ConnectionError {
-    
+    ErrorInvalidInputParse,
 }

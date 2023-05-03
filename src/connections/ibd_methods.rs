@@ -14,7 +14,7 @@ impl std::str::FromStr for IBDMethod {
         match s {
             "BlocksFirst" => Ok(IBDMethod::BlocksFirst),
             "HeaderFirst" => Ok(IBDMethod::HeaderFirst),
-            _ => todo!(),
+            _ => Err(ConnectionError::ErrorInvalidInputParse),
         }
     }
 }
