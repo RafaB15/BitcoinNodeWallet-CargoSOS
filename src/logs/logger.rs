@@ -1,8 +1,12 @@
+use super::error_log::{ErrorLog};
+use super::logger_receiver::LoggerReceiver;
+use super::logger_sender::LoggerSender;
+use super::level::Level;
 
+use std::path::Path;
+use std::sync::mpsc;
 
-pub(crate) type MessageLog = (Level, String) //podria agregar el TIME STAMP, al principio?
-
-/// Crear el sender-receiver
+pub(crate) type MessageLog = (Level, String); //podria agregar el TIME STAMP, al principio?
 
 pub fn initialize_logger(logger_file: &Path) -> Result<(LoggerSender, LoggerReceiver), ErrorString> {
     let (sender, receiver) = mpsc::channel::<MessageLog>();
@@ -14,5 +18,3 @@ pub fn initialize_logger(logger_file: &Path) -> Result<(LoggerSender, LoggerRece
     Ok((logger_sender, logger_receiver))
 
 }
-
-
