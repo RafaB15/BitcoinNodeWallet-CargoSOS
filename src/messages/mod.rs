@@ -1,4 +1,4 @@
-mod network_message;
-mod message_header;
-mod message_payload;
-mod version_message;
+pub mod network_message;
+pub mod message_header;
+pub mod message_payload;
+pub mod version_message;

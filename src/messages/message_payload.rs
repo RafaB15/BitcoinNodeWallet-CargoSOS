@@ -1,4 +1,4 @@
-use crate::messages::version_message::VersionMessage;
+use super::version_message::VersionMessage;
 
 pub enum MessagePayload {
     Version(VersionMessage)

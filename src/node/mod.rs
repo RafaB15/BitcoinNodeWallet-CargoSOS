@@ -1,1 +1,1 @@
-pub mod testnet_node;
+pub mod node_structure;
