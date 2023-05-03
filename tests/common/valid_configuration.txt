@@ -4,4 +4,4 @@ p2p_protocol_version:V70015
 ibd_method:HeaderFirst
 
 [Logs]
-filepath_log:log_prueba.txt
+filepath_log:log_test.txt

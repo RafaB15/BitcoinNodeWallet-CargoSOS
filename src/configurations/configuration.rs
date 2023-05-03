@@ -1,4 +1,3 @@
-///Función asociada a Settings que crea un nuevo objeto en base al contenido de un archivo de texto
 pub mod config {
 
     use crate::configurations::{
@@ -10,17 +9,31 @@ pub mod config {
 
     pub type Configuraciones = (LogConfig, ConnectionConfig);
 
+    const CONNECTION_CONFIG: &str = "Connection";
+    const LOGS_CONFIG: &str = "Logs";
+
+    /// Returns all the configurations given a readable value
+    /// 
+    /// ### Errors
+    ///  * `ErrorReadableError`: It will appear when there given readable gives an error when read 
+    ///  * `ErrorIncompleteConfiguration`: It will appear when there isn't a configuration at all
+    ///  * `ErrorConfigurationNoFount`: It will appear when there isn't a structure with a given property name
     pub fn new<R: Read>(configuration: R) -> Result<Configuraciones, ParseError> {
         let config_dictionary: HashMap<String, Vec<String>> =
             create_config_dictionary(configuration)?;
 
-        let log_config: LogConfig = LogConfig::deserializar(&config_dictionary)?;
+        let log_config: LogConfig = LogConfig::deserializar(LOGS_CONFIG, &config_dictionary)?;
         let connection_config: ConnectionConfig =
-            ConnectionConfig::deserializar(&config_dictionary)?;
+            ConnectionConfig::deserializar(CONNECTION_CONFIG, &config_dictionary)?;
 
         Ok((log_config, connection_config))
     }
 
+    /// Returns the structure of the configurations
+    /// 
+    /// ### Errors
+    ///  * `ErrorReadableError`: It will appear when there given readable gives an error when read 
+    ///  * `ErrorIncompleteConfiguration`: It will appear when there isn't a configuration at all
     fn create_config_dictionary<R: Read>(
         mut settings_reader: R,
     ) -> Result<HashMap<String, Vec<String>>, ParseError> {
@@ -30,7 +43,7 @@ pub mod config {
         let _ = match settings_reader.read_to_string(&mut full_text) {
             Ok(len) => len,
             _ => {
-                return Err(ParseError::ErrorFileDoesntExist);
+                return Err(ParseError::ErrorReadableError);
             }
         };
 
@@ -38,13 +51,10 @@ pub mod config {
             .split('\n')
             .map(|valor| valor.to_string())
             .collect();
-        if text.len() <= 1 {
-            return Err(ParseError::ErrorFieldNotFound);
-        }
 
         let title_positions: Vec<usize> = find_titles(&text);
         if title_positions.is_empty() {
-            return Err(ParseError::ErrorFieldNotFound);
+            return Err(ParseError::ErrorIncompleteConfiguration);
         }
 
         let last_position: usize = text.len();
@@ -65,6 +75,7 @@ pub mod config {
         Ok(config_dictionary)
     }
 
+    /// Return the position of the titles of every structure 
     fn find_titles(text: &[String]) -> Vec<usize> {
         let mut positions: Vec<usize> = Vec::new();
 
@@ -137,16 +148,15 @@ mod tests {
     }
 
     #[test]
-    fn test03_does_not_accept_input_with_missing_fields() {
+    fn test03_does_not_accept_input_with_missing_configuration() {
         let configuration = "[Connection]
             dns_address:127.0.0.1
             p2p_protocol_version:V70015
-            ibd_method:HeaderFirst
-            [Logs]"
+            ibd_method:HeaderFirst"
             .as_bytes();
         let config_result = config::new(configuration);
 
-        assert_eq!(config_result, Err(ParseError::ErrorIncompleteConfiguration));
+        assert_eq!(config_result, Err(ParseError::ErrorConfigurationNoFount));
     }
 
     #[test]
@@ -160,7 +170,7 @@ mod tests {
             .as_bytes();
         let config_result = config::new(configuration);
 
-        assert_eq!(config_result, Err(ParseError::ErrorIncompleteConfiguration));
+        assert_eq!(config_result, Err(ParseError::ErrorCantParseValue));
     }
 
     #[test]
@@ -174,7 +184,7 @@ mod tests {
             .as_bytes();
         let config_result = config::new(configuration);
 
-        assert_eq!(config_result, Err(ParseError::ErrorIncompleteConfiguration));
+        assert_eq!(config_result, Err(ParseError::ErrorCantParseValue));
     }
 
     #[test]
@@ -188,7 +198,7 @@ mod tests {
             .as_bytes();
         let config_result = config::new(configuration);
 
-        assert_eq!(config_result, Err(ParseError::ErrorIncompleteConfiguration));
+        assert_eq!(config_result, Err(ParseError::ErrorCantParseValue));
     }
 
     #[test]
@@ -202,7 +212,7 @@ mod tests {
             .as_bytes();
         let config_result = config::new(configuration);
 
-        assert_eq!(config_result, Err(ParseError::ErrorIncompleteConfiguration));
+        assert_eq!(config_result, Err(ParseError::ErrorCantParseValue));
     }
 
     #[test]
@@ -220,6 +230,17 @@ mod tests {
         assert_eq!(
             config_result,
             Err(ParseError::ErrorEncounterFieldMoreThanOnes)
+        );
+    }
+
+    #[test]
+    fn test09_does_not_accept_input_with_not_information() {
+        let configuration = "".as_bytes();
+        let config_result = config::new(configuration);
+
+        assert_eq!(
+            config_result,
+            Err(ParseError::ErrorIncompleteConfiguration)
         );
     }
 }

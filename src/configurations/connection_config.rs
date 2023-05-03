@@ -5,8 +5,6 @@ use crate::connections::{ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2
 use std::collections::HashMap;
 use std::net::IpAddr;
 
-const CONNECTION_CONFIG: &str = "Connection";
-
 const DNS_ADDRESS: &str = "dns_address";
 const P2P_PROTOCOL_VERSION: &str = "p2p_protocol_version";
 const IBD_METHOD: &str = "ibd_method";
@@ -33,9 +31,5 @@ impl<'d> DeserializeStructure<'d> for ConnectionConfig {
             )?,
             ibd_method: deserialize::<IBDMethod>(IBD_METHOD, &settings_dictionary)?,
         })
-    }
-
-    fn name() -> String {
-        CONNECTION_CONFIG.to_string()
     }
 }

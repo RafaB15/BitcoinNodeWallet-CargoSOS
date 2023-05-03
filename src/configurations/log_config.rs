@@ -3,13 +3,12 @@ use super::deserializable_structure::DeserializeStructure;
 use super::parse_error::ParseError;
 use std::collections::HashMap;
 
-const LOGS_CONFIG: &str = "Logs";
-
 const FILEPATH_LOG: &str = "filepath_log";
 
+/// Configuration for the logs process
 #[derive(Debug, std::cmp::PartialEq)]
 pub struct LogConfig {
-    ///La ruta al archivo en donde vamos a escribir el log
+    /// The file path to where to write the logs message
     pub filepath_log: String,
 }
 
@@ -20,9 +19,5 @@ impl<'d> DeserializeStructure<'d> for LogConfig {
         Ok(LogConfig {
             filepath_log: deserialize::<String>(FILEPATH_LOG, &settings_dictionary)?,
         })
-    }
-
-    fn name() -> String {
-        LOGS_CONFIG.to_string()
     }
 }

@@ -1,29 +1,36 @@
 use super::parse_error::ParseError;
 use std::collections::HashMap;
 
-pub trait DeserializeStructure<'d> {
+/// It's a way to ensure the correct creation of a configuration structure
+pub(super) trait DeserializeStructure<'d> {
     type Value;
 
+    /// Returns the parse structure of a given property name
+    /// 
+    /// ### Errors
+    ///  * `ErrorConfigurationNoFount`: It will appear when there isn't a structure with a given property name
     fn deserializar(
+        name: &str,
         estructura_dictionary: &'d HashMap<String, Vec<String>>,
     ) -> Result<Self::Value, ParseError> {
-        let nombre = format!("[{}]", Self::name());
+        let nombre = format!("[{}]", name);
 
         if let Some(valor) = estructura_dictionary.get(nombre.as_str()) {
             let settings_dictionary = create_property_value_dictionary(valor)?;
             Ok(Self::new(settings_dictionary)?)
         } else {
-            Err(ParseError::ErrorIncompleteConfiguration)
+            Err(ParseError::ErrorConfigurationNoFount)
         }
     }
-
+    
+    /// Creation of the structure given 
     fn new(settings_dictionary: HashMap<String, String>) -> Result<Self::Value, ParseError>;
-
-    fn name() -> String {
-        stringify!(self).to_string()
-    }
 }
 
+/// Returns the key-values pair for all the configuration of a given structure
+/// 
+/// ### Errors
+///  * `ErrorEncounterFieldMoreThanOnes`: It will appear when the property name appears more than ones
 fn create_property_value_dictionary(
     text: &Vec<String>,
 ) -> Result<HashMap<String, String>, ParseError> {
@@ -46,6 +53,10 @@ fn create_property_value_dictionary(
     Ok(config_dictionary)
 }
 
+/// Return the key-value pair of a line in the configuration
+/// 
+/// ### Errors
+///  * `ErrorInvalidFormat`: It will appear when the line of the configuration isn't given by the format `key: value`
 fn slit_linea(text_line: &str) -> Result<(String, String), ParseError> {
     let mut split_line = text_line.split(':');
 
