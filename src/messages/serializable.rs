@@ -1,5 +1,7 @@
+use std::io::Write;
+
 pub trait Serializable {
     
-    fn serialize(&self) -> Vec<u8>;
+    fn serialize(&self, stream: &mut dyn Write);
     
 }

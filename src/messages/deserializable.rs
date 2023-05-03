@@ -1,6 +1,7 @@
+use std::io::Read;
+
 pub trait Deserializable {
 
-
-    fn deserialize(data: Vec<u8>) -> Self;
+    fn deserialize(stream: &mut dyn Read) -> Self;
 
 }
