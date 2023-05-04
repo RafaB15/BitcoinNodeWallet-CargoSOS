@@ -62,6 +62,8 @@ fn main() {
 
     println!("Initialization");
 
+    println!("Reading the configuration file");
+
     let config_name: String = match get_config_name(arguments) {
         Ok(config_name) => config_name,
         Err(err) => return println!("{err}"),
@@ -72,7 +74,15 @@ fn main() {
         Err(err) => return println!("{err}"),
     };
 
-    let config_result = config::new(config_file);
+    let (log_config, connection_config) = match config::new(config_file) {
+        Ok(configuration) => configuration,
+        Err(err) => {
+            let error: InitializationError = err.into();
+            return println!("{error}");
+        },
+    };
+
+    println!("Creating the logs system");
 
 
     
