@@ -8,12 +8,24 @@ use std::net::Ipv6Addr;
 
 pub struct Node {
     protocol_version: ProtocolVersionP2P,
-    synching_method: IBDMethod,
+    ibd_method: IBDMethod,
     peers_addrs: Vec<Ipv6Addr>,
     services: SupportedServices,
 }
 
 
 impl Node {
+    
+    pub fn new(
+        protocol_version: ProtocolVersionP2P,
+        ibd_method: IBDMethod,
+        services: SupportedServices) -> Self {
+        Node {
+            protocol_version,
+            ibd_method,
+            peers_addrs: vec![],
+            services,
+        }
+    }
 
 }
