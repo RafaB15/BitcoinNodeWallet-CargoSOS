@@ -5,16 +5,15 @@ use std::io::BufReader;
 use std::fs::File;
 use cargosos_bitcoin::configurations::configuration::config;
 
-const DECLARATION_LITTLE_CONFIG: &str = "-c";
-const DECLARATION_CONFIG: &str = "--config";
-const DECLARATION_BIG_CONFIG: &str = "--configuration";
+const DECLARATION_CONFIG: &str = "config";
+const DECLARATION_BIG_CONFIG: &str = "configuration";
 
-/// Finds the position of the declaration of the configuration given by  `-c`, `--config` or `--configuration`
+/// Finds the position of the declaration of the configuration given by  `--config` or `--configuration`
 /// 
-///  * `ErrorNoGivenFile`: It will appear when there is not `-c`, `--config` or `--configuration` in the arguments
+///  * `ErrorNoGivenFile`: It will appear when there is not `--config` or `--configuration` in the arguments
 fn find_config_name(arguments: &Vec<String>) -> Result<usize, InitializationError> {
     
-    let config_declarations = &[DECLARATION_LITTLE_CONFIG.to_string(), 
+    let config_declarations = &[
         DECLARATION_CONFIG.to_string(), 
         DECLARATION_BIG_CONFIG.to_string()
     ];
@@ -31,7 +30,7 @@ fn find_config_name(arguments: &Vec<String>) -> Result<usize, InitializationErro
 /// Get the configuration name given the arguments 
 /// 
 /// ### Errors
-///  * `ErrorNoGivenFile`: It will appear when there is not `-c`, `--config` or `--configuration` in the arguments or there is not argument pass that configuration declaration
+///  * `ErrorNoGivenFile`: It will appear when there is not `--config` or `--configuration` in the arguments or there is not argument pass that configuration declaration
 fn get_config_name(arguments: Vec<String>) -> Result<String, InitializationError> {
     
     let config_position: usize = find_config_name(&arguments)?;
@@ -83,7 +82,6 @@ fn main() {
     };
 
     println!("Creating the logs system");
-
 
     
 }
