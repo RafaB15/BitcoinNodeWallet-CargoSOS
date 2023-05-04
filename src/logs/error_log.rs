@@ -1,17 +1,16 @@
 
-/// Representa los errores posibles para los logs
+/// Enum to represent the error types we can encounter
 /// 
 /// ### Errores
 ///  * `ErrorReceiverNotFound`
-///  * `ErrorFileNotFound`
 ///  * `ErrorCouldNotWriteInFile`
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ErrorLog {
-    ErrorReceiverNotFound,
 
     ErrorFileNotFound,
 
-    ErrorCouldNotWriteInFile,
+    ErrorReceiverNotFound,
 
+    ErrorCouldNotWriteInFile,
 }
 

@@ -4,73 +4,75 @@ use std::sync::mpsc::Sender;
 use super::error_log::{ErrorLog};
 use super::level::Level;
 
-/// Se encarga de mandar los mensajes de logs, este se puede clonar para tener varios senders
+/// Manages the log messages. This can be cloned to have multiple senders
 /// 
 /// ### Errores
 ///  * `Error::ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
 #[derive(Debug, Clone)]
 pub struct LoggerSender {
-    sender: MessageLog,
+    sender: Sender<MessageLog>,
 }
 
 impl LoggerSender {
 
     pub(crate) fn new(sender: Sender<MessageLog>) -> Self {
-        LoggerSender { sender }
+        LoggerSender {
+            sender }
     }
 
-    /// Envia el mensaje deseado con su nivel de prioridad
+    /// Sends the message with the desired level
+    /// 
     /// ### Errores
     ///  * `Error::ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
-    pub(crate) fn log(&self, level: Level, message: String) -> Result<(), ErrorLog>{
-        if self.sender.send(level, message).is_err() {
+    pub fn log(&self, level: Level, message: String) -> Result<(), ErrorLog>{
+        if self.sender.send((level, message)).is_err() {
             return Err(ErrorLog::ErrorReceiverNotFound);
         }
         Ok(())
     }
 
-    /// Envia el mensaje deseado con el nivel `Nivel::NODE`
+    /// Sends the desired message with level: `Level::NODE`
     /// 
     /// ### Errores
     ///  * `Error::ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
     pub fn log_node(&self, mensaje: String) -> Result<(), ErrorLog> {
-        self.log(Nivel::NODE, mensaje)?;
+        self.log(Level::NODE, mensaje)?;
         Ok(())
     }
 
-    /// Envia el mensaje deseado con el nivel `Nivel::WALLET`
+    /// Sends the desired message with level: `Level::WALLET`
     /// 
     /// ### Errores
     ///  * `Error::ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
     pub fn log_wallet(&self, mensaje: String) -> Result<(), ErrorLog> {
-        self.log(Nivel::WALLET, mensaje)?;
+        self.log(Level::WALLET, mensaje)?;
         Ok(())
     }
 
-    /// Envia el mensaje deseado con el nivel `Nivel::TRANSACTION`
+    /// Sends the desired message with level: `Level::TRANSACTION`
     /// 
     /// ### Errores
     ///  * `Error::ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
     pub fn log_transaction(&self, mensaje: String) -> Result<(), ErrorLog> {
-        self.log(Nivel::TRANSACTION, mensaje)?;
+        self.log(Level::TRANSACTION, mensaje)?;
         Ok(())
     }
 
-    /// Envia el mensaje deseado con el nivel `Nivel::CONFIGURATION`
+    /// Sends the desired message with level: `Level::CONFIGURATION`
     /// 
     /// ### Errores
     ///  * `Error::ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
     pub fn log_configuration(&self, mensaje: String) -> Result<(), ErrorLog> {
-        self.log(Nivel::CONFIGURATION, mensaje)?;
+        self.log(Level::CONFIGURATION, mensaje)?;
         Ok(())
     }
 
-    /// Envia el mensaje deseado con el nivel `Nivel::CONNECTION`
+    /// Sends the desired message with level: `Level::CONNECTION`
     /// 
     /// ### Errores
     ///  * `Error::ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
     pub fn log_connection(&self, mensaje: String) -> Result<(), ErrorLog> {
-        self.log(Nivel::CONNECTION, mensaje)?;
+        self.log(Level::CONNECTION, mensaje)?;
         Ok(())
     }
 }
