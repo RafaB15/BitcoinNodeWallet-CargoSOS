@@ -3,13 +3,13 @@ use super::connection_error::ConnectionError;
 #[derive(Debug, std::cmp::PartialEq)]
 ///
 pub enum SupportedServices {
-    UNNAME,
-    NODE_NETWORK,
-    NODE_GETUTXO,
-    NODE_BLOOM,
-    NODE_WITNESS,
-    NODE_XTHIN,
-    NODE_NETWORK_LIMITED,
+    Unname,
+    NodeNetwork,
+    NodeGetUTXO,
+    NodeBloom,
+    NodeWitness,
+    NodeXThin,
+    NodeNetworkLimited,
 }
 
 ///Implementación del trait que permite hacer parse
