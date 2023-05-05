@@ -5,7 +5,7 @@ use super::{
     deserializable::Deserializable, 
     serializable::Serializable,
 };
-use std::io::Read;
+use std::io::{Read, Write};
 
 pub enum Payload {
     VersionMessage(VersionMessage),
@@ -30,7 +30,7 @@ impl Payload {
 }
 
 impl Serializable for Payload {
-    fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorMessage> {
+    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
         match self {
             Payload::VersionMessage(message) => message.serialize(stream),
             Payload::VerackMessage(message) => message.serialize(stream),

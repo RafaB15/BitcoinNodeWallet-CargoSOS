@@ -24,11 +24,15 @@ impl Serializable for VerackMessage {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
         
         // message_type: [u8; 12]
-        stream.write(&VERACK_TYPE);
+        if stream.write(&VERACK_TYPE).is_err() {
+            return Err(ErrorMessage::ErrorWhileWritting);
+        }
 
         // payload_size: u32
         let payload_size: u32 = 0;
-        stream.write(&payload_size.to_be_bytes());
+        if stream.write(&payload_size.to_be_bytes()).is_err() {
+            return Err(ErrorMessage::ErrorWhileWritting);
+        }
         
         // checksum: [u8; 4]
         let payload = [0u8; 0];
@@ -40,7 +44,10 @@ impl Serializable for VerackMessage {
             _ => return Err(ErrorMessage::ErrorInSerialization),
         };
 
-        stream.write(hash_bytes);
+        if stream.write(hash_bytes).is_err() {
+            return Err(ErrorMessage::ErrorWhileWritting);
+        }
+
         Ok(())
     }
 }

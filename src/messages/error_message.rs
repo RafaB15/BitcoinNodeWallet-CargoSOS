@@ -12,6 +12,8 @@ pub enum ErrorMessage {
 
     ErrorInDeserialization,
 
-    ErrorMessageUnknown
+    ErrorMessageUnknown,
+
+    ErrorWhileWritting,
 }
 
