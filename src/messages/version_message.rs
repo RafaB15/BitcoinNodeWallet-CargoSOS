@@ -1,7 +1,6 @@
 use super::{
     serializable::Serializable,
     deserializable::Deserializable,
-    payload::Payload,
     error_message::ErrorMessage,
 };
 
@@ -17,6 +16,8 @@ use crate::connections::{
     p2p_protocol::ProtocolVersionP2P,
     suppored_services::SupportedServices,
 };
+
+pub const VERSION_TYPE: [u8; 12] = [118, 101, 114, 115, 105, 111, 110, 0, 0, 0, 0, 1];
 
 pub struct VersionMessage {
     pub version: ProtocolVersionP2P,
@@ -50,12 +51,6 @@ impl VersionMessage {
         relay: bool,
     ) -> Self {
         todo!();
-    }
-}
-
-impl Payload for VersionMessage {
-    fn get_message_type(&self) -> [u8; 12] {
-        todo!()
     }
 }
 
