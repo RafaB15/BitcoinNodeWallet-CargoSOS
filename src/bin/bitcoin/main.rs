@@ -77,7 +77,7 @@ fn main() {
         Err(err) => return println!("{err}"),
     };
 
-    let (log_config, connection_config) = match config::new(config_file) {
+    let (log_config, _connection_config) = match config::new(config_file) {
         Ok(configuration) => configuration,
         Err(err) => return println!("An error ocurre: {:?}", err),
     };
@@ -94,8 +94,16 @@ fn main() {
 
     if let Err(err) = logger_sender.log_configuration("Logs are already configured".to_string()) {
         return println!("An error ocurre: {:?}", err);
-    }    
-    
+    }   
+
+
+    // Ejecutar programa
+
+
+    if let Err(err) = logger_sender.log_configuration("Closing program".to_string()) {
+        return println!("An error ocurre: {:?}", err);
+    }   
+
     std::mem::drop(logger_sender);
     let _ = handle.join().unwrap();
 

@@ -1,5 +1,4 @@
 use std::fmt::Display;
-use std::convert::From;
 
 pub enum InitializationError {
     /// It will appear when there is not `-c`, `--config` or `--configuration` in the arguments or there is not argument pass that configuration declaration
