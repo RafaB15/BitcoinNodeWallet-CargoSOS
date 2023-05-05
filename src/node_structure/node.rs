@@ -9,7 +9,13 @@ use std::net::{
     SocketAddr
 };
 use crate::connections::socket_conversion::socket_to_ipv6_port;
-use crate::messages::version_message::VersionMessage;
+
+use crate::messages::{
+    message::Message,
+    version_message::VersionMessage,
+    payload::Payload,
+};
+
 use chrono::offset::Utc;
 
 const IGNORE_NONCE: u64 = 0;
@@ -43,8 +49,8 @@ impl Node {
         }
     }
 
-    ///Function that tries to build a version message with the current information of the node
-    pub fn build_version_message(
+    ///Function that builds a version message payload with the current information of the node
+    pub fn build_version_message_payload(
         &self,
         recv_socket_addr: SocketAddr,
         recv_services: SupportedServices,
@@ -52,13 +58,13 @@ impl Node {
         nonce: u64,
         user_agent: String,
         relay: bool
-    ) ->  VersionMessage {
+    ) ->  Payload {
 
         let timestamp = Utc::now();
         let (recv_addr, recv_port) = socket_to_ipv6_port(&recv_socket_addr);
         let (trans_addr, trans_port) = socket_to_ipv6_port(&trans_socket_addr);
         
-        VersionMessage::new(
+        let payload = VersionMessage::new(
             self.protocol_version, 
             self.services, 
             timestamp, 
@@ -70,10 +76,25 @@ impl Node {
             nonce, 
             user_agent, 
             self.blockchain_height, 
-            relay)
+            relay);
+        
+        Payload::VersionMessage(payload)
     }
 
-    
+    pub fn build_version_message(
+        &self,
+        magic_bytes: [u8; 4],
+        recv_socket_addr: SocketAddr,
+        recv_services: SupportedServices,
+        trans_socket_addr: SocketAddr,
+        nonce: u64,
+        user_agent: String,
+        relay: bool
+    ) -> Message {
+
+        let payload = self.build_version_message_payload(recv_socket_addr, recv_services, trans_socket_addr, nonce, user_agent, relay);
+        Message::new(magic_bytes, payload)
+    }
 
     /*
     ///Función que intenta hacer el handshake
