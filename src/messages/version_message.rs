@@ -1,6 +1,8 @@
 use super::{
     serializable::Serializable,
     deserializable::Deserializable,
+    payload::Payload,
+    error_message::ErrorMessage,
 };
 
 use std::net::Ipv6Addr;
@@ -51,14 +53,21 @@ impl VersionMessage {
     }
 }
 
+impl Payload for VersionMessage {
+    fn get_message_type(&self) -> [u8; 12] {
+        todo!()
+    }
+}
+
 impl Serializable for VersionMessage {
-    fn serialize(&self, stream: &mut dyn Write) {
+    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage>{
         todo!()
     }
 }
 
 impl Deserializable for VersionMessage {
-    fn deserialize(stream: &mut dyn Read) -> Self {
+    type Value = Self;
+    fn deserialize(stream: &mut dyn Read) ->  Result<Self::Value, ErrorMessage> {
         todo!()
     }
 }
