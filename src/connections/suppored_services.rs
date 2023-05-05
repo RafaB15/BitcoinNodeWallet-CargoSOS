@@ -1,6 +1,6 @@
 use super::connection_error::ConnectionError;
 
-#[derive(Debug, std::cmp::PartialEq)]
+#[derive(Debug, std::cmp::PartialEq, Copy, Clone)]
 ///
 pub enum SupportedServices {
     Unname,
