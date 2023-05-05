@@ -7,3 +7,4 @@ pub mod version_message;
 pub mod verack_message;
 pub mod error_message;
 pub mod payload;
+//pub mod message_type;

@@ -8,6 +8,10 @@ pub enum ErrorMessage {
 
     ErrorInMessage,
 
-    ErrorInSerialization
+    ErrorInSerialization,
+
+    ErrorInDeserialization,
+
+    ErrorMessageUnknown
 }
 

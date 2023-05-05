@@ -5,5 +5,5 @@ use super::{
 
 pub trait Payload : Serializable + Deserializable {
     
-    fn get_message_type(&self) -> [u8; 12];
+    fn get_message_type() -> [u8; 12];
 }

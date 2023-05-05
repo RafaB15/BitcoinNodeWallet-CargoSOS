@@ -17,7 +17,7 @@ impl VerackMessage {
 }
 
 impl Payload for VerackMessage {
-    fn get_message_type(&self) -> [u8; 12] {
+    fn get_message_type() -> [u8; 12] {
         todo!()
     }
 }
