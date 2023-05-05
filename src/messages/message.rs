@@ -72,7 +72,6 @@ impl<Load> Deserializable for Message<Load>
             _ => return Err(ErrorMessage::ErrorMessageUnknown),
         };
 
-
         todo!()
     }
 }
