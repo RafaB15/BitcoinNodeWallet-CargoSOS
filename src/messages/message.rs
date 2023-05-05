@@ -1,26 +1,28 @@
-use crate::messages::{verack_message::VerackMessage, version_message::{VersionMessage, self}};
+use crate::messages::{
+    verack_message::{VerackMessage, VERACK_TYPE}, 
+    version_message::{VersionMessage, VERSION_TYPE}
+};
 
 use super::{
     serializable::Serializable,
     deserializable::Deserializable,
-    payload::Payload,
     error_message::ErrorMessage,
 };
 
 use std::io::{Read, Write};
 
 
-pub struct Message<Load>
-    where Load : Payload
+pub struct Message<Payload>
+    where Payload : Deserializable + Serializable
 {
     pub magic_bytes: [u8; 4],
-    pub payload: Load,
+    pub payload: Payload,
 }
 
-impl<Load> Message<Load> 
-    where Load : Payload
+impl<Payload> Message<Payload> 
+    where Payload : Deserializable + Serializable
 {
-    pub fn new(magic_bytes: [u8; 4], payload: Load) -> Self {
+    pub fn new(magic_bytes: [u8; 4], payload: Payload) -> Self {
         Message { 
             magic_bytes, 
             payload,
@@ -28,8 +30,8 @@ impl<Load> Message<Load>
     }
 }
 
-impl<Load> Serializable for Message<Load>
-    where Load : Payload
+impl<Payload> Serializable for Message<Payload>
+    where Payload : Deserializable + Serializable
 {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
 
@@ -41,10 +43,11 @@ impl<Load> Serializable for Message<Load>
     }
 }
 
-impl<Load> Deserializable for Message<Load> 
-    where Load : Payload
+impl<Payload> Deserializable for Message<Payload> 
+    where Payload : Deserializable + Serializable
 {
     type Value = Self;
+    
     fn deserialize(stream: &mut dyn Read) -> Result<Self::Value, ErrorMessage> {
         /* Tener en cuenta
         pub message_type: [u8; 12],
@@ -63,12 +66,9 @@ impl<Load> Deserializable for Message<Load>
             return Err(ErrorMessage::ErrorInDeserialization);
         }    
 
-        let verack_type = VerackMessage::get_message_type();
-        let version_type = VersionMessage::get_message_type();
-
-        let payload = match message_type {
-            verack_type => VerackMessage::deserialize(stream)?,
-            version_message => VersionMessage::deserialize(stream)?,
+        let payload: Payload = match message_type {
+            VERACK_TYPE => VerackMessage::deserialize(stream)?,
+            VERSION_TYPE => VersionMessage::deserialize(stream)?,
             _ => return Err(ErrorMessage::ErrorMessageUnknown),
         };
 
