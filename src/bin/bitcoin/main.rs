@@ -1,9 +1,13 @@
 mod initialization_error;
 
 use initialization_error::InitializationError;
-use std::io::BufReader;
+use std::{io::BufReader, path::Path};
 use std::fs::File;
-use cargosos_bitcoin::configurations::configuration::config;
+use std::thread;
+use cargosos_bitcoin::{
+    configurations::configuration::config,
+    logs::logger,
+};
 
 const DECLARATION_CONFIG: &str = "config";
 const DECLARATION_BIG_CONFIG: &str = "configuration";
@@ -57,7 +61,7 @@ fn open_config_file(config_name: String) -> Result<BufReader<File>, Initializati
 }
 
 fn main() {
-    let arguments: Vec<String> = std::env::args().collect();
+    let arguments: Vec<String> = std::env::args().collect();    
 
     println!("Initialization");
 
@@ -75,13 +79,24 @@ fn main() {
 
     let (log_config, connection_config) = match config::new(config_file) {
         Ok(configuration) => configuration,
-        Err(err) => {
-            let error: InitializationError = err.into();
-            return println!("{error}");
-        },
+        Err(err) => return println!("An error ocurre: {:?}", err),
     };
 
     println!("Creating the logs system");
 
+    let filepath_log = Path::new(&log_config.filepath_log);
+    let (logger_sender, logger_receiver) = match logger::initialize_logger(filepath_log) {
+        Ok((logger_sender, logger_receiver)) => (logger_sender, logger_receiver),
+        Err(err) => return println!("An error ocurre: {:?}", err),
+    };
+
+    let handle = thread::spawn(move || logger_receiver.receive_log());        
+
+    if let Err(err) = logger_sender.log_configuration("Logs are already configured".to_string()) {
+        return println!("An error ocurre: {:?}", err);
+    }    
     
+    std::mem::drop(logger_sender);
+    let _ = handle.join().unwrap();
+
 }
