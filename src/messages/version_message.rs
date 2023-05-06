@@ -132,7 +132,7 @@ impl Serializable for VersionMessage {
             return Err(ErrorMessage::ErrorInSerialization);
         }
 
-        todo!()
+        Ok(())
 
         }
 
