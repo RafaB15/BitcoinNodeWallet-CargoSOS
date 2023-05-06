@@ -1,2 +1,0 @@
-Time: [1683285020.0566756s]: [CONFIGURATION] Logs are already configured
-Time: [1683285020.0574126s]: [CONFIGURATION] Closing program
