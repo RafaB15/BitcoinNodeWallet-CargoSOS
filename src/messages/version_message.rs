@@ -57,7 +57,18 @@ impl VersionMessage {
 impl Serializable for VersionMessage {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage>{
 
+    
         //version
+        if stream.write(&self.version.to_i32().to_le_bytes()).is_err() {
+            return Err(ErrorMessage::ErrorWhileWriting);
+        }
+            
+        
+
+
+
+
+
         /*let version: &[i32] = match self.version.try_into(){
             Ok(version) => version,
             _ => return Err(ErrorMessage::ErrorWhileWriting),

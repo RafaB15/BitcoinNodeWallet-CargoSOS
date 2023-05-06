@@ -44,3 +44,27 @@ impl std::str::FromStr for ProtocolVersionP2P {
         }
     }
 }
+
+/// Implementación del trait que permite convertir a i32
+impl ProtocolVersionP2P {
+    pub fn to_i32(&self) -> i32 {
+        match self {
+            ProtocolVersionP2P::V70015 => 70015,
+            ProtocolVersionP2P::V70014 => 70014,
+            ProtocolVersionP2P::V70013 => 70013,
+            ProtocolVersionP2P::V70012 => 70012,
+            ProtocolVersionP2P::V70011 => 70011,
+            ProtocolVersionP2P::V70002 => 70002,
+            ProtocolVersionP2P::V70001 => 70001,
+            ProtocolVersionP2P::V60002 => 60002,
+            ProtocolVersionP2P::V60001 => 60001,
+            ProtocolVersionP2P::V60000 => 60000,
+            ProtocolVersionP2P::V31800 => 31800,
+            ProtocolVersionP2P::V31402 => 31402,
+            ProtocolVersionP2P::V311 => 311,
+            ProtocolVersionP2P::V209 => 209,
+            ProtocolVersionP2P::V106 => 106,
+        }
+    }
+}
+
