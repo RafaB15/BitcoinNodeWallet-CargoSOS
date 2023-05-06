@@ -150,23 +150,15 @@ impl Deserializable for VersionMessage {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
         let version_int = i32::from_le_bytes(version_bytes);
-        if ProtocolVersionP2P::from_i32(version_int).is_err(){
-            return Err(ErrorMessage::ErrorInDeserialization);
+        let version = match ProtocolVersionP2P::from_i32(version_int){
+            Ok(version) => version,
+            _ => return Err(ErrorMessage::ErrorInDeserialization),
         };
         
         //services
         //para despues
-
-        //timestamp
-        /*let mut timestamp_bytes = [0u8; 8];
-        if stream.read_exact(&mut timestamp_bytes).is_err() {
-        return Err(ErrorMessage::ErrorInDeserialization);
-        }
-        let timestamp_int = i64::from_le_bytes(timestamp_bytes);
-        //let timestamp_utc = Utc.timestamp(timestamp_int, 0);
-        let timestamp_utc = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(timestamp_int, 0), Utc);
-        let timestamp = DateTime::<Utc>::from_utc(timestamp_utc, Utc);*/
         
+        //timestamp
         let mut timestamp_bytes = [0u8; 8];
         if stream.read_exact(&mut timestamp_bytes).is_err() {
             return Err(ErrorMessage::ErrorInDeserialization);
@@ -175,13 +167,77 @@ impl Deserializable for VersionMessage {
         let timestamp_utc = NaiveDateTime::from_timestamp_opt(timestamp_int, 0).ok_or(ErrorMessage::ErrorInDeserialization)?;
         let timestamp = DateTime::<Utc>::from_utc(timestamp_utc, Utc);
 
+        //recv_services: SupportedServices
 
+        //recv_addr: Ipv6Addr
+        let mut recv_bytes = [0u8; 16];
+        if stream.read_exact(&mut recv_bytes).is_err() {
+            return Err(ErrorMessage::ErrorInDeserialization);
+        }
+        let recv_addr = Ipv6Addr::from(recv_bytes);
 
+        //recv_port: u16
+        let mut recv_port_bytes = [0u8; 2];
+        if stream.read_exact(&mut recv_port_bytes).is_err() {
+            return Err(ErrorMessage::ErrorInDeserialization);
+        }
+        let recv_port = u16::from_le_bytes(recv_port_bytes);
 
+        //trans_addr: Ipv6Addr
+        let mut trans_addr_bytes = [0u8; 16];
+        if stream.read_exact(&mut trans_addr_bytes).is_err() {
+            return Err(ErrorMessage::ErrorInDeserialization);
+        }
+        let trans_addr = Ipv6Addr::from(trans_addr_bytes);
 
+        //trans_port: u16, // tal vez es el mismo que el recv_port
+        let mut trans_port_bytes = [0u8; 2];
+        if stream.read_exact(&mut trans_port_bytes).is_err() {
+            return Err(ErrorMessage::ErrorInDeserialization);
+        }
+        let trans_port = u16::from_le_bytes(trans_port_bytes);
 
+        //nonce: u64
+        let mut nonce_bytes = [0u8; 8];
+        if stream.read_exact(&mut nonce_bytes).is_err() {
+        return Err(ErrorMessage::ErrorInDeserialization);
+        }
+        let nonce = u64::from_le_bytes(nonce_bytes);
 
+        //user_agent: String
 
-        todo!()
+        //start_height: i32
+        let mut height_bytes = [0u8; 4];
+        if stream.read_exact(&mut height_bytes).is_err() {
+            return Err(ErrorMessage::ErrorInDeserialization);
+        }
+        let start_height = i32::from_le_bytes(height_bytes);
+
+        //relay: bool
+        let mut relay_value = [0u8; 1];
+        if stream.read_exact(&mut relay_value).is_err() {
+            return Err(ErrorMessage::ErrorInDeserialization);
+        }
+        let relay = match relay_value[0] {
+            0x00 => false,
+            0x01 => true,
+            _ => return Err(ErrorMessage::ErrorInDeserialization),
+        };
+
+        Ok(VersionMessage::new(
+            version,
+            services,
+            timestamp,
+            recv_services,
+            recv_addr,
+            recv_port,
+            trans_addr,
+            trans_port,
+            nonce,
+            user_agent,
+            start_height,
+            relay,
+
+        ))
     }
 }
