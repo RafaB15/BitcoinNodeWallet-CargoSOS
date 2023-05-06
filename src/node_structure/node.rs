@@ -102,6 +102,7 @@ impl Node {
         Message::new(magic_bytes, payload)
     }
 
+    ///Function that sends a version message to the given potential peer.
     pub fn send_testnet_version_message(&self, local_socket_addr: &SocketAddr, potential_peer: &SocketAddr, potencial_peer_stream: &mut TcpStream) -> Result<(), ErrorMessage>{
         let version_message = self.build_version_message(
             TESTNET_MAGIC_NUMBERS, 
@@ -116,6 +117,7 @@ impl Node {
         Ok(())
     }
 
+    ///Function that sends a verack message to the given potential peer.
     pub fn send_testnet_verack_message(&self, potencial_peer_stream: &mut TcpStream) -> Result<(), ErrorMessage>{
         let verack_message = Message::new(TESTNET_MAGIC_NUMBERS, Payload::VerackMessage(VerackMessage::new()));
         verack_message.serialize(potencial_peer_stream)?;
