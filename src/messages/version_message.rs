@@ -63,22 +63,8 @@ impl Serializable for VersionMessage {
             return Err(ErrorMessage::ErrorWhileWriting);
         }
             
-        
-
-
-
-
-
-        /*let version: &[i32] = match self.version.try_into(){
-            Ok(version) => version,
-            _ => return Err(ErrorMessage::ErrorWhileWriting),
-        };
-        //el version deberia implementar la serializacion
-        if stream.write(version).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }
-
-        let services: &[u64] = match self.services.try_into(){
+        //services
+        /*let services: &[u64] = match self.services.try_into(){
             Ok(services) => services,
             _ => return Err(ErrorMessage::ErrorWhileWriting),
         };
@@ -87,19 +73,25 @@ impl Serializable for VersionMessage {
             Ok(services) => services,
             _ => return Err(ErrorMessage::ErrorInSerialization),
             
-        }
+        }*/
 
-        if stream.write(&self.services.to_le_bytes()).is_err() {
+        //timestamp
+        let timestamp_bytes = self.timestamp.timestamp().to_le_bytes();
+        if stream.write(&timestamp_bytes).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
         }
 
-        if stream.write(&self.timestamp.timestamp().to_le_bytes()).is_err() {
+        //recv_services
+        /*if stream.write(&self.recv_services.to_le_bytes()).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
-        }
+        }*/
 
-        if stream.write(&self.recv_services.to_le_bytes()).is_err() {
+        //recv_addr
+        let recv_bytes = self.recv_addr.octets();
+        if stream.write(&recv_bytes).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
         }
+        /*
 
         if stream.write(&self.recv_addr.octets()).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
