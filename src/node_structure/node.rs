@@ -4,8 +4,8 @@ use crate::connections::{
     suppored_services::SupportedServices,
     connection_error::ConnectionError
 };
-use crate::messages::message;
 use crate::messages::serializable::Serializable;
+use crate::messages::deserializable::Deserializable;
 
 use std::net::{
     Ipv6Addr,
@@ -118,6 +118,16 @@ impl Node {
         Ok(())
     }
 
+    pub fn build_verack_message_payload(&self) -> Payload {
+        Payload::Verack
+    }
+
+    pub fn send_testnet_verack_message(&self, potencial_peer_stream: &mut TcpStream) -> Result<(), ErrorMessage>{
+        let verack_message = Message::new(TESTNET_MAGIC_NUMBERS, Payload::Verack);
+        verack_message.serialize(potencial_peer_stream)?;
+        Ok(())
+    }
+
     ///Function that tries to do the handshake with the given potential peer.
     pub fn attempt_connection_with_testnet_peer(&self, potential_peer: &SocketAddr) -> Result<(), ConnectionError>{
 
@@ -139,11 +149,20 @@ impl Node {
             }
         };
 
+        let received_version_message = match Message::deserialize(&mut potencial_peer_stream) {
+            Ok(message) => message,
+            Err(e) => {
+                println!("Error while sending version message to peer {}: {:?}", potential_peer, e);
+                return Err(ConnectionError::ErrorCannotReceiveMessage);
+            }
+        };
+        
         Ok(())
     }
 
 
     ///Function that tries to do the handshake with the given vector of potential peers.
+    //Recordar implementar la funcionalidad con
     pub fn connect_to_testnet_peers(&self, potential_peers: &Vec<SocketAddr>) -> Result<(), ConnectionError> {
         for potential_peer in potential_peers {
             match self.attempt_connection_with_testnet_peer(potential_peer) {
