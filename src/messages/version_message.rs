@@ -98,7 +98,7 @@ impl Serializable for VersionMessage {
         }
         
         //trans addr
-        let trans_addr_bytes = self.recv_addr.octets();
+        let trans_addr_bytes = self.trans_addr.octets();
         if stream.write(&trans_addr_bytes).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
         }
