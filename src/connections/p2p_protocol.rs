@@ -68,3 +68,26 @@ impl ProtocolVersionP2P {
     }
 }
 
+impl ProtocolVersionP2P {
+    pub fn from_i32(version_num: i32) -> Result<Self, ConnectionError> {
+        match version_num {
+            70015 => Ok(ProtocolVersionP2P::V70015),
+            70014 => Ok(ProtocolVersionP2P::V70014),
+            70013 => Ok(ProtocolVersionP2P::V70013),
+            70012 => Ok(ProtocolVersionP2P::V70012),
+            70011 => Ok(ProtocolVersionP2P::V70011),
+            70002 => Ok(ProtocolVersionP2P::V70002),
+            70001 => Ok(ProtocolVersionP2P::V70001),
+            60002 => Ok(ProtocolVersionP2P::V60002),
+            60001 => Ok(ProtocolVersionP2P::V60001),
+            60000 => Ok(ProtocolVersionP2P::V60000),
+            31800 => Ok(ProtocolVersionP2P::V31800),
+            31402 => Ok(ProtocolVersionP2P::V31402),
+            311 => Ok(ProtocolVersionP2P::V311),
+            209 => Ok(ProtocolVersionP2P::V209),
+            106 => Ok(ProtocolVersionP2P::V106),
+            _ => return Err(ConnectionError::ErrorInvalidInputParse),
+        }
+
+    }
+}

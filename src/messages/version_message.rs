@@ -142,6 +142,26 @@ impl Serializable for VersionMessage {
 impl Deserializable for VersionMessage {
     type Value = Self;
     fn deserialize(stream: &mut dyn Read) ->  Result<Self::Value, ErrorMessage> {
+        //version
+        let mut version_bytes = [0u8; 4];
+        if stream.read_exact(&mut version_bytes).is_err() {
+            return Err(ErrorMessage::ErrorInDeserialization);
+        }
+        let version_int = i32::from_le_bytes(version_bytes);
+        if ProtocolVersionP2P::from_i32(version_int).is_err(){
+            return Err(ErrorMessage::ErrorInDeserialization);
+        };
+        
+        //services
+
+
+
+
+
+
+
+
+
         todo!()
     }
 }
