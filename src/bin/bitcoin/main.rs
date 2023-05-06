@@ -78,15 +78,13 @@ fn open_config_file(config_name: String) -> Result<BufReader<File>, ErrorInitial
 ///  * `ErrorCouldNotWriteInFile`: No se pudo escribir en el file
 ///  * `ErrorCouldNotFindReceiver`: No se encontro el receiver
 ///  * `ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
-fn initialize_logs(log_config: LogConfig) -> Result<(JoinHandle<()>, LoggerSender), ErrorLog> {
+fn initialize_logs(log_config: LogConfig) -> Result<(JoinHandle<Result<(), ErrorLog>>, LoggerSender), ErrorLog> {
     println!("Creating the logs system");
 
     let filepath_log = Path::new(&log_config.filepath_log);
     let (logger_sender, logger_receiver) = logger::initialize_logger(filepath_log)?;
 
-    let handle = thread::spawn(move || {
-        logger_receiver.receive_log();
-    });       
+    let handle = thread::spawn(move || logger_receiver.receive_log());       
 
     logger_sender.log_configuration("Logs are already configured".to_string())?;
 
@@ -112,8 +110,11 @@ fn main() -> Result<(), ErrorEjecution> {
 
 
     logger_sender.log_configuration("Closing program".to_string())?;
+    
     std::mem::drop(logger_sender);
-    let _ = handle.join().unwrap();
+    if let Ok(resultado) = handle.join() {
+        let _ = resultado?;
+    }
 
     Ok(())
 }
