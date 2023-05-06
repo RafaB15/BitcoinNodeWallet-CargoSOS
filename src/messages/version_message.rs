@@ -96,16 +96,14 @@ impl Serializable for VersionMessage {
         if stream.write(&self.recv_port.to_le_bytes()).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
         }
-        /*
-        if stream.write(&self.recv_port.to_le_bytes()).is_err() {
+        
+        //trans addr
+        let trans_addr_bytes = self.recv_addr.octets();
+        if stream.write(&trans_addr_bytes).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
         }
 
-        if stream.write(&self.trans_addr.octets()).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }
-
-        if stream.write(&self.trans_port.to_le_bytes()).is_err() {
+        /*if stream.write(&self.trans_port.to_le_bytes()).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
         }
 
