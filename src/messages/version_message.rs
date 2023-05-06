@@ -91,12 +91,12 @@ impl Serializable for VersionMessage {
         if stream.write(&recv_bytes).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
         }
-        /*
 
-        if stream.write(&self.recv_addr.octets()).is_err() {
+        //recv_port
+        if stream.write(&self.recv_port.to_le_bytes()).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
         }
-
+        /*
         if stream.write(&self.recv_port.to_le_bytes()).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
         }
