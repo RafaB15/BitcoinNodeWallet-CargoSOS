@@ -25,13 +25,13 @@ impl Serializable for VerackMessage {
         
         // message_type: [u8; 12]
         if stream.write(&VERACK_TYPE).is_err() {
-            return Err(ErrorMessage::ErrorWhileWritting);
+            return Err(ErrorMessage::ErrorWhileWriting);
         }
 
         // payload_size: u32
         let payload_size: u32 = 0;
         if stream.write(&payload_size.to_be_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorWhileWritting);
+            return Err(ErrorMessage::ErrorWhileWriting);
         }
         
         // checksum: [u8; 4]
@@ -45,7 +45,7 @@ impl Serializable for VerackMessage {
         };
 
         if stream.write(hash_bytes).is_err() {
-            return Err(ErrorMessage::ErrorWhileWritting);
+            return Err(ErrorMessage::ErrorWhileWriting);
         }
 
         Ok(())

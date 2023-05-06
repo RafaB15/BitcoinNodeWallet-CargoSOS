@@ -14,6 +14,6 @@ pub enum ErrorMessage {
 
     ErrorMessageUnknown,
 
-    ErrorWhileWritting,
+    ErrorWhileWriting,
 }
 

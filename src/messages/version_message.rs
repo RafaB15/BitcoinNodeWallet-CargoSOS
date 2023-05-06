@@ -56,6 +56,14 @@ impl VersionMessage {
 
 impl Serializable for VersionMessage {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage>{
+
+
+        if stream.write()
+
+
+
+
+
         todo!()
     }
 }
