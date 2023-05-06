@@ -6,4 +6,5 @@ pub enum ConnectionError {
     ErrorCannotConnectToAddress,
     ErrorCannotObtainOwnAddress,
     ErrorCannotSendMessage,
+    ErrorCannotReceiveMessage
 }
