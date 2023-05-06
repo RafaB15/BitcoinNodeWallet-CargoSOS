@@ -113,22 +113,26 @@ impl Serializable for VersionMessage {
             return Err(ErrorMessage::ErrorInSerialization);
         }
 
-        /*if stream.write(&self.user_agent.as_bytes()).is_err() {
+        //user_agent VER ESTO
+        if stream.write(&self.user_agent.as_bytes()).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
         }
 
+        //start_height
         if stream.write(&self.start_height.to_le_bytes()).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
         }
 
-        if stream.write(&self.relay.to_le_bytes()).is_err() {
+        //relay
+        let relay_value = match self.relay {
+            true => 0x01,
+            false => 0x00,
+        };
+        if stream.write(&[relay_value]).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
-        }*/
-
+        }
 
         todo!()
-
-
 
         }
 
