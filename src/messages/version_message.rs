@@ -103,15 +103,17 @@ impl Serializable for VersionMessage {
             return Err(ErrorMessage::ErrorInSerialization);
         }
 
-        /*if stream.write(&self.trans_port.to_le_bytes()).is_err() {
+        //trans port
+        if stream.write(&self.trans_port.to_le_bytes()).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
         }
 
+        //nonce
         if stream.write(&self.nonce.to_le_bytes()).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
         }
 
-        if stream.write(&self.user_agent.as_bytes()).is_err() {
+        /*if stream.write(&self.user_agent.as_bytes()).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
         }
 
