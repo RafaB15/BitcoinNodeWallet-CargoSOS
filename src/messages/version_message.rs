@@ -7,6 +7,8 @@ use super::{
 use std::net::Ipv6Addr;
 use chrono::{
     DateTime,
+    Timelike,
+    NaiveDateTime,
     offset::Utc
 };
 
@@ -153,7 +155,25 @@ impl Deserializable for VersionMessage {
         };
         
         //services
+        //para despues
 
+        //timestamp
+        /*let mut timestamp_bytes = [0u8; 8];
+        if stream.read_exact(&mut timestamp_bytes).is_err() {
+        return Err(ErrorMessage::ErrorInDeserialization);
+        }
+        let timestamp_int = i64::from_le_bytes(timestamp_bytes);
+        //let timestamp_utc = Utc.timestamp(timestamp_int, 0);
+        let timestamp_utc = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(timestamp_int, 0), Utc);
+        let timestamp = DateTime::<Utc>::from_utc(timestamp_utc, Utc);*/
+        
+        let mut timestamp_bytes = [0u8; 8];
+        if stream.read_exact(&mut timestamp_bytes).is_err() {
+            return Err(ErrorMessage::ErrorInDeserialization);
+        }
+        let timestamp_int = i64::from_le_bytes(timestamp_bytes);
+        let timestamp_utc = NaiveDateTime::from_timestamp_opt(timestamp_int, 0).ok_or(ErrorMessage::ErrorInDeserialization)?;
+        let timestamp = DateTime::<Utc>::from_utc(timestamp_utc, Utc);
 
 
 
