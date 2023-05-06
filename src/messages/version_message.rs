@@ -57,15 +57,79 @@ impl VersionMessage {
 impl Serializable for VersionMessage {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage>{
 
+        //version
+        /*let version: &[i32] = match self.version.try_into(){
+            Ok(version) => version,
+            _ => return Err(ErrorMessage::ErrorWhileWriting),
+        };
+        //el version deberia implementar la serializacion
+        if stream.write(version).is_err() {
+            return Err(ErrorMessage::ErrorInSerialization);
+        }
 
-        if stream.write()
+        let services: &[u64] = match self.services.try_into(){
+            Ok(services) => services,
+            _ => return Err(ErrorMessage::ErrorWhileWriting),
+        };
 
+        if stream.write(services).is_err() {
+            Ok(services) => services,
+            _ => return Err(ErrorMessage::ErrorInSerialization),
+            
+        }
 
+        if stream.write(&self.services.to_le_bytes()).is_err() {
+            return Err(ErrorMessage::ErrorInSerialization);
+        }
 
+        if stream.write(&self.timestamp.timestamp().to_le_bytes()).is_err() {
+            return Err(ErrorMessage::ErrorInSerialization);
+        }
+
+        if stream.write(&self.recv_services.to_le_bytes()).is_err() {
+            return Err(ErrorMessage::ErrorInSerialization);
+        }
+
+        if stream.write(&self.recv_addr.octets()).is_err() {
+            return Err(ErrorMessage::ErrorInSerialization);
+        }
+
+        if stream.write(&self.recv_port.to_le_bytes()).is_err() {
+            return Err(ErrorMessage::ErrorInSerialization);
+        }
+
+        if stream.write(&self.trans_addr.octets()).is_err() {
+            return Err(ErrorMessage::ErrorInSerialization);
+        }
+
+        if stream.write(&self.trans_port.to_le_bytes()).is_err() {
+            return Err(ErrorMessage::ErrorInSerialization);
+        }
+
+        if stream.write(&self.nonce.to_le_bytes()).is_err() {
+            return Err(ErrorMessage::ErrorInSerialization);
+        }
+
+        if stream.write(&self.user_agent.as_bytes()).is_err() {
+            return Err(ErrorMessage::ErrorInSerialization);
+        }
+
+        if stream.write(&self.start_height.to_le_bytes()).is_err() {
+            return Err(ErrorMessage::ErrorInSerialization);
+        }
+
+        if stream.write(&self.relay.to_le_bytes()).is_err() {
+            return Err(ErrorMessage::ErrorInSerialization);
+        }*/
 
 
         todo!()
-    }
+
+
+
+        }
+
+
 }
 
 impl Deserializable for VersionMessage {

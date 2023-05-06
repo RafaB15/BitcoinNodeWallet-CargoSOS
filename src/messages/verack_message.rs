@@ -30,7 +30,7 @@ impl Serializable for VerackMessage {
 
         // payload_size: u32
         let payload_size: u32 = 0;
-        if stream.write(&payload_size.to_be_bytes()).is_err() {
+        if stream.write(&payload_size.to_le_bytes()).is_err() {
             return Err(ErrorMessage::ErrorWhileWriting);
         }
         
