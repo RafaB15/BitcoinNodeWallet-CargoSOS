@@ -8,16 +8,15 @@ use crate::messages::serializable::Serializable;
 use crate::messages::deserializable::Deserializable;
 
 use std::net::{
-    Ipv6Addr,
     SocketAddr,
     TcpStream,
-    TcpListener
 };
 use crate::connections::socket_conversion::socket_to_ipv6_port;
 
 use crate::messages::{
     message::Message,
     version_message::VersionMessage,
+    verack_message::VerackMessage,
     payload::Payload,
     error_message::ErrorMessage,
 };
@@ -27,13 +26,12 @@ use chrono::offset::Utc;
 const IGNORE_NONCE: u64 = 0;
 const IGNORE_USER_AGENT: &str = "";
 const NO_NEW_TRANSACTIONS: bool = false; 
-const NO_RELAY: bool = false;
 const TESTNET_MAGIC_NUMBERS: [u8; 4] = [0x0b, 0x11, 0x09, 0x07];
 
 pub struct Node {
     protocol_version: ProtocolVersionP2P,
     ibd_method: IBDMethod,
-    peers_addrs: Vec<Ipv6Addr>,
+    peers_addrs: Vec<SocketAddr>,
     services: SupportedServices,
     blockchain_height: i32,
 }
@@ -118,12 +116,8 @@ impl Node {
         Ok(())
     }
 
-    pub fn build_verack_message_payload(&self) -> Payload {
-        Payload::Verack
-    }
-
     pub fn send_testnet_verack_message(&self, potencial_peer_stream: &mut TcpStream) -> Result<(), ErrorMessage>{
-        let verack_message = Message::new(TESTNET_MAGIC_NUMBERS, Payload::Verack);
+        let verack_message = Message::new(TESTNET_MAGIC_NUMBERS, Payload::VerackMessage(VerackMessage::new()));
         verack_message.serialize(potencial_peer_stream)?;
         Ok(())
     }
@@ -149,24 +143,43 @@ impl Node {
             }
         };
 
-        let received_version_message = match Message::deserialize(&mut potencial_peer_stream) {
+        match Message::deserialize(&mut potencial_peer_stream) {
             Ok(message) => message,
             Err(e) => {
-                println!("Error while sending version message to peer {}: {:?}", potential_peer, e);
+                println!("Error while receiving version message from peer {}: {:?}", potential_peer, e);
                 return Err(ConnectionError::ErrorCannotReceiveMessage);
             }
         };
-        
+
+        match self.send_testnet_verack_message(&mut potencial_peer_stream) {
+            Ok(_) => println!("Verack message sent to peer {}", potential_peer),
+            Err(e) => {
+                println!("Error while sending verack message to peer {}: {:?}", potential_peer, e);
+                return Err(ConnectionError::ErrorCannotSendMessage);
+            }
+        };
+
+        match Message::deserialize(&mut potencial_peer_stream) {
+            Ok(message) => message,
+            Err(e) => {
+                println!("Error while receiving verack message from peer {}: {:?}", potential_peer, e);
+                return Err(ConnectionError::ErrorCannotReceiveMessage);
+            }
+        };
+
         Ok(())
     }
 
 
     ///Function that tries to do the handshake with the given vector of potential peers.
     //Recordar implementar la funcionalidad con
-    pub fn connect_to_testnet_peers(&self, potential_peers: &Vec<SocketAddr>) -> Result<(), ConnectionError> {
+    pub fn connect_to_testnet_peers(&mut self, potential_peers: &Vec<SocketAddr>) -> Result<(), ConnectionError> {
         for potential_peer in potential_peers {
             match self.attempt_connection_with_testnet_peer(potential_peer) {
-                Ok(_) => println!("Connection with peer {} established", potential_peer),
+                Ok(_) => {
+                    println!("Connection with peer {} established", potential_peer);
+                    self.peers_addrs.push(potential_peer.clone());
+            },
                 Err(e) => println!("Error while trying to connect to peer {}: {:?}", potential_peer, e)
             }
         }
