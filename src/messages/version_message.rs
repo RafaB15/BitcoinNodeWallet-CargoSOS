@@ -1,6 +1,7 @@
 use super::{
     serializable::Serializable,
     deserializable::Deserializable,
+    error_message::ErrorMessage,
 };
 
 use std::net::Ipv6Addr;
@@ -15,6 +16,8 @@ use crate::connections::{
     p2p_protocol::ProtocolVersionP2P,
     suppored_services::SupportedServices,
 };
+
+pub const VERSION_TYPE: [u8; 12] = [118, 101, 114, 115, 105, 111, 110, 0, 0, 0, 0, 1];
 
 pub struct VersionMessage {
     pub version: ProtocolVersionP2P,
@@ -52,13 +55,14 @@ impl VersionMessage {
 }
 
 impl Serializable for VersionMessage {
-    fn serialize(&self, stream: &mut dyn Write) {
+    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage>{
         todo!()
     }
 }
 
 impl Deserializable for VersionMessage {
-    fn deserialize(stream: &mut dyn Read) -> Self {
+    type Value = Self;
+    fn deserialize(stream: &mut dyn Read) ->  Result<Self::Value, ErrorMessage> {
         todo!()
     }
 }

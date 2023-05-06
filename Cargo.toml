@@ -11,3 +11,4 @@ src = "bitcoin/main.rs"
 
 [dependencies]
 chrono = "0.4.24"
+bitcoin_hashes = "0.12.0"

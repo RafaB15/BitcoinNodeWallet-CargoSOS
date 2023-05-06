@@ -1,7 +1,8 @@
 use std::io::Read;
+use super::error_message::ErrorMessage;
 
 pub trait Deserializable {
-
-    fn deserialize(stream: &mut dyn Read) -> Self;
+    type Value;
+    fn deserialize(stream: &mut dyn Read) -> Result<Self::Value, ErrorMessage>;
 
 }
