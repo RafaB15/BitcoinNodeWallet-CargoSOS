@@ -52,6 +52,6 @@ impl From<ErrorConfiguration> for ErrorExecution {
 
 impl From<ErrorConnection> for ErrorExecution {
     fn from(value: ErrorConnection) -> Self {
-        ErrorExecution::ErrorConnnection(value)
+        ErrorExecution::ErrorConnection(value)
     }
 }

@@ -2,7 +2,7 @@ use crate::connections::{
     p2p_protocol::ProtocolVersionP2P,
     ibd_methods::IBDMethod,
     suppored_services::SupportedServices,
-    connection_error::ErrorConnection
+    error_connection::ErrorConnection
 };
 use crate::messages::serializable::Serializable;
 use crate::messages::deserializable::Deserializable;
@@ -31,7 +31,7 @@ const TESTNET_MAGIC_NUMBERS: [u8; 4] = [0x0b, 0x11, 0x09, 0x07];
 pub struct Node {
     protocol_version: ProtocolVersionP2P,
     ibd_method: IBDMethod,
-    peers_addrs: Vec<SocketAddr>,
+    pub peers_addrs: Vec<SocketAddr>, //Cambiar el público luego
     services: SupportedServices,
     blockchain_height: i32,
 }
