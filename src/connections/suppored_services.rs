@@ -1,6 +1,6 @@
 use super::connection_error::ConnectionError;
 
-#[derive(Debug, std::cmp::PartialEq)]
+#[derive(Debug, std::cmp::PartialEq, Copy, Clone)]
 ///
 pub enum SupportedServices {
     Unname,
@@ -22,10 +22,10 @@ impl std::str::FromStr for SupportedServices {
 
 }
 
-impl std::convert::TryFrom<i64> for SupportedServices {
+impl std::convert::TryFrom<u64> for SupportedServices {
     type Error = ConnectionError;
 
-    fn try_from(value: i64) -> Result<Self, Self::Error> {
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(SupportedServices::Unname),
             1 => Ok(SupportedServices::NodeNetwork),
@@ -39,10 +39,10 @@ impl std::convert::TryFrom<i64> for SupportedServices {
     }
 }
 
-impl std::convert::TryInto<i64> for SupportedServices {
+impl std::convert::TryInto<u64> for SupportedServices {
     type Error = ConnectionError;
 
-    fn try_into(self) -> Result<i64, Self::Error> {
+    fn try_into(self) -> Result<u64, Self::Error> {
         match self {
             SupportedServices::Unname => Ok(0),
             SupportedServices::NodeNetwork => Ok(1),

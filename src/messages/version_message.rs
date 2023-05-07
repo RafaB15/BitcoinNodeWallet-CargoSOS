@@ -52,7 +52,20 @@ impl VersionMessage {
         start_height: i32,
         relay: bool,
     ) -> Self {
-        todo!();
+        Self { 
+            version,
+            services,
+            timestamp,
+            recv_services,
+            recv_addr,
+            recv_port, 
+            trans_addr,
+            trans_port, 
+            nonce, 
+            user_agent,
+            start_height, 
+            relay,
+        }
     }
 }
 
@@ -70,7 +83,7 @@ impl Serializable for VersionMessage {
         }
 
         //serializar 2 veces services
-        let services: i64 = match self.services.try_into() {
+        let services: u64 = match self.services.try_into() {
             Ok(services) => services,
             _ => return Err(ErrorMessage::ErrorWhileWriting),
         };
@@ -86,7 +99,7 @@ impl Serializable for VersionMessage {
         }
 
         //recv_services
-        let recv_services: i64 = match self.recv_services.try_into() {
+        let recv_services: u64 = match self.recv_services.try_into() {
             Ok(recv_services) => recv_services,
             _ => return Err(ErrorMessage::ErrorWhileWriting),
         };
@@ -127,8 +140,8 @@ impl Serializable for VersionMessage {
             return Err(ErrorMessage::ErrorInSerialization);
         }
 
-        //user_agent VER ESTO
-        if stream.write(&self.user_agent.as_bytes()).is_err() {
+        //user_agent
+        if stream.write(&(self.user_agent.len() as u32).to_le_bytes()).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
         }
 
@@ -172,7 +185,7 @@ impl Deserializable for VersionMessage {
         if stream.read_exact(&mut services_bytes).is_err() {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
-        let services_int: i64 = i64::from_le_bytes(services_bytes);
+        let services_int: u64 = u64::from_le_bytes(services_bytes);
         let services: SupportedServices = match services_int.try_into() {
             Ok(services) => services,
             _ => return Err(ErrorMessage::ErrorInDeserialization),
@@ -192,8 +205,8 @@ impl Deserializable for VersionMessage {
         if stream.read_exact(&mut recv_services_bytes).is_err() {
             return Err(ErrorMessage::ErrorInDeserialization);
         };
-        let recv_services_int: i64 = i64::from_le_bytes(services_bytes);
-        let recv_services: SupportedServices = match services_int.try_into() {
+        let recv_services_int: u64 = u64::from_le_bytes(recv_services_bytes);
+        let recv_services: SupportedServices = match recv_services_int.try_into() {
             Ok(recv_services) => recv_services,
             _ => return Err(ErrorMessage::ErrorInDeserialization),
         };
@@ -217,10 +230,10 @@ impl Deserializable for VersionMessage {
         if stream.read_exact(&mut addr_services_bytes).is_err() {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
-        let addr_services_int: i64 = i64::from_le_bytes(services_bytes);
-        let addr_services: SupportedServices = match addr_services_int.try_into() {
-            Ok(addr_services) => match addr_services == services {
-                true => addr_services,
+        let addr_services_int: u64 = u64::from_le_bytes(addr_services_bytes);
+        let _addr_services: SupportedServices = match addr_services_int.try_into() {
+            Ok(_addr_services) => match _addr_services == services {
+                true => _addr_services,
                 false => return Err(ErrorMessage::ErrorInDeserialization),
             }
             _ => return Err(ErrorMessage::ErrorInDeserialization),
@@ -233,7 +246,7 @@ impl Deserializable for VersionMessage {
         }
         let trans_addr = Ipv6Addr::from(trans_addr_bytes);
 
-        //trans_port: u16, // tal vez es el mismo que el recv_port
+        //trans_port: u16
         let mut trans_port_bytes = [0u8; 2];
         if stream.read_exact(&mut trans_port_bytes).is_err() {
             return Err(ErrorMessage::ErrorInDeserialization);
@@ -247,8 +260,21 @@ impl Deserializable for VersionMessage {
         }
         let nonce = u64::from_le_bytes(nonce_bytes);
 
-        //user_agent: String -> no user agent (vacio)
-
+        //user_agent: String
+        let mut user_agent_len_buf = [0u8; 1];
+        if stream.read_exact(&mut user_agent_len_buf).is_err() {
+            return Err(ErrorMessage::ErrorInDeserialization);
+        };
+        let user_agent_len = user_agent_len_buf[0] as usize;
+        let mut user_agent_buf = vec![0u8; user_agent_len];
+        if stream.read_exact(&mut user_agent_buf).is_err() {
+            return Err(ErrorMessage::ErrorInDeserialization);
+        };
+        let user_agent = match String::from_utf8(user_agent_buf) {
+            Ok(user_agent) => user_agent,
+            Err(_) => return Err(ErrorMessage::ErrorInDeserialization),
+        };
+        
         //start_height: i32
         let mut height_bytes = [0u8; 4];
         if stream.read_exact(&mut height_bytes).is_err() {
@@ -284,3 +310,5 @@ impl Deserializable for VersionMessage {
         ))
     }
 }
+
+        

@@ -1,6 +1,6 @@
 use super::connection_error::ConnectionError;
 
-#[derive(Debug, std::cmp::PartialEq)]
+#[derive(Debug, std::cmp::PartialEq, Copy, Clone)]
 ///Enum que representa la versión del protocolo P2P que se va a utilizar
 pub enum ProtocolVersionP2P {
     V70015,
