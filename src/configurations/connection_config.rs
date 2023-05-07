@@ -1,6 +1,6 @@
 use super::deserializable::deserialize;
 use super::deserializable_structure::DeserializeStructure;
-use super::parse_error::ParseError;
+use super::error_configuration::ErrorConfiguration;
 use crate::connections::{ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P};
 use std::collections::HashMap;
 use std::net::IpAddr;
@@ -22,7 +22,7 @@ pub struct ConnectionConfig {
 impl<'d> DeserializeStructure<'d> for ConnectionConfig {
     type Value = ConnectionConfig;
 
-    fn new(settings_dictionary: HashMap<String, String>) -> Result<Self, ParseError> {
+    fn new(settings_dictionary: HashMap<String, String>) -> Result<Self, ErrorConfiguration> {
         Ok(ConnectionConfig {
             dns_address: deserialize::<IpAddr>(DNS_ADDRESS, &settings_dictionary)?,
             p2p_protocol_version: deserialize::<ProtocolVersionP2P>(
