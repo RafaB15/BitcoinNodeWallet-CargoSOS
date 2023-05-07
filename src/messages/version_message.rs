@@ -61,7 +61,12 @@ impl Serializable for VersionMessage {
 
     
         //version
-        if stream.write(&self.version.to_i32().to_le_bytes()).is_err() {
+        let version: i32 = match self.version.try_into() {
+            Ok(version) => version,
+            _ => return Err(ErrorMessage::ErrorWhileWriting),
+        };
+
+        if stream.write(&version.to_le_bytes()).is_err() {
             return Err(ErrorMessage::ErrorWhileWriting);
         }
 
@@ -152,7 +157,7 @@ impl Deserializable for VersionMessage {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
         let version_int = i32::from_le_bytes(version_bytes);
-        let version = match ProtocolVersionP2P::from_i32(version_int){
+        let version: ProtocolVersionP2P = match version_int.try_into() {
             Ok(version) => version,
             _ => return Err(ErrorMessage::ErrorInDeserialization),
         };
