@@ -20,5 +20,5 @@ pub enum ParseError {
     ErrorReadableError,
 
     /// It will appear when there isn't a structure with a given property name
-    ErrorConfigurationNoFount,
+    ErrorConfigurationNotFound,
 }

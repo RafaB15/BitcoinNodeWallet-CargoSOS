@@ -25,13 +25,13 @@ impl Serializable for VerackMessage {
         
         // message_type: [u8; 12]
         if stream.write(&VERACK_TYPE).is_err() {
-            return Err(ErrorMessage::ErrorWhileWritting);
+            return Err(ErrorMessage::ErrorWhileWriting);
         }
 
         // payload_size: u32
         let payload_size: u32 = 0;
-        if stream.write(&payload_size.to_be_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorWhileWritting);
+        if stream.write(&payload_size.to_le_bytes()).is_err() {
+            return Err(ErrorMessage::ErrorWhileWriting);
         }
         
         // checksum: [u8; 4]
@@ -39,13 +39,13 @@ impl Serializable for VerackMessage {
         let hash_of_bytes = sha256d::Hash::hash(&payload);
 
         let hash_bytes: &[u8] = hash_of_bytes.as_ref();
-        let hash_bytes: &[u8; 4] = match hash_bytes.try_into() {
-            Ok(hash_bytes) => hash_bytes,
+        let checksum: &[u8; 4] = match (&hash_bytes[0..4]).try_into() {
+            Ok(checksum) => checksum,
             _ => return Err(ErrorMessage::ErrorInSerialization),
         };
 
-        if stream.write(hash_bytes).is_err() {
-            return Err(ErrorMessage::ErrorWhileWritting);
+        if stream.write(checksum).is_err() {
+            return Err(ErrorMessage::ErrorWhileWriting);
         }
 
         Ok(())
@@ -57,6 +57,35 @@ impl Deserializable for VerackMessage {
     type Value = Self;
 
     fn deserialize(stream: &mut dyn Read) -> Result<Self::Value, ErrorMessage> {
-        todo!()
+        
+        let mut num_buffer = [0u8; 4];
+        if stream.read_exact(&mut num_buffer).is_err() {
+            return Err(ErrorMessage::ErrorInDeserialization);
+        }
+        let payload_size = u32::from_be_bytes(num_buffer);
+
+        if payload_size != 0 {
+            return Err(ErrorMessage::ErrorInDeserialization);
+        }
+        
+        let receive_checksum: [u8; 4] = [0u8; 4];
+        if stream.read_exact(&mut num_buffer).is_err() {
+            return Err(ErrorMessage::ErrorInDeserialization);
+        }
+
+        let payload = [0u8; 0];
+        let hash_of_bytes = sha256d::Hash::hash(&payload);
+
+        let hash_bytes: &[u8] = hash_of_bytes.as_ref();
+        let checksum: &[u8; 4] = match (&hash_bytes[0..4]).try_into() {
+            Ok(checksum) => checksum,
+            _ => return Err(ErrorMessage::ErrorInSerialization),
+        };
+
+        if receive_checksum != *checksum {
+            return Err(ErrorMessage::ErrorInSerialization);
+        }
+
+        Ok(VerackMessage::new())
     }
 }
