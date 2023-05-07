@@ -1,4 +1,4 @@
-use super::connection_error::ConnectionError;
+use super::error_connection::ErrorConnection;
 
 #[derive(Debug, std::cmp::PartialEq, Copy, Clone)]
 ///Enum que representa la versión del protocolo P2P que se va a utilizar
@@ -21,7 +21,7 @@ pub enum ProtocolVersionP2P {
 }
 ///Implementación del trait que permite hacer parse
 impl std::str::FromStr for ProtocolVersionP2P {
-    type Err = ConnectionError;
+    type Err = ErrorConnection;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
@@ -40,14 +40,14 @@ impl std::str::FromStr for ProtocolVersionP2P {
             "V311" => Ok(ProtocolVersionP2P::V311),
             "V209" => Ok(ProtocolVersionP2P::V209),
             "V106" => Ok(ProtocolVersionP2P::V106),
-            _ => Err(ConnectionError::ErrorInvalidInputParse),
+            _ => Err(ErrorConnection::ErrorInvalidInputParse),
         }
     }
 }
 
 /// Implementación del trait try_from que permite convertir a i32
 impl std::convert::TryFrom<i32> for ProtocolVersionP2P {
-    type Error = ConnectionError;
+    type Error = ErrorConnection;
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
@@ -66,14 +66,14 @@ impl std::convert::TryFrom<i32> for ProtocolVersionP2P {
             311 => Ok(ProtocolVersionP2P::V311),
             209 => Ok(ProtocolVersionP2P::V209),
             106 => Ok(ProtocolVersionP2P::V106),
-            _ => return Err(ConnectionError::ErrorInvalidInputParse),
+            _ => return Err(ErrorConnection::ErrorInvalidInputParse),
         }
     }
 }
 
 /// Implementación del trait que permite convertir a i32
 impl std::convert::TryInto<i32> for ProtocolVersionP2P {
-    type Error = ConnectionError;
+    type Error = ErrorConnection;
 
     fn try_into(self) -> Result<i32, Self::Error> {
         match self {

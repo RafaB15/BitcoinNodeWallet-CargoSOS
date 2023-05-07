@@ -8,4 +8,4 @@ pub mod deserializable;
 
 pub mod deserializable_structure;
 
-pub mod parse_error;
+pub mod error_configuration;

@@ -2,7 +2,7 @@ use crate::connections::{
     p2p_protocol::ProtocolVersionP2P,
     ibd_methods::IBDMethod,
     suppored_services::SupportedServices,
-    connection_error::ConnectionError
+    error_connection::ErrorConnection
 };
 use crate::messages::serializable::Serializable;
 use crate::messages::deserializable::Deserializable;
@@ -31,7 +31,7 @@ const TESTNET_MAGIC_NUMBERS: [u8; 4] = [0x0b, 0x11, 0x09, 0x07];
 pub struct Node {
     protocol_version: ProtocolVersionP2P,
     ibd_method: IBDMethod,
-    peers_addrs: Vec<SocketAddr>,
+    pub peers_addrs: Vec<SocketAddr>, //Cambiar el público luego
     services: SupportedServices,
     blockchain_height: i32,
 }
@@ -125,23 +125,23 @@ impl Node {
     }
 
     ///Function that tries to do the handshake with the given potential peer.
-    pub fn attempt_connection_with_testnet_peer(&self, potential_peer: &SocketAddr) -> Result<(), ConnectionError>{
+    pub fn attempt_connection_with_testnet_peer(&self, potential_peer: &SocketAddr) -> Result<(), ErrorConnection>{
 
         let mut potencial_peer_stream = match TcpStream::connect(potential_peer) {
             Ok(stream) => stream,
-            Err(_) => return Err(ConnectionError::ErrorCannotConnectToAddress),
+            Err(_) => return Err(ErrorConnection::ErrorCannotConnectToAddress),
         };
 
         let local_socket_addr = match potencial_peer_stream.local_addr() {
             Ok(addr) => addr,
-            Err(_) => return Err(ConnectionError::ErrorCannotObtainOwnAddress),
+            Err(_) => return Err(ErrorConnection::ErrorCannotObtainOwnAddress),
         };
 
         match self.send_testnet_version_message(&local_socket_addr, potential_peer, &mut potencial_peer_stream) {
             Ok(_) => println!("Version message sent to peer {}", potential_peer),
             Err(e) => {
                 println!("Error while sending version message to peer {}: {:?}", potential_peer, e);
-                return Err(ConnectionError::ErrorCannotSendMessage);
+                return Err(ErrorConnection::ErrorCannotSendMessage);
             }
         };
 
@@ -149,7 +149,7 @@ impl Node {
             Ok(message) => message,
             Err(e) => {
                 println!("Error while receiving version message from peer {}: {:?}", potential_peer, e);
-                return Err(ConnectionError::ErrorCannotReceiveMessage);
+                return Err(ErrorConnection::ErrorCannotReceiveMessage);
             }
         };
 
@@ -157,7 +157,7 @@ impl Node {
             Ok(_) => println!("Verack message sent to peer {}", potential_peer),
             Err(e) => {
                 println!("Error while sending verack message to peer {}: {:?}", potential_peer, e);
-                return Err(ConnectionError::ErrorCannotSendMessage);
+                return Err(ErrorConnection::ErrorCannotSendMessage);
             }
         };
 
@@ -165,7 +165,7 @@ impl Node {
             Ok(message) => message,
             Err(e) => {
                 println!("Error while receiving verack message from peer {}: {:?}", potential_peer, e);
-                return Err(ConnectionError::ErrorCannotReceiveMessage);
+                return Err(ErrorConnection::ErrorCannotReceiveMessage);
             }
         };
 
@@ -175,7 +175,7 @@ impl Node {
 
     ///Function that tries to do the handshake with the given vector of potential peers.
     //Recordar implementar la funcionalidad con
-    pub fn connect_to_testnet_peers(&mut self, potential_peers: &Vec<SocketAddr>) -> Result<(), ConnectionError> {
+    pub fn connect_to_testnet_peers(&mut self, potential_peers: &Vec<SocketAddr>) -> Result<(), ErrorConnection> {
         for potential_peer in potential_peers {
             match self.attempt_connection_with_testnet_peer(potential_peer) {
                 Ok(_) => {

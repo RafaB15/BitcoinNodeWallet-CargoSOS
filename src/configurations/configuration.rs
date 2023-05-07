@@ -2,7 +2,7 @@ pub mod config {
 
     use crate::configurations::{
         connection_config::ConnectionConfig, deserializable_structure::DeserializeStructure,
-        log_config::LogConfig, parse_error::ParseError,
+        log_config::LogConfig, error_configuration::ErrorConfiguration,
     };
     use std::collections::HashMap;
     use std::io::Read;
@@ -18,7 +18,7 @@ pub mod config {
     ///  * `ErrorReadableError`: It will appear when there given readable gives an error when read
     ///  * `ErrorIncompleteConfiguration`: It will appear when there isn't a configuration at all
     ///  * `ErrorConfigurationNoFount`: It will appear when there isn't a structure with a given property name
-    pub fn new<R: Read>(configuration: R) -> Result<Configuraciones, ParseError> {
+    pub fn new<R: Read>(configuration: R) -> Result<Configuraciones, ErrorConfiguration> {
         let config_dictionary: HashMap<String, Vec<String>> =
             create_config_dictionary(configuration)?;
 
@@ -36,14 +36,14 @@ pub mod config {
     ///  * `ErrorIncompleteConfiguration`: It will appear when there isn't a configuration at all
     fn create_config_dictionary<R: Read>(
         mut settings_reader: R,
-    ) -> Result<HashMap<String, Vec<String>>, ParseError> {
+    ) -> Result<HashMap<String, Vec<String>>, ErrorConfiguration> {
         let mut config_dictionary: HashMap<String, Vec<String>> = HashMap::new();
 
         let mut full_text: String = String::new();
         let _ = match settings_reader.read_to_string(&mut full_text) {
             Ok(len) => len,
             _ => {
-                return Err(ParseError::ErrorReadableError);
+                return Err(ErrorConfiguration::ErrorReadableError);
             }
         };
 
@@ -54,7 +54,7 @@ pub mod config {
 
         let title_positions: Vec<usize> = find_titles(&text);
         if title_positions.is_empty() {
-            return Err(ParseError::ErrorIncompleteConfiguration);
+            return Err(ErrorConfiguration::ErrorIncompleteConfiguration);
         }
 
         let last_position: usize = text.len();
@@ -64,7 +64,7 @@ pub mod config {
             let title: String = match text.get(position) {
                 Some(titulo) => titulo.to_owned(),
                 _ => {
-                    return Err(ParseError::ErrorFieldNotFound);
+                    return Err(ErrorConfiguration::ErrorFieldNotFound);
                 }
             };
 
@@ -93,7 +93,7 @@ pub mod config {
 mod tests {
     use super::config;
     use crate::configurations::{
-        connection_config::ConnectionConfig, log_config::LogConfig, parse_error::ParseError,
+        connection_config::ConnectionConfig, log_config::LogConfig, error_configuration::ErrorConfiguration,
     };
     use crate::connections::{ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P};
 
@@ -156,7 +156,7 @@ mod tests {
             .as_bytes();
         let config_result = config::new(configuration);
 
-        assert_eq!(config_result, Err(ParseError::ErrorConfigurationNotFound));
+        assert_eq!(config_result, Err(ErrorConfiguration::ErrorConfigurationNotFound));
     }
 
     #[test]
@@ -170,7 +170,7 @@ mod tests {
             .as_bytes();
         let config_result = config::new(configuration);
 
-        assert_eq!(config_result, Err(ParseError::ErrorCantParseValue));
+        assert_eq!(config_result, Err(ErrorConfiguration::ErrorCantParseValue));
     }
 
     #[test]
@@ -184,7 +184,7 @@ mod tests {
             .as_bytes();
         let config_result = config::new(configuration);
 
-        assert_eq!(config_result, Err(ParseError::ErrorCantParseValue));
+        assert_eq!(config_result, Err(ErrorConfiguration::ErrorCantParseValue));
     }
 
     #[test]
@@ -198,7 +198,7 @@ mod tests {
             .as_bytes();
         let config_result = config::new(configuration);
 
-        assert_eq!(config_result, Err(ParseError::ErrorCantParseValue));
+        assert_eq!(config_result, Err(ErrorConfiguration::ErrorCantParseValue));
     }
 
     #[test]
@@ -212,7 +212,7 @@ mod tests {
             .as_bytes();
         let config_result = config::new(configuration);
 
-        assert_eq!(config_result, Err(ParseError::ErrorCantParseValue));
+        assert_eq!(config_result, Err(ErrorConfiguration::ErrorCantParseValue));
     }
 
     #[test]
@@ -229,7 +229,7 @@ mod tests {
 
         assert_eq!(
             config_result,
-            Err(ParseError::ErrorEncounterFieldMoreThanOnes)
+            Err(ErrorConfiguration::ErrorEncounterFieldMoreThanOnes)
         );
     }
 
@@ -238,6 +238,6 @@ mod tests {
         let configuration = "".as_bytes();
         let config_result = config::new(configuration);
 
-        assert_eq!(config_result, Err(ParseError::ErrorIncompleteConfiguration));
+        assert_eq!(config_result, Err(ErrorConfiguration::ErrorIncompleteConfiguration));
     }
 }
