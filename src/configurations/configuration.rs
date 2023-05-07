@@ -156,7 +156,7 @@ mod tests {
             .as_bytes();
         let config_result = config::new(configuration);
 
-        assert_eq!(config_result, Err(ParseError::ErrorConfigurationNoFount));
+        assert_eq!(config_result, Err(ParseError::ErrorConfigurationNotFound));
     }
 
     #[test]

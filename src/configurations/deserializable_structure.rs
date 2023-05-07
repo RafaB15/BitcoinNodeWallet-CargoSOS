@@ -19,7 +19,7 @@ pub(super) trait DeserializeStructure<'d> {
             let settings_dictionary = create_property_value_dictionary(valor)?;
             Ok(Self::new(settings_dictionary)?)
         } else {
-            Err(ParseError::ErrorConfigurationNoFount)
+            Err(ParseError::ErrorConfigurationNotFound)
         }
     }
 

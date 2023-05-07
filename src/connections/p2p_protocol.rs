@@ -88,6 +88,5 @@ impl ProtocolVersionP2P {
             106 => Ok(ProtocolVersionP2P::V106),
             _ => return Err(ConnectionError::ErrorInvalidInputParse),
         }
-
     }
 }

@@ -7,7 +7,7 @@ use super::{
 use std::net::Ipv6Addr;
 use chrono::{
     DateTime,
-    Timelike,
+    //Timelike,
     NaiveDateTime,
     offset::Utc
 };
@@ -64,7 +64,9 @@ impl Serializable for VersionMessage {
         if stream.write(&self.version.to_i32().to_le_bytes()).is_err() {
             return Err(ErrorMessage::ErrorWhileWriting);
         }
-            
+
+        //serializar 2 veces services
+
         //services
         /*let services: &[u64] = match self.services.try_into(){
             Ok(services) => services,
@@ -87,7 +89,7 @@ impl Serializable for VersionMessage {
         /*if stream.write(&self.recv_services.to_le_bytes()).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
         }*/
-
+        //serializar 2 veces services (trans y recv)
         //recv_addr
         let recv_bytes = self.recv_addr.octets();
         if stream.write(&recv_bytes).is_err() {
@@ -168,6 +170,8 @@ impl Deserializable for VersionMessage {
         let timestamp = DateTime::<Utc>::from_utc(timestamp_utc, Utc);
 
         //recv_services: SupportedServices
+        //leo 2 veces
+        //chequeo igualdad
 
         //recv_addr: Ipv6Addr
         let mut recv_bytes = [0u8; 16];
