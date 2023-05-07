@@ -1,5 +1,5 @@
 use std::net::{ToSocketAddrs, SocketAddr};
-use std::io::{Error, ErrorKind};
+use super::connection_error::ConnectionError;
 
 pub struct DNSSeeder {
     pub dns_addr: String,
@@ -11,7 +11,7 @@ impl DNSSeeder {
         DNSSeeder {dns_addr: dns_addr.to_string() , port_number}
     }
 
-    pub fn discover_peers(&self) -> Result<Vec<SocketAddr>, Error>{
+    pub fn discover_peers(&self) -> Result<Vec<SocketAddr>, ConnectionError>{
         let mut peer_addrs: Vec<SocketAddr> = Vec::new();
         
         if let Ok(iter) = (self.dns_addr.clone(), self.port_number).to_socket_addrs() {
@@ -20,9 +20,7 @@ impl DNSSeeder {
             }
         
         } else {
-            return Err(Error::new(
-                ErrorKind::ConnectionRefused,
-                "The IP address or the specified port did not yield any addresses."))
+            return Err(ConnectionError::ErrorInvalidIPOrPortNumber)
         } 
 
         Ok(peer_addrs)

@@ -1,6 +1,6 @@
 use super::connection_error::ConnectionError;
 
-#[derive(Debug, std::cmp::PartialEq)]
+#[derive(Debug, std::cmp::PartialEq, Copy, Clone)]
 ///Enum que representa el método de Initial Block Download que se va a utilizar
 pub enum IBDMethod {
     BlocksFirst,
