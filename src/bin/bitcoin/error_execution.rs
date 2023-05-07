@@ -3,6 +3,7 @@ use super::error_initialization::ErrorInitialization;
 use cargosos_bitcoin::{
     logs::error_log::ErrorLog,
     configurations::error_configuration::ErrorConfiguration,
+    connections::error_connection::ErrorConnection,
 };
 
 use std::fmt::{
@@ -17,6 +18,7 @@ pub enum ErrorExecution {
     ErrorInitialization(ErrorInitialization),
     ErrorLog(ErrorLog),
     ErrorConfiguration(ErrorConfiguration),
+    ErrorConnection(ErrorConnection)
 }
 
 impl Debug for ErrorExecution {
@@ -25,6 +27,7 @@ impl Debug for ErrorExecution {
             ErrorExecution::ErrorInitialization(error_initialization) => write!(f, "{:?}", error_initialization),
             ErrorExecution::ErrorLog(error_log) => write!(f, "{:?}", error_log),
             ErrorExecution::ErrorConfiguration(error_configuration) => write!(f, "{:?}", error_configuration),
+            ErrorExecution::ErrorConnection(error_connection) => write!(f, "{:?}", error_connection),
         }
     }
 }
@@ -44,5 +47,11 @@ impl From<ErrorLog> for ErrorExecution {
 impl From<ErrorConfiguration> for ErrorExecution {
     fn from(value: ErrorConfiguration) -> Self {
         ErrorExecution::ErrorConfiguration(value)
+    }
+}
+
+impl From<ErrorConnection> for ErrorExecution {
+    fn from(value: ErrorConnection) -> Self {
+        ErrorExecution::ErrorConnnection(value)
     }
 }

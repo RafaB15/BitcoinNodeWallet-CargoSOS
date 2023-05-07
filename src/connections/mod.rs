@@ -6,6 +6,6 @@ pub mod dns_seeder;
 
 pub mod suppored_services;
 
-pub mod connection_error;
+pub mod error_connection;
 
 pub mod socket_conversion;
