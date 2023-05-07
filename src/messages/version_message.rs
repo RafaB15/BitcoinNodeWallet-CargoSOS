@@ -192,7 +192,11 @@ impl Deserializable for VersionMessage {
         if stream.read_exact(&mut recv_services_bytes).is_err() {
             return Err(ErrorMessage::ErrorInDeserialization);
         };
-        let recv_services_int: SupportedServices = recv_services_bytes.try_into();
+        let recv_services_int: i64 = i64::from_le_bytes(services_bytes);
+        let recv_services: SupportedServices = match services_int.try_into() {
+            Ok(recv_services) => recv_services,
+            _ => return Err(ErrorMessage::ErrorInDeserialization),
+        };
 
         //recv_addr: Ipv6Addr
         let mut recv_bytes = [0u8; 16];
