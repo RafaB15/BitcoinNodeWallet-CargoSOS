@@ -231,9 +231,9 @@ impl Deserializable for VersionMessage {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
         let addr_services_int: u64 = u64::from_le_bytes(addr_services_bytes);
-        let _addr_services: SupportedServices = match addr_services_int.try_into() {
-            Ok(_addr_services) => match _addr_services == services {
-                true => _addr_services,
+        let _: SupportedServices = match addr_services_int.try_into() {
+            Ok(addr_services) => match addr_services == services {
+                true => addr_services,
                 false => return Err(ErrorMessage::ErrorInDeserialization),
             }
             _ => return Err(ErrorMessage::ErrorInDeserialization),

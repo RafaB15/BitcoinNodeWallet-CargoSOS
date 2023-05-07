@@ -1,0 +1,48 @@
+use super::error_initialization::ErrorInitialization;
+
+use cargosos_bitcoin::{
+    logs::error_log::ErrorLog,
+    configurations::error_configuration::ErrorConfiguration,
+};
+
+use std::fmt::{
+    Debug,
+    Formatter,
+    Error,
+};
+
+use std::convert::From;
+
+pub enum ErrorExecution {
+    ErrorInitialization(ErrorInitialization),
+    ErrorLog(ErrorLog),
+    ErrorConfiguration(ErrorConfiguration),
+}
+
+impl Debug for ErrorExecution {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        match self {
+            ErrorExecution::ErrorInitialization(error_initialization) => write!(f, "{:?}", error_initialization),
+            ErrorExecution::ErrorLog(error_log) => write!(f, "{:?}", error_log),
+            ErrorExecution::ErrorConfiguration(error_configuration) => write!(f, "{:?}", error_configuration),
+        }
+    }
+}
+
+impl From<ErrorInitialization> for ErrorExecution {
+    fn from(value: ErrorInitialization) -> Self {
+        ErrorExecution::ErrorInitialization(value)
+    }
+}
+
+impl From<ErrorLog> for ErrorExecution {
+    fn from(value: ErrorLog) -> Self {
+        ErrorExecution::ErrorLog(value)
+    }
+}
+
+impl From<ErrorConfiguration> for ErrorExecution {
+    fn from(value: ErrorConfiguration) -> Self {
+        ErrorExecution::ErrorConfiguration(value)
+    }
+}

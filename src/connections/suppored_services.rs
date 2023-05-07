@@ -16,7 +16,7 @@ pub enum SupportedServices {
 impl std::str::FromStr for SupportedServices {
     type Err = ConnectionError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(_: &str) -> Result<Self, Self::Err> {
         Err(ConnectionError::ErrorInvalidInputParse)
     }
 
