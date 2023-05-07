@@ -1,4 +1,4 @@
-use super::connection_error::ConnectionError;
+use super::error_connection::ErrorConnection;
 
 #[derive(Debug, std::cmp::PartialEq, Copy, Clone)]
 ///
@@ -14,16 +14,16 @@ pub enum SupportedServices {
 
 ///Implementación del trait que permite hacer parse
 impl std::str::FromStr for SupportedServices {
-    type Err = ConnectionError;
+    type Err = ErrorConnection;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Err(ConnectionError::ErrorInvalidInputParse)
+    fn from_str(_: &str) -> Result<Self, Self::Err> {
+        Err(ErrorConnection::ErrorInvalidInputParse)
     }
 
 }
 
 impl std::convert::TryFrom<u64> for SupportedServices {
-    type Error = ConnectionError;
+    type Error = ErrorConnection;
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
         match value {
@@ -34,13 +34,13 @@ impl std::convert::TryFrom<u64> for SupportedServices {
             8 => Ok(SupportedServices::NodeWitness),
             10 => Ok(SupportedServices::NodeXThin),
             400 => Ok(SupportedServices::NodeNetworkLimited),
-            _ => return Err(ConnectionError::ErrorInvalidInputParse),
+            _ => return Err(ErrorConnection::ErrorInvalidInputParse),
         }
     }
 }
 
 impl std::convert::TryInto<u64> for SupportedServices {
-    type Error = ConnectionError;
+    type Error = ErrorConnection;
 
     fn try_into(self) -> Result<u64, Self::Error> {
         match self {

@@ -1,4 +1,4 @@
-use super::parse_error::ParseError;
+use super::error_configuration::ErrorConfiguration;
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -10,13 +10,13 @@ use std::str::FromStr;
 pub(super) fn deserialize<V: FromStr>(
     name: &str,
     settings_dictionary: &HashMap<String, String>,
-) -> Result<V, ParseError> {
+) -> Result<V, ErrorConfiguration> {
     if let Some(value) = settings_dictionary.get(name) {
         match value.parse::<V>() {
             Ok(parse_value) => Ok(parse_value),
-            _ => Err(ParseError::ErrorCantParseValue),
+            _ => Err(ErrorConfiguration::ErrorCantParseValue),
         }
     } else {
-        Err(ParseError::ErrorReadableError)
+        Err(ErrorConfiguration::ErrorReadableError)
     }
 }
