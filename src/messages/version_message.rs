@@ -58,7 +58,6 @@ impl VersionMessage {
 
 impl Serializable for VersionMessage {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage>{
-
     
         //version
         let version: i32 = match self.version.try_into() {
@@ -71,18 +70,14 @@ impl Serializable for VersionMessage {
         }
 
         //serializar 2 veces services
-
-        //services
-        /*let services: &[u64] = match self.services.try_into(){
+        let services: i64 = match self.services.try_into() {
             Ok(services) => services,
             _ => return Err(ErrorMessage::ErrorWhileWriting),
         };
 
-        if stream.write(services).is_err() {
-            Ok(services) => services,
-            _ => return Err(ErrorMessage::ErrorInSerialization),
-            
-        }*/
+        if stream.write(&services.to_le_bytes()).is_err() {
+            return Err(ErrorMessage::ErrorWhileWriting);
+        }
 
         //timestamp
         let timestamp_bytes = self.timestamp.timestamp().to_le_bytes();
@@ -91,10 +86,15 @@ impl Serializable for VersionMessage {
         }
 
         //recv_services
-        /*if stream.write(&self.recv_services.to_le_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }*/
-        //serializar 2 veces services (trans y recv)
+        let recv_services: i64 = match self.recv_services.try_into() {
+            Ok(recv_services) => recv_services,
+            _ => return Err(ErrorMessage::ErrorWhileWriting),
+        };
+
+        if stream.write(&recv_services.to_le_bytes()).is_err() {
+            return Err(ErrorMessage::ErrorWhileWriting);
+        }
+        
         //recv_addr
         let recv_bytes = self.recv_addr.octets();
         if stream.write(&recv_bytes).is_err() {
@@ -102,10 +102,15 @@ impl Serializable for VersionMessage {
         }
 
         //recv_port
-        if stream.write(&self.recv_port.to_le_bytes()).is_err() {
+        if stream.write(&self.recv_port.to_be_bytes()).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
         }
         
+        //addr trans services
+        if stream.write(&services.to_le_bytes()).is_err() {
+            return Err(ErrorMessage::ErrorWhileWriting);
+        }
+
         //trans addr
         let trans_addr_bytes = self.trans_addr.octets();
         if stream.write(&trans_addr_bytes).is_err() {
@@ -113,7 +118,7 @@ impl Serializable for VersionMessage {
         }
 
         //trans port
-        if stream.write(&self.trans_port.to_le_bytes()).is_err() {
+        if stream.write(&self.trans_port.to_be_bytes()).is_err() {
             return Err(ErrorMessage::ErrorInSerialization);
         }
 
@@ -163,7 +168,15 @@ impl Deserializable for VersionMessage {
         };
         
         //services
-        //para despues
+        let mut services_bytes = [0u8; 8];
+        if stream.read_exact(&mut services_bytes).is_err() {
+            return Err(ErrorMessage::ErrorInDeserialization);
+        }
+        let services_int: i64 = i64::from_le_bytes(services_bytes);
+        let services: SupportedServices = match services_int.try_into() {
+            Ok(services) => services,
+            _ => return Err(ErrorMessage::ErrorInDeserialization),
+        };
         
         //timestamp
         let mut timestamp_bytes = [0u8; 8];
@@ -175,8 +188,11 @@ impl Deserializable for VersionMessage {
         let timestamp = DateTime::<Utc>::from_utc(timestamp_utc, Utc);
 
         //recv_services: SupportedServices
-        //leo 2 veces
-        //chequeo igualdad
+        let mut recv_services_bytes = [0u8; 8];
+        if stream.read_exact(&mut recv_services_bytes).is_err() {
+            return Err(ErrorMessage::ErrorInDeserialization);
+        };
+        let recv_services_int: SupportedServices = recv_services_bytes.try_into();
 
         //recv_addr: Ipv6Addr
         let mut recv_bytes = [0u8; 16];
@@ -192,6 +208,20 @@ impl Deserializable for VersionMessage {
         }
         let recv_port = u16::from_le_bytes(recv_port_bytes);
 
+        //addr trans services
+        let mut addr_services_bytes = [0u8; 8];
+        if stream.read_exact(&mut addr_services_bytes).is_err() {
+            return Err(ErrorMessage::ErrorInDeserialization);
+        }
+        let addr_services_int: i64 = i64::from_le_bytes(services_bytes);
+        let addr_services: SupportedServices = match addr_services_int.try_into() {
+            Ok(addr_services) => match addr_services == services {
+                true => addr_services,
+                false => return Err(ErrorMessage::ErrorInDeserialization),
+            }
+            _ => return Err(ErrorMessage::ErrorInDeserialization),
+        };
+
         //trans_addr: Ipv6Addr
         let mut trans_addr_bytes = [0u8; 16];
         if stream.read_exact(&mut trans_addr_bytes).is_err() {
@@ -204,7 +234,7 @@ impl Deserializable for VersionMessage {
         if stream.read_exact(&mut trans_port_bytes).is_err() {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
-        let trans_port = u16::from_le_bytes(trans_port_bytes);
+        let trans_port = u16::from_be_bytes(trans_port_bytes);
 
         //nonce: u64
         let mut nonce_bytes = [0u8; 8];
@@ -213,7 +243,7 @@ impl Deserializable for VersionMessage {
         }
         let nonce = u64::from_le_bytes(nonce_bytes);
 
-        //user_agent: String
+        //user_agent: String -> no user agent (vacio)
 
         //start_height: i32
         let mut height_bytes = [0u8; 4];
