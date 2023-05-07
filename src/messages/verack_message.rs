@@ -11,6 +11,7 @@ use bitcoin_hashes::Hash;
 
 pub const VERACK_TYPE: [u8; 12] = [118, 101, 114, 97, 99, 107, 0, 0, 0, 0, 0, 0];
 
+#[derive(Debug, std::cmp::PartialEq)]
 pub struct VerackMessage {}
 
 impl VerackMessage {
@@ -79,13 +80,45 @@ impl Deserializable for VerackMessage {
         let hash_bytes: &[u8] = hash_of_bytes.as_ref();
         let checksum: &[u8; 4] = match (&hash_bytes[0..4]).try_into() {
             Ok(checksum) => checksum,
-            _ => return Err(ErrorMessage::ErrorInSerialization),
+            _ => return Err(ErrorMessage::ErrorInDeserialization),
         };
 
         if receive_checksum != *checksum {
-            return Err(ErrorMessage::ErrorInSerialization);
+            return Err(ErrorMessage::ErrorInDeserialization);
         }
 
         Ok(VerackMessage::new())
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::messages::{
+        serializable::Serializable, 
+        deserializable::Deserializable
+    };
+
+    use super::VerackMessage;
+
+
+    #[test]
+    fn test01_serializar() {
+        let message_verack = VerackMessage::new();
+        let mut stream: [u32; 1] = [10];
+
+        message_verack.serialize(&mut stream);
+
+        assert_eq!([10], stream);
+    }
+
+    #[test]
+    fn test02_deserializar() {
+        let mut stream = "".as_bytes();
+        let verack_esperado = VerackMessage::new();
+
+        let result_message_verack = VerackMessage::deserialize(&mut stream);
+
+        assert_eq!(Ok(verack_esperado), result_message_verack);
+    }
+
 }
