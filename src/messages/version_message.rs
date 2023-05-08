@@ -19,7 +19,7 @@ use crate::connections::{
     suppored_services::SupportedServices,
 };
 
-pub const VERSION_TYPE: [u8; 12] = [118, 101, 114, 115, 105, 111, 110, 0, 0, 0, 0, 1];
+pub const VERSION_TYPE: [u8; 12] = [118, 101, 114, 115, 105, 111, 110, 0, 0, 0, 0, 0];
 
 pub struct VersionMessage {
     pub version: ProtocolVersionP2P,
@@ -29,7 +29,7 @@ pub struct VersionMessage {
     pub recv_addr: Ipv6Addr,
     pub recv_port: u16,
     pub trans_addr: Ipv6Addr,
-    pub trans_port: u16, // tal vez es el mismo que el recv_port
+    pub trans_port: u16,
     pub nonce: u64,
     pub user_agent: String,
     pub start_height: i32,
@@ -72,6 +72,12 @@ impl VersionMessage {
 impl Serializable for VersionMessage {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage>{
     
+        //message_type
+
+        if stream.write(&VERSION_TYPE).is_err() {
+            return Err(ErrorMessage::ErrorWhileWriting);
+        }
+
         //version
         let version: i32 = match self.version.try_into() {
             Ok(version) => version,
