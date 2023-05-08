@@ -78,6 +78,12 @@ impl Serializable for VersionMessage {
             return Err(ErrorMessage::ErrorWhileWriting);
         }
 
+        //payload_size: u32
+        let payload_size: u32 = 86; //Está algo hardcodeado, pues asume que mandamos un cero como user agent bytes
+        if stream.write(&payload_size.to_le_bytes()).is_err() {
+            return Err(ErrorMessage::ErrorWhileWriting);
+        }
+
         //version
         let version: i32 = match self.version.try_into() {
             Ok(version) => version,
