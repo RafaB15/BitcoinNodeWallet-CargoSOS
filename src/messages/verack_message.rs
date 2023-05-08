@@ -6,9 +6,6 @@ use super::{
 
 use std::io::{Read, Write};
 
-use bitcoin_hashes::sha256d;
-use bitcoin_hashes::Hash;
-
 pub const VERACK_TYPE: &[u8; 12] = b"verack\0\0\0\0\0\0";
 pub const VERACK_CHECKSUM: [u8; 4] = [0x5d, 0xf6, 0xe0, 0xe2];
 

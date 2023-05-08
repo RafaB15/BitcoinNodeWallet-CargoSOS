@@ -20,7 +20,7 @@ impl Payload {
                 let message_payload = VerackMessage::deserialize(stream)?;
                 Ok(Payload::VerackMessage(message_payload))
             },
-            &VERSION_TYPE => {
+            VERSION_TYPE => {
                 let message_payload = VersionMessage::deserialize(stream)?;
                 Ok(Payload::VersionMessage(message_payload))
             },
