@@ -1,6 +1,7 @@
 use super::{
     verack_message::{VerackMessage, VERACK_TYPE},
     version_message::{VersionMessage, VERSION_TYPE},
+    get_headers_message::GetHeadersMessage,
     error_message::ErrorMessage,
     deserializable::Deserializable, 
     serializable::Serializable,
@@ -10,6 +11,7 @@ use std::io::{Read, Write};
 pub enum Payload {
     VersionMessage(VersionMessage),
     VerackMessage(VerackMessage),
+    GetHeadersMessage(GetHeadersMessage),
 }
 
 impl Payload {
