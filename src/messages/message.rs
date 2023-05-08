@@ -42,6 +42,8 @@ impl Deserializable for Message {
         
         let mut magic_buff = [0u8; 4];
         let mut message_type = [0u8; 12];
+        let mut payload_size = [0u8; 4];
+        let mut checksum = [0u8; 4];
 
         if stream.read_exact(&mut magic_buff).is_err(){
             return Err(ErrorMessage::ErrorInDeserialization);
@@ -50,6 +52,14 @@ impl Deserializable for Message {
         if stream.read_exact(&mut message_type).is_err(){
             return Err(ErrorMessage::ErrorInDeserialization);
         }    
+
+        if stream.read_exact(&mut payload_size).is_err(){
+            return Err(ErrorMessage::ErrorInDeserialization);
+        } 
+
+        if stream.read_exact(&mut checksum).is_err(){
+            return Err(ErrorMessage::ErrorInDeserialization);
+        } 
 
         let payload = Payload::get_from_message_type(message_type, stream)?;
 
