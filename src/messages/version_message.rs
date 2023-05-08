@@ -19,7 +19,7 @@ use crate::connections::{
     suppored_services::SupportedServices,
 };
 
-pub const VERSION_TYPE: [u8; 12] = [118, 101, 114, 115, 105, 111, 110, 0, 0, 0, 0, 1];
+pub const VERSION_TYPE: [u8; 12] = [118, 101, 114, 115, 105, 111, 110, 0, 0, 0, 0, 0];
 
 pub struct VersionMessage {
     pub version: ProtocolVersionP2P,
