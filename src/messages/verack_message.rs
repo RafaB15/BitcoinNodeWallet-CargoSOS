@@ -9,7 +9,8 @@ use std::io::{Read, Write};
 use bitcoin_hashes::sha256d;
 use bitcoin_hashes::Hash;
 
-pub const VERACK_TYPE: [u8; 12] = [118, 101, 114, 97, 99, 107, 0, 0, 0, 0, 0, 0];
+pub const VERACK_TYPE: &[u8; 12] = b"verack\0\0\0\0\0\0";
+pub const VERACK_CHECKSUM: [u8; 4] = [0x5d, 0xf6, 0xe0, 0xe2];
 
 #[derive(Debug, std::cmp::PartialEq)]
 pub struct VerackMessage {}
@@ -23,9 +24,10 @@ impl VerackMessage {
 
 impl Serializable for VerackMessage {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
-        
+
+
         // message_type: [u8; 12]
-        if stream.write(&VERACK_TYPE).is_err() {
+        if stream.write(VERACK_TYPE).is_err() {
             return Err(ErrorMessage::ErrorWhileWriting);
         }
 
@@ -36,16 +38,7 @@ impl Serializable for VerackMessage {
         }
         
         // checksum: [u8; 4]
-        let payload = [0u8; 0];
-        let hash_of_bytes = sha256d::Hash::hash(&payload);
-
-        let hash_bytes: &[u8] = hash_of_bytes.as_ref();
-        let checksum: &[u8; 4] = match (&hash_bytes[0..4]).try_into() {
-            Ok(checksum) => checksum,
-            _ => return Err(ErrorMessage::ErrorInSerialization),
-        };
-
-        if stream.write(checksum).is_err() {
+        if stream.write(&VERACK_CHECKSUM).is_err() {
             return Err(ErrorMessage::ErrorWhileWriting);
         }
 
@@ -74,16 +67,7 @@ impl Deserializable for VerackMessage {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
 
-        let payload = [0u8; 0];
-        let hash_of_bytes = sha256d::Hash::hash(&payload);
-
-        let hash_bytes: &[u8] = hash_of_bytes.as_ref();
-        let checksum: &[u8; 4] = match (&hash_bytes[0..4]).try_into() {
-            Ok(checksum) => checksum,
-            _ => return Err(ErrorMessage::ErrorInDeserialization),
-        };
-
-        if receive_checksum != *checksum {
+        if receive_checksum != VERACK_CHECKSUM {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
 
@@ -100,15 +84,16 @@ mod tests {
 
     use super::VerackMessage;
 
-
     #[test]
     fn test01_serializar() {
         let message_verack = VerackMessage::new();
-        let mut stream: [u32; 1] = [10];
+        let mut stream: Vec<u8> = Vec::new();
 
-        message_verack.serialize(&mut stream);
+        let _ = message_verack.serialize(&mut stream);
 
-        assert_eq!([10], stream);
+        let stream_esperado: Vec<u8> = Vec::new();
+
+        assert_eq!(stream_esperado, stream);
     }
 
     #[test]

@@ -15,12 +15,12 @@ pub enum Payload {
 impl Payload {
     pub fn get_from_message_type(message_type: [u8; 12], stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
 
-        match message_type {
+        match &message_type {
             VERACK_TYPE => {
                 let message_payload = VerackMessage::deserialize(stream)?;
                 Ok(Payload::VerackMessage(message_payload))
             },
-            VERSION_TYPE => {
+            &VERSION_TYPE => {
                 let message_payload = VersionMessage::deserialize(stream)?;
                 Ok(Payload::VersionMessage(message_payload))
             },
