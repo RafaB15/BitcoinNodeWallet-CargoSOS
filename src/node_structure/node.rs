@@ -11,7 +11,6 @@ use std::net::{
 };
 
 use crate::messages::{
-    message::Message,
     version_message::VersionMessage,
     verack_message::VerackMessage,
     error_message::ErrorMessage,
@@ -96,7 +95,7 @@ impl Node {
             }
         };
 
-        match Message::deserialize(&mut potencial_peer_stream) {
+        match VersionMessage::deserialize(&mut potencial_peer_stream) {
             Ok(message) => message,
             Err(e) => {
                 println!("Error while receiving version message from peer {}: {:?}", potential_peer, e);
@@ -112,7 +111,7 @@ impl Node {
             }
         };
 
-        match Message::deserialize(&mut potencial_peer_stream) {
+        match VerackMessage::deserialize(&mut potencial_peer_stream) {
             Ok(message) => message,
             Err(e) => {
                 println!("Error while receiving verack message from peer {}: {:?}", potential_peer, e);
