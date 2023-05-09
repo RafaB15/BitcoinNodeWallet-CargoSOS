@@ -1,7 +1,7 @@
 use super::{
     serializable::Serializable,
     deserializable::Deserializable,
-    error_message::ErrorMessage,
+    error_message::ErrorMessage, payload::Payload,
 };
 
 use std::io::{Read, Write};
@@ -16,6 +16,18 @@ impl VerackMessage {
 
     pub fn new() -> Self {
         VerackMessage {  }
+    }
+}
+
+impl VerackMessage {
+    
+    fn get_slice<const N: usize>(buffer: &[u8], inicio: usize) -> Result<[u8; N], ErrorMessage>{
+        let slice: [u8; N] = match buffer[inicio..(N + inicio)].try_into() {
+            Ok(slice) => slice,
+            _ => return Err(ErrorMessage::ErrorInDeserialization),
+        };
+
+        Ok(slice)
     }
 }
 
@@ -48,27 +60,26 @@ impl Deserializable for VerackMessage {
 
     fn deserialize(stream: &mut dyn Read) -> Result<Self::Value, ErrorMessage> {
         
-        let mut num_buffer = [0u8; 4];
+        let mut num_buffer = [0u8; 8];
         if stream.read_exact(&mut num_buffer).is_err() {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
-        let payload_size = u32::from_be_bytes(num_buffer);
 
+        let payload_size = Self::get_slice::<4>(&num_buffer, 0)?;
+        let payload_size = u32::from_be_bytes(payload_size);
+        
         if payload_size != 0 {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
         
-        let receive_checksum: [u8; 4] = [0u8; 4];
-        if stream.read_exact(&mut num_buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization);
-        }
-
-        if receive_checksum != VERACK_CHECKSUM {
+        let receive_checksum = Self::get_slice::<4>(&num_buffer, 4)?;
+        if !VERACK_CHECKSUM.eq(&receive_checksum) {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
 
         Ok(VerackMessage::new())
     }
+
 }
 
 #[cfg(test)]
@@ -91,15 +102,11 @@ mod tests {
         let mut stream: Vec<u8> = Vec::new();
 
         message_verack.serialize(&mut stream)?;
-
-        let mut verack_type: Vec<u8> = VERACK_TYPE.to_vec();
-        let mut payload_size: Vec<u8> = vec![0, 0, 0, 0];
-        let mut checksum: Vec<u8> = VERACK_CHECKSUM.to_vec();
     
         let mut stream_esperado: Vec<u8> = Vec::new();
-        stream_esperado.append(&mut verack_type);
-        stream_esperado.append(&mut payload_size);
-        stream_esperado.append(&mut checksum);
+        stream_esperado.append(&mut VERACK_TYPE.to_vec());
+        stream_esperado.append(&mut vec![0, 0, 0, 0]);
+        stream_esperado.append(&mut VERACK_CHECKSUM.to_vec());
 
         assert_eq!(stream_esperado, stream);
 
@@ -107,13 +114,20 @@ mod tests {
     }
 
     #[test]
-    fn test02_deserializar() {
-        let mut stream = "".as_bytes();
+    fn test02_deserializar() -> Result<(), ErrorMessage> {
+        let mut stream: Vec<u8> = Vec::new();
+        stream.append(&mut vec![0, 0, 0, 0]);
+        stream.append(&mut VERACK_CHECKSUM.to_vec());
+
+        let mut stream: &[u8] = &stream[..];
+
         let verack_esperado = VerackMessage::new();
 
-        let result_message_verack = VerackMessage::deserialize(&mut stream);
+        let verack = VerackMessage::deserialize(&mut stream)?;
 
-        assert_eq!(Ok(verack_esperado), result_message_verack);
+        assert_eq!(verack_esperado, verack);
+
+        Ok(())
     }
 
 }
