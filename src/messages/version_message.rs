@@ -83,92 +83,78 @@ impl VersionMessage {
 impl Serializable for VersionMessage {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage>{
     
-        //message_type
+        let mut serialized_message = Vec::new();
 
-        if stream.write(&VERSION_TYPE).is_err() {
-            return Err(ErrorMessage::ErrorWhileWriting);
-        }
+        //magic_bytes
+        serialized_message.extend_from_slice(&self.magic_bytes);
+
+        //message_type
+        serialized_message.extend_from_slice(&VERSION_TYPE);
 
         //payload_size: u32
-        let payload_size: u32 = 86; //Está algo hardcodeado, pues asume que mandamos un cero como user agent bytes
-        if stream.write(&payload_size.to_le_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorWhileWriting);
-        }
+        let payload_size: u32 = 86;
+        serialized_message.extend_from_slice(&payload_size.to_le_bytes());
 
         //checksum
         //Since for the checksum we need to hash the payload, we will first serialize the payload without writing it to the stream
+
+        let mut payload = Vec::new();
 
         //version serialization
         let version: i32 = match self.version.try_into() {
             Ok(version) => version,
             _ => return Err(ErrorMessage::ErrorWhileWriting),
         };
-        let version_bytes = version.to_le_bytes();
+        payload.extend_from_slice(&version.to_le_bytes());
 
         //services serialization
         let services: u64 = match self.services.try_into() {
             Ok(services) => services,
             _ => return Err(ErrorMessage::ErrorWhileWriting),
         };
-        let services_bytes = services.to_le_bytes();
+        payload.extend_from_slice(&services.to_le_bytes());
 
         //timestamp serialization
-        let timestamp_bytes = self.timestamp.timestamp().to_le_bytes();
+        payload.extend_from_slice(&self.timestamp.timestamp().to_le_bytes());
 
         //recv_services serialization
         let recv_services: u64 = match self.recv_services.try_into() {
             Ok(recv_services) => recv_services,
             _ => return Err(ErrorMessage::ErrorWhileWriting),
         };
-        let recv_services_bytes = recv_services.to_le_bytes();
+        payload.extend_from_slice(&recv_services.to_le_bytes());
 
         //recv_addr serialization
-        let recv_addr_bytes = self.recv_addr.octets();
+        payload.extend_from_slice(&self.recv_addr.octets());
 
         //recv_port serialization
-        let recv_port_bytes = self.recv_port.to_be_bytes();
+        payload.extend_from_slice(&self.recv_port.to_be_bytes());
 
         //trans services serialization = es el mismo que services_bytes
+        payload.extend_from_slice(&services.to_le_bytes());
 
         //trans addrs serialization
-        let trans_addr_bytes = self.trans_addr.octets();
+        payload.extend_from_slice(&self.trans_addr.octets());
 
         //trans port serialization
-        let trans_port_bytes = self.trans_port.to_be_bytes();
+        payload.extend_from_slice(&self.trans_port.to_be_bytes());
 
         //nonce serialization
-        let nonce_bytes = self.nonce.to_le_bytes();
+        payload.extend_from_slice(&self.nonce.to_le_bytes());
 
         //user_agent serialization
-        let user_agent_bytes = (self.user_agent.len() as u32).to_le_bytes();
+        payload.extend_from_slice(&(self.user_agent.len() as u32).to_le_bytes());
 
         //start_height serialization
-        let start_height_bytes = self.start_height.to_le_bytes();
+        payload.extend_from_slice(&self.start_height.to_le_bytes());
 
         //relay serialization
         let relay_value: u8 = match self.relay {
             true => 0x01,
             false => 0x00,
         };
-        let relay_bytes = [relay_value];
+        payload.extend_from_slice(&[relay_value]);
         
-        //We can now create a payload variable and write the bytes to it
-
-        let mut payload = Vec::new();
-        payload.extend_from_slice(&version_bytes);
-        payload.extend_from_slice(&services_bytes);
-        payload.extend_from_slice(&timestamp_bytes);
-        payload.extend_from_slice(&recv_services_bytes);
-        payload.extend_from_slice(&recv_addr_bytes);
-        payload.extend_from_slice(&recv_port_bytes);
-        payload.extend_from_slice(&services_bytes);
-        payload.extend_from_slice(&trans_addr_bytes);
-        payload.extend_from_slice(&trans_port_bytes);
-        payload.extend_from_slice(&nonce_bytes);
-        payload.extend_from_slice(&user_agent_bytes);
-        payload.extend_from_slice(&start_height_bytes);
-        payload.extend_from_slice(&relay_bytes);
-
         //We can now calculate the checksum
         let hash_of_bytes = sha256d::Hash::hash(&payload);
 
@@ -178,13 +164,12 @@ impl Serializable for VersionMessage {
             _ => return Err(ErrorMessage::ErrorInSerialization),
         };
 
-        //We write the checksum to the stream
-        if stream.write(checksum).is_err() {
-            return Err(ErrorMessage::ErrorWhileWriting);
-        }
+        //Now that we have both the checksum and the payload we can add them to the serialized message vector
+        serialized_message.extend_from_slice(checksum);
+        serialized_message.extend_from_slice(&payload);
 
-        //We write the payload to the stream
-        if stream.write(&payload).is_err() {
+        //We can finally write the message to the stream
+        if stream.write(&serialized_message).is_err() {
             return Err(ErrorMessage::ErrorWhileWriting);
         }
 
