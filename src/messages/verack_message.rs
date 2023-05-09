@@ -11,12 +11,15 @@ use bitcoin_hashes::Hash;
 
 pub const VERACK_TYPE: [u8; 12] = [118, 101, 114, 97, 99, 107, 0, 0, 0, 0, 0, 0];
 
-pub struct VerackMessage {}
+pub struct VerackMessage {
+    pub magic_bytes: [u8; 4],
+}
 
 impl VerackMessage {
-
-    pub fn new() -> Self {
-        VerackMessage {  }
+    pub fn new(magic_bytes: [u8; 4]) -> Self {
+        VerackMessage { 
+            magic_bytes
+         }
     }
 }
 
