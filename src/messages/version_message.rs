@@ -19,6 +19,11 @@ use crate::connections::{
     suppored_services::SupportedServices,
 };
 
+use bitcoin_hashes::{
+    sha256d,
+    Hash,
+};
+
 pub const VERSION_TYPE: [u8; 12] = [118, 101, 114, 115, 105, 111, 110, 0, 0, 0, 0, 0];
 
 pub struct VersionMessage {
@@ -84,91 +89,97 @@ impl Serializable for VersionMessage {
             return Err(ErrorMessage::ErrorWhileWriting);
         }
 
-        //version
+        //checksum
+        //Since for the checksum we need to hash the payload, we will first serialize the payload without writing it to the stream
+
+        //version serialization
         let version: i32 = match self.version.try_into() {
             Ok(version) => version,
             _ => return Err(ErrorMessage::ErrorWhileWriting),
         };
+        let version_bytes = version.to_le_bytes();
 
-        if stream.write(&version.to_le_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorWhileWriting);
-        }
-
-        //serializar 2 veces services
+        //services serialization
         let services: u64 = match self.services.try_into() {
             Ok(services) => services,
             _ => return Err(ErrorMessage::ErrorWhileWriting),
         };
+        let services_bytes = services.to_le_bytes();
 
-        if stream.write(&services.to_le_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorWhileWriting);
-        }
-
-        //timestamp
+        //timestamp serialization
         let timestamp_bytes = self.timestamp.timestamp().to_le_bytes();
-        if stream.write(&timestamp_bytes).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }
 
-        //recv_services
+        //recv_services serialization
         let recv_services: u64 = match self.recv_services.try_into() {
             Ok(recv_services) => recv_services,
             _ => return Err(ErrorMessage::ErrorWhileWriting),
         };
+        let recv_services_bytes = recv_services.to_le_bytes();
 
-        if stream.write(&recv_services.to_le_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorWhileWriting);
-        }
-        
-        //recv_addr
-        let recv_bytes = self.recv_addr.octets();
-        if stream.write(&recv_bytes).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }
+        //recv_addr serialization
+        let recv_addr_bytes = self.recv_addr.octets();
 
-        //recv_port
-        if stream.write(&self.recv_port.to_be_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }
-        
-        //addr trans services
-        if stream.write(&services.to_le_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorWhileWriting);
-        }
+        //recv_port serialization
+        let recv_port_bytes = self.recv_port.to_be_bytes();
 
-        //trans addr
+        //trans services serialization = es el mismo que services_bytes
+
+        //trans addrs serialization
         let trans_addr_bytes = self.trans_addr.octets();
-        if stream.write(&trans_addr_bytes).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }
 
-        //trans port
-        if stream.write(&self.trans_port.to_be_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }
+        //trans port serialization
+        let trans_port_bytes = self.trans_port.to_be_bytes();
 
-        //nonce
-        if stream.write(&self.nonce.to_le_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }
+        //nonce serialization
+        let nonce_bytes = self.nonce.to_le_bytes();
 
-        //user_agent
-        if stream.write(&(self.user_agent.len() as u32).to_le_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }
+        //user_agent serialization
+        let user_agent_bytes = (self.user_agent.len() as u32).to_le_bytes();
 
-        //start_height
-        if stream.write(&self.start_height.to_le_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }
+        //start_height serialization
+        let start_height_bytes = self.start_height.to_le_bytes();
 
-        //relay
-        let relay_value = match self.relay {
+        //relay serialization
+        let relay_value: u8 = match self.relay {
             true => 0x01,
             false => 0x00,
         };
-        if stream.write(&[relay_value]).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
+        let relay_bytes = [relay_value];
+        
+        //We can now create a payload variable and write the bytes to it
+
+        let mut payload = Vec::new();
+        payload.extend_from_slice(&version_bytes);
+        payload.extend_from_slice(&services_bytes);
+        payload.extend_from_slice(&timestamp_bytes);
+        payload.extend_from_slice(&recv_services_bytes);
+        payload.extend_from_slice(&recv_addr_bytes);
+        payload.extend_from_slice(&recv_port_bytes);
+        payload.extend_from_slice(&services_bytes);
+        payload.extend_from_slice(&trans_addr_bytes);
+        payload.extend_from_slice(&trans_port_bytes);
+        payload.extend_from_slice(&nonce_bytes);
+        payload.extend_from_slice(&user_agent_bytes);
+        payload.extend_from_slice(&start_height_bytes);
+        payload.extend_from_slice(&relay_bytes);
+
+        //We can now calculate the checksum
+        let hash_of_bytes = sha256d::Hash::hash(&payload);
+
+        let hash_bytes: &[u8] = hash_of_bytes.as_ref();
+        let checksum: &[u8; 4] = match (&hash_bytes[0..4]).try_into() {
+            Ok(checksum) => checksum,
+            _ => return Err(ErrorMessage::ErrorInSerialization),
+        };
+
+        //We write the checksum to the stream
+        if stream.write(checksum).is_err() {
+            return Err(ErrorMessage::ErrorWhileWriting);
+        }
+
+        //We write the payload to the stream
+        if stream.write(&payload).is_err() {
+            return Err(ErrorMessage::ErrorWhileWriting);
         }
 
         Ok(())
