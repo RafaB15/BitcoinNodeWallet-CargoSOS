@@ -10,6 +10,7 @@ use bitcoin_hashes::sha256d;
 use bitcoin_hashes::Hash;
 
 pub const VERACK_TYPE: [u8; 12] = [118, 101, 114, 97, 99, 107, 0, 0, 0, 0, 0, 0];
+pub const VERACK_CHECKSUM: [u8; 4] = [0x5d, 0xf6, 0xe0, 0xe2];
 
 pub struct VerackMessage {
     pub magic_bytes: [u8; 4],
@@ -26,28 +27,23 @@ impl VerackMessage {
 impl Serializable for VerackMessage {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
         
+        let mut serialized_message = Vec::new();
+
+        //magic_bytes
+        serialized_message.extend_from_slice(&self.magic_bytes);
+
         // message_type: [u8; 12]
-        if stream.write(&VERACK_TYPE).is_err() {
-            return Err(ErrorMessage::ErrorWhileWriting);
-        }
+        serialized_message.extend_from_slice(&VERACK_TYPE);
 
         // payload_size: u32
         let payload_size: u32 = 0;
-        if stream.write(&payload_size.to_le_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorWhileWriting);
-        }
+        serialized_message.extend_from_slice(&payload_size.to_le_bytes());
         
         // checksum: [u8; 4]
-        let payload = [0u8; 0];
-        let hash_of_bytes = sha256d::Hash::hash(&payload);
+        serialized_message.extend_from_slice(&VERACK_CHECKSUM);
 
-        let hash_bytes: &[u8] = hash_of_bytes.as_ref();
-        let checksum: &[u8; 4] = match (&hash_bytes[0..4]).try_into() {
-            Ok(checksum) => checksum,
-            _ => return Err(ErrorMessage::ErrorInSerialization),
-        };
-
-        if stream.write(checksum).is_err() {
+        //We can finally write the message to the stream
+        if stream.write(&serialized_message).is_err() {
             return Err(ErrorMessage::ErrorWhileWriting);
         }
 
