@@ -14,7 +14,6 @@ use crate::messages::{
     message::Message,
     version_message::VersionMessage,
     verack_message::VerackMessage,
-    payload::Payload,
     error_message::ErrorMessage,
     serializable::Serializable,
     deserializable::Deserializable,
@@ -71,7 +70,7 @@ impl Node {
 
     ///Function that sends a verack message to the given potential peer.
     pub fn send_testnet_verack_message(&self, potencial_peer_stream: &mut TcpStream) -> Result<(), ErrorMessage>{
-        let verack_message = Message::new(TESTNET_MAGIC_NUMBERS, Payload::VerackMessage(VerackMessage::new()));
+        let verack_message = VerackMessage::new(TESTNET_MAGIC_NUMBERS);
         verack_message.serialize(potencial_peer_stream)?;
         Ok(())
     }
