@@ -4,7 +4,7 @@ use super::{
     error_message::ErrorMessage,
 };
 
-use std::net::Ipv6Addr;
+use std::net::{Ipv6Addr, SocketAddr};
 use chrono::{
     DateTime,
     //Timelike,
@@ -17,6 +17,7 @@ use std::io::{Read, Write};
 use crate::connections::{
     p2p_protocol::ProtocolVersionP2P,
     suppored_services::SupportedServices,
+    socket_conversion::socket_to_ipv6_port,
 };
 
 use bitcoin_hashes::{
@@ -27,6 +28,7 @@ use bitcoin_hashes::{
 pub const VERSION_TYPE: [u8; 12] = [118, 101, 114, 115, 105, 111, 110, 0, 0, 0, 0, 0];
 
 pub struct VersionMessage {
+    pub magic_bytes: [u8; 4],
     pub version: ProtocolVersionP2P,
     pub services: SupportedServices,
     pub timestamp: DateTime<Utc>,
@@ -44,20 +46,24 @@ pub struct VersionMessage {
 impl VersionMessage {
 
     pub fn new(
+        magic_bytes: [u8; 4],
         version: ProtocolVersionP2P,
         services: SupportedServices,
-        timestamp: DateTime<Utc>,
         recv_services: SupportedServices,
-        recv_addr: Ipv6Addr,
-        recv_port: u16,
-        trans_addr: Ipv6Addr,
-        trans_port: u16,
+        recv_socket_addr: &SocketAddr,
+        trans_socket_addr: &SocketAddr,
         nonce: u64,
         user_agent: String,
         start_height: i32,
         relay: bool,
     ) -> Self {
-        Self { 
+
+        let timestamp = Utc::now();
+        let (recv_addr, recv_port) = socket_to_ipv6_port(recv_socket_addr);
+        let (trans_addr, trans_port) = socket_to_ipv6_port(trans_socket_addr);
+
+        Self {
+            magic_bytes,
             version,
             services,
             timestamp,
