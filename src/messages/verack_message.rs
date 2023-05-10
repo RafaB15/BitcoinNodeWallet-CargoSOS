@@ -1,7 +1,7 @@
 use super::{
     serializable::Serializable,
     deserializable::Deserializable,
-    error_message::ErrorMessage, payload::Payload,
+    error_message::ErrorMessage,
 };
 
 use std::io::{Read, Write};
@@ -65,10 +65,8 @@ impl Deserializable for VerackMessage {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
 
-        let payload_size = Self::get_slice::<4>(&num_buffer, 0)?;
-        let payload_size = u32::from_be_bytes(payload_size);
-        
-        if payload_size != 0 {
+        let payload_size = Self::get_slice::<4>(&num_buffer, 0)?;        
+        if u32::from_be_bytes(payload_size) != 0 {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
         
