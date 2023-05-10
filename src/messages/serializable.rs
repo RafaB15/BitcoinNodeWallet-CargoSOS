@@ -20,6 +20,24 @@ impl Serializable for i32 {
     }
 }
 
+impl Serializable for u8 {
+    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
+        match stream.write(&self.to_le_bytes()) {
+            Ok(_) => Ok(()),
+            _ => Err(ErrorMessage::ErrorInDeserialization),
+        }
+    }
+}
+
+impl Serializable for u16 {
+    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
+        match stream.write(&self.to_le_bytes()) {
+            Ok(_) => Ok(()),
+            _ => Err(ErrorMessage::ErrorInDeserialization),
+        }
+    }
+}
+
 impl Serializable for u32 {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
         match stream.write(&self.to_le_bytes()) {
