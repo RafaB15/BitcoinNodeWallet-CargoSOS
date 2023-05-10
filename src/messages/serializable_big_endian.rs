@@ -19,7 +19,9 @@ impl SerializableBigEndian for u16 {
 
 impl SerializableBigEndian for Ipv6Addr {
     fn serialize_big_endian(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
-        todo!()
-        // .octets()
+        match stream.write(&self.octets()) {
+            Ok(_) => Ok(()),
+            _ => Err(ErrorMessage::ErrorInDeserialization),
+        }
     }
 }
