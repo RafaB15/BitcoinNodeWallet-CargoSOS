@@ -6,3 +6,14 @@ pub trait Deserializable {
 
     fn deserialize(stream: &mut dyn Read) -> Result<Self::Value, ErrorMessage>;
 }
+
+pub fn get_slice<const N: usize>(buffer: &[u8], posicion: &mut usize) -> Result<[u8; N], ErrorMessage>{
+    let inicio = *posicion;
+    let slice: [u8; N] = match buffer[inicio..(N + inicio)].try_into() {
+        Ok(slice) => slice,
+        _ => return Err(ErrorMessage::ErrorInDeserialization),
+    };
+
+    *posicion += N;
+    Ok(slice)
+}

@@ -1,6 +1,9 @@
 use super::{
     serializable::Serializable,
-    deserializable::Deserializable,
+    deserializable::{
+        Deserializable,
+        get_slice,
+    },
     error_message::ErrorMessage,
 };
 
@@ -29,20 +32,6 @@ impl VerackMessage {
     }
 }
 
-impl VerackMessage {
-    
-    fn get_slice<const N: usize>(buffer: &[u8], posicion: &mut usize) -> Result<[u8; N], ErrorMessage>{
-        let inicio = *posicion;
-        let slice: [u8; N] = match buffer[inicio..(N + inicio)].try_into() {
-            Ok(slice) => slice,
-            _ => return Err(ErrorMessage::ErrorInDeserialization),
-        };
-
-        *posicion += N;
-        Ok(slice)
-    }
-}
-
 impl Serializable for VerackMessage {
     // magic_bytes: [u8; 4]
     // message_type: [u8; 12]
@@ -68,26 +57,26 @@ impl Deserializable for VerackMessage {
 
     fn deserialize(stream: &mut dyn Read) -> Result<Self::Value, ErrorMessage> {
         
-        let mut posicion = 0;
+        let mut position = 0;
         let mut buffer = [0u8; HEADER_SIZE];
 
         if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
 
-        let magic_bytes = Self::get_slice::<MAGIC_BYTES_SIZE>(&buffer, &mut posicion)?;
+        let magic_bytes = get_slice::<MAGIC_BYTES_SIZE>(&buffer, &mut position)?;
         
-        let message_type = Self::get_slice::<MASSAGE_TYPE_SIZE>(&buffer, &mut posicion)?;
+        let message_type = get_slice::<MASSAGE_TYPE_SIZE>(&buffer, &mut position)?;
         if !VERACK_TYPE.eq(&message_type) {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
         
-        let payload_size = Self::get_slice::<PAYLOAD_SIZE>(&buffer, &mut posicion)?;        
+        let payload_size = get_slice::<PAYLOAD_SIZE>(&buffer, &mut position)?;        
         if u32::from_be_bytes(payload_size) != 0 {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
         
-        let receive_checksum = Self::get_slice::<CHECKSUM_SIZE>(&buffer, &mut posicion)?;
+        let receive_checksum = get_slice::<CHECKSUM_SIZE>(&buffer, &mut position)?;
         if !VERACK_CHECKSUM.eq(&receive_checksum) {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
