@@ -7,3 +7,5 @@ pub mod verack_message;
 pub mod error_message;
 
 pub mod compact_size;
+
+pub mod get_headers_message;
