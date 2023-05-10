@@ -107,7 +107,6 @@ impl Serializable for VersionMessage {
         let mut serialized_message = Vec::new();
         let mut payload = Vec::new();
 
-        let payload_size: u32 = 86;
         let version: i32 = match self.version.try_into() {
             Ok(version) => version,
             _ => return Err(ErrorMessage::ErrorWhileWriting),
@@ -128,17 +127,8 @@ impl Serializable for VersionMessage {
             false => 0x00,
         };
 
-        let hash_of_bytes = sha256d::Hash::hash(&payload);
-
-        let hash_bytes: &[u8] = hash_of_bytes.as_ref();
-        let checksum: &[u8; 4] = match (&hash_bytes[0..4]).try_into() {
-            Ok(checksum) => checksum,
-            _ => return Err(ErrorMessage::ErrorInSerialization),
-        };
-
         serialized_message.extend_from_slice(&self.magic_bytes);
         serialized_message.extend_from_slice(VERSION_TYPE);
-        serialized_message.extend_from_slice(&payload_size.to_le_bytes());
 
 
         payload.extend_from_slice(&version.to_le_bytes());
@@ -152,10 +142,23 @@ impl Serializable for VersionMessage {
         payload.extend_from_slice(&self.trans_port.to_be_bytes());
         payload.extend_from_slice(&self.nonce.to_le_bytes());
         payload.extend_from_slice(&(self.user_agent.len() as u32).to_le_bytes());
+        payload.extend_from_slice(self.user_agent.as_bytes());
         payload.extend_from_slice(&self.start_height.to_le_bytes());        
         payload.extend_from_slice(&[relay_value]);
         
+        let payload_size: u32 = payload.len() as u32;
+        serialized_message.extend_from_slice(&payload_size.to_le_bytes());
 
+
+        let hash_of_bytes = sha256d::Hash::hash(&payload);
+
+        let hash_bytes: &[u8] = hash_of_bytes.as_ref();
+        let checksum: &[u8; 4] = match (&hash_bytes[0..4]).try_into() {
+            Ok(checksum) => checksum,
+            _ => return Err(ErrorMessage::ErrorInSerialization),
+        };
+
+        
         serialized_message.extend_from_slice(checksum);
         serialized_message.extend_from_slice(&payload);
         
