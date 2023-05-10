@@ -44,17 +44,12 @@ impl Serializable for VerackMessage {
         let payload_size: u32 = 0;
         let mut serialized_message = Vec::new();
 
-        
-        serialized_message.extend_from_slice(&self.magic_bytes);
-        serialized_message.extend_from_slice(VERACK_TYPE);
-        serialized_message.extend_from_slice(&payload_size.to_le_bytes());        
-        serialized_message.extend_from_slice(&VERACK_CHECKSUM);
+        self.magic_bytes.serialize(&mut serialized_message)?;
+        VERACK_TYPE.serialize(&mut serialized_message)?;
+        payload_size.serialize(&mut serialized_message)?;
+        VERACK_CHECKSUM.serialize(&mut serialized_message)?;
 
-
-        match stream.write(&serialized_message) {
-            Ok(_) => Ok(()),
-            _ => Err(ErrorMessage::ErrorWhileWriting),
-        }
+        serialized_message.serialize(stream)
     }
 }
 
