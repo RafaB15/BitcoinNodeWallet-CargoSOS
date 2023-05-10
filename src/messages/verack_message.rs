@@ -9,6 +9,11 @@ use std::io::{Read, Write};
 pub const VERACK_TYPE: &[u8; 12] = b"verack\0\0\0\0\0\0";
 pub const VERACK_CHECKSUM: [u8; 4] = [0x5d, 0xf6, 0xe0, 0xe2];
 
+const MAGIC_BYTES_SIZE: usize = 4;
+const MASSAGE_TYPE_SIZE: usize = 12;
+const PAYLOAD_SIZE: usize = 4;
+const CHECKSUM_SIZE: usize = 4;
+
 #[derive(Debug, std::cmp::PartialEq)]
 pub struct VerackMessage {
     pub magic_bytes: [u8; 4],
@@ -59,24 +64,30 @@ impl Deserializable for VerackMessage {
 
     fn deserialize(stream: &mut dyn Read) -> Result<Self::Value, ErrorMessage> {
         
+        let mut posicion = 0;
         let mut num_buffer = [0u8; 24];
         if stream.read_exact(&mut num_buffer).is_err() {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
 
-        let magic_bytes = Self::get_slice::<4>(&num_buffer, 0)?;
+        let magic_bytes = Self::get_slice::<MAGIC_BYTES_SIZE>(&num_buffer, posicion)?;
+        posicion += MAGIC_BYTES_SIZE;
 
-        let message_type = Self::get_slice::<12>(&num_buffer, 4)?;
+        let message_type = Self::get_slice::<MASSAGE_TYPE_SIZE>(&num_buffer, posicion)?;
+        posicion += MASSAGE_TYPE_SIZE;
+
         if !VERACK_TYPE.eq(&message_type) {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
 
-        let payload_size = Self::get_slice::<4>(&num_buffer, 0)?;        
+        let payload_size = Self::get_slice::<PAYLOAD_SIZE>(&num_buffer, posicion)?;        
+        posicion += PAYLOAD_SIZE;
         if u32::from_be_bytes(payload_size) != 0 {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
         
-        let receive_checksum = Self::get_slice::<4>(&num_buffer, 4)?;
+        let receive_checksum = Self::get_slice::<CHECKSUM_SIZE>(&num_buffer, posicion)?;
+        posicion += CHECKSUM_SIZE;
         if !VERACK_CHECKSUM.eq(&receive_checksum) {
             return Err(ErrorMessage::ErrorInDeserialization);
         }

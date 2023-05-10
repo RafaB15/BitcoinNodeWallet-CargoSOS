@@ -8,8 +8,7 @@ use chrono::{
 
 pub trait Serializable {
     
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage>;
-    
+    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage>;    
 }
 
 impl Serializable for i32 {
