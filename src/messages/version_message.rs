@@ -93,7 +93,7 @@ impl VersionMessage {
 
         self.trans_addr.serialize_big_endian(stream)?;
         self.trans_port.serialize_big_endian(stream)?;
-        
+
         self.nonce.serialize(stream)?;
         (self.user_agent.len() as u32).serialize(stream)?;
         self.user_agent.serialize(stream)?;
@@ -143,7 +143,12 @@ impl Serializable for VersionMessage {
         (payload.len() as u32).serialize(&mut serialized_message)?;       
 
         // checksum
-        sha256d::Hash::hash(&payload).serialize(&mut serialized_message)?;
+        let hash_bytes: &[u8] = sha256d::Hash::hash(&payload).as_ref();
+        let checksum: &[u8; 4] = match (&hash_bytes[0..4]).try_into() {
+            Ok(checksum) => checksum,
+            _ => return Err(ErrorMessage::ErrorInSerialization),
+        };
+        checksum.serialize(&mut serialized_message)?;
 
         // payload
         payload.serialize(&mut serialized_message)?;
