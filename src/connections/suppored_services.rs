@@ -2,6 +2,7 @@ use super::error_connection::ErrorConnection;
 
 use crate::messages::{
     serializable::Serializable,
+    deserializable::Deserializable,
     error_message::ErrorMessage,
 };
 
@@ -69,6 +70,18 @@ impl Serializable for SupportedServices {
 
         match stream.write(&version.to_le_bytes()) {
             Ok(_) => Ok(()),
+            _ => Err(ErrorMessage::ErrorInDeserialization),
+        }
+    }
+}
+
+impl Deserializable for SupportedServices {
+    type Value = SupportedServices;
+
+    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self::Value, ErrorMessage> {
+        let supported_servicies = <u64 as Deserializable>::deserialize(stream)?;
+        match supported_servicies.try_into() {
+            Ok(supported_servicies) => Ok(supported_servicies),
             _ => Err(ErrorMessage::ErrorInDeserialization),
         }
     }

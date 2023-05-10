@@ -1,3 +1,4 @@
+use super::deserializable::Deserializable;
 use super::serializable::Serializable;
 use super::error_message::ErrorMessage;
 use std::io::Write;
@@ -12,7 +13,7 @@ const PREFIX_U64: u8 = 0xFF;
 
 
 pub struct CompactSize {
-    value: u64,
+    pub value: u64,
 }
 
 impl CompactSize {
@@ -42,5 +43,23 @@ impl Serializable for CompactSize {
         }
 
         Ok(())
+    }
+}
+
+impl Deserializable for CompactSize {
+    type Value = CompactSize;
+
+    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self::Value, ErrorMessage> {
+        let mut buffer = [0u8; 1];
+        if stream.read_exact(&mut buffer).is_err() {
+            return Err(ErrorMessage::ErrorInDeserialization);
+        }
+
+        match buffer {
+            [PREFIX_U16] => Ok(CompactSize::new(u16::deserialize(stream)? as u64)),
+            [PREFIX_U32] => Ok(CompactSize::new(u32::deserialize(stream)? as u64)),
+            [PREFIX_U64] => Ok(CompactSize::new(u64::deserialize(stream)?)),
+            _ => Ok(CompactSize::new(u8::deserialize(stream)? as u64))
+        }
     }
 }

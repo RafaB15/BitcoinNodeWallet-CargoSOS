@@ -57,26 +57,27 @@ impl Deserializable for VerackMessage {
 
     fn deserialize(stream: &mut dyn Read) -> Result<Self::Value, ErrorMessage> {
         
-        let mut position = 0;
-        let mut buffer = [0u8; HEADER_SIZE];
+        let mut buffer: Vec<u8> = vec![0; HEADER_SIZE];
 
         if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
 
-        let magic_bytes = get_slice::<MAGIC_BYTES_SIZE>(&buffer, &mut position)?;
+        let mut buffer: &[u8] = &buffer[..];
+
+        let magic_bytes = <[u8; MAGIC_BYTES_SIZE] as Deserializable>::deserialize(&mut buffer)?;
         
-        let message_type = get_slice::<MASSAGE_TYPE_SIZE>(&buffer, &mut position)?;
+        let message_type = <[u8; MASSAGE_TYPE_SIZE] as Deserializable>::deserialize(&mut buffer)?;
         if !VERACK_TYPE.eq(&message_type) {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
         
-        let payload_size = get_slice::<PAYLOAD_SIZE>(&buffer, &mut position)?;        
-        if u32::from_be_bytes(payload_size) != 0 {
+        let payload_size = u32::deserialize(&mut buffer)?;
+        if payload_size != 0 {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
         
-        let receive_checksum = get_slice::<CHECKSUM_SIZE>(&buffer, &mut position)?;
+        let receive_checksum = <[u8; CHECKSUM_SIZE] as Deserializable>::deserialize(&mut buffer)?;
         if !VERACK_CHECKSUM.eq(&receive_checksum) {
             return Err(ErrorMessage::ErrorInDeserialization);
         }

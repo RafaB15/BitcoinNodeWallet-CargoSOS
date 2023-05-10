@@ -1,5 +1,6 @@
 use crate::messages::{
     serializable::Serializable,
+    deserializable::Deserializable,
     error_message::ErrorMessage,
 };
 
@@ -110,6 +111,18 @@ impl Serializable for ProtocolVersionP2P {
 
         match stream.write(&version.to_le_bytes()) {
             Ok(_) => Ok(()),
+            _ => Err(ErrorMessage::ErrorInDeserialization),
+        }
+    }
+}
+
+impl Deserializable for ProtocolVersionP2P {
+    type Value = ProtocolVersionP2P;
+
+    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self::Value, ErrorMessage> {
+        let version_int = <i32 as Deserializable>::deserialize(stream)?;
+        match version_int.try_into() {
+            Ok(version) => Ok(version),
             _ => Err(ErrorMessage::ErrorInDeserialization),
         }
     }
