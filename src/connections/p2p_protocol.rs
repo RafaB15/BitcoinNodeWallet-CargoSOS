@@ -117,9 +117,8 @@ impl Serializable for ProtocolVersionP2P {
 }
 
 impl Deserializable for ProtocolVersionP2P {
-    type Value = ProtocolVersionP2P;
 
-    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self::Value, ErrorMessage> {
+    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorMessage> {
         let version_int = <i32 as Deserializable>::deserialize(stream)?;
         match version_int.try_into() {
             Ok(version) => Ok(version),

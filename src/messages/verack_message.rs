@@ -1,9 +1,6 @@
 use super::{
     serializable::Serializable,
-    deserializable::{
-        Deserializable,
-        get_slice,
-    },
+    deserializable::Deserializable,
     error_message::ErrorMessage,
 };
 
@@ -52,10 +49,8 @@ impl Serializable for VerackMessage {
 }
 
 impl Deserializable for VerackMessage {
-    
-    type Value = Self;
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self::Value, ErrorMessage> {
+    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
         
         let mut buffer: Vec<u8> = vec![0; HEADER_SIZE];
 

@@ -2,8 +2,7 @@ use super::{
     serializable_big_endian::SerializableBigEndian,
     serializable::Serializable,
     deserializable::{
-        Deserializable,
-        get_slice,
+        Deserializable
     },
     error_message::ErrorMessage, deserializable_big_endian::DeserializableBigEndian, compact_size::CompactSize, deserializable_fix_size::DeserializableFixSize, 
 };
@@ -11,8 +10,6 @@ use super::{
 use std::net::{Ipv6Addr, SocketAddr};
 use chrono::{
     DateTime,
-    //Timelike,
-    NaiveDateTime,
     offset::Utc
 };
 
@@ -90,7 +87,7 @@ impl VersionMessage {
         }
     }
 
-    pub fn serializar_payload(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
+    pub(super) fn serializar_payload(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
         
         self.version.serialize(stream)?;
         self.services.serialize(stream)?;
@@ -114,34 +111,29 @@ impl VersionMessage {
         Ok(())
     }
 
-    pub fn deserializar_payload(stream: &mut dyn Read, magic_bytes: [u8; 4], payload_size: u32) ->  Result<VersionMessage, ErrorMessage> {
-        let mut buffer: Vec<u8> = vec![0; payload_size as usize];
-        if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization);
-        }
-        let mut buffer: &[u8] = &buffer[..];
+    pub(super) fn deserializar_payload(stream: &mut dyn Read, magic_bytes: [u8; 4]) ->  Result<VersionMessage, ErrorMessage> {
 
-        let version = ProtocolVersionP2P::deserialize(&mut buffer)?;
-        let services = SupportedServices::deserialize(&mut buffer)?;
-        let timestamp = DateTime::<Utc>::deserialize(&mut buffer)?;
-        let recv_services = SupportedServices::deserialize(&mut buffer)?;
+        let version = ProtocolVersionP2P::deserialize(stream)?;
+        let services = SupportedServices::deserialize(stream)?;
+        let timestamp = DateTime::<Utc>::deserialize(stream)?;
+        let recv_services = SupportedServices::deserialize(stream)?;
 
-        let recv_addr = Ipv6Addr::deserialize_big_endian(&mut buffer)?;
-        let recv_port = u16::deserialize_big_endian(&mut buffer)?;
+        let recv_addr = Ipv6Addr::deserialize_big_endian(stream)?;
+        let recv_port = u16::deserialize_big_endian(stream)?;
 
-        let trans_services = SupportedServices::deserialize(&mut buffer)?;
+        let trans_services = SupportedServices::deserialize(stream)?;
         if trans_services != services {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
 
-        let trans_addr = Ipv6Addr::deserialize_big_endian(&mut buffer)?;
-        let trans_port = u16::deserialize_big_endian(&mut buffer)?;
+        let trans_addr = Ipv6Addr::deserialize_big_endian(stream)?;
+        let trans_port = u16::deserialize_big_endian(stream)?;
 
-        let nonce = u64::deserialize(&mut buffer)?;
-        let user_agent_len = CompactSize::deserialize(&mut buffer)?;
-        let user_agent = String::deserialize_fix_size(&mut buffer, user_agent_len.value as usize)?;
-        let start_height = i32::deserialize(&mut buffer)?;
-        let relay = bool::deserialize(&mut buffer)?;
+        let nonce = u64::deserialize(stream)?;
+        let user_agent_len = CompactSize::deserialize(stream)?;
+        let user_agent = String::deserialize_fix_size(stream, user_agent_len.value as usize)?;
+        let start_height = i32::deserialize(stream)?;
+        let relay = bool::deserialize(stream)?;
 
         Ok(VersionMessage {
             magic_bytes,
@@ -158,6 +150,15 @@ impl VersionMessage {
             start_height,
             relay,
         })
+    }
+
+    pub(super) fn calculate_checksum(payload: &Vec<u8>) -> Result<[u8; 4], ErrorMessage> {
+        let hash_bytes: sha256d::Hash = sha256d::Hash::hash(payload); 
+        let checksum: [u8; 4] = match hash_bytes[0..4].try_into() {
+            Ok(checksum) => checksum,
+            _ => return Err(ErrorMessage::ErrorInSerialization),
+        };
+        Ok(checksum)
     }
 }
 
@@ -200,12 +201,7 @@ impl Serializable for VersionMessage {
         (payload.len() as u32).serialize(&mut serialized_message)?;       
 
         // checksum
-        let hash_bytes: sha256d::Hash = sha256d::Hash::hash(&payload);        
-        let checksum: &[u8; 4] = match (&hash_bytes[0..4]).try_into() {
-            Ok(checksum) => checksum,
-            _ => return Err(ErrorMessage::ErrorInSerialization),
-        };
-        checksum.serialize(&mut serialized_message)?;
+        Self::calculate_checksum(&payload)?.serialize(&mut serialized_message)?;
 
         // payload
         payload.serialize(&mut serialized_message)?;
@@ -215,16 +211,15 @@ impl Serializable for VersionMessage {
 }
 
 impl Deserializable for VersionMessage {
-    
-    type Value = Self;
 
-    fn deserialize(stream: &mut dyn Read) ->  Result<Self::Value, ErrorMessage> {
+
+    fn deserialize(stream: &mut dyn Read) ->  Result<Self, ErrorMessage> {
 
         let mut buffer: Vec<u8> = vec![0; HEADER_SIZE];
         if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
-        let mut buffer: &[u8] = &buffer[..];
+        let mut buffer: &[u8] = &buffer;
 
         let magic_bytes = <[u8; MAGIC_BYTES_SIZE] as Deserializable>::deserialize(&mut buffer)?;
 
@@ -233,19 +228,19 @@ impl Deserializable for VersionMessage {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
 
-        let payload_size = <u32 as Deserializable>::deserialize(&mut buffer)?;        
+        let payload_size = u32::deserialize(&mut buffer)?;        
         let receive_checksum = <[u8; CHECKSUM_SIZE] as Deserializable>::deserialize(&mut buffer)?;
 
-        let version_message = Self::deserializar_payload(stream, magic_bytes, payload_size)?;
+        let mut buffer: Vec<u8> = vec![0; payload_size as usize];
+        if stream.read_exact(&mut buffer).is_err() {
+            return Err(ErrorMessage::ErrorInDeserialization);
+        }
+        let mut buffer: &[u8] = &buffer;
+        let version_message = Self::deserializar_payload(&mut buffer, magic_bytes)?;
 
         let mut payload_bytes: Vec<u8> = Vec::new();
         version_message.serializar_payload(&mut payload_bytes)?;
-
-        let hash_bytes: sha256d::Hash = sha256d::Hash::hash(&payload_bytes);        
-        let checksum: &[u8; 4] = match (&hash_bytes[0..4]).try_into() {
-            Ok(checksum) => checksum,
-            _ => return Err(ErrorMessage::ErrorInSerialization),
-        };
+        let checksum: [u8; 4] = Self::calculate_checksum(&payload_bytes)?;
 
         if !checksum.eq(&receive_checksum) {
             return Err(ErrorMessage::ErrorInDeserialization);

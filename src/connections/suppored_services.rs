@@ -76,9 +76,8 @@ impl Serializable for SupportedServices {
 }
 
 impl Deserializable for SupportedServices {
-    type Value = SupportedServices;
 
-    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self::Value, ErrorMessage> {
+    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorMessage> {
         let supported_servicies = <u64 as Deserializable>::deserialize(stream)?;
         match supported_servicies.try_into() {
             Ok(supported_servicies) => Ok(supported_servicies),
