@@ -4,7 +4,7 @@ use super::{
     error_message::ErrorMessage,
 };
 
-use std::net::Ipv6Addr;
+use std::net::{Ipv6Addr, SocketAddr};
 use chrono::{
     DateTime,
     //Timelike,
@@ -17,11 +17,18 @@ use std::io::{Read, Write};
 use crate::connections::{
     p2p_protocol::ProtocolVersionP2P,
     suppored_services::SupportedServices,
+    socket_conversion::socket_to_ipv6_port,
+};
+
+use bitcoin_hashes::{
+    sha256d,
+    Hash,
 };
 
 pub const VERSION_TYPE: &[u8; 12] = b"version\0\0\0\0\0";
 
 pub struct VersionMessage {
+    pub magic_bytes: [u8; 4],
     pub version: ProtocolVersionP2P,
     pub services: SupportedServices,
     pub timestamp: DateTime<Utc>,
@@ -29,7 +36,7 @@ pub struct VersionMessage {
     pub recv_addr: Ipv6Addr,
     pub recv_port: u16,
     pub trans_addr: Ipv6Addr,
-    pub trans_port: u16, // tal vez es el mismo que el recv_port
+    pub trans_port: u16,
     pub nonce: u64,
     pub user_agent: String,
     pub start_height: i32,
@@ -39,20 +46,24 @@ pub struct VersionMessage {
 impl VersionMessage {
 
     pub fn new(
+        magic_bytes: [u8; 4],
         version: ProtocolVersionP2P,
         services: SupportedServices,
-        timestamp: DateTime<Utc>,
         recv_services: SupportedServices,
-        recv_addr: Ipv6Addr,
-        recv_port: u16,
-        trans_addr: Ipv6Addr,
-        trans_port: u16,
+        recv_socket_addr: &SocketAddr,
+        trans_socket_addr: &SocketAddr,
         nonce: u64,
         user_agent: String,
         start_height: i32,
         relay: bool,
     ) -> Self {
-        Self { 
+
+        let timestamp = Utc::now();
+        let (recv_addr, recv_port) = socket_to_ipv6_port(recv_socket_addr);
+        let (trans_addr, trans_port) = socket_to_ipv6_port(trans_socket_addr);
+
+        Self {
+            magic_bytes,
             version,
             services,
             timestamp,
@@ -70,100 +81,89 @@ impl VersionMessage {
 }
 
 impl Serializable for VersionMessage {
+    
+    //magic_bytes
+    //message_type
+    //payload_size: u32
+    //checksum
+    //Since for the checksum we need to hash the payload, we will first serialize the payload without writing it to the stream
+    //version serialization
+    //services serialization
+    //timestamp serialization
+    //recv_services serialization
+    //recv_addr serialization
+    //recv_port serialization
+    //trans services serialization = es el mismo que services_bytes
+    //trans addrs serialization
+    //trans port serialization
+    //nonce serialization
+    //user_agent serialization
+    //start_height serialization
+    //relay serialization
+    //We can now calculate the checksum
+    //Now that we have both the checksum and the payload we can add them to the serialized message vector
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage>{
     
-        //version
+        let mut serialized_message = Vec::new();
+        let mut payload = Vec::new();
+
+        let payload_size: u32 = 86;
         let version: i32 = match self.version.try_into() {
             Ok(version) => version,
             _ => return Err(ErrorMessage::ErrorWhileWriting),
         };
 
-        if stream.write(&version.to_le_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorWhileWriting);
-        }
-
-        //serializar 2 veces services
         let services: u64 = match self.services.try_into() {
             Ok(services) => services,
             _ => return Err(ErrorMessage::ErrorWhileWriting),
         };
-
-        if stream.write(&services.to_le_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorWhileWriting);
-        }
-
-        //timestamp
-        let timestamp_bytes = self.timestamp.timestamp().to_le_bytes();
-        if stream.write(&timestamp_bytes).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }
-
-        //recv_services
+        
         let recv_services: u64 = match self.recv_services.try_into() {
             Ok(recv_services) => recv_services,
             _ => return Err(ErrorMessage::ErrorWhileWriting),
         };
 
-        if stream.write(&recv_services.to_le_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorWhileWriting);
-        }
-        
-        //recv_addr
-        let recv_bytes = self.recv_addr.octets();
-        if stream.write(&recv_bytes).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }
-
-        //recv_port
-        if stream.write(&self.recv_port.to_be_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }
-        
-        //addr trans services
-        if stream.write(&services.to_le_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorWhileWriting);
-        }
-
-        //trans addr
-        let trans_addr_bytes = self.trans_addr.octets();
-        if stream.write(&trans_addr_bytes).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }
-
-        //trans port
-        if stream.write(&self.trans_port.to_be_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }
-
-        //nonce
-        if stream.write(&self.nonce.to_le_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }
-
-        //user_agent
-        if stream.write(&(self.user_agent.len() as u32).to_le_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }
-
-        //start_height
-        if stream.write(&self.start_height.to_le_bytes()).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
-        }
-
-        //relay
-        let relay_value = match self.relay {
+        let relay_value: u8 = match self.relay {
             true => 0x01,
             false => 0x00,
         };
-        if stream.write(&[relay_value]).is_err() {
-            return Err(ErrorMessage::ErrorInSerialization);
+
+        let hash_of_bytes = sha256d::Hash::hash(&payload);
+
+        let hash_bytes: &[u8] = hash_of_bytes.as_ref();
+        let checksum: &[u8; 4] = match (&hash_bytes[0..4]).try_into() {
+            Ok(checksum) => checksum,
+            _ => return Err(ErrorMessage::ErrorInSerialization),
+        };
+
+        serialized_message.extend_from_slice(&self.magic_bytes);
+        serialized_message.extend_from_slice(VERSION_TYPE);
+        serialized_message.extend_from_slice(&payload_size.to_le_bytes());
+
+
+        payload.extend_from_slice(&version.to_le_bytes());
+        payload.extend_from_slice(&services.to_le_bytes());
+        payload.extend_from_slice(&self.timestamp.timestamp().to_le_bytes());        
+        payload.extend_from_slice(&recv_services.to_le_bytes());
+        payload.extend_from_slice(&self.recv_addr.octets());
+        payload.extend_from_slice(&self.recv_port.to_be_bytes());
+        payload.extend_from_slice(&services.to_le_bytes());
+        payload.extend_from_slice(&self.trans_addr.octets());
+        payload.extend_from_slice(&self.trans_port.to_be_bytes());
+        payload.extend_from_slice(&self.nonce.to_le_bytes());
+        payload.extend_from_slice(&(self.user_agent.len() as u32).to_le_bytes());
+        payload.extend_from_slice(&self.start_height.to_le_bytes());        
+        payload.extend_from_slice(&[relay_value]);
+        
+
+        serialized_message.extend_from_slice(checksum);
+        serialized_message.extend_from_slice(&payload);
+        
+        match stream.write(&serialized_message) {
+            Ok(_) => Ok(())
+            _ => Err(ErrorMessage::ErrorWhileWriting),
         }
-
-        Ok(())
-
-        }
-
-
+    }
 }
 
 impl Deserializable for VersionMessage {
