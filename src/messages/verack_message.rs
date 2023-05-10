@@ -29,12 +29,14 @@ impl VerackMessage {
 
 impl VerackMessage {
     
-    fn get_slice<const N: usize>(buffer: &[u8], inicio: usize) -> Result<[u8; N], ErrorMessage>{
+    fn get_slice<const N: usize>(buffer: &[u8], posicion: &mut usize) -> Result<[u8; N], ErrorMessage>{
+        let inicio = *posicion;
         let slice: [u8; N] = match buffer[inicio..(N + inicio)].try_into() {
             Ok(slice) => slice,
             _ => return Err(ErrorMessage::ErrorInDeserialization),
         };
 
+        *posicion += N;
         Ok(slice)
     }
 }
@@ -70,24 +72,19 @@ impl Deserializable for VerackMessage {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
 
-        let magic_bytes = Self::get_slice::<MAGIC_BYTES_SIZE>(&num_buffer, posicion)?;
-        posicion += MAGIC_BYTES_SIZE;
-
-        let message_type = Self::get_slice::<MASSAGE_TYPE_SIZE>(&num_buffer, posicion)?;
-        posicion += MASSAGE_TYPE_SIZE;
-
+        let magic_bytes = Self::get_slice::<MAGIC_BYTES_SIZE>(&num_buffer, &mut posicion)?;
+        
+        let message_type = Self::get_slice::<MASSAGE_TYPE_SIZE>(&num_buffer, &mut posicion)?;
         if !VERACK_TYPE.eq(&message_type) {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
-
-        let payload_size = Self::get_slice::<PAYLOAD_SIZE>(&num_buffer, posicion)?;        
-        posicion += PAYLOAD_SIZE;
+        
+        let payload_size = Self::get_slice::<PAYLOAD_SIZE>(&num_buffer, &mut posicion)?;        
         if u32::from_be_bytes(payload_size) != 0 {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
         
-        let receive_checksum = Self::get_slice::<CHECKSUM_SIZE>(&num_buffer, posicion)?;
-        posicion += CHECKSUM_SIZE;
+        let receive_checksum = Self::get_slice::<CHECKSUM_SIZE>(&num_buffer, &mut posicion)?;
         if !VERACK_CHECKSUM.eq(&receive_checksum) {
             return Err(ErrorMessage::ErrorInDeserialization);
         }
