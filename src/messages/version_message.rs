@@ -1,7 +1,7 @@
 use super::{
     serializable::Serializable,
     deserializable::Deserializable,
-    error_message::ErrorMessage,
+    error_message::ErrorMessage, serializable_big_endian::SerializableBigEndian,
 };
 
 use std::net::{Ipv6Addr, SocketAddr};
@@ -78,6 +78,30 @@ impl VersionMessage {
             relay,
         }
     }
+
+    pub fn serializar_payload(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
+        
+        self.version.serialize(stream)?;
+        self.services.serialize(stream)?;
+        self.timestamp.serialize(stream)?;
+        self.recv_services.serialize(stream)?;
+
+        self.recv_addr.serialize_big_endian(stream)?;
+        self.recv_port.serialize_big_endian(stream)?;
+
+        self.services.serialize(stream)?;
+
+        self.trans_addr.serialize_big_endian(stream)?;
+        self.trans_port.serialize_big_endian(stream)?;
+        
+        self.nonce.serialize(stream)?;
+        (self.user_agent.len() as u32).serialize(stream)?;
+        self.user_agent.serialize(stream)?;
+        self.start_height.serialize(stream)?;
+        self.relay.serialize(stream)?;
+
+        Ok(())
+    }
 }
 
 impl Serializable for VersionMessage {
@@ -106,66 +130,25 @@ impl Serializable for VersionMessage {
     
         let mut serialized_message = Vec::new();
         let mut payload = Vec::new();
-
-        let version: i32 = match self.version.try_into() {
-            Ok(version) => version,
-            _ => return Err(ErrorMessage::ErrorWhileWriting),
-        };
-
-        let services: u64 = match self.services.try_into() {
-            Ok(services) => services,
-            _ => return Err(ErrorMessage::ErrorWhileWriting),
-        };
         
-        let recv_services: u64 = match self.recv_services.try_into() {
-            Ok(recv_services) => recv_services,
-            _ => return Err(ErrorMessage::ErrorWhileWriting),
-        };
+        // magic bytes
+        self.magic_bytes.serialize(&mut serialized_message)?;
 
-        let relay_value: u8 = match self.relay {
-            true => 0x01,
-            false => 0x00,
-        };
-
-        serialized_message.extend_from_slice(&self.magic_bytes);
-        serialized_message.extend_from_slice(VERSION_TYPE);
-
-
-        payload.extend_from_slice(&version.to_le_bytes());
-        payload.extend_from_slice(&services.to_le_bytes());
-        payload.extend_from_slice(&self.timestamp.timestamp().to_le_bytes());        
-        payload.extend_from_slice(&recv_services.to_le_bytes());
-        payload.extend_from_slice(&self.recv_addr.octets());
-        payload.extend_from_slice(&self.recv_port.to_be_bytes());
-        payload.extend_from_slice(&services.to_le_bytes());
-        payload.extend_from_slice(&self.trans_addr.octets());
-        payload.extend_from_slice(&self.trans_port.to_be_bytes());
-        payload.extend_from_slice(&self.nonce.to_le_bytes());
-        payload.extend_from_slice(&(self.user_agent.len() as u32).to_le_bytes());
-        payload.extend_from_slice(self.user_agent.as_bytes());
-        payload.extend_from_slice(&self.start_height.to_le_bytes());        
-        payload.extend_from_slice(&[relay_value]);
+        // command name
+        VERSION_TYPE.serialize(&mut serialized_message)?;        
         
-        let payload_size: u32 = payload.len() as u32;
-        serialized_message.extend_from_slice(&payload_size.to_le_bytes());
+        self.serializar_payload(&mut payload);
 
+        // payload size
+        (payload.len() as u32).serialize(&mut serialized_message)?;       
 
-        let hash_of_bytes = sha256d::Hash::hash(&payload);
+        // checksum
+        sha256d::Hash::hash(&payload).serialize(&mut serialized_message)?;
 
-        let hash_bytes: &[u8] = hash_of_bytes.as_ref();
-        let checksum: &[u8; 4] = match (&hash_bytes[0..4]).try_into() {
-            Ok(checksum) => checksum,
-            _ => return Err(ErrorMessage::ErrorInSerialization),
-        };
-
+        // payload
+        payload.serialize(&mut serialized_message)?;
         
-        serialized_message.extend_from_slice(checksum);
-        serialized_message.extend_from_slice(&payload);
-        
-        match stream.write(&serialized_message) {
-            Ok(_) => Ok(())
-            _ => Err(ErrorMessage::ErrorWhileWriting),
-        }
+        serialized_message.serialize(stream)
     }
 }
 

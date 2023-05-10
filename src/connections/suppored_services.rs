@@ -1,5 +1,10 @@
 use super::error_connection::ErrorConnection;
 
+use crate::messages::{
+    serializable::Serializable,
+    error_message::ErrorMessage,
+};
+
 #[derive(Debug, std::cmp::PartialEq, Copy, Clone)]
 ///
 pub enum SupportedServices {
@@ -51,6 +56,20 @@ impl std::convert::TryInto<u64> for SupportedServices {
             SupportedServices::NodeWitness => Ok(8),
             SupportedServices::NodeXThin => Ok(10),
             SupportedServices::NodeNetworkLimited => Ok(400),
+        }
+    }
+}
+
+impl Serializable for SupportedServices {
+    fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorMessage> {
+        let version: u64 = match (*self).try_into() {
+            Ok(version) => version,
+            _ => return Err(ErrorMessage::ErrorWhileWriting),
+        };
+
+        match stream.write(&version.to_le_bytes()) {
+            Ok(_) => Ok(()),
+            _ => Err(ErrorMessage::ErrorInDeserialization),
         }
     }
 }

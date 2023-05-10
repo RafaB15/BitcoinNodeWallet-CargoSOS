@@ -1,3 +1,8 @@
+use crate::messages::{
+    serializable::Serializable,
+    error_message::ErrorMessage,
+};
+
 use super::error_connection::ErrorConnection;
 
 #[derive(Debug, std::cmp::PartialEq, Copy, Clone)]
@@ -92,6 +97,20 @@ impl std::convert::TryInto<i32> for ProtocolVersionP2P {
             ProtocolVersionP2P::V311 => Ok(311),
             ProtocolVersionP2P::V209 => Ok(209),
             ProtocolVersionP2P::V106 => Ok(106),
+        }
+    }
+}
+
+impl Serializable for ProtocolVersionP2P {
+    fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorMessage> {
+        let version: i32 = match (*self).try_into() {
+            Ok(version) => version,
+            _ => return Err(ErrorMessage::ErrorWhileWriting),
+        };
+
+        match stream.write(&version.to_le_bytes()) {
+            Ok(_) => Ok(()),
+            _ => Err(ErrorMessage::ErrorInDeserialization),
         }
     }
 }
