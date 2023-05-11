@@ -35,6 +35,7 @@ const CHECKSUM_SIZE: usize = 4;
 
 const HEADER_SIZE: usize = MAGIC_BYTES_SIZE + MASSAGE_TYPE_SIZE + PAYLOAD_SIZE + CHECKSUM_SIZE;
 
+#[derive(Debug, std::cmp::PartialEq)]
 pub struct VersionMessage {
     pub magic_bytes: [u8; 4],
     pub version: ProtocolVersionP2P,
@@ -309,7 +310,7 @@ mod tests {
         let start_height: i32 = 3;
         let relay: bool = false;
 
-        let message_verack = VersionMessage {
+        let version_message = VersionMessage {
             magic_bytes,
             version,
             services,
@@ -326,7 +327,7 @@ mod tests {
         };
         let mut stream: Vec<u8> = Vec::new();
         
-        message_verack.serialize(&mut stream)?;
+        version_message.serialize(&mut stream)?;
         
         let mut stream_esperado: Vec<u8> = Vec::new();
         magic_bytes.serialize(&mut stream_esperado)?;
@@ -366,24 +367,84 @@ mod tests {
         Ok(())
     }
 
-    /*
     #[test]
     fn test02_deserializar() -> Result<(), ErrorMessage> {
-        let magic_bytes: [u8; 4] = [0x55, 0x66, 0xee, 0xee];
+        let magic_bytes = [0x55, 0x66, 0xee, 0xee];
+        let version = ProtocolVersionP2P::V31402;
+        let services = SupportedServices::NodeNetworkLimited;
+
+        let naive = NaiveDateTime::from_timestamp_opt(1628, 0).unwrap();
+        let timestamp: DateTime<Utc> = DateTime::<Utc>::from_utc(naive, Utc);
+
+        let recv_services: SupportedServices = SupportedServices::NodeNetworkLimited;
+        let recv_addr: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0xffff, 0xc00a, 0x02ff);
+        let recv_port: u16 = 80;
+        let trans_addr: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0xffff, 0xc00a, 0x02ff);
+        let trans_port: u16 = 64;
+        let nonce: u64 = 00001111;
+        let user_agent: String = "abc".to_string();
+        let user_agent_esperado: String = "abc".to_string();
+        let length: usize = user_agent.len();
+        let length = CompactSize::new(length as u64);
+        let start_height: i32 = 3;
+        let relay: bool = false;
+
         let mut stream: Vec<u8> = Vec::new();
-        stream.append(&mut magic_bytes.to_vec());
-        stream.append(&mut VERSION_TYPE.to_vec());
+    
+        magic_bytes.serialize(&mut stream)?;
+        VERSION_TYPE.serialize(&mut stream)?;
         
-        let mut stream: &[u8] = &stream[..];
+        let mut payload: Vec<u8> = Vec::new();
+        version.serialize(&mut payload)?;
+        services.serialize(&mut payload)?;
+        timestamp.serialize(&mut payload)?;
+        recv_services.serialize(&mut payload)?;
         
-        let verack_esperado = VerackMessage::new(magic_bytes);
+        recv_addr.serialize_big_endian(&mut payload)?;
+        recv_port.serialize_big_endian(&mut payload)?;
+
+        services.serialize(&mut payload)?;
+
+        trans_addr.serialize_big_endian(&mut payload)?;
+        trans_port.serialize_big_endian(&mut payload)?; 
         
-        let verack = VerackMessage::deserialize(&mut stream)?;
+        nonce.serialize(&mut payload)?;
+        length.serialize(&mut payload)?; 
+        user_agent_esperado.serialize(&mut payload)?;
+        start_height.serialize(&mut payload)?; 
+        relay.serialize(&mut payload)?;
+
+        (payload.len() as u32).serialize(&mut stream)?;
+        let hash_bytes: sha256d::Hash = sha256d::Hash::hash(&payload); 
+        let checksum: [u8; 4] = match hash_bytes[0..4].try_into() {
+            Ok(checksum) => checksum,
+            _ => return Err(ErrorMessage::ErrorInSerialization),
+        };
+        checksum.serialize(&mut stream)?;
+        payload.serialize(&mut stream)?;
         
-        assert_eq!(verack_esperado, verack);
+        let mut stream: &[u8] = &stream;
+        
+        let version_esperado = VersionMessage {
+            magic_bytes,
+            version,
+            services,
+            timestamp,
+            recv_services,
+            recv_addr,
+            recv_port, 
+            trans_addr,
+            trans_port, 
+            nonce, 
+            user_agent,
+            start_height, 
+            relay,
+        };
+
+        let version = VersionMessage::deserialize(&mut stream)?;
+        
+        assert_eq!(version_esperado, version);
         
         Ok(())
     }
-    */
-
 }
