@@ -8,12 +8,16 @@ pub enum ErrorMessage {
 
     ErrorInMessage,
 
-    ErrorInSerialization,
+    ErrorInSerialization(String),
 
-    ErrorInDeserialization,
+    ErrorInDeserialization(String),
 
     ErrorMessageUnknown,
 
     ErrorWhileWriting,
+
+    ErrorWhileReading,
+
+    ErrorChecksum,
 }
 

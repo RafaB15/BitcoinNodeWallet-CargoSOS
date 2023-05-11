@@ -1,5 +1,5 @@
 mod error_initialization;
-mod error_ejecution;
+mod error_execution;
 
 use std::{io::BufReader, path::Path};
 use std::fs::File;
@@ -17,8 +17,16 @@ use cargosos_bitcoin::logs::{
 };
 
 use error_initialization::ErrorInitialization;
-use error_ejecution::ErrorEjecution;
+use error_execution::ErrorExecution;
 
+use cargosos_bitcoin::node_structure::node::Node;
+
+use cargosos_bitcoin::connections::{
+    dns_seeder::DNSSeeder,
+    p2p_protocol::ProtocolVersionP2P,
+    ibd_methods::IBDMethod,
+    suppored_services::SupportedServices,
+};
 
 const DECLARATION_CONFIG: &str = "config";
 const DECLARATION_BIG_CONFIG: &str = "configuration";
@@ -91,7 +99,7 @@ fn initialize_logs(log_config: LogConfig) -> Result<(JoinHandle<Result<(), Error
     Ok((handle, logger_sender))
 }
 
-fn main() -> Result<(), ErrorEjecution> {
+fn main() -> Result<(), ErrorExecution> {
     let arguments: Vec<String> = std::env::args().collect();    
 
     println!("\tInitialization");
@@ -106,8 +114,20 @@ fn main() -> Result<(), ErrorEjecution> {
 
     // Ejecutar programa
 
+    let dns_seeder = DNSSeeder::new("seed.testnet.bitcoin.sprovoost.nl", 18333);
+    let potential_peers = dns_seeder.discover_peers()?;
+    println!("Potential peers: {:?}", potential_peers);
 
+    let mut node = Node::new(
+        ProtocolVersionP2P::V70015,
+        IBDMethod::HeaderFirst,
+        SupportedServices::Unname,
+        0,
+    );
 
+    node.connect_to_testnet_peers(&potential_peers)?;
+
+    println!("Connection made: {:?}", node.peers_addrs);
 
     logger_sender.log_configuration("Closing program".to_string())?;
     

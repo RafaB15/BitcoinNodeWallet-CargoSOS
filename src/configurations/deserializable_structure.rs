@@ -1,4 +1,4 @@
-use super::parse_error::ParseError;
+use super::error_configuration::ErrorConfiguration;
 use std::collections::HashMap;
 
 /// It's a way to ensure the correct creation of a configuration structure
@@ -12,19 +12,19 @@ pub(super) trait DeserializeStructure<'d> {
     fn deserializar(
         name: &str,
         estructura_dictionary: &'d HashMap<String, Vec<String>>,
-    ) -> Result<Self::Value, ParseError> {
+    ) -> Result<Self::Value, ErrorConfiguration> {
         let nombre = format!("[{}]", name);
 
         if let Some(valor) = estructura_dictionary.get(nombre.as_str()) {
             let settings_dictionary = create_property_value_dictionary(valor)?;
             Ok(Self::new(settings_dictionary)?)
         } else {
-            Err(ParseError::ErrorConfigurationNotFound)
+            Err(ErrorConfiguration::ErrorConfigurationNotFound)
         }
     }
 
     /// Creation of the structure given
-    fn new(settings_dictionary: HashMap<String, String>) -> Result<Self::Value, ParseError>;
+    fn new(settings_dictionary: HashMap<String, String>) -> Result<Self::Value, ErrorConfiguration>;
 }
 
 /// Returns the key-values pair for all the configuration of a given structure
@@ -33,7 +33,7 @@ pub(super) trait DeserializeStructure<'d> {
 ///  * `ErrorEncounterFieldMoreThanOnes`: It will appear when the property name appears more than ones
 fn create_property_value_dictionary(
     text: &Vec<String>,
-) -> Result<HashMap<String, String>, ParseError> {
+) -> Result<HashMap<String, String>, ErrorConfiguration> {
     let mut config_dictionary: HashMap<String, String> = HashMap::new();
 
     for line in text {
@@ -44,7 +44,7 @@ fn create_property_value_dictionary(
         let (key, value) = slit_linea(line)?;
 
         if config_dictionary.contains_key(&key) {
-            return Err(ParseError::ErrorEncounterFieldMoreThanOnes);
+            return Err(ErrorConfiguration::ErrorEncounterFieldMoreThanOnes);
         }
 
         config_dictionary.insert(key, value);
@@ -57,11 +57,11 @@ fn create_property_value_dictionary(
 ///
 /// ### Errors
 ///  * `ErrorInvalidFormat`: It will appear when the line of the configuration isn't given by the format `key: value`
-fn slit_linea(text_line: &str) -> Result<(String, String), ParseError> {
+fn slit_linea(text_line: &str) -> Result<(String, String), ErrorConfiguration> {
     let mut split_line = text_line.split(':');
 
     match (split_line.next(), split_line.next()) {
         (Some(key), Some(value)) => Ok((key.trim().to_string(), value.trim().to_string())),
-        _ => Err(ParseError::ErrorInvalidFormat),
+        _ => Err(ErrorConfiguration::ErrorInvalidFormat),
     }
 }
