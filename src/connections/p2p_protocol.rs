@@ -1,5 +1,6 @@
 use crate::messages::{
     serializable::Serializable,
+    deserializable::Deserializable,
     error_message::ErrorMessage,
 };
 
@@ -105,12 +106,64 @@ impl Serializable for ProtocolVersionP2P {
     fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorMessage> {
         let version: i32 = match (*self).try_into() {
             Ok(version) => version,
-            _ => return Err(ErrorMessage::ErrorWhileWriting),
+            _ => return Err(ErrorMessage::ErrorInSerialization(format!("While serializing {:?}", self))),
         };
 
         match stream.write(&version.to_le_bytes()) {
             Ok(_) => Ok(()),
-            _ => Err(ErrorMessage::ErrorInDeserialization),
+            _ => Err(ErrorMessage::ErrorWhileWriting),
         }
     }
+}
+
+impl Deserializable for ProtocolVersionP2P {
+
+    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorMessage> {
+        let version_int = i32::deserialize(stream)?;
+        match version_int.try_into() {
+            Ok(version) => Ok(version),
+            _ => Err(ErrorMessage::ErrorInDeserialization(format!("While deserializing {:?}", version_int))),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::{
+        ProtocolVersionP2P,
+        ErrorMessage,
+        Serializable,
+        Deserializable,
+    };
+
+    #[test]
+    fn test01_serialize_correctly_protocol_version_p2p() -> Result<(), ErrorMessage> {
+        
+        let expected_stream: Vec<u8> = vec![0xAA, 0x7A, 0x00, 0x00];
+        
+        let mut stream: Vec<u8> = Vec::new();
+        let protocol: ProtocolVersionP2P = ProtocolVersionP2P::V31402;
+
+        protocol.serialize(&mut stream)?;
+
+        assert_eq!(expected_stream, stream);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test02_deserialize_correctly_protocol_version_p2p() -> Result<(), ErrorMessage> {
+
+        let stream: Vec<u8> = vec![0xAA, 0x7A, 0x00, 0x00];
+        let mut stream: &[u8] = &stream;
+        let protocol: ProtocolVersionP2P = ProtocolVersionP2P::V31402;
+
+        let expected_protocol = ProtocolVersionP2P::deserialize(&mut stream)?;
+
+        assert_eq!(expected_protocol, protocol);
+
+        Ok(())
+    }
+
 }
