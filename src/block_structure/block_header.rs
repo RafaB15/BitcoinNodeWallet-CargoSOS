@@ -65,9 +65,11 @@ impl Serializable for BlockHeader {
         self.version.serialize(&mut serialized_message)?;
         self.previous_block_header_hash.serialize(&mut serialized_message)?;
         self.merkle_root_hash.serialize(&mut serialized_message)?;
-        self.time.serialize(stream)?;
-        self.n_bits.serialize(stream)?;
-        self.nonce.serialize(stream)?;
+        self.time.serialize(&mut serialized_message)?;
+        self.n_bits.serialize(&mut serialized_message)?;
+        self.nonce.serialize(&mut serialized_message)?;
+
+        serialized_message.serialize(stream)?;
         Ok(())
     }
 }
