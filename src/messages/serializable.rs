@@ -136,7 +136,7 @@ mod tests {
     }
 
     #[test]
-    fn test03_serialize_correctly_u8() -> Result<(), ErrorMessage> {
+    fn test02_serialize_correctly_u8() -> Result<(), ErrorMessage> {
         
         let stream_esperado: Vec<u8> = vec![0x54];
         
@@ -151,7 +151,7 @@ mod tests {
     }
     
     #[test]
-    fn test05_serialize_correctly_u16() -> Result<(), ErrorMessage> {
+    fn test03_serialize_correctly_u16() -> Result<(), ErrorMessage> {
         
         let stream_esperado: Vec<u8> = vec![0x9E, 0x3F];
         
@@ -166,7 +166,7 @@ mod tests {
     }
 
     #[test]
-    fn test07_serialize_correctly_u32() -> Result<(), ErrorMessage> {
+    fn test04_serialize_correctly_u32() -> Result<(), ErrorMessage> {
         
         let stream_esperado: Vec<u8> = vec![0xAD, 0x83, 0xF8, 0x00];
         
@@ -181,7 +181,7 @@ mod tests {
     }
 
     #[test]
-    fn test09_serialize_correctly_u64() -> Result<(), ErrorMessage> {
+    fn test05_serialize_correctly_u64() -> Result<(), ErrorMessage> {
         
         let stream_esperado: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19, 0x00, 0x00, 0x00];
         
@@ -196,7 +196,7 @@ mod tests {
     }
 
     #[test]
-    fn test11_serialize_correctly_vec() -> Result<(), ErrorMessage> {
+    fn test06_serialize_correctly_vec() -> Result<(), ErrorMessage> {
         
         let stream_esperado: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19];
         
@@ -211,7 +211,7 @@ mod tests {
     }
 
     #[test]
-    fn test13_serialize_correctly_array() -> Result<(), ErrorMessage> {
+    fn test07_serialize_correctly_array() -> Result<(), ErrorMessage> {
         
         let stream_esperado: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19];
         
@@ -226,7 +226,7 @@ mod tests {
     }
 
     #[test]
-    fn test15_serialize_correctly_bool() -> Result<(), ErrorMessage> {
+    fn test08_serialize_correctly_bool() -> Result<(), ErrorMessage> {
         
         let stream_esperado: Vec<u8> = vec![0x01];
         
@@ -250,7 +250,7 @@ mod tests {
     }
 
     #[test]
-    fn test17_serialize_correctly_string() -> Result<(), ErrorMessage> {
+    fn test09_serialize_correctly_string() -> Result<(), ErrorMessage> {
         
         let stream_esperado: Vec<u8> = vec![0x62, 0x75, 0x75];
         
@@ -265,7 +265,7 @@ mod tests {
     }
 
     #[test]
-    fn test19_serialize_correctly_datetime() -> Result<(), ErrorMessage> {
+    fn test10_serialize_correctly_datetime() -> Result<(), ErrorMessage> {
         
         let stream_esperado: Vec<u8> = vec![0x5C, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
         
