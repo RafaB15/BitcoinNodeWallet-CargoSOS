@@ -12,7 +12,7 @@ impl DeserializableBigEndian for u16 {
     fn deserialize_big_endian(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
         let mut buffer = [0u8; 2];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorInDeserialization("Deserializing u16 in Big endian".to_string()));
         }
         Ok(u16::from_be_bytes(buffer))
     }
@@ -23,7 +23,7 @@ impl DeserializableBigEndian for Ipv6Addr {
     fn deserialize_big_endian(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
         let mut buffer = [0u8; 16];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorInDeserialization("Deserializing Ipv6Addr in Big endian".to_string()));
         }
         Ok(Ipv6Addr::from(buffer))
     }

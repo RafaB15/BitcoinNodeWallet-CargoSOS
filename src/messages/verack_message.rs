@@ -55,7 +55,7 @@ impl Deserializable for VerackMessage {
         let mut buffer: Vec<u8> = vec![0; HEADER_SIZE];
 
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorWhileReading);
         }
 
         let mut buffer: &[u8] = &buffer[..];
@@ -64,17 +64,17 @@ impl Deserializable for VerackMessage {
         
         let message_type = <[u8; MASSAGE_TYPE_SIZE] as Deserializable>::deserialize(&mut buffer)?;
         if !VERACK_TYPE.eq(&message_type) {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorInDeserialization(format!("Type name not of version: {:?}", message_type)));
         }
         
         let payload_size = u32::deserialize(&mut buffer)?;
         if payload_size != 0 {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorInDeserialization(format!("Payload in verack message has to be 0: {:?}", payload_size)));
         }
         
         let receive_checksum = <[u8; CHECKSUM_SIZE] as Deserializable>::deserialize(&mut buffer)?;
         if !VERACK_CHECKSUM.eq(&receive_checksum) {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorInDeserialization(format!("Checksum isn't the same: {:?} != {:?}", VERACK_CHECKSUM, receive_checksum)));
         }
 
         Ok(VerackMessage::new(magic_bytes))

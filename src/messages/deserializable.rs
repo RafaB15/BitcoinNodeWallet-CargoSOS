@@ -17,7 +17,7 @@ impl Deserializable for i32 {
     fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
         let mut buffer = [0u8; 4];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorInDeserialization("Deserializing i32".to_string()));
         }
         Ok(i32::from_le_bytes(buffer))
     }
@@ -28,7 +28,7 @@ impl Deserializable for i64 {
     fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
         let mut buffer= [0u8; 8];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorInDeserialization("Deserializing i64".to_string()));
         }
         Ok(i64::from_le_bytes(buffer))
     }
@@ -39,7 +39,7 @@ impl Deserializable for u8 {
     fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
         let mut buffer = [0u8; 1];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorInDeserialization("Deserializing u8".to_string()));
         }
         Ok(u8::from_le_bytes(buffer))
     }
@@ -50,7 +50,7 @@ impl Deserializable for u16 {
     fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
         let mut buffer = [0u8; 2];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorInDeserialization("Deserializing u16".to_string()));
         }
         Ok(u16::from_le_bytes(buffer))
     }
@@ -61,7 +61,7 @@ impl Deserializable for u32 {
     fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
         let mut buffer = [0u8; 4];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorInDeserialization("Deserializing u32".to_string()));
         }
         Ok(u32::from_le_bytes(buffer))
     }
@@ -72,7 +72,7 @@ impl Deserializable for u64 {
     fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
         let mut buffer = [0u8; 8];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorInDeserialization("Deserializing u64".to_string()));
         }
         Ok(u64::from_le_bytes(buffer))
     }
@@ -83,7 +83,7 @@ impl Deserializable for [u8; 4] {
     fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
         let mut buffer= [0u8; 4];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorInDeserialization("Deserializing [u8; 4]".to_string()));
         }
         Ok(buffer)
     }
@@ -94,7 +94,7 @@ impl Deserializable for [u8; 12] {
     fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
         let mut buffer = [0u8; 12];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorInDeserialization("Deserializing [u8; 12]".to_string()));
         }
         Ok(buffer)
     }
@@ -105,12 +105,12 @@ impl Deserializable for bool {
     fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
         let mut buffer = [0u8; 1];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorInDeserialization("Deserializing bool".to_string()));
         }
         match buffer[0] {
             0x00 => Ok(false),
             0x01 => Ok(true),
-            _ => Err(ErrorMessage::ErrorInDeserialization),
+            _ => Err(ErrorMessage::ErrorInDeserialization(format!("The given buffer does not represent a boolean: {:?}", buffer))),
         }
     }
 }
@@ -121,7 +121,7 @@ impl Deserializable for DateTime<Utc> {
         let timestamp_int = i64::deserialize(stream)?;
         match NaiveDateTime::from_timestamp_opt(timestamp_int, 0) {
             Some(utc_timestamp) => Ok(DateTime::<Utc>::from_utc(utc_timestamp, Utc)),
-            _ => Err(ErrorMessage::ErrorInDeserialization),
+            _ => Err(ErrorMessage::ErrorInDeserialization("Deserializing DateTime<Utc>".to_string())),
         }
     }
 }

@@ -15,7 +15,7 @@ impl Serializable for i32 {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
         match stream.write(&self.to_le_bytes()) {
             Ok(_) => Ok(()),
-            _ => Err(ErrorMessage::ErrorInDeserialization),
+            _ => Err(ErrorMessage::ErrorInSerialization("Serializing i32".to_string())),
         }
     }
 }
@@ -24,7 +24,7 @@ impl Serializable for u8 {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
         match stream.write(&self.to_le_bytes()) {
             Ok(_) => Ok(()),
-            _ => Err(ErrorMessage::ErrorInDeserialization),
+            _ => Err(ErrorMessage::ErrorInSerialization("Serializing u8".to_string())),
         }
     }
 }
@@ -33,7 +33,7 @@ impl Serializable for u16 {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
         match stream.write(&self.to_le_bytes()) {
             Ok(_) => Ok(()),
-            _ => Err(ErrorMessage::ErrorInDeserialization),
+            _ => Err(ErrorMessage::ErrorInSerialization("Serializing u16".to_string())),
         }
     }
 }
@@ -42,7 +42,7 @@ impl Serializable for u32 {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
         match stream.write(&self.to_le_bytes()) {
             Ok(_) => Ok(()),
-            _ => Err(ErrorMessage::ErrorInDeserialization),
+            _ => Err(ErrorMessage::ErrorInSerialization("Serializing u32".to_string())),
         }
     }
 }
@@ -51,7 +51,7 @@ impl Serializable for u64 {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
         match stream.write(&self.to_le_bytes()) {
             Ok(_) => Ok(()),
-            _ => Err(ErrorMessage::ErrorInDeserialization),
+            _ => Err(ErrorMessage::ErrorInSerialization("Serializing u64".to_string())),
         }
     }
 }
@@ -60,7 +60,7 @@ impl Serializable for Vec<u8> {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
         match stream.write(&self) {
             Ok(_) => Ok(()),
-            _ => Err(ErrorMessage::ErrorInDeserialization),
+            _ => Err(ErrorMessage::ErrorInSerialization("Serializing Vec<u8>".to_string())),
         }
     }
 }
@@ -69,7 +69,7 @@ impl Serializable for [u8] {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
         match stream.write(&self) {
             Ok(_) => Ok(()),
-            _ => Err(ErrorMessage::ErrorInDeserialization),
+            _ => Err(ErrorMessage::ErrorInSerialization("Serializing [u8]".to_string())),
         }
     }
 }
@@ -83,7 +83,7 @@ impl Serializable for bool {
 
         match stream.write(&boolean) {
             Ok(_) => Ok(()),
-            _ => Err(ErrorMessage::ErrorInDeserialization),
+            _ => Err(ErrorMessage::ErrorInSerialization("Serializing bool".to_string())),
         }
     }
 }
@@ -92,7 +92,7 @@ impl Serializable for String {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
         match stream.write(&self.as_bytes()) {
             Ok(_) => Ok(()),
-            _ => Err(ErrorMessage::ErrorInDeserialization),
+            _ => Err(ErrorMessage::ErrorInSerialization("Serializing String".to_string())),
         }
     }
 }
@@ -101,7 +101,7 @@ impl Serializable for DateTime<Utc> {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
         match stream.write(&self.timestamp().to_le_bytes())  {
             Ok(_) => Ok(()),
-            _ => Err(ErrorMessage::ErrorInDeserialization),
+            _ => Err(ErrorMessage::ErrorInSerialization("Serializing DateTime<Utc>".to_string())),
         }
     }
 }

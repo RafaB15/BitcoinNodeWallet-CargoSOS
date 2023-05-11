@@ -65,12 +65,12 @@ impl Serializable for SupportedServices {
     fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorMessage> {
         let version: u64 = match (*self).try_into() {
             Ok(version) => version,
-            _ => return Err(ErrorMessage::ErrorWhileWriting),
+            _ => return Err(ErrorMessage::ErrorInSerialization(format!("While serializing {:?}", self))),
         };
 
         match stream.write(&version.to_le_bytes()) {
             Ok(_) => Ok(()),
-            _ => Err(ErrorMessage::ErrorInDeserialization),
+            _ => Err(ErrorMessage::ErrorWhileWriting),
         }
     }
 }
@@ -81,7 +81,7 @@ impl Deserializable for SupportedServices {
         let supported_servicies = <u64 as Deserializable>::deserialize(stream)?;
         match supported_servicies.try_into() {
             Ok(supported_servicies) => Ok(supported_servicies),
-            _ => Err(ErrorMessage::ErrorInDeserialization),
+            _ => Err(ErrorMessage::ErrorInDeserialization(format!("While deserializing {:?}", supported_servicies))),
         }
     }
 }

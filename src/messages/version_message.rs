@@ -125,7 +125,7 @@ impl VersionMessage {
 
         let trans_services = SupportedServices::deserialize(stream)?;
         if trans_services != services {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorInDeserialization(format!("Transceiver service isn't the same as the service: {:?}", trans_services)));
         }
 
         let trans_addr = Ipv6Addr::deserialize_big_endian(stream)?;
@@ -158,7 +158,7 @@ impl VersionMessage {
         let hash_bytes: sha256d::Hash = sha256d::Hash::hash(payload); 
         let checksum: [u8; 4] = match hash_bytes[0..4].try_into() {
             Ok(checksum) => checksum,
-            _ => return Err(ErrorMessage::ErrorInSerialization),
+            _ => return Err(ErrorMessage::ErrorChecksum),
         };
         Ok(checksum)
     }
@@ -219,7 +219,7 @@ impl Deserializable for VersionMessage {
 
         let mut buffer: Vec<u8> = vec![0; HEADER_SIZE];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorWhileReading);
         }
         let mut buffer: &[u8] = &buffer;
 
@@ -227,7 +227,7 @@ impl Deserializable for VersionMessage {
 
         let message_type = <[u8; MASSAGE_TYPE_SIZE] as Deserializable>::deserialize(&mut buffer)?;
         if !VERSION_TYPE.eq(&message_type) {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorInDeserialization(format!("Type name not of version: {:?}", message_type)));
         }
 
         let payload_size = u32::deserialize(&mut buffer)?;        
@@ -235,7 +235,7 @@ impl Deserializable for VersionMessage {
 
         let mut buffer: Vec<u8> = vec![0; payload_size as usize];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorWhileReading);
         }
         let mut buffer: &[u8] = &buffer;
         let version_message = Self::deserializar_payload(&mut buffer, magic_bytes)?;
@@ -245,7 +245,7 @@ impl Deserializable for VersionMessage {
         let checksum: [u8; 4] = Self::calculate_checksum(&payload_bytes)?;
 
         if !checksum.eq(&receive_checksum) {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorInDeserialization(format!("Checksum isn't the same: {:?} != {:?}", checksum, receive_checksum)));
         }
 
         Ok(version_message)        
@@ -358,7 +358,7 @@ mod tests {
         let hash_bytes: sha256d::Hash = sha256d::Hash::hash(&payload); 
         let checksum: [u8; 4] = match hash_bytes[0..4].try_into() {
             Ok(checksum) => checksum,
-            _ => return Err(ErrorMessage::ErrorInSerialization),
+            _ => return Err(ErrorMessage::ErrorChecksum),
         };
         checksum.serialize(&mut stream_esperado)?;
         payload.serialize(&mut stream_esperado)?;
@@ -419,7 +419,7 @@ mod tests {
         let hash_bytes: sha256d::Hash = sha256d::Hash::hash(&payload); 
         let checksum: [u8; 4] = match hash_bytes[0..4].try_into() {
             Ok(checksum) => checksum,
-            _ => return Err(ErrorMessage::ErrorInSerialization),
+            _ => return Err(ErrorMessage::ErrorChecksum),
         };
         checksum.serialize(&mut stream)?;
         payload.serialize(&mut stream)?;

@@ -106,12 +106,12 @@ impl Serializable for ProtocolVersionP2P {
     fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorMessage> {
         let version: i32 = match (*self).try_into() {
             Ok(version) => version,
-            _ => return Err(ErrorMessage::ErrorWhileWriting),
+            _ => return Err(ErrorMessage::ErrorInSerialization(format!("While serializing {:?}", self))),
         };
 
         match stream.write(&version.to_le_bytes()) {
             Ok(_) => Ok(()),
-            _ => Err(ErrorMessage::ErrorInDeserialization),
+            _ => Err(ErrorMessage::ErrorWhileWriting),
         }
     }
 }
@@ -122,7 +122,7 @@ impl Deserializable for ProtocolVersionP2P {
         let version_int = <i32 as Deserializable>::deserialize(stream)?;
         match version_int.try_into() {
             Ok(version) => Ok(version),
-            _ => Err(ErrorMessage::ErrorInDeserialization),
+            _ => Err(ErrorMessage::ErrorInDeserialization(format!("While deserializing {:?}", version_int))),
         }
     }
 }

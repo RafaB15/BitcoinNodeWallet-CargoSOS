@@ -51,7 +51,7 @@ impl Deserializable for CompactSize {
     fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorMessage> {
         let mut buffer = [0u8; 1];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization);
+            return Err(ErrorMessage::ErrorInDeserialization("Deserializing CompactSize".to_string()));
         }
 
         match buffer {
