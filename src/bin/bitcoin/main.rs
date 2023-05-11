@@ -19,12 +19,11 @@ use cargosos_bitcoin::logs::{
 use error_initialization::ErrorInitialization;
 use error_execution::ErrorExecution;
 
-use cargosos_bitcoin::node_structure::node::Node;
+use cargosos_bitcoin::node_structure::handshake::Handshake;
 
 use cargosos_bitcoin::connections::{
     dns_seeder::DNSSeeder,
     p2p_protocol::ProtocolVersionP2P,
-    ibd_methods::IBDMethod,
     suppored_services::SupportedServices,
 };
 
@@ -118,16 +117,15 @@ fn main() -> Result<(), ErrorExecution> {
     let potential_peers = dns_seeder.discover_peers()?;
     println!("Potential peers: {:?}", potential_peers);
 
-    let mut node = Node::new(
+    let mut node = Handshake::new(
         ProtocolVersionP2P::V70015,
-        IBDMethod::HeaderFirst,
         SupportedServices::Unname,
         0,
     );
 
-    node.connect_to_testnet_peers(&potential_peers)?;
+    let peers_addrs = node.connect_to_testnet_peers(&potential_peers)?;
 
-    println!("Connection made: {:?}", node.peers_addrs);
+    println!("Connection made: {:?}", peers_addrs);
 
     logger_sender.log_configuration("Closing program".to_string())?;
     
