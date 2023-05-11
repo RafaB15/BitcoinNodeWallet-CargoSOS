@@ -1,4 +1,14 @@
 use super::block_version::BlockVersion;
+use crate::messages::{
+    serializable::Serializable,
+    error_message::ErrorMessage,
+};
+
+use std::io::{
+    Write,
+    Read,
+};
+
 
 const GENESIS_BLOCK_VERSION: BlockVersion = BlockVersion::V1;
 const GENESIS_PREVIOUS_BLOCK_HEADER_HASH: [u8; 32] = [0; 32];
@@ -45,5 +55,19 @@ impl BlockHeader {
             GENESIS_NONCE,
         );
         genesis_block_header
+    }
+}
+
+impl Serializable for BlockHeader {
+    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
+        let mut serialized_message = Vec::new();
+        
+        self.version.serialize(&mut serialized_message)?;
+        self.previous_block_header_hash.serialize(&mut serialized_message)?;
+        self.merkle_root_hash.serialize(&mut serialized_message)?;
+        self.time.serialize(stream)?;
+        self.n_bits.serialize(stream)?;
+        self.nonce.serialize(stream)?;
+        Ok(())
     }
 }
