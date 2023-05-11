@@ -105,10 +105,10 @@ mod tests {
         message_verack.serialize(&mut stream)?;
     
         let mut stream_esperado: Vec<u8> = Vec::new();
-        stream_esperado.append(&mut magic_bytes.to_vec());
-        stream_esperado.append(&mut VERACK_TYPE.to_vec());
-        stream_esperado.append(&mut vec![0, 0, 0, 0]);
-        stream_esperado.append(&mut VERACK_CHECKSUM.to_vec());
+        magic_bytes.serialize(&mut stream_esperado)?;
+        VERACK_TYPE.serialize(&mut stream_esperado)?;
+        vec![0, 0, 0, 0].serialize(&mut stream_esperado)?;
+        VERACK_CHECKSUM.serialize(&mut stream_esperado)?;
 
         assert_eq!(stream_esperado, stream);
 

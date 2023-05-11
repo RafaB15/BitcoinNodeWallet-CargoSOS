@@ -251,3 +251,139 @@ impl Deserializable for VersionMessage {
 
     
 }
+
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        messages::{
+            serializable::Serializable, 
+            serializable_big_endian::SerializableBigEndian,
+            deserializable::Deserializable,
+            compact_size::CompactSize,
+            error_message::ErrorMessage, 
+        }, 
+        connections::{
+            p2p_protocol::ProtocolVersionP2P, 
+            suppored_services::SupportedServices,
+        },
+    };
+
+    use super::{
+        VersionMessage,
+        VERSION_TYPE,
+    };
+
+    use chrono::{
+        DateTime,
+        offset::Utc,
+        NaiveDateTime,
+    };
+
+    use bitcoin_hashes::{
+        sha256d,
+        Hash,
+    };
+
+    use std::net::Ipv6Addr;
+    
+    #[test]
+    fn test01_serializar() -> Result<(), ErrorMessage>{
+        let magic_bytes = [0x55, 0x66, 0xee, 0xee];
+        let version = ProtocolVersionP2P::V31402;
+        let services = SupportedServices::NodeNetworkLimited;
+
+        let naive = NaiveDateTime::from_timestamp_opt(1628, 0).unwrap();
+        let timestamp: DateTime<Utc> = DateTime::<Utc>::from_utc(naive, Utc);
+
+        let recv_services: SupportedServices = SupportedServices::NodeNetworkLimited;
+        let recv_addr: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0xffff, 0xc00a, 0x02ff);
+        let recv_port: u16 = 80;
+        let trans_addr: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0xffff, 0xc00a, 0x02ff);
+        let trans_port: u16 = 64;
+        let nonce: u64 = 00001111;
+        let user_agent: String = "abc".to_string();
+        let user_agent_esperado: String = "abc".to_string();
+        let length: usize = user_agent.len();
+        let length = CompactSize::new(length as u64);
+        let start_height: i32 = 3;
+        let relay: bool = false;
+
+        let message_verack = VersionMessage {
+            magic_bytes,
+            version,
+            services,
+            timestamp,
+            recv_services,
+            recv_addr,
+            recv_port, 
+            trans_addr,
+            trans_port, 
+            nonce, 
+            user_agent,
+            start_height, 
+            relay,
+        };
+        let mut stream: Vec<u8> = Vec::new();
+        
+        message_verack.serialize(&mut stream)?;
+        
+        let mut stream_esperado: Vec<u8> = Vec::new();
+        magic_bytes.serialize(&mut stream_esperado)?;
+        VERSION_TYPE.serialize(&mut stream_esperado)?;
+        
+        let mut payload: Vec<u8> = Vec::new();
+        version.serialize(&mut payload)?;
+        services.serialize(&mut payload)?;
+        timestamp.serialize(&mut payload)?;
+        recv_services.serialize(&mut payload)?;
+        
+        recv_addr.serialize_big_endian(&mut payload)?;
+        recv_port.serialize_big_endian(&mut payload)?;
+
+        services.serialize(&mut payload)?;
+
+        trans_addr.serialize_big_endian(&mut payload)?;
+        trans_port.serialize_big_endian(&mut payload)?; 
+        
+        nonce.serialize(&mut payload)?;
+        length.serialize(&mut payload)?; 
+        user_agent_esperado.serialize(&mut payload)?;
+        start_height.serialize(&mut payload)?; 
+        relay.serialize(&mut payload)?;
+
+        (payload.len() as u32).serialize(&mut stream_esperado)?;
+        let hash_bytes: sha256d::Hash = sha256d::Hash::hash(&payload); 
+        let checksum: [u8; 4] = match hash_bytes[0..4].try_into() {
+            Ok(checksum) => checksum,
+            _ => return Err(ErrorMessage::ErrorInSerialization),
+        };
+        checksum.serialize(&mut stream_esperado)?;
+        payload.serialize(&mut stream_esperado)?;
+        
+        assert_eq!(stream_esperado, stream);
+        
+        Ok(())
+    }
+
+    /*
+    #[test]
+    fn test02_deserializar() -> Result<(), ErrorMessage> {
+        let magic_bytes: [u8; 4] = [0x55, 0x66, 0xee, 0xee];
+        let mut stream: Vec<u8> = Vec::new();
+        stream.append(&mut magic_bytes.to_vec());
+        stream.append(&mut VERSION_TYPE.to_vec());
+        
+        let mut stream: &[u8] = &stream[..];
+        
+        let verack_esperado = VerackMessage::new(magic_bytes);
+        
+        let verack = VerackMessage::deserialize(&mut stream)?;
+        
+        assert_eq!(verack_esperado, verack);
+        
+        Ok(())
+    }
+    */
+
+}
