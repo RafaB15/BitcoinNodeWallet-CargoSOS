@@ -306,8 +306,7 @@ mod tests {
         let nonce: u64 = 00001111;
         let user_agent: String = "abc".to_string();
         let user_agent_esperado: String = "abc".to_string();
-        let length: usize = user_agent.len();
-        let length = CompactSize::new(length as u64);
+        let length = CompactSize::new(user_agent.len() as u64);
         let start_height: i32 = 3;
         let relay: bool = false;
 
@@ -384,9 +383,7 @@ mod tests {
         let trans_port: u16 = 64;
         let nonce: u64 = 00001111;
         let user_agent: String = "abc".to_string();
-        let user_agent_esperado: String = "abc".to_string();
-        let length: usize = user_agent.len();
-        let length = CompactSize::new(length as u64);
+        let length = CompactSize::new(user_agent.len() as u64);
         let start_height: i32 = 3;
         let relay: bool = false;
 
@@ -411,7 +408,7 @@ mod tests {
         
         nonce.serialize(&mut payload)?;
         length.serialize(&mut payload)?; 
-        user_agent_esperado.serialize(&mut payload)?;
+        user_agent.serialize(&mut payload)?;
         start_height.serialize(&mut payload)?; 
         relay.serialize(&mut payload)?;
 

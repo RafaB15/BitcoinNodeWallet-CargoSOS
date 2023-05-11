@@ -37,7 +37,7 @@ mod tests {
         
         let expected_string: String = "buu".to_string();
 
-        let string = String::deserialize_fix_size(&mut stream, 3)?;
+        let string = String::deserialize_fix_size(&mut stream, expected_string.len() as usize)?;
 
         assert_eq!(expected_string, string);
 
