@@ -1,2 +1,68 @@
-Time: [1683490006.071899295s]: [CONFIGURATION] Logs are already configured
-Time: [1683490021.689481849s]: [CONFIGURATION] Closing program
+Time: [1683840105.3669894s]: [CONFIGURATION] Logs are already configured
+Time: [1683840105.6853499s]: [CONNECTION] Version message sent to peer 3.125.169.233:18333
+Time: [1683840105.9936343s]: [CONNECTION] Error while receiving version message from peer 3.125.169.233:18333: ErrorInDeserialization("While deserializing 1097")
+Time: [1683840105.9937315s]: [CONNECTION] Error while trying to connect to peer 3.125.169.233:18333: ErrorCannotReceiveMessage
+Time: [1683840106.2993005s]: [CONNECTION] Version message sent to peer 90.231.110.32:18333
+Time: [1683840106.6171876s]: [CONNECTION] Error while receiving version message from peer 90.231.110.32:18333: ErrorInDeserialization("While deserializing 1097")
+Time: [1683840106.6173751s]: [CONNECTION] Error while trying to connect to peer 90.231.110.32:18333: ErrorCannotReceiveMessage
+Time: [1683840106.914267s]: [CONNECTION] Version message sent to peer 5.159.103.164:18333
+Time: [1683840107.2234142s]: [CONNECTION] Error while receiving version message from peer 5.159.103.164:18333: ErrorInDeserialization("While deserializing 1033")
+Time: [1683840107.2235831s]: [CONNECTION] Error while trying to connect to peer 5.159.103.164:18333: ErrorCannotReceiveMessage
+Time: [1683840107.5285022s]: [CONNECTION] Version message sent to peer 24.130.129.242:18333
+Time: [1683840107.9412451s]: [CONNECTION] Error while receiving version message from peer 24.130.129.242:18333: ErrorInDeserialization("While deserializing 1033")
+Time: [1683840107.9415319s]: [CONNECTION] Error while trying to connect to peer 24.130.129.242:18333: ErrorCannotReceiveMessage
+Time: [1683840108.2451027s]: [CONNECTION] Version message sent to peer 185.255.131.183:18333
+Time: [1683840108.498987s]: [CONNECTION] Error while receiving version message from peer 185.255.131.183:18333: ErrorInDeserialization("While deserializing 1033")
+Time: [1683840108.4992132s]: [CONNECTION] Error while trying to connect to peer 185.255.131.183:18333: ErrorCannotReceiveMessage
+Time: [1683840108.7574913s]: [CONNECTION] Version message sent to peer 3.236.254.16:18333
+Time: [1683840108.9619634s]: [CONNECTION] Error while receiving version message from peer 3.236.254.16:18333: ErrorInDeserialization("While deserializing 1097")
+Time: [1683840108.9620018s]: [CONNECTION] Error while trying to connect to peer 3.236.254.16:18333: ErrorCannotReceiveMessage
+Time: [1683840109.2689369s]: [CONNECTION] Version message sent to peer 134.122.81.59:18333
+Time: [1683840109.5771088s]: [CONNECTION] Error while receiving version message from peer 134.122.81.59:18333: ErrorInDeserialization("While deserializing 1033")
+Time: [1683840109.5771572s]: [CONNECTION] Error while trying to connect to peer 134.122.81.59:18333: ErrorCannotReceiveMessage
+Time: [1683840109.7805145s]: [CONNECTION] Version message sent to peer 15.204.85.140:18333
+Time: [1683840109.9871458s]: [CONNECTION] Error while receiving version message from peer 15.204.85.140:18333: ErrorInDeserialization("While deserializing 77")
+Time: [1683840109.9873184s]: [CONNECTION] Error while trying to connect to peer 15.204.85.140:18333: ErrorCannotReceiveMessage
+Time: [1683840110.293416s]: [CONNECTION] Version message sent to peer 3.69.144.21:18333
+Time: [1683840110.6016678s]: [CONNECTION] Error while receiving version message from peer 3.69.144.21:18333: ErrorInDeserialization("While deserializing 1097")
+Time: [1683840110.6018934s]: [CONNECTION] Error while trying to connect to peer 3.69.144.21:18333: ErrorCannotReceiveMessage
+Time: [1683840110.8045798s]: [CONNECTION] Version message sent to peer 34.82.180.118:18333
+Time: [1683840111.0111358s]: [CONNECTION] Error while receiving version message from peer 34.82.180.118:18333: ErrorInDeserialization("While deserializing 1033")
+Time: [1683840111.0113168s]: [CONNECTION] Error while trying to connect to peer 34.82.180.118:18333: ErrorCannotReceiveMessage
+Time: [1683840111.3192063s]: [CONNECTION] Version message sent to peer 5.255.99.130:18333
+Time: [1683840111.6266582s]: [CONNECTION] Error while receiving version message from peer 5.255.99.130:18333: ErrorInDeserialization("While deserializing 1033")
+Time: [1683840111.6268516s]: [CONNECTION] Error while trying to connect to peer 5.255.99.130:18333: ErrorCannotReceiveMessage
+Time: [1683840111.9309392s]: [CONNECTION] Version message sent to peer 131.188.40.47:18333
+Time: [1683840112.2404062s]: [CONNECTION] Error while receiving version message from peer 131.188.40.47:18333: ErrorInDeserialization("While deserializing 1033")
+Time: [1683840112.2407637s]: [CONNECTION] Error while trying to connect to peer 131.188.40.47:18333: ErrorCannotReceiveMessage
+Time: [1683840112.5033536s]: [CONNECTION] Version message sent to peer 185.28.96.16:18333
+Time: [1683840112.7742682s]: [CONNECTION] Error while receiving version message from peer 185.28.96.16:18333: ErrorInDeserialization("While deserializing 1033")
+Time: [1683840112.774972s]: [CONNECTION] Error while trying to connect to peer 185.28.96.16:18333: ErrorCannotReceiveMessage
+Time: [1683840113.058265s]: [CONNECTION] Version message sent to peer 5.9.48.83:18333
+Time: [1683840113.3676532s]: [CONNECTION] Error while receiving version message from peer 5.9.48.83:18333: ErrorInDeserialization("While deserializing 1033")
+Time: [1683840113.3679131s]: [CONNECTION] Error while trying to connect to peer 5.9.48.83:18333: ErrorCannotReceiveMessage
+Time: [1683840113.5692354s]: [CONNECTION] Version message sent to peer 206.204.104.7:18333
+Time: [1683840113.7770199s]: [CONNECTION] Error while receiving version message from peer 206.204.104.7:18333: ErrorInDeserialization("While deserializing 1033")
+Time: [1683840113.7772273s]: [CONNECTION] Error while trying to connect to peer 206.204.104.7:18333: ErrorCannotReceiveMessage
+Time: [1683840114.0824092s]: [CONNECTION] Version message sent to peer 185.107.68.135:18333
+Time: [1683840114.328149s]: [CONNECTION] Error while receiving version message from peer 185.107.68.135:18333: ErrorInDeserialization("While deserializing 1033")
+Time: [1683840114.3284003s]: [CONNECTION] Error while trying to connect to peer 185.107.68.135:18333: ErrorCannotReceiveMessage
+Time: [1683840114.6965349s]: [CONNECTION] Version message sent to peer 18.140.86.31:18333
+Time: [1683840115.0590752s]: [CONNECTION] Error while receiving version message from peer 18.140.86.31:18333: ErrorInDeserialization("While deserializing 1033")
+Time: [1683840115.0594185s]: [CONNECTION] Error while trying to connect to peer 18.140.86.31:18333: ErrorCannotReceiveMessage
+Time: [1683840115.3106048s]: [CONNECTION] Version message sent to peer 74.213.175.99:18333
+Time: [1683840115.5169404s]: [CONNECTION] Error while receiving version message from peer 74.213.175.99:18333: ErrorInDeserialization("While deserializing 1033")
+Time: [1683840115.5172342s]: [CONNECTION] Error while trying to connect to peer 74.213.175.99:18333: ErrorCannotReceiveMessage
+Time: [1683840115.7199924s]: [CONNECTION] Version message sent to peer 34.136.47.143:18333
+Time: [1683840115.927869s]: [CONNECTION] Error while receiving version message from peer 34.136.47.143:18333: ErrorInDeserialization("While deserializing 1033")
+Time: [1683840115.9281058s]: [CONNECTION] Error while trying to connect to peer 34.136.47.143:18333: ErrorCannotReceiveMessage
+Time: [1683840116.2320658s]: [CONNECTION] Version message sent to peer 5.102.168.214:18333
+Time: [1683840116.5406894s]: [CONNECTION] Error while receiving version message from peer 5.102.168.214:18333: ErrorInDeserialization("While deserializing 1033")
+Time: [1683840116.5408592s]: [CONNECTION] Error while trying to connect to peer 5.102.168.214:18333: ErrorCannotReceiveMessage
+Time: [1683840116.846625s]: [CONNECTION] Version message sent to peer 78.46.84.70:18333
+Time: [1683840117.1559432s]: [CONNECTION] Error while receiving version message from peer 78.46.84.70:18333: ErrorInDeserialization("While deserializing 1033")
+Time: [1683840117.1561534s]: [CONNECTION] Error while trying to connect to peer 78.46.84.70:18333: ErrorCannotReceiveMessage
+Time: [1683840117.3857428s]: [CONNECTION] Version message sent to peer 168.119.88.108:18333
+Time: [1683840117.6679592s]: [CONNECTION] Error while receiving version message from peer 168.119.88.108:18333: ErrorInDeserialization("While deserializing 1033")
+Time: [1683840117.6680691s]: [CONNECTION] Error while trying to connect to peer 168.119.88.108:18333: ErrorCannotReceiveMessage
+Time: [1683840117.6682787s]: [CONFIGURATION] Closing program

@@ -27,37 +27,12 @@ use cargosos_bitcoin::connections::{
     suppored_services::SupportedServices,
 };
 
-const DECLARATION_CONFIG: &str = "config";
-const DECLARATION_BIG_CONFIG: &str = "configuration";
-
-/// Finds the position of the declaration of the configuration given by  `--config` or `--configuration`
-/// 
-///  * `ErrorNoGivenFile`: It will appear when there is not `--config` or `--configuration` in the arguments
-fn find_config_name(arguments: &Vec<String>) -> Result<usize, ErrorInitialization> {
-    
-    let config_declarations = &[
-        DECLARATION_CONFIG.to_string(), 
-        DECLARATION_BIG_CONFIG.to_string()
-    ];
-
-    for (index, argument) in arguments.iter().enumerate() {
-        if config_declarations.contains(argument) {
-            return Ok(index);
-        }
-    }
-
-    Err(ErrorInitialization::ErrorNoGivenConfigurationFile)
-}
-
 /// Get the configuration name given the arguments 
 /// 
 /// ### Errors
-///  * `ErrorNoGivenFile`: It will appear when there is not `--config` or `--configuration` in the arguments or there is not argument pass that configuration declaration
+///  * `ErrorNoGivenFile`: It will appear when there is not argument pass that configuration declaration
 fn get_config_name(arguments: Vec<String>) -> Result<String, ErrorInitialization> {
-    
-    let config_position: usize = find_config_name(&arguments)?;
-
-    let config_name: String = match arguments.get(config_position + 1) {
+    let config_name: String = match arguments.get(1) {
         Some(config_name) => config_name.to_owned(),
         None => return Err(ErrorInitialization::ErrorNoGivenConfigurationFile),
     };
