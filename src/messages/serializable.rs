@@ -123,14 +123,14 @@ mod tests {
     #[test]
     fn test01_serialize_correctly_i32() -> Result<(), ErrorMessage> {
         
-        let stream_esperado: Vec<u8> = vec![0x5C, 0x06, 0x00, 0x00];
+        let expected_stream: Vec<u8> = vec![0x5C, 0x06, 0x00, 0x00];
         
         let mut stream: Vec<u8> = Vec::new();
-        let numero: i32 = 1628;
+        let number: i32 = 1628;
 
-        numero.serialize(&mut stream)?;
+        number.serialize(&mut stream)?;
 
-        assert_eq!(stream_esperado, stream);
+        assert_eq!(expected_stream, stream);
 
         Ok(())
     }
@@ -138,14 +138,14 @@ mod tests {
     #[test]
     fn test02_serialize_correctly_u8() -> Result<(), ErrorMessage> {
         
-        let stream_esperado: Vec<u8> = vec![0x54];
+        let expected_stream: Vec<u8> = vec![0x54];
         
         let mut stream: Vec<u8> = Vec::new();
-        let numero: u8 = 84;
+        let number: u8 = 84;
 
-        numero.serialize(&mut stream)?;
+        number.serialize(&mut stream)?;
 
-        assert_eq!(stream_esperado, stream);
+        assert_eq!(expected_stream, stream);
 
         Ok(())
     }
@@ -153,14 +153,14 @@ mod tests {
     #[test]
     fn test03_serialize_correctly_u16() -> Result<(), ErrorMessage> {
         
-        let stream_esperado: Vec<u8> = vec![0x9E, 0x3F];
+        let expected_stream: Vec<u8> = vec![0x9E, 0x3F];
         
         let mut stream: Vec<u8> = Vec::new();
-        let numero: u16 = 16286;
+        let number: u16 = 16286;
 
-        numero.serialize(&mut stream)?;
+        number.serialize(&mut stream)?;
 
-        assert_eq!(stream_esperado, stream);
+        assert_eq!(expected_stream, stream);
 
         Ok(())
     }
@@ -168,14 +168,14 @@ mod tests {
     #[test]
     fn test04_serialize_correctly_u32() -> Result<(), ErrorMessage> {
         
-        let stream_esperado: Vec<u8> = vec![0xAD, 0x83, 0xF8, 0x00];
+        let expected_stream: Vec<u8> = vec![0xAD, 0x83, 0xF8, 0x00];
         
         let mut stream: Vec<u8> = Vec::new();
-        let numero: u32 = 16_286_637;
+        let number: u32 = 16_286_637;
 
-        numero.serialize(&mut stream)?;
+        number.serialize(&mut stream)?;
 
-        assert_eq!(stream_esperado, stream);
+        assert_eq!(expected_stream, stream);
 
         Ok(())
     }
@@ -183,14 +183,14 @@ mod tests {
     #[test]
     fn test05_serialize_correctly_u64() -> Result<(), ErrorMessage> {
         
-        let stream_esperado: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19, 0x00, 0x00, 0x00];
+        let expected_stream: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19, 0x00, 0x00, 0x00];
         
         let mut stream: Vec<u8> = Vec::new();
-        let numero: u64 = 1111_1111_1111;
+        let number: u64 = 1111_1111_1111;
 
-        numero.serialize(&mut stream)?;
+        number.serialize(&mut stream)?;
 
-        assert_eq!(stream_esperado, stream);
+        assert_eq!(expected_stream, stream);
 
         Ok(())
     }
@@ -198,14 +198,14 @@ mod tests {
     #[test]
     fn test06_serialize_correctly_vec() -> Result<(), ErrorMessage> {
         
-        let stream_esperado: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19];
+        let expected_stream: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19];
         
         let mut stream: Vec<u8> = Vec::new();
         let vector: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19];
 
         vector.serialize(&mut stream)?;
 
-        assert_eq!(stream_esperado, stream);
+        assert_eq!(expected_stream, stream);
 
         Ok(())
     }
@@ -213,14 +213,14 @@ mod tests {
     #[test]
     fn test07_serialize_correctly_array() -> Result<(), ErrorMessage> {
         
-        let stream_esperado: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19];
+        let expected_stream: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19];
         
         let mut stream: Vec<u8> = Vec::new();
         let vector: [u8; 5] = [0xC7, 0x01, 0xBD, 0xDE, 0x19];
 
         vector.serialize(&mut stream)?;
 
-        assert_eq!(stream_esperado, stream);
+        assert_eq!(expected_stream, stream);
 
         Ok(())
     }
@@ -228,23 +228,23 @@ mod tests {
     #[test]
     fn test08_serialize_correctly_bool() -> Result<(), ErrorMessage> {
         
-        let stream_esperado: Vec<u8> = vec![0x01];
+        let expected_stream: Vec<u8> = vec![0x01];
         
         let mut stream: Vec<u8> = Vec::new();
         let boolean: bool = true;
 
         boolean.serialize(&mut stream)?;
 
-        assert_eq!(stream_esperado, stream);
+        assert_eq!(expected_stream, stream);
 
-        let stream_esperado: Vec<u8> = vec![0x00];
+        let expected_stream: Vec<u8> = vec![0x00];
         
         let mut stream: Vec<u8> = Vec::new();
         let boolean: bool = false;
 
         boolean.serialize(&mut stream)?;
 
-        assert_eq!(stream_esperado, stream);
+        assert_eq!(expected_stream, stream);
 
         Ok(())
     }
@@ -252,14 +252,14 @@ mod tests {
     #[test]
     fn test09_serialize_correctly_string() -> Result<(), ErrorMessage> {
         
-        let stream_esperado: Vec<u8> = vec![0x62, 0x75, 0x75];
+        let expected_stream: Vec<u8> = vec![0x62, 0x75, 0x75];
         
         let mut stream: Vec<u8> = Vec::new();
         let string: String = "buu".to_string();
 
         string.serialize(&mut stream)?;
 
-        assert_eq!(stream_esperado, stream);
+        assert_eq!(expected_stream, stream);
 
         Ok(())
     }
@@ -267,7 +267,7 @@ mod tests {
     #[test]
     fn test10_serialize_correctly_datetime() -> Result<(), ErrorMessage> {
         
-        let stream_esperado: Vec<u8> = vec![0x5C, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+        let expected_stream: Vec<u8> = vec![0x5C, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
         
         let mut stream: Vec<u8> = Vec::new();
         let naive = NaiveDateTime::from_timestamp_opt(1628, 0).unwrap();
@@ -275,7 +275,7 @@ mod tests {
 
         date.serialize(&mut stream)?;
 
-        assert_eq!(stream_esperado, stream);
+        assert_eq!(expected_stream, stream);
 
         Ok(())
     }
