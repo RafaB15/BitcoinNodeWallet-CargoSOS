@@ -20,3 +20,27 @@ impl DeserializableFixSize for String {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::{
+        DeserializableFixSize,
+        ErrorMessage,
+    };
+
+    #[test]
+    fn test01_serialize_correctly_string() -> Result<(), ErrorMessage> {
+        
+        let stream: Vec<u8> = vec![0x62, 0x75, 0x75];
+        let mut stream: &[u8] = &stream;        
+        
+        let expected_string: String = "buu".to_string();
+
+        let string = String::deserialize_fix_size(&mut stream, 3)?;
+
+        assert_eq!(expected_string, string);
+
+        Ok(())
+    }
+}

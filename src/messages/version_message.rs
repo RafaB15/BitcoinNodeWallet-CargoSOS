@@ -1,10 +1,11 @@
 use super::{
-    serializable_big_endian::SerializableBigEndian,
+    compact_size::CompactSize, 
     serializable::Serializable,
-    deserializable::{
-        Deserializable
-    },
-    error_message::ErrorMessage, deserializable_big_endian::DeserializableBigEndian, compact_size::CompactSize, deserializable_fix_size::DeserializableFixSize, 
+    serializable_big_endian::SerializableBigEndian,
+    deserializable::Deserializable,
+    deserializable_big_endian::DeserializableBigEndian, 
+    deserializable_fix_size::DeserializableFixSize, 
+    error_message::ErrorMessage, 
 };
 
 use std::net::{Ipv6Addr, SocketAddr};

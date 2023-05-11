@@ -8,6 +8,7 @@ use chrono::{
 };
 
 pub trait Deserializable : Sized {
+
     fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage>;
 }
 
@@ -123,4 +124,178 @@ impl Deserializable for DateTime<Utc> {
             _ => Err(ErrorMessage::ErrorInDeserialization),
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::{
+        Deserializable,
+        ErrorMessage,
+    };
+
+    use chrono::{
+        DateTime,
+        offset::Utc,
+        NaiveDateTime,
+    };
+
+    #[test]
+    fn test01_deserialize_correctly_i32() -> Result<(), ErrorMessage> {
+
+        let stream: Vec<u8> = vec![0x5C, 0x06, 0x00, 0x00];
+        let mut stream: &[u8] = &stream;
+        let number: i32 = 1628;
+
+        let expected_number = i32::deserialize(&mut stream)?;
+
+        assert_eq!(expected_number, number);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test02_deserialize_correctly_i64() -> Result<(), ErrorMessage> {
+
+        let stream: Vec<u8> = vec![0x5C, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+        let mut stream: &[u8] = &stream;
+        let number: i64 = 1628;
+
+        let expected_number = i64::deserialize(&mut stream)?;
+
+        assert_eq!(expected_number, number);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test03_deserialize_correctly_u8() -> Result<(), ErrorMessage> {
+        
+        let stream: Vec<u8> = vec![0x54];
+        let mut stream: &[u8] = &stream;
+        
+        let expected_number: u8 = 84;
+
+        let  number = u8::deserialize(&mut stream)?;
+
+        assert_eq!(expected_number, number);
+
+        Ok(())
+    }
+    
+    #[test]
+    fn test04_deserialize_correctly_u16() -> Result<(), ErrorMessage> {
+        
+        let stream: Vec<u8> = vec![0x9E, 0x3F];
+        let mut stream: &[u8] = &stream;
+        
+        let expected_number: u16 = 16286;
+
+        let number = u16::deserialize(&mut stream)?;
+
+        assert_eq!(expected_number, number);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test05_deserialize_correctly_u32() -> Result<(), ErrorMessage> {
+        
+        let stream: Vec<u8> = vec![0xAD, 0x83, 0xF8, 0x00];
+        let mut stream: &[u8] = &stream;
+        
+        let expected_number: u32 = 16_286_637;
+
+        let number = u32::deserialize(&mut stream)?;
+
+        assert_eq!(expected_number, number);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test06_deserialize_correctly_u64() -> Result<(), ErrorMessage> {
+        
+        let stream: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19, 0x00, 0x00, 0x00];
+        let mut stream: &[u8] = &stream;
+        
+        let expected_number: u64 = 1111_1111_1111;
+
+        let number = u64::deserialize(&mut stream)?;
+
+        assert_eq!(expected_number, number);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test07_deserialize_correctly_array_4() -> Result<(), ErrorMessage> {
+        
+        let stream: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE];
+        let mut stream: &[u8] = &stream;        
+        
+        let expected_vector: [u8; 4] = [0xC7, 0x01, 0xBD, 0xDE];
+
+        let vector = <[u8; 4] as Deserializable>::deserialize(&mut stream)?;
+
+        assert_eq!(expected_vector, vector);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test08_deserialize_correctly_array_12() -> Result<(), ErrorMessage> {
+        
+        let stream: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19, 0x01, 0xBD, 0xDE, 0x19, 0x01, 0xBD, 0xDE];
+        let mut stream: &[u8] = &stream;        
+        
+        let expected_vector: [u8; 12] = [0xC7, 0x01, 0xBD, 0xDE, 0x19, 0x01, 0xBD, 0xDE, 0x19, 0x01, 0xBD, 0xDE];
+
+        let vector = <[u8; 12] as Deserializable>::deserialize(&mut stream)?;
+
+        assert_eq!(expected_vector, vector);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test09_deserialize_correctly_bool() -> Result<(), ErrorMessage> {
+        
+        let stream: Vec<u8> = vec![0x01];
+        let mut stream: &[u8] = &stream;
+        
+        let expected_boolean: bool = true;
+
+        let boolean = bool::deserialize(&mut stream)?;
+
+        assert_eq!(expected_boolean, boolean);
+
+        let stream: Vec<u8> = vec![0x00];
+        let mut stream: &[u8] = &stream;
+        
+        let expected_boolean: bool = false;
+
+        let boolean = bool::deserialize(&mut stream)?;
+
+        assert_eq!(expected_boolean, boolean);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test10_deserialize_correctly_datetime() -> Result<(), ErrorMessage> {
+        
+        let stream: Vec<u8> = vec![0x5C, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+        let mut stream: &[u8] = &stream;
+        
+        let naive = NaiveDateTime::from_timestamp_opt(1628, 0).unwrap();
+        let expected_date: DateTime<Utc> = DateTime::<Utc>::from_utc(naive, Utc);
+
+        let date = DateTime::deserialize(&mut stream)?;
+
+        assert_eq!(expected_date, date);
+
+        Ok(())
+    }
+
 }
