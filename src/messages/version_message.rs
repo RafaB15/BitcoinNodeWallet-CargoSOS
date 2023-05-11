@@ -223,6 +223,8 @@ impl Deserializable for VersionMessage {
         }
         let mut buffer: &[u8] = &buffer;
 
+        println!("header: {:?}", buffer);
+
         let magic_bytes = <[u8; MAGIC_BYTES_SIZE] as Deserializable>::deserialize(&mut buffer)?;
 
         let message_type = <[u8; MASSAGE_TYPE_SIZE] as Deserializable>::deserialize(&mut buffer)?;
@@ -238,6 +240,7 @@ impl Deserializable for VersionMessage {
             return Err(ErrorMessage::ErrorWhileReading);
         }
         let mut buffer: &[u8] = &buffer;
+        println!("payload: {:?}", buffer);
         let version_message = Self::deserializar_payload(&mut buffer, magic_bytes)?;
 
         let mut payload_bytes: Vec<u8> = Vec::new();

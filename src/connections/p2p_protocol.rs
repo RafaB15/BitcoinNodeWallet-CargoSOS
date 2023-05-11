@@ -9,6 +9,7 @@ use super::error_connection::ErrorConnection;
 #[derive(Debug, std::cmp::PartialEq, Copy, Clone)]
 ///Enum que representa la versión del protocolo P2P que se va a utilizar
 pub enum ProtocolVersionP2P {
+    V70016,
     V70015,
     V70014,
     V70013,
@@ -31,6 +32,7 @@ impl std::str::FromStr for ProtocolVersionP2P {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "V70016" => Ok(ProtocolVersionP2P::V70015),
             "V70015" => Ok(ProtocolVersionP2P::V70015),
             "V70014" => Ok(ProtocolVersionP2P::V70014),
             "V70013" => Ok(ProtocolVersionP2P::V70013),
@@ -57,6 +59,7 @@ impl std::convert::TryFrom<i32> for ProtocolVersionP2P {
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
+            70016 => Ok(ProtocolVersionP2P::V70016),
             70015 => Ok(ProtocolVersionP2P::V70015),
             70014 => Ok(ProtocolVersionP2P::V70014),
             70013 => Ok(ProtocolVersionP2P::V70013),
@@ -83,6 +86,7 @@ impl std::convert::TryInto<i32> for ProtocolVersionP2P {
 
     fn try_into(self) -> Result<i32, Self::Error> {
         match self {
+            ProtocolVersionP2P::V70016 => Ok(70016),
             ProtocolVersionP2P::V70015 => Ok(70015),
             ProtocolVersionP2P::V70014 => Ok(70014),
             ProtocolVersionP2P::V70013 => Ok(70013),

@@ -113,19 +113,22 @@ fn main() -> Result<(), ErrorExecution> {
 
     // Ejecutar programa
 
-    let dns_seeder = DNSSeeder::new("seed.testnet.bitcoin.sprovoost.nl", 18333);
-    let potential_peers = dns_seeder.discover_peers()?;
-    println!("Potential peers: {:?}", potential_peers);
+    {
+        let dns_seeder = DNSSeeder::new("seed.testnet.bitcoin.sprovoost.nl", 18333);
+        let potential_peers = dns_seeder.discover_peers()?;
+        println!("Potential peers: {:?}", potential_peers);
 
-    let mut node = Handshake::new(
-        ProtocolVersionP2P::V70015,
-        SupportedServices::Unname,
-        0,
-    );
+        let mut node = Handshake::new(
+            ProtocolVersionP2P::V70015,
+            SupportedServices::Unname,
+            0,
+            logger_sender.clone(),  
+        );
 
-    let peers_addrs = node.connect_to_testnet_peers(&potential_peers)?;
+        let peers_addrs = node.connect_to_testnet_peers(&potential_peers)?;
 
-    println!("Connection made: {:?}", peers_addrs);
+        println!("Connection made: {:?}", peers_addrs);
+    }
 
     logger_sender.log_configuration("Closing program".to_string())?;
     
