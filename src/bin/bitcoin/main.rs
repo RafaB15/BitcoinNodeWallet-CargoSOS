@@ -27,37 +27,14 @@ use cargosos_bitcoin::connections::{
     suppored_services::SupportedServices,
 };
 
-const DECLARATION_CONFIG: &str = "config";
-const DECLARATION_BIG_CONFIG: &str = "configuration";
-
-/// Finds the position of the declaration of the configuration given by  `--config` or `--configuration`
-/// 
-///  * `ErrorNoGivenFile`: It will appear when there is not `--config` or `--configuration` in the arguments
-fn find_config_name(arguments: &Vec<String>) -> Result<usize, ErrorInitialization> {
-    
-    let config_declarations = &[
-        DECLARATION_CONFIG.to_string(), 
-        DECLARATION_BIG_CONFIG.to_string()
-    ];
-
-    for (index, argument) in arguments.iter().enumerate() {
-        if config_declarations.contains(argument) {
-            return Ok(index);
-        }
-    }
-
-    Err(ErrorInitialization::ErrorNoGivenConfigurationFile)
-}
+use cargosos_bitcoin::messages::bitfield_services::BitfieldServices;
 
 /// Get the configuration name given the arguments 
 /// 
 /// ### Errors
-///  * `ErrorNoGivenFile`: It will appear when there is not `--config` or `--configuration` in the arguments or there is not argument pass that configuration declaration
+///  * `ErrorNoGivenFile`: It will appear when there is not argument pass that configuration declaration
 fn get_config_name(arguments: Vec<String>) -> Result<String, ErrorInitialization> {
-    
-    let config_position: usize = find_config_name(&arguments)?;
-
-    let config_name: String = match arguments.get(config_position + 1) {
+    let config_name: String = match arguments.get(1) {
         Some(config_name) => config_name.to_owned(),
         None => return Err(ErrorInitialization::ErrorNoGivenConfigurationFile),
     };
@@ -113,25 +90,28 @@ fn main() -> Result<(), ErrorExecution> {
 
     // Ejecutar programa
 
-    let dns_seeder = DNSSeeder::new("seed.testnet.bitcoin.sprovoost.nl", 18333);
-    let potential_peers = dns_seeder.discover_peers()?;
-    println!("Potential peers: {:?}", potential_peers);
+    {
+        let dns_seeder = DNSSeeder::new("seed.testnet.bitcoin.sprovoost.nl", 18333);
+        let potential_peers = dns_seeder.discover_peers()?;
+        println!("Potential peers: {:?}", potential_peers);
 
-    let mut node = Handshake::new(
-        ProtocolVersionP2P::V70015,
-        SupportedServices::Unname,
-        0,
-    );
+        let mut node = Handshake::new(
+            ProtocolVersionP2P::V70015,
+            BitfieldServices::new(vec![SupportedServices::Unname]),
+            0,
+            logger_sender.clone(),  
+        );
 
-    let peers_addrs = node.connect_to_testnet_peers(&potential_peers)?;
+        let peers_addrs = node.connect_to_testnet_peers(&potential_peers)?;
 
-    println!("Connection made: {:?}", peers_addrs);
+        println!("Connection made: {:?}", peers_addrs);
+    }
 
     logger_sender.log_configuration("Closing program".to_string())?;
     
     std::mem::drop(logger_sender);
     if let Ok(resultado) = handle.join() {
-        let _ = resultado?;
+        resultado?;
     }
 
     Ok(())
