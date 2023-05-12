@@ -6,7 +6,6 @@ use crate::messages::{
 
 use std::io::{
     Write,
-    Read,
 };
 
 
@@ -60,16 +59,11 @@ impl BlockHeader {
 
 impl Serializable for BlockHeader {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
-        let mut serialized_message = Vec::new();
-        
-        self.version.serialize(&mut serialized_message)?;
-        self.previous_block_header_hash.serialize(&mut serialized_message)?;
-        self.merkle_root_hash.serialize(&mut serialized_message)?;
-        self.time.serialize(&mut serialized_message)?;
-        self.n_bits.serialize(&mut serialized_message)?;
-        self.nonce.serialize(&mut serialized_message)?;
-
-        serialized_message.serialize(stream)?;
-        Ok(())
+        self.version.serialize(stream)?;
+        self.previous_block_header_hash.serialize(stream)?;
+        self.merkle_root_hash.serialize(stream)?;
+        self.time.serialize(stream)?;
+        self.n_bits.serialize(stream)?;
+        self.nonce.serialize(stream)
     }
 }
