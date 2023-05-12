@@ -27,7 +27,16 @@ impl BitfieldServices {
 
 impl PartialEq for BitfieldServices {
     fn eq(&self, other: &Self) -> bool {
-        self.elements == other.elements
+        if self.elements.len() != other.elements.len() {
+            return false;
+        }
+
+        let mut are_equal = true;
+        self.elements.iter().for_each(|element| {
+            are_equal &= other.elements.contains(element);
+        });
+
+        are_equal
     }
 }
 
@@ -78,4 +87,55 @@ impl Deserializable for BitfieldServices{
 
         Ok(BitfieldServices::new(elements))
     }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::{
+        BitfieldServices,
+        SupportedServices,
+        Serializable,
+        Deserializable,
+        ErrorMessage,
+    };
+
+    #[test]
+    fn test01_serialize_correctly_bitfield_services() -> Result<(), ErrorMessage> {
+
+        let expected_stream: Vec<u8> = vec![0x09, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+        
+        let mut stream: Vec<u8> = Vec::new();
+        let services = BitfieldServices::new(vec![
+            SupportedServices::NodeNetworkLimited, 
+            SupportedServices::NodeWitness, 
+            SupportedServices::NodeNetwork
+        ]);
+
+        services.serialize(&mut stream)?;
+
+        assert_eq!(expected_stream, stream);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test02_deserialize_correctly_bitfield_services() -> Result<(), ErrorMessage> {
+
+        let stream: Vec<u8> = vec![0x09, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+        let mut stream: &[u8] = &stream;
+        
+        let expected_services = BitfieldServices::new(vec![
+            SupportedServices::NodeNetworkLimited, 
+            SupportedServices::NodeWitness, 
+            SupportedServices::NodeNetwork
+        ]);
+
+        let services = BitfieldServices::deserialize(&mut stream)?;
+
+        assert_eq!(expected_services, services);
+
+        Ok(())
+    }
+
 }
