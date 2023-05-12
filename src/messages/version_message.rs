@@ -19,7 +19,6 @@ use std::io::{Read, Write};
 
 use crate::connections::{
     p2p_protocol::ProtocolVersionP2P,
-    suppored_services::SupportedServices,
     socket_conversion::socket_to_ipv6_port,
 };
 
@@ -300,7 +299,7 @@ mod tests {
         let naive = NaiveDateTime::from_timestamp_opt(1628, 0).unwrap();
         let timestamp: DateTime<Utc> = DateTime::<Utc>::from_utc(naive, Utc);
 
-        let recv_services = Bitfield::new(vec![SupportedServices::Unname, SupportedServices::NodeNetworkLimited]);;
+        let recv_services = Bitfield::new(vec![SupportedServices::Unname, SupportedServices::NodeNetworkLimited]);
         let recv_addr: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0xffff, 0xc00a, 0x02ff);
         let recv_port: u16 = 80;
         let trans_addr: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0xffff, 0xc00a, 0x02ff);
@@ -374,12 +373,12 @@ mod tests {
     fn test02_deserializar() -> Result<(), ErrorMessage> {
         let magic_bytes = [0x55, 0x66, 0xee, 0xee];
         let version = ProtocolVersionP2P::V31402;
-        let services = Bitfield::new(vec![SupportedServices::Unname, SupportedServices::NodeNetworkLimited]);;
+        let services = Bitfield::new(vec![SupportedServices::Unname, SupportedServices::NodeNetworkLimited]);
 
         let naive = NaiveDateTime::from_timestamp_opt(1628, 0).unwrap();
         let timestamp: DateTime<Utc> = DateTime::<Utc>::from_utc(naive, Utc);
 
-        let recv_services = Bitfield::new(vec![SupportedServices::Unname, SupportedServices::NodeNetworkLimited]);;
+        let recv_services = Bitfield::new(vec![SupportedServices::Unname, SupportedServices::NodeNetworkLimited]);
         let recv_addr: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0xffff, 0xc00a, 0x02ff);
         let recv_port: u16 = 80;
         let trans_addr: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0xffff, 0xc00a, 0x02ff);

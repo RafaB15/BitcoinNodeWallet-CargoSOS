@@ -6,10 +6,7 @@ use crate::messages::{
 
 use crate::connections::suppored_services::SupportedServices;
 
-use std::convert::{
-    TryFrom,
-    TryInto,
-};
+use std::convert::TryInto;
 
 use std::cmp::PartialEq;
 
