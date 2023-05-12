@@ -9,6 +9,7 @@ use super::error_connection::ErrorConnection;
 #[derive(Debug, std::cmp::PartialEq, Copy, Clone)]
 ///Enum que representa la versión del protocolo P2P que se va a utilizar
 pub enum ProtocolVersionP2P {
+    V70016,
     V70015,
     V70014,
     V70013,
@@ -31,6 +32,7 @@ impl std::str::FromStr for ProtocolVersionP2P {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "V70016" => Ok(ProtocolVersionP2P::V70016),
             "V70015" => Ok(ProtocolVersionP2P::V70015),
             "V70014" => Ok(ProtocolVersionP2P::V70014),
             "V70013" => Ok(ProtocolVersionP2P::V70013),
@@ -57,6 +59,7 @@ impl std::convert::TryFrom<i32> for ProtocolVersionP2P {
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
+            70016 => Ok(ProtocolVersionP2P::V70016),
             70015 => Ok(ProtocolVersionP2P::V70015),
             70014 => Ok(ProtocolVersionP2P::V70014),
             70013 => Ok(ProtocolVersionP2P::V70013),
@@ -72,7 +75,7 @@ impl std::convert::TryFrom<i32> for ProtocolVersionP2P {
             311 => Ok(ProtocolVersionP2P::V311),
             209 => Ok(ProtocolVersionP2P::V209),
             106 => Ok(ProtocolVersionP2P::V106),
-            _ => return Err(ErrorConnection::ErrorInvalidInputParse),
+            _ => Err(ErrorConnection::ErrorInvalidInputParse),
         }
     }
 }
@@ -83,6 +86,7 @@ impl std::convert::TryInto<i32> for ProtocolVersionP2P {
 
     fn try_into(self) -> Result<i32, Self::Error> {
         match self {
+            ProtocolVersionP2P::V70016 => Ok(70016),
             ProtocolVersionP2P::V70015 => Ok(70015),
             ProtocolVersionP2P::V70014 => Ok(70014),
             ProtocolVersionP2P::V70013 => Ok(70013),
@@ -106,7 +110,7 @@ impl Serializable for ProtocolVersionP2P {
     fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorMessage> {
         let version: i32 = match (*self).try_into() {
             Ok(version) => version,
-            _ => return Err(ErrorMessage::ErrorInSerialization(format!("While serializing {:?}", self))),
+            _ => return Err(ErrorMessage::ErrorInSerialization(format!("While serializing p2p protocol version {:?}", self))),
         };
 
         match stream.write(&version.to_le_bytes()) {
@@ -122,7 +126,7 @@ impl Deserializable for ProtocolVersionP2P {
         let version_int = i32::deserialize(stream)?;
         match version_int.try_into() {
             Ok(version) => Ok(version),
-            _ => Err(ErrorMessage::ErrorInDeserialization(format!("While deserializing {:?}", version_int))),
+            _ => Err(ErrorMessage::ErrorInDeserialization(format!("While deserializing p2p protocol version {:?}", version_int))),
         }
     }
 }
