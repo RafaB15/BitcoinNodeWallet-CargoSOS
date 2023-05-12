@@ -97,26 +97,26 @@ mod tests {
     };
 
     #[test]
-    fn test01_serializar() -> Result<(), ErrorMessage>{
+    fn test01_serialize() -> Result<(), ErrorMessage>{
         let magic_bytes: [u8; 4] = [0x55, 0x66, 0xee, 0xee];
         let verack_message = VerackMessage::new(magic_bytes);
         let mut stream: Vec<u8> = Vec::new();
 
         verack_message.serialize(&mut stream)?;
     
-        let mut stream_esperado: Vec<u8> = Vec::new();
-        magic_bytes.serialize(&mut stream_esperado)?;
-        VERACK_TYPE.serialize(&mut stream_esperado)?;
-        vec![0, 0, 0, 0].serialize(&mut stream_esperado)?;
-        VERACK_CHECKSUM.serialize(&mut stream_esperado)?;
+        let mut expected_stream: Vec<u8> = Vec::new();
+        magic_bytes.serialize(&mut expected_stream)?;
+        VERACK_TYPE.serialize(&mut expected_stream)?;
+        vec![0, 0, 0, 0].serialize(&mut expected_stream)?;
+        VERACK_CHECKSUM.serialize(&mut expected_stream)?;
 
-        assert_eq!(stream_esperado, stream);
+        assert_eq!(expected_stream, stream);
 
         Ok(())
     }
 
     #[test]
-    fn test02_deserializar() -> Result<(), ErrorMessage> {
+    fn test02_deserialize() -> Result<(), ErrorMessage> {
         let magic_bytes: [u8; 4] = [0x55, 0x66, 0xee, 0xee];
         
         let mut stream: Vec<u8> = Vec::new();
@@ -126,11 +126,11 @@ mod tests {
         VERACK_CHECKSUM.serialize(&mut stream)?;
         let mut stream: &[u8] = &stream;
 
-        let verack_esperado = VerackMessage::new(magic_bytes);
+        let expected_verack = VerackMessage::new(magic_bytes);
 
         let verack = VerackMessage::deserialize(&mut stream)?;
 
-        assert_eq!(verack_esperado, verack);
+        assert_eq!(expected_verack, verack);
 
         Ok(())
     }

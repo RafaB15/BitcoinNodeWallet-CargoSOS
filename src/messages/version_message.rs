@@ -291,7 +291,7 @@ mod tests {
     use std::net::Ipv6Addr;
     
     #[test]
-    fn test01_serializar() -> Result<(), ErrorMessage>{
+    fn test01_serialize() -> Result<(), ErrorMessage>{
         let magic_bytes = [0x55, 0x66, 0xee, 0xee];
         let version = ProtocolVersionP2P::V31402;
         let services = BitfieldServices::new(vec![SupportedServices::NodeNetworkLimited]);
@@ -370,7 +370,7 @@ mod tests {
     }
 
     #[test]
-    fn test02_deserializar() -> Result<(), ErrorMessage> {
+    fn test02_deserialize() -> Result<(), ErrorMessage> {
         let magic_bytes = [0x55, 0x66, 0xee, 0xee];
         let version = ProtocolVersionP2P::V31402;
         let services = BitfieldServices::new(vec![SupportedServices::NodeNetworkLimited]);
