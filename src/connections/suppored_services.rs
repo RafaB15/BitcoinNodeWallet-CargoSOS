@@ -107,7 +107,7 @@ mod tests {
     #[test]
     fn test01_serialize_correctly_supported_services() -> Result<(), ErrorMessage> {
         
-        let expected_stream: Vec<u8> = vec![0x90, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+        let expected_stream: Vec<u8> = vec![0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
         
         let mut stream: Vec<u8> = Vec::new();
         let services = SupportedServices::NodeNetworkLimited;
@@ -122,7 +122,7 @@ mod tests {
     #[test]
     fn test02_deserialize_correctly_supported_services() -> Result<(), ErrorMessage> {
         
-        let stream: Vec<u8> = vec![0x90, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+        let stream: Vec<u8> = vec![0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
         let mut stream: &[u8] = &stream;
         
         let expected_services = SupportedServices::NodeNetworkLimited;
