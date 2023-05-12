@@ -27,6 +27,8 @@ use cargosos_bitcoin::connections::{
     suppored_services::SupportedServices,
 };
 
+use cargosos_bitcoin::messages::bitfield::Bitfield;
+
 /// Get the configuration name given the arguments 
 /// 
 /// ### Errors
@@ -95,7 +97,7 @@ fn main() -> Result<(), ErrorExecution> {
 
         let mut node = Handshake::new(
             ProtocolVersionP2P::V70015,
-            SupportedServices::Unname,
+            Bitfield::new(vec![SupportedServices::Unname]),
             0,
             logger_sender.clone(),  
         );
