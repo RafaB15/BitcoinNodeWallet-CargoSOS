@@ -6,30 +6,32 @@ use crate::messages::{
 
 use crate::connections::suppored_services::SupportedServices;
 
-use std::convert::TryInto;
-
-use std::cmp::PartialEq;
+use std::{
+    convert::TryInto,
+    cmp::PartialEq,
+};
 
 #[derive(Debug, Clone)]
-pub struct Bitfield {
+pub struct BitfieldServices {
     pub elements: Vec<SupportedServices>,
 }
 
-impl Bitfield {
+impl BitfieldServices {
     pub fn new(elements: Vec<SupportedServices>) -> Self {
-        Bitfield { 
-            elements 
+        match elements.is_empty() {
+            true => BitfieldServices { elements: vec![SupportedServices::Unname] },
+            false => BitfieldServices { elements },
         }
     }
 }
 
-impl PartialEq for Bitfield {
+impl PartialEq for BitfieldServices {
     fn eq(&self, other: &Self) -> bool {
         self.elements == other.elements
     }
 }
 
-impl Serializable for Bitfield {
+impl Serializable for BitfieldServices {
     fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorMessage> {
         
         let mut sum: u64 = 0;
@@ -46,7 +48,7 @@ impl Serializable for Bitfield {
     }
 }
 
-impl Deserializable for Bitfield{
+impl Deserializable for BitfieldServices{
     fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorMessage> {
         
         let posibles_suppored = [
@@ -60,7 +62,7 @@ impl Deserializable for Bitfield{
         
         let bitfield: u64 = u64::deserialize(stream)?;
 
-        let mut elements: Vec<SupportedServices> = vec![SupportedServices::Unname];
+        let mut elements: Vec<SupportedServices> = Vec::new();
 
         for posible_suppored in posibles_suppored {
 
@@ -74,6 +76,6 @@ impl Deserializable for Bitfield{
             }
         }
 
-        Ok(Bitfield::new(elements))
+        Ok(BitfieldServices::new(elements))
     }
 }

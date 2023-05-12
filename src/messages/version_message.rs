@@ -1,6 +1,6 @@
 use super::{
     compact_size::CompactSize, 
-    bitfield::Bitfield,
+    bitfield_services::BitfieldServices,
     serializable::Serializable,
     serializable_big_endian::SerializableBigEndian,
     deserializable::Deserializable,
@@ -40,9 +40,9 @@ const HEADER_SIZE: usize = MAGIC_BYTES_SIZE + MASSAGE_TYPE_SIZE + PAYLOAD_SIZE +
 pub struct VersionMessage {
     pub magic_bytes: [u8; 4],
     pub version: ProtocolVersionP2P,
-    pub services: Bitfield,
+    pub services: BitfieldServices,
     pub timestamp: DateTime<Utc>,
-    pub recv_services: Bitfield,
+    pub recv_services: BitfieldServices,
     pub recv_addr: Ipv6Addr,
     pub recv_port: u16,
     pub trans_addr: Ipv6Addr,
@@ -58,8 +58,8 @@ impl VersionMessage {
     pub fn new(
         magic_bytes: [u8; 4],
         version: ProtocolVersionP2P,
-        services: Bitfield,
-        recv_services: Bitfield,
+        services: BitfieldServices,
+        recv_services: BitfieldServices,
         recv_socket_addr: &SocketAddr,
         trans_socket_addr: &SocketAddr,
         nonce: u64,
@@ -116,14 +116,14 @@ impl VersionMessage {
     pub(super) fn deserializar_payload(stream: &mut dyn Read, magic_bytes: [u8; 4]) ->  Result<VersionMessage, ErrorMessage> {
 
         let version = ProtocolVersionP2P::deserialize(stream)?;
-        let services =  Bitfield::deserialize(stream)?;
+        let services =  BitfieldServices::deserialize(stream)?;
         let timestamp = DateTime::<Utc>::deserialize(stream)?;
-        let recv_services =  Bitfield::deserialize(stream)?;
+        let recv_services =  BitfieldServices::deserialize(stream)?;
 
         let recv_addr = Ipv6Addr::deserialize_big_endian(stream)?;
         let recv_port = u16::deserialize_big_endian(stream)?;
 
-        let trans_services =  Bitfield::deserialize(stream)?;
+        let trans_services =  BitfieldServices::deserialize(stream)?;
         if trans_services != services {
             return Err(ErrorMessage::ErrorInDeserialization(format!("Transceiver service isn't the same as the service: {:?}", trans_services)));
         }
@@ -260,7 +260,7 @@ mod tests {
     use crate::{
         messages::{
             compact_size::CompactSize,
-            bitfield::Bitfield,
+            bitfield_services::BitfieldServices,
             serializable::Serializable, 
             serializable_big_endian::SerializableBigEndian,
             deserializable::Deserializable,
@@ -294,12 +294,12 @@ mod tests {
     fn test01_serializar() -> Result<(), ErrorMessage>{
         let magic_bytes = [0x55, 0x66, 0xee, 0xee];
         let version = ProtocolVersionP2P::V31402;
-        let services = Bitfield::new(vec![SupportedServices::Unname, SupportedServices::NodeNetworkLimited]);
+        let services = BitfieldServices::new(vec![SupportedServices::NodeNetworkLimited]);
 
         let naive = NaiveDateTime::from_timestamp_opt(1628, 0).unwrap();
         let timestamp: DateTime<Utc> = DateTime::<Utc>::from_utc(naive, Utc);
 
-        let recv_services = Bitfield::new(vec![SupportedServices::Unname, SupportedServices::NodeNetworkLimited]);
+        let recv_services = BitfieldServices::new(vec![SupportedServices::NodeNetworkLimited]);
         let recv_addr: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0xffff, 0xc00a, 0x02ff);
         let recv_port: u16 = 80;
         let trans_addr: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0xffff, 0xc00a, 0x02ff);
@@ -373,12 +373,12 @@ mod tests {
     fn test02_deserializar() -> Result<(), ErrorMessage> {
         let magic_bytes = [0x55, 0x66, 0xee, 0xee];
         let version = ProtocolVersionP2P::V31402;
-        let services = Bitfield::new(vec![SupportedServices::Unname, SupportedServices::NodeNetworkLimited]);
+        let services = BitfieldServices::new(vec![SupportedServices::NodeNetworkLimited]);
 
         let naive = NaiveDateTime::from_timestamp_opt(1628, 0).unwrap();
         let timestamp: DateTime<Utc> = DateTime::<Utc>::from_utc(naive, Utc);
 
-        let recv_services = Bitfield::new(vec![SupportedServices::Unname, SupportedServices::NodeNetworkLimited]);
+        let recv_services = BitfieldServices::new(vec![SupportedServices::NodeNetworkLimited]);
         let recv_addr: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0xffff, 0xc00a, 0x02ff);
         let recv_port: u16 = 80;
         let trans_addr: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0xffff, 0xc00a, 0x02ff);

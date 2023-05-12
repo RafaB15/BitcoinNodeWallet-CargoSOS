@@ -9,7 +9,7 @@ use crate::logs::logger_sender::LoggerSender;
 use crate::messages::{
     version_message::VersionMessage,
     verack_message::VerackMessage,
-    bitfield::Bitfield,
+    bitfield_services::BitfieldServices,
     serializable::Serializable,
     deserializable::Deserializable,
     error_message::ErrorMessage,
@@ -27,7 +27,7 @@ const TESTNET_MAGIC_NUMBERS: [u8; 4] = [0x0b, 0x11, 0x09, 0x07];
 
 pub struct Handshake {
     protocol_version: ProtocolVersionP2P,
-    services: Bitfield,
+    services: BitfieldServices,
     blockchain_height: i32,
     sender_log: LoggerSender,
 }
@@ -36,7 +36,7 @@ impl Handshake {
     
     pub fn new(
         protocol_version: ProtocolVersionP2P,
-        services: Bitfield,
+        services: BitfieldServices,
         blockchain_height: i32,
         sender_log: LoggerSender,
     ) -> Self {
@@ -54,7 +54,7 @@ impl Handshake {
             TESTNET_MAGIC_NUMBERS,
             self.protocol_version,
             self.services.clone(),
-            Bitfield::new(vec![SupportedServices::NodeNetworkLimited]),
+            BitfieldServices::new(vec![SupportedServices::NodeNetworkLimited]),
             potential_peer,
             local_socket_addr,
             IGNORE_NONCE,

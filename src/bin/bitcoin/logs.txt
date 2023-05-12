@@ -1,68 +1,66 @@
-Time: [1683867090.0780683s]: [CONFIGURATION] Logs are already configured
-Time: [1683867090.566355s]: [CONNECTION] Version message sent to peer 94.156.33.13:18333
-Time: [1683867090.812081s]: [CONNECTION] Verack message sent to peer 94.156.33.13:18333
-Time: [1683867090.8122293s]: [CONNECTION] Connection with peer 94.156.33.13:18333 established
-Time: [1683867091.0633614s]: [CONNECTION] Version message sent to peer 131.188.40.191:18333
-Time: [1683867091.334469s]: [CONNECTION] Verack message sent to peer 131.188.40.191:18333
-Time: [1683867091.3345296s]: [CONNECTION] Connection with peer 131.188.40.191:18333 established
-Time: [1683867091.5739033s]: [CONNECTION] Version message sent to peer 168.119.88.108:18333
-Time: [1683867091.8128907s]: [CONNECTION] Verack message sent to peer 168.119.88.108:18333
-Time: [1683867091.8129709s]: [CONNECTION] Connection with peer 168.119.88.108:18333 established
-Time: [1683867092.0854257s]: [CONNECTION] Version message sent to peer 162.19.255.226:18333
-Time: [1683867092.357846s]: [CONNECTION] Verack message sent to peer 162.19.255.226:18333
-Time: [1683867092.3579019s]: [CONNECTION] Connection with peer 162.19.255.226:18333 established
-Time: [1683867092.5425956s]: [CONNECTION] Version message sent to peer 69.197.185.106:18333
-Time: [1683867092.7272766s]: [CONNECTION] Verack message sent to peer 69.197.185.106:18333
-Time: [1683867092.7273384s]: [CONNECTION] Connection with peer 69.197.185.106:18333 established
-Time: [1683867092.9093811s]: [CONNECTION] Version message sent to peer 128.199.15.99:18333
-Time: [1683867093.0894364s]: [CONNECTION] Verack message sent to peer 128.199.15.99:18333
-Time: [1683867093.0894969s]: [CONNECTION] Connection with peer 128.199.15.99:18333 established
-Time: [1683867093.3239268s]: [CONNECTION] Version message sent to peer 37.1.219.136:18333
-Time: [1683867093.5613703s]: [CONNECTION] Verack message sent to peer 37.1.219.136:18333
-Time: [1683867093.5614281s]: [CONNECTION] Connection with peer 37.1.219.136:18333 established
-Time: [1683867093.8958072s]: [CONNECTION] Version message sent to peer 16.162.119.13:18333
-Time: [1683867094.2296696s]: [CONNECTION] Error while receiving version message from peer 16.162.119.13:18333: ErrorInDeserialization("Checksum isn't the same: [151, 179, 223, 152] != [131, 161, 32, 55]")
-Time: [1683867094.2298588s]: [CONNECTION] Error while trying to connect to peer 16.162.119.13:18333: ErrorCannotReceiveMessage
-Time: [1683867094.4710569s]: [CONNECTION] Version message sent to peer 35.207.96.34:18333
-Time: [1683867094.7132262s]: [CONNECTION] Error while receiving version message from peer 35.207.96.34:18333: ErrorInDeserialization("Checksum isn't the same: [126, 49, 147, 214] != [4, 71, 102, 222]")
-Time: [1683867094.7133615s]: [CONNECTION] Error while trying to connect to peer 35.207.96.34:18333: ErrorCannotReceiveMessage
-Time: [1683867094.9452921s]: [CONNECTION] Version message sent to peer 162.55.92.102:18333
-Time: [1683867095.1765576s]: [CONNECTION] Verack message sent to peer 162.55.92.102:18333
-Time: [1683867095.1766192s]: [CONNECTION] Connection with peer 162.55.92.102:18333 established
-Time: [1683867095.4251925s]: [CONNECTION] Version message sent to peer 161.97.88.149:18333
-Time: [1683867095.6732955s]: [CONNECTION] Verack message sent to peer 161.97.88.149:18333
-Time: [1683867095.6733658s]: [CONNECTION] Connection with peer 161.97.88.149:18333 established
-Time: [1683867095.9542305s]: [CONNECTION] Version message sent to peer 188.120.244.213:18333
-Time: [1683867096.2352715s]: [CONNECTION] Verack message sent to peer 188.120.244.213:18333
-Time: [1683867096.2353263s]: [CONNECTION] Connection with peer 188.120.244.213:18333 established
-Time: [1683867096.4710802s]: [CONNECTION] Version message sent to peer 185.150.162.44:18333
-Time: [1683867096.7059579s]: [CONNECTION] Verack message sent to peer 185.150.162.44:18333
-Time: [1683867096.7060155s]: [CONNECTION] Connection with peer 185.150.162.44:18333 established
-Time: [1683867096.9766962s]: [CONNECTION] Version message sent to peer 85.203.53.89:18333
-Time: [1683867097.2418574s]: [CONNECTION] Verack message sent to peer 85.203.53.89:18333
-Time: [1683867097.2419415s]: [CONNECTION] Connection with peer 85.203.53.89:18333 established
-Time: [1683867097.4819948s]: [CONNECTION] Version message sent to peer 23.88.68.160:18333
-Time: [1683867097.720365s]: [CONNECTION] Verack message sent to peer 23.88.68.160:18333
-Time: [1683867097.7204308s]: [CONNECTION] Connection with peer 23.88.68.160:18333 established
-Time: [1683867098.0417832s]: [CONNECTION] Version message sent to peer 43.200.216.62:18333
-Time: [1683867098.3617685s]: [CONNECTION] Verack message sent to peer 43.200.216.62:18333
-Time: [1683867098.3617985s]: [CONNECTION] Connection with peer 43.200.216.62:18333 established
-Time: [1683867098.5159116s]: [CONNECTION] Version message sent to peer 161.35.142.235:18333
-Time: [1683867098.6691099s]: [CONNECTION] Verack message sent to peer 161.35.142.235:18333
-Time: [1683867098.6691494s]: [CONNECTION] Connection with peer 161.35.142.235:18333 established
-Time: [1683867098.9563746s]: [CONNECTION] Version message sent to peer 93.157.187.23:18333
-Time: [1683867099.2433771s]: [CONNECTION] Verack message sent to peer 93.157.187.23:18333
-Time: [1683867099.2434501s]: [CONNECTION] Connection with peer 93.157.187.23:18333 established
-Time: [1683867099.5055436s]: [CONNECTION] Version message sent to peer 65.108.8.120:18333
-Time: [1683867099.7692112s]: [CONNECTION] Verack message sent to peer 65.108.8.120:18333
-Time: [1683867099.7692491s]: [CONNECTION] Connection with peer 65.108.8.120:18333 established
-Time: [1683867100.0452204s]: [CONNECTION] Version message sent to peer 51.195.104.36:18333
-Time: [1683867100.327817s]: [CONNECTION] Verack message sent to peer 51.195.104.36:18333
-Time: [1683867100.3278773s]: [CONNECTION] Connection with peer 51.195.104.36:18333 established
-Time: [1683867100.494559s]: [CONNECTION] Version message sent to peer 34.82.180.118:18333
-Time: [1683867100.6607465s]: [CONNECTION] Verack message sent to peer 34.82.180.118:18333
-Time: [1683867100.6608128s]: [CONNECTION] Connection with peer 34.82.180.118:18333 established
-Time: [1683867100.8984153s]: [CONNECTION] Version message sent to peer 88.198.46.21:18333
-Time: [1683867101.1350796s]: [CONNECTION] Verack message sent to peer 88.198.46.21:18333
-Time: [1683867101.1351372s]: [CONNECTION] Connection with peer 88.198.46.21:18333 established
-Time: [1683867101.136885s]: [CONFIGURATION] Closing program
+Time: [1683903095.7977161s]: [CONFIGURATION] Logs are already configured
+Time: [1683903096.1665864s]: [CONNECTION] Version message sent to peer 116.203.194.133:18333
+Time: [1683903096.4732718s]: [CONNECTION] Verack message sent to peer 116.203.194.133:18333
+Time: [1683903096.4733322s]: [CONNECTION] Connection with peer 116.203.194.133:18333 established
+Time: [1683903096.6777689s]: [CONNECTION] Version message sent to peer 3.136.70.213:18333
+Time: [1683903096.8617349s]: [CONNECTION] Verack message sent to peer 3.136.70.213:18333
+Time: [1683903096.8618589s]: [CONNECTION] Connection with peer 3.136.70.213:18333 established
+Time: [1683903097.1215822s]: [CONNECTION] Version message sent to peer 5.159.103.164:18333
+Time: [1683903097.3946594s]: [CONNECTION] Verack message sent to peer 5.159.103.164:18333
+Time: [1683903097.3990947s]: [CONNECTION] Connection with peer 5.159.103.164:18333 established
+Time: [1683903097.6417804s]: [CONNECTION] Version message sent to peer 135.181.2.62:18333
+Time: [1683903097.9064415s]: [CONNECTION] Verack message sent to peer 135.181.2.62:18333
+Time: [1683903097.9065331s]: [CONNECTION] Connection with peer 135.181.2.62:18333 established
+Time: [1683903098.1128345s]: [CONNECTION] Version message sent to peer 44.192.10.119:18333
+Time: [1683903098.2900828s]: [CONNECTION] Error while receiving version message from peer 44.192.10.119:18333: ErrorInDeserialization("Checksum isn't the same: [167, 163, 199, 61] != [191, 228, 139, 40]")
+Time: [1683903098.2901978s]: [CONNECTION] Error while trying to connect to peer 44.192.10.119:18333: ErrorCannotReceiveMessage
+Time: [1683903098.4949675s]: [CONNECTION] Version message sent to peer 54.89.113.236:18333
+Time: [1683903098.7266875s]: [CONNECTION] Verack message sent to peer 54.89.113.236:18333
+Time: [1683903098.7577964s]: [CONNECTION] Connection with peer 54.89.113.236:18333 established
+Time: [1683903098.9383374s]: [CONNECTION] Version message sent to peer 165.227.60.15:18333
+Time: [1683903099.2381364s]: [CONNECTION] Verack message sent to peer 165.227.60.15:18333
+Time: [1683903099.238253s]: [CONNECTION] Connection with peer 165.227.60.15:18333 established
+Time: [1683903099.4429301s]: [CONNECTION] Version message sent to peer 69.61.32.242:18333
+Time: [1683903099.6471966s]: [CONNECTION] Verack message sent to peer 69.61.32.242:18333
+Time: [1683903099.6472505s]: [CONNECTION] Connection with peer 69.61.32.242:18333 established
+Time: [1683903099.8847748s]: [CONNECTION] Version message sent to peer 78.46.84.70:18333
+Time: [1683903100.1599435s]: [CONNECTION] Verack message sent to peer 78.46.84.70:18333
+Time: [1683903100.1600434s]: [CONNECTION] Connection with peer 78.46.84.70:18333 established
+Time: [1683903100.4666502s]: [CONNECTION] Version message sent to peer 5.189.162.76:18333
+Time: [1683903100.876918s]: [CONNECTION] Verack message sent to peer 5.189.162.76:18333
+Time: [1683903100.8770153s]: [CONNECTION] Connection with peer 5.189.162.76:18333 established
+Time: [1683903101.0805763s]: [CONNECTION] Version message sent to peer 137.184.2.124:18333
+Time: [1683903101.286012s]: [CONNECTION] Verack message sent to peer 137.184.2.124:18333
+Time: [1683903101.286062s]: [CONNECTION] Connection with peer 137.184.2.124:18333 established
+Time: [1683903122.3303504s]: [CONNECTION] Error while trying to connect to peer 65.191.54.90:18333: ErrorCannotConnectToAddress
+Time: [1683903122.5864251s]: [CONNECTION] Version message sent to peer 85.10.203.112:18333
+Time: [1683903122.8927439s]: [CONNECTION] Verack message sent to peer 85.10.203.112:18333
+Time: [1683903122.8929552s]: [CONNECTION] Connection with peer 85.10.203.112:18333 established
+Time: [1683903123.2006672s]: [CONNECTION] Version message sent to peer 94.130.58.119:18333
+Time: [1683903123.5072699s]: [CONNECTION] Verack message sent to peer 94.130.58.119:18333
+Time: [1683903123.5074543s]: [CONNECTION] Connection with peer 94.130.58.119:18333 established
+Time: [1683903123.7113809s]: [CONNECTION] Version message sent to peer 51.79.82.75:18333
+Time: [1683903123.9047991s]: [CONNECTION] Verack message sent to peer 51.79.82.75:18333
+Time: [1683903123.9050215s]: [CONNECTION] Connection with peer 51.79.82.75:18333 established
+Time: [1683903124.1224208s]: [CONNECTION] Version message sent to peer 158.69.116.169:18333
+Time: [1683903124.3260525s]: [CONNECTION] Verack message sent to peer 158.69.116.169:18333
+Time: [1683903124.3262113s]: [CONNECTION] Connection with peer 158.69.116.169:18333 established
+Time: [1683903124.5922058s]: [CONNECTION] Version message sent to peer 51.77.119.85:18333
+Time: [1683903124.9405785s]: [CONNECTION] Verack message sent to peer 51.77.119.85:18333
+Time: [1683903124.9406178s]: [CONNECTION] Connection with peer 51.77.119.85:18333 established
+Time: [1683903125.2131346s]: [CONNECTION] Version message sent to peer 188.117.132.82:18333
+Time: [1683903125.4837651s]: [CONNECTION] Verack message sent to peer 188.117.132.82:18333
+Time: [1683903125.4838265s]: [CONNECTION] Connection with peer 188.117.132.82:18333 established
+Time: [1683903125.8623985s]: [CONNECTION] Version message sent to peer 51.210.216.76:18333
+Time: [1683903126.1487633s]: [CONNECTION] Verack message sent to peer 51.210.216.76:18333
+Time: [1683903126.1488137s]: [CONNECTION] Connection with peer 51.210.216.76:18333 established
+Time: [1683903127.5008352s]: [CONNECTION] Version message sent to peer 185.150.162.44:18333
+Time: [1683903127.8081893s]: [CONNECTION] Verack message sent to peer 185.150.162.44:18333
+Time: [1683903127.8082949s]: [CONNECTION] Connection with peer 185.150.162.44:18333 established
+Time: [1683903128.1149493s]: [CONNECTION] Version message sent to peer 5.255.97.92:18333
+Time: [1683903128.4221061s]: [CONNECTION] Verack message sent to peer 5.255.97.92:18333
+Time: [1683903128.422203s]: [CONNECTION] Connection with peer 5.255.97.92:18333 established
+Time: [1683903128.7308937s]: [CONNECTION] Version message sent to peer 79.98.30.13:18333
+Time: [1683903129.0510491s]: [CONNECTION] Verack message sent to peer 79.98.30.13:18333
+Time: [1683903129.051103s]: [CONNECTION] Connection with peer 79.98.30.13:18333 established
+Time: [1683903129.05158s]: [CONFIGURATION] Closing program

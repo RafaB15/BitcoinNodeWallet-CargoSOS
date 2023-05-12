@@ -53,7 +53,7 @@ impl LoggerReceiver {
             }
 
             //Simplemente para no abrir el logger constantemente
-            // print!("{text}");
+            print!("{text}");
 
         }
 
