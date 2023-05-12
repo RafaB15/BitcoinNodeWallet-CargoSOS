@@ -10,6 +10,13 @@ use bitcoin_hashes::{
     Hash,
 };
 
+use crate::messages::{
+    serializable::Serializable,
+    deserializable::Deserializable,
+    error_message::ErrorMessage,
+    get_headers_message::GetHeadersMessage,
+};
+
 use crate::{connections::p2p_protocol::ProtocolVersionP2P, block_structure::block_header::BlockHeader};
 
 const TESTNET_MAGIC_NUMBERS: [u8; 4] = [0x0b, 0x11, 0x09, 0x07];
@@ -31,15 +38,25 @@ impl InitialBlockDownload {
     }
 
     pub fn send_get_headers_message(&self, peer_stream: &mut TcpStream) -> Result<(), ErrorMessage>{
-        if let Some(last_header) = self.header_chain.last() {
-            let hash_bytes: &[u8] = sha256d::Hash::hash(last_header).as_ref();
-            let get_headers_message = GetHeadersMessage::new(
-                self.protocol_version,
-                vec![hash_bytes],
-                NO_STOP_HASH,
-            );
-            get_headers_message.serialize(peer_stream)?;
-        }
+        let last_header = match self.header_chain.last() {
+            Some(last_header) => last_header,
+            None => return Err(ErrorMessage::ErrorInSerialization("While serializing last header".to_string())),
+        };
+        let serialized_header = Vec::new();
+        last_header.serialize(&mut serialized_header)?;
+        let hash_bytes: &[u8] = sha256d::Hash::hash(&serialized_header).as_ref();
+        let hashed_header: [u8; 32] = match hash_bytes.try_into() {
+            Ok(hashed_header) => hashed_header,
+            Err(_) => return Err(ErrorMessage::ErrorInSerialization("While serializing last header".to_string())),
+        };
+        
+        let get_headers_message = GetHeadersMessage::new(
+            TESTNET_MAGIC_NUMBERS,
+            self.protocol_version,
+            vec![hashed_header],
+            NO_STOP_HASH,
+        );
+        get_headers_message.serialize(peer_stream)?;
         Ok(())
     }
 }
