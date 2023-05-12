@@ -3,8 +3,6 @@ use std::net::{
     TcpStream,
 };
 
-use crate::messages::error_message::ErrorMessage;
-
 use bitcoin_hashes::{
     sha256d,
     Hash,
@@ -15,21 +13,25 @@ use crate::messages::{
     deserializable::Deserializable,
     error_message::ErrorMessage,
     get_headers_message::GetHeadersMessage,
+    bitfield_services::BitfieldServices,
 };
 
-use crate::{connections::p2p_protocol::ProtocolVersionP2P, block_structure::block_header::BlockHeader};
+use crate::{
+    connections::p2p_protocol::ProtocolVersionP2P, 
+    block_structure::block_header::BlockHeader
+};
 
 const TESTNET_MAGIC_NUMBERS: [u8; 4] = [0x0b, 0x11, 0x09, 0x07];
 const NO_STOP_HASH: [u8; 32] = [0; 32];
 
 pub struct InitialBlockDownload {
-    pub protocol_version: ProtocolVersionP2P,
+    pub protocol_version: BitfieldServices,
     pub peers_adrrs: Vec<SocketAddr>,
     pub header_chain: Vec<BlockHeader>,
 }
 
 impl InitialBlockDownload {
-    pub fn new(protocol_version: ProtocolVersionP2P, peers_adrrs: Vec<SocketAddr>, header_chain: Vec<BlockHeader>) -> Self {
+    pub fn new(protocol_version: BitfieldServices, peers_adrrs: Vec<SocketAddr>, header_chain: Vec<BlockHeader>) -> Self {
         InitialBlockDownload {
             protocol_version,
             peers_adrrs,
@@ -42,9 +44,12 @@ impl InitialBlockDownload {
             Some(last_header) => last_header,
             None => return Err(ErrorMessage::ErrorInSerialization("While serializing last header".to_string())),
         };
-        let serialized_header = Vec::new();
+        let mut serialized_header = Vec::new();
+
         last_header.serialize(&mut serialized_header)?;
-        let hash_bytes: &[u8] = sha256d::Hash::hash(&serialized_header).as_ref();
+        
+        let hash_bytes = sha256d::Hash::hash(&serialized_header);
+        let hash_bytes: &[u8] = hash_bytes.as_ref();
         let hashed_header: [u8; 32] = match hash_bytes.try_into() {
             Ok(hashed_header) => hashed_header,
             Err(_) => return Err(ErrorMessage::ErrorInSerialization("While serializing last header".to_string())),
@@ -52,7 +57,7 @@ impl InitialBlockDownload {
         
         let get_headers_message = GetHeadersMessage::new(
             TESTNET_MAGIC_NUMBERS,
-            self.protocol_version,
+            self.protocol_version.clone(),
             vec![hashed_header],
             NO_STOP_HASH,
         );

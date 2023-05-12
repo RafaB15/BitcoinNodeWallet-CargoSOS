@@ -2,6 +2,7 @@ use super::{
     serializable::Serializable,
     error_message::ErrorMessage,
     compact_size::CompactSize,
+    bitfield_services::BitfieldServices,
 };
 
 use std::io::Write;
@@ -11,13 +12,11 @@ use bitcoin_hashes::{
     Hash,
 };
 
-use crate::connections::p2p_protocol::ProtocolVersionP2P;
-
 pub const GET_HEADERS_TYPE: &[u8; 12] = b"getheaders\0\0";
 
 pub struct GetHeadersMessage {
     pub magic_numbers: [u8; 4],
-    pub version: ProtocolVersionP2P,
+    pub version: BitfieldServices,
     pub header_locator_hashes: Vec<[u8; 32]>, //Lista de hashes de los headers que el recv node va a chequear si tiene
     pub stop_hash: [u8; 32], //El hash hasta el que quiero avanzar. Todos ceros significa que quiero ir hasta el final
 }
@@ -25,7 +24,7 @@ pub struct GetHeadersMessage {
 impl GetHeadersMessage {
     pub fn new(
         magic_bytes: [u8; 4],
-        version: ProtocolVersionP2P,
+        version: BitfieldServices,
         header_locator_hashes: Vec<[u8; 32]>,
         stop_hash: [u8; 32],
     ) -> Self {
@@ -41,7 +40,7 @@ impl GetHeadersMessage {
         self.version.serialize(stream)?;
         CompactSize::new(self.header_locator_hashes.len() as u64).serialize(stream)?;
         
-        for hash in self.header_locator_hashes {
+        for hash in self.header_locator_hashes.iter() {
             hash.serialize(stream)?;
         }
         
