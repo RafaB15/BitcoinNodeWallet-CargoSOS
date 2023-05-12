@@ -123,7 +123,7 @@ impl Handshake {
                 let _ = self.sender_log.log_connection(format!("Error while trying to connect to peer {}: {:?}", potential_peer, e));
             } else {
                 let _ = self.sender_log.log_connection(format!("Connection with peer {} established", potential_peer));
-                peers_addrs.push(potential_peer.clone());
+                peers_addrs.push(*potential_peer);
             }
         }
         Ok(peers_addrs)

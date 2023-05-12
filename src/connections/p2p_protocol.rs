@@ -75,7 +75,7 @@ impl std::convert::TryFrom<i32> for ProtocolVersionP2P {
             311 => Ok(ProtocolVersionP2P::V311),
             209 => Ok(ProtocolVersionP2P::V209),
             106 => Ok(ProtocolVersionP2P::V106),
-            _ => return Err(ErrorConnection::ErrorInvalidInputParse),
+            _ => Err(ErrorConnection::ErrorInvalidInputParse),
         }
     }
 }

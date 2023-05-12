@@ -58,7 +58,7 @@ impl Serializable for u64 {
 
 impl Serializable for Vec<u8> {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
-        match stream.write(&self) {
+        match stream.write(self) {
             Ok(_) => Ok(()),
             _ => Err(ErrorMessage::ErrorInSerialization("Serializing Vec<u8>".to_string())),
         }
@@ -67,7 +67,7 @@ impl Serializable for Vec<u8> {
 
 impl Serializable for [u8] {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
-        match stream.write(&self) {
+        match stream.write(self) {
             Ok(_) => Ok(()),
             _ => Err(ErrorMessage::ErrorInSerialization("Serializing [u8]".to_string())),
         }
@@ -90,7 +90,7 @@ impl Serializable for bool {
 
 impl Serializable for String {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
-        match stream.write(&self.as_bytes()) {
+        match stream.write(self.as_bytes()) {
             Ok(_) => Ok(()),
             _ => Err(ErrorMessage::ErrorInSerialization("Serializing String".to_string())),
         }

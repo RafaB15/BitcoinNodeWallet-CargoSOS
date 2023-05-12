@@ -154,7 +154,7 @@ impl VersionMessage {
         })
     }
 
-    pub(super) fn calculate_checksum(payload: &Vec<u8>) -> Result<[u8; 4], ErrorMessage> {
+    pub(super) fn calculate_checksum(payload: &[u8]) -> Result<[u8; 4], ErrorMessage> {
         let hash_bytes: sha256d::Hash = sha256d::Hash::hash(payload); 
         let checksum: [u8; 4] = match hash_bytes[0..4].try_into() {
             Ok(checksum) => checksum,

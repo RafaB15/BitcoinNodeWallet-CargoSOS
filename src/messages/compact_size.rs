@@ -40,7 +40,7 @@ impl Serializable for CompactSize {
 
         } else {
             PREFIX_U64.serialize(stream)?;
-            (self.value as u64).serialize(stream)?;
+            self.value.serialize(stream)?;
         }
 
         Ok(())

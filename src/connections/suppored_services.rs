@@ -48,7 +48,7 @@ impl std::convert::TryFrom<u64> for SupportedServices {
             NODE_WITNESS => Ok(SupportedServices::NodeWitness),
             NODE_XTHIN => Ok(SupportedServices::NodeXThin),
             NODE_NETWORK_LIMITED => Ok(SupportedServices::NodeNetworkLimited),
-            _ => return Err(ErrorConnection::ErrorInvalidInputParse),
+            _ => Err(ErrorConnection::ErrorInvalidInputParse),
         }
     }
 }

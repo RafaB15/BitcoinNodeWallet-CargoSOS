@@ -111,7 +111,7 @@ fn main() -> Result<(), ErrorExecution> {
     
     std::mem::drop(logger_sender);
     if let Ok(resultado) = handle.join() {
-        let _ = resultado?;
+        resultado?;
     }
 
     Ok(())
