@@ -3,11 +3,6 @@ use std::net::{
     TcpStream,
 };
 
-use bitcoin_hashes::{
-    sha256d,
-    Hash,
-};
-
 use crate::messages::{
     error_message::ErrorMessage,
     get_headers_message::GetHeadersMessage,
@@ -17,7 +12,13 @@ use crate::serialization::serializable::Serializable;
 
 use crate::{
     connections::p2p_protocol::ProtocolVersionP2P, 
-    block_structure::block_header::BlockHeader
+    block_structure::{
+        block_header::BlockHeader,
+        hash::{
+            HashType,
+            hash256d,
+        },
+    },
 };
 
 const TESTNET_MAGIC_NUMBERS: [u8; 4] = [0x0b, 0x11, 0x09, 0x07];
@@ -47,12 +48,7 @@ impl InitialBlockDownload {
 
         last_header.serialize(&mut serialized_header)?;
         
-        let hash_bytes = sha256d::Hash::hash(&serialized_header);
-        let hash_bytes: &[u8] = hash_bytes.as_ref();
-        let hashed_header: [u8; 32] = match hash_bytes.try_into() {
-            Ok(hashed_header) => hashed_header,
-            Err(_) => return Err(ErrorMessage::ErrorInSerialization("While serializing last header".to_string())),
-        };
+        let hashed_header: HashType = hash256d(&serialized_header)?;
         
         let get_headers_message = GetHeadersMessage::new(
             TESTNET_MAGIC_NUMBERS,

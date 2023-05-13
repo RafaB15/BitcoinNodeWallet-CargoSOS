@@ -12,6 +12,11 @@ use crate::serialization::{
     error_serialization::ErrorSerialization,
 };
 
+use crate::block_structure::hash::{
+    HashTypeReduce,
+    hash256d_reduce,
+};
+
 use std::net::{Ipv6Addr, SocketAddr};
 use chrono::{
     DateTime,
@@ -23,11 +28,6 @@ use std::io::{Read, Write};
 use crate::connections::{
     p2p_protocol::ProtocolVersionP2P,
     socket_conversion::socket_to_ipv6_port,
-};
-
-use bitcoin_hashes::{
-    sha256d,
-    Hash,
 };
 
 pub const VERSION_TYPE: &[u8; 12] = b"version\0\0\0\0\0";
@@ -156,15 +156,6 @@ impl VersionMessage {
             relay,
         })
     }
-
-    pub(super) fn calculate_checksum(payload: &[u8]) -> Result<[u8; 4], ErrorSerialization> {
-        let hash_bytes: sha256d::Hash = sha256d::Hash::hash(payload); 
-        let checksum: [u8; 4] = match hash_bytes[0..4].try_into() {
-            Ok(checksum) => checksum,
-            _ => return Err(ErrorSerialization::ErrorInSerialization("Calculating the checksum".to_string())),
-        };
-        Ok(checksum)
-    }
 }
 
 impl Serializable for VersionMessage {
@@ -206,7 +197,7 @@ impl Serializable for VersionMessage {
         (payload.len() as u32).serialize(&mut serialized_message)?;       
 
         // checksum
-        Self::calculate_checksum(&payload)?.serialize(&mut serialized_message)?;
+        hash256d_reduce(&payload)?.serialize(&mut serialized_message)?;
 
         // payload
         payload.serialize(&mut serialized_message)?;
@@ -247,7 +238,7 @@ impl Deserializable for VersionMessage {
 
         let mut payload_bytes: Vec<u8> = Vec::new();
         version_message.serializar_payload(&mut payload_bytes)?;
-        let checksum: [u8; 4] = Self::calculate_checksum(&payload_bytes)?;
+        let checksum: HashTypeReduce = hash256d_reduce(&payload_bytes)?;
 
         if !checksum.eq(&receive_checksum) {
             return Err(ErrorSerialization::ErrorInDeserialization(format!("Checksum isn't the same: {:?} != {:?}", checksum, receive_checksum)));

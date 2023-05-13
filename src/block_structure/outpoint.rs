@@ -1,4 +1,6 @@
+use super::hash::HashType;
+
 pub struct Outpoint {
-    pub hash: [u8; 32],
+    pub hash: HashType,
     pub index: u32,
 }

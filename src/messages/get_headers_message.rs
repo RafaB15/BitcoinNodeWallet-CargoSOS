@@ -9,9 +9,8 @@ use crate::serialization::{
 
 use std::io::Write;
 
-use bitcoin_hashes::{
-    sha256d,
-    Hash,
+use crate::block_structure::hash::{
+    hash256d_reduce,
 };
 
 pub const GET_HEADERS_TYPE: &[u8; 12] = b"getheaders\0\0";
@@ -50,15 +49,6 @@ impl GetHeadersMessage {
         Ok(())
     }
 
-    pub fn calculate_checksum(payload: &Vec<u8>) -> Result<[u8; 4], ErrorSerialization> {
-        let hash_bytes: sha256d::Hash = sha256d::Hash::hash(payload); 
-        let checksum: [u8; 4] = match hash_bytes[0..4].try_into() {
-            Ok(checksum) => checksum,
-            _ => return Err(ErrorSerialization::ErrorInSerialization("Calculating the checksum".to_string())),
-        };
-        Ok(checksum)
-    }
-
 }
 
 impl Serializable for GetHeadersMessage {
@@ -79,7 +69,7 @@ impl Serializable for GetHeadersMessage {
         (serialized_payload.len() as u32).serialize(&mut serialized_message)?;
 
         //checksum
-        Self::calculate_checksum(&serialized_payload)?.serialize(&mut serialized_message)?;
+        hash256d_reduce(&serialized_payload)?.serialize(&mut serialized_message)?;
 
         // payload
         serialized_payload.serialize(&mut serialized_message)?;

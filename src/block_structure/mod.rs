@@ -7,5 +7,6 @@ pub mod transaction;
 pub mod transaction_input;
 pub mod transaction_output;
 pub mod outpoint;
+pub mod hash;
 
 pub mod error_block;
