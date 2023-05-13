@@ -5,6 +5,7 @@ use super::{
     error_block::ErrorBlock,
 };
 
+#[derive(Debug)]
 pub struct BlockChain {
     next_block: Vec<BlockChain>,
     block: Block,   

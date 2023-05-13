@@ -4,6 +4,7 @@ use super::{
     error_block::ErrorBlock,
 };
 
+#[derive(Debug)]
 pub struct Block {
     pub header: BlockHeader,
     pub transactions: Vec<Transaction>
