@@ -31,6 +31,10 @@ impl BlockChain {
         todo!()
     }
 
+    pub fn last<'b>(&self) -> &'b Block {
+        todo!()
+    }
+
     pub fn get_utxo(&self) -> Vec<TransactionOutput> {
         todo!()
     }

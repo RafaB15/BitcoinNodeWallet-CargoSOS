@@ -6,7 +6,7 @@ use bitcoin_hashes::{
 };
 
 pub type HashType = [u8; 32];
-pub type HashTypeReduce = [u8; 4];
+pub type HashTypeReduced = [u8; 4];
 
 pub fn hash256d(bytes: &[u8]) -> Result<HashType, ErrorSerialization>{
 
@@ -20,11 +20,11 @@ pub fn hash256d(bytes: &[u8]) -> Result<HashType, ErrorSerialization>{
     Ok(hash_bytes_32)
 }
 
-pub fn hash256d_reduce(bytes: &[u8]) -> Result<HashTypeReduce, ErrorSerialization> {
+pub fn hash256d_reduce(bytes: &[u8]) -> Result<HashTypeReduced, ErrorSerialization> {
     
     let hash_byte_32: HashType = hash256d(bytes)?;
 
-    let hash_byte_4: HashTypeReduce = match hash_byte_32[..4].try_into() {
+    let hash_byte_4: HashTypeReduced = match hash_byte_32[..4].try_into() {
         Ok(hash_byte_4) => hash_byte_4,
         _ => return Err(ErrorSerialization::ErrorInSerialization("While reduce hashing".to_string())),
     };

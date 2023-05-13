@@ -13,7 +13,7 @@ use crate::serialization::{
 };
 
 use crate::block_structure::hash::{
-    HashTypeReduce,
+    HashTypeReduced,
     hash256d_reduce,
 };
 
@@ -238,7 +238,7 @@ impl Deserializable for VersionMessage {
 
         let mut payload_bytes: Vec<u8> = Vec::new();
         version_message.serializar_payload(&mut payload_bytes)?;
-        let checksum: HashTypeReduce = hash256d_reduce(&payload_bytes)?;
+        let checksum: HashTypeReduced = hash256d_reduce(&payload_bytes)?;
 
         if !checksum.eq(&receive_checksum) {
             return Err(ErrorSerialization::ErrorInDeserialization(format!("Checksum isn't the same: {:?} != {:?}", checksum, receive_checksum)));
