@@ -1,9 +1,6 @@
 use crate::connections::p2p_protocol::ProtocolVersionP2P;
 
-use super::{
-    error_message::ErrorMessage,
-    compact_size::CompactSize,
-};
+use super::compact_size::CompactSize;
 
 use crate::serialization::{
     serializable::Serializable,

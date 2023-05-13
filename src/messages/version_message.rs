@@ -1,7 +1,6 @@
 use super::{
     compact_size::CompactSize, 
     bitfield_services::BitfieldServices,
-    error_message::ErrorMessage, 
 };
 
 use crate::serialization::{
