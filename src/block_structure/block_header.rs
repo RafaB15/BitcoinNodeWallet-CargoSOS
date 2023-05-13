@@ -1,4 +1,4 @@
-use super::block_version::BlockVersion;
+use super::{block_version::BlockVersion, transaction::Transaction};
 
 use crate::serialization::{
     serializable::Serializable,
@@ -56,6 +56,15 @@ impl BlockHeader {
         );
         genesis_block_header
     }
+
+    pub fn proof_of_work(&self) -> bool {
+        todo!()
+    }
+
+    pub fn proof_of_inclusion(&self, transactions: &[Transaction]) -> bool {
+        todo!()
+    }
+
 }
 
 impl Serializable for BlockHeader {
