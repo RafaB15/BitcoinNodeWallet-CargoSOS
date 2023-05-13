@@ -22,7 +22,7 @@ impl Block {
         self.header.proof_of_inclusion(&self.transactions)
     }
 
-    pub fn agregar_transaccion(&self) -> Result<(), ErrorBlock> {
+    pub fn agregar_transaccion(self, transaction: Transaction) {
         todo!()
     }
 }

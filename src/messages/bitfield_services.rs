@@ -60,7 +60,7 @@ impl Serializable for BitfieldServices {
 impl Deserializable for BitfieldServices{
     fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
         
-        let posibles_suppored = [
+        let possibles_supported = [
             SupportedServices::NodeNetwork,
             SupportedServices::NodeGetUTXO,
             SupportedServices::NodeBloom,
@@ -73,16 +73,17 @@ impl Deserializable for BitfieldServices{
 
         let mut elements: Vec<SupportedServices> = Vec::new();
 
-        for posible_suppored in posibles_suppored {
+        for possible_supported in possibles_supported {
 
-            let supported_value: u64 = match posible_suppored.try_into() {
+            let supported_value: u64 = match possible_supported.try_into() {
                 Ok(value) => value,
-                _ => return Err(ErrorSerialization::ErrorInDeserialization(format!("While deserializing bitfield {:?}", posible_suppored))),
+                _ => return Err(ErrorSerialization::ErrorInDeserialization(format!("While deserializing bitfield {:?}", possible_supported))),
             };
 
             if bitfield & supported_value == supported_value {
-                elements.push(posible_suppored);
+                elements.push(possible_supported);
             }
+
         }
 
         Ok(BitfieldServices::new(elements))

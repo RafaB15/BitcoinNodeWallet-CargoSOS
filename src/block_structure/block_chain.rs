@@ -5,22 +5,22 @@ use super::{
     error_block::ErrorBlock,
 };
 
-pub struct BloqueChain {
-    next_block: Vec<BloqueChain>,
-    block: Block,
+pub struct BlockChain {
+    next_block: Vec<BlockChain>,
+    block: Block,   
 }
 
-impl BloqueChain {
+impl BlockChain {
 
     pub fn new(block: Block) -> Self {
-        BloqueChain { 
+        BlockChain { 
             next_block: vec![],
             block,
         }
     }
 
     pub fn append_header(&self, header: BlockHeader) -> Result<(), ErrorBlock> {
-        todo!()
+        self.append_block(Block::new(header))
     }
 
     pub fn append_block(&self, block: Block) -> Result<(), ErrorBlock> {
