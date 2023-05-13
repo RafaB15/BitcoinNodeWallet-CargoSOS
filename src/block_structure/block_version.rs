@@ -1,8 +1,8 @@
 use crate::connections::error_connection::ErrorConnection;
 use std::io::Write;
-use crate::messages::{
+use crate::serialization::{
     serializable::Serializable,
-    error_message::ErrorMessage,
+    error_serialization::ErrorSerialization,
 };
 
 
@@ -42,14 +42,14 @@ impl std::convert::TryInto<i32> for BlockVersion {
 }
 
 impl Serializable for BlockVersion {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
+    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         let version: i32 = match (*self).try_into() {
             Ok(version) => version,
-            Err(_) => return Err(ErrorMessage::ErrorInSerialization(format!("While serializing {:?}", self))),
+            Err(_) => return Err(ErrorSerialization::ErrorInSerialization(format!("While serializing {:?}", self))),
         };
         match stream.write(&version.to_le_bytes()) {
             Ok(_) => Ok(()),
-            _ => Err(ErrorMessage::ErrorWhileWriting),
+            _ => Err(ErrorSerialization::ErrorWhileWriting),
         }
     }
 }

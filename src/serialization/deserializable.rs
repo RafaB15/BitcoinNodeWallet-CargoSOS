@@ -1,5 +1,5 @@
+use super::error_serialization::ErrorSerialization;
 use std::io::Read;
-use super::error_message::ErrorMessage;
 
 use chrono::{
     DateTime,
@@ -9,15 +9,15 @@ use chrono::{
 
 pub trait Deserializable : Sized {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage>;
+    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization>;
 }
 
 impl Deserializable for i32 {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
+    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 4];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization("Deserializing i32".to_string()));
+            return Err(ErrorSerialization::ErrorInDeserialization("Deserializing i32".to_string()));
         }
         Ok(i32::from_le_bytes(buffer))
     }
@@ -25,10 +25,10 @@ impl Deserializable for i32 {
 
 impl Deserializable for i64 {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
+    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer= [0u8; 8];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization("Deserializing i64".to_string()));
+            return Err(ErrorSerialization::ErrorInDeserialization("Deserializing i64".to_string()));
         }
         Ok(i64::from_le_bytes(buffer))
     }
@@ -36,10 +36,10 @@ impl Deserializable for i64 {
 
 impl Deserializable for u8 {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
+    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 1];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization("Deserializing u8".to_string()));
+            return Err(ErrorSerialization::ErrorInDeserialization("Deserializing u8".to_string()));
         }
         Ok(u8::from_le_bytes(buffer))
     }
@@ -47,10 +47,10 @@ impl Deserializable for u8 {
 
 impl Deserializable for u16 {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
+    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 2];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization("Deserializing u16".to_string()));
+            return Err(ErrorSerialization::ErrorInDeserialization("Deserializing u16".to_string()));
         }
         Ok(u16::from_le_bytes(buffer))
     }
@@ -58,10 +58,10 @@ impl Deserializable for u16 {
 
 impl Deserializable for u32 {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
+    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 4];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization("Deserializing u32".to_string()));
+            return Err(ErrorSerialization::ErrorInDeserialization("Deserializing u32".to_string()));
         }
         Ok(u32::from_le_bytes(buffer))
     }
@@ -69,10 +69,10 @@ impl Deserializable for u32 {
 
 impl Deserializable for u64 {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
+    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 8];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization("Deserializing u64".to_string()));
+            return Err(ErrorSerialization::ErrorInDeserialization("Deserializing u64".to_string()));
         }
         Ok(u64::from_le_bytes(buffer))
     }
@@ -80,10 +80,10 @@ impl Deserializable for u64 {
 
 impl Deserializable for [u8; 4] {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
+    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer= [0u8; 4];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization("Deserializing [u8; 4]".to_string()));
+            return Err(ErrorSerialization::ErrorInDeserialization("Deserializing [u8; 4]".to_string()));
         }
         Ok(buffer)
     }
@@ -91,10 +91,10 @@ impl Deserializable for [u8; 4] {
 
 impl Deserializable for [u8; 12] {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
+    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 12];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization("Deserializing [u8; 12]".to_string()));
+            return Err(ErrorSerialization::ErrorInDeserialization("Deserializing [u8; 12]".to_string()));
         }
         Ok(buffer)
     }
@@ -102,26 +102,26 @@ impl Deserializable for [u8; 12] {
 
 impl Deserializable for bool {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
+    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 1];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization("Deserializing bool".to_string()));
+            return Err(ErrorSerialization::ErrorInDeserialization("Deserializing bool".to_string()));
         }
         match buffer[0] {
             0x00 => Ok(false),
             0x01 => Ok(true),
-            _ => Err(ErrorMessage::ErrorInDeserialization(format!("The given buffer does not represent a boolean: {:?}", buffer))),
+            _ => Err(ErrorSerialization::ErrorInDeserialization(format!("The given buffer does not represent a boolean: {:?}", buffer))),
         }
     }
 }
 
 impl Deserializable for DateTime<Utc> {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
+    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let timestamp_int = i64::deserialize(stream)?;
         match NaiveDateTime::from_timestamp_opt(timestamp_int, 0) {
             Some(utc_timestamp) => Ok(DateTime::<Utc>::from_utc(utc_timestamp, Utc)),
-            _ => Err(ErrorMessage::ErrorInDeserialization("Deserializing DateTime<Utc>".to_string())),
+            _ => Err(ErrorSerialization::ErrorInDeserialization("Deserializing DateTime<Utc>".to_string())),
         }
     }
 }
@@ -131,7 +131,7 @@ mod tests {
 
     use super::{
         Deserializable,
-        ErrorMessage,
+        ErrorSerialization,
     };
 
     use chrono::{
@@ -141,7 +141,7 @@ mod tests {
     };
 
     #[test]
-    fn test01_deserialize_correctly_i32() -> Result<(), ErrorMessage> {
+    fn test01_deserialize_correctly_i32() -> Result<(), ErrorSerialization> {
 
         let stream: Vec<u8> = vec![0x5C, 0x06, 0x00, 0x00];
         let mut stream: &[u8] = &stream;
@@ -155,7 +155,7 @@ mod tests {
     }
 
     #[test]
-    fn test02_deserialize_correctly_i64() -> Result<(), ErrorMessage> {
+    fn test02_deserialize_correctly_i64() -> Result<(), ErrorSerialization> {
 
         let stream: Vec<u8> = vec![0x5C, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
         let mut stream: &[u8] = &stream;
@@ -169,7 +169,7 @@ mod tests {
     }
 
     #[test]
-    fn test03_deserialize_correctly_u8() -> Result<(), ErrorMessage> {
+    fn test03_deserialize_correctly_u8() -> Result<(), ErrorSerialization> {
         
         let stream: Vec<u8> = vec![0x54];
         let mut stream: &[u8] = &stream;
@@ -184,7 +184,7 @@ mod tests {
     }
     
     #[test]
-    fn test04_deserialize_correctly_u16() -> Result<(), ErrorMessage> {
+    fn test04_deserialize_correctly_u16() -> Result<(), ErrorSerialization> {
         
         let stream: Vec<u8> = vec![0x9E, 0x3F];
         let mut stream: &[u8] = &stream;
@@ -199,7 +199,7 @@ mod tests {
     }
 
     #[test]
-    fn test05_deserialize_correctly_u32() -> Result<(), ErrorMessage> {
+    fn test05_deserialize_correctly_u32() -> Result<(), ErrorSerialization> {
         
         let stream: Vec<u8> = vec![0xAD, 0x83, 0xF8, 0x00];
         let mut stream: &[u8] = &stream;
@@ -214,7 +214,7 @@ mod tests {
     }
 
     #[test]
-    fn test06_deserialize_correctly_u64() -> Result<(), ErrorMessage> {
+    fn test06_deserialize_correctly_u64() -> Result<(), ErrorSerialization> {
         
         let stream: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19, 0x00, 0x00, 0x00];
         let mut stream: &[u8] = &stream;
@@ -229,7 +229,7 @@ mod tests {
     }
 
     #[test]
-    fn test07_deserialize_correctly_array_4() -> Result<(), ErrorMessage> {
+    fn test07_deserialize_correctly_array_4() -> Result<(), ErrorSerialization> {
         
         let stream: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE];
         let mut stream: &[u8] = &stream;        
@@ -244,7 +244,7 @@ mod tests {
     }
 
     #[test]
-    fn test08_deserialize_correctly_array_12() -> Result<(), ErrorMessage> {
+    fn test08_deserialize_correctly_array_12() -> Result<(), ErrorSerialization> {
         
         let stream: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19, 0x01, 0xBD, 0xDE, 0x19, 0x01, 0xBD, 0xDE];
         let mut stream: &[u8] = &stream;        
@@ -259,7 +259,7 @@ mod tests {
     }
 
     #[test]
-    fn test09_deserialize_correctly_bool() -> Result<(), ErrorMessage> {
+    fn test09_deserialize_correctly_bool() -> Result<(), ErrorSerialization> {
         
         let stream: Vec<u8> = vec![0x01];
         let mut stream: &[u8] = &stream;
@@ -283,7 +283,7 @@ mod tests {
     }
 
     #[test]
-    fn test10_deserialize_correctly_datetime() -> Result<(), ErrorMessage> {
+    fn test10_deserialize_correctly_datetime() -> Result<(), ErrorSerialization> {
         
         let stream: Vec<u8> = vec![0x5C, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
         let mut stream: &[u8] = &stream;

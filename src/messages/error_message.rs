@@ -1,3 +1,7 @@
+use std::convert::From;
+
+use crate::serialization::error_serialization::ErrorSerialization;
+
 /// Enum to represent the error types we can encounter in messages
 /// 
 /// ### Errores
@@ -21,3 +25,13 @@ pub enum ErrorMessage {
     ErrorChecksum,
 }
 
+impl From<ErrorSerialization> for ErrorMessage {
+    fn from(value: ErrorSerialization) -> Self {
+        match value {
+            ErrorSerialization::ErrorInSerialization(error) => ErrorMessage::ErrorInSerialization(error),
+            ErrorSerialization::ErrorInDeserialization(error) => ErrorMessage::ErrorInDeserialization(error),
+            ErrorSerialization::ErrorWhileWriting => ErrorMessage::ErrorWhileWriting,
+            ErrorSerialization::ErrorWhileReading => ErrorMessage::ErrorWhileReading,
+        }
+    }
+}

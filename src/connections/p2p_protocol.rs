@@ -1,7 +1,7 @@
-use crate::messages::{
+use crate::serialization::{
     serializable::Serializable,
     deserializable::Deserializable,
-    error_message::ErrorMessage,
+    error_serialization::ErrorSerialization,
 };
 
 use super::error_connection::ErrorConnection;
@@ -107,26 +107,26 @@ impl std::convert::TryInto<i32> for ProtocolVersionP2P {
 }
 
 impl Serializable for ProtocolVersionP2P {
-    fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorMessage> {
+    fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
         let version: i32 = match (*self).try_into() {
             Ok(version) => version,
-            _ => return Err(ErrorMessage::ErrorInSerialization(format!("While serializing p2p protocol version {:?}", self))),
+            _ => return Err(ErrorSerialization::ErrorInSerialization(format!("While serializing p2p protocol version {:?}", self))),
         };
 
         match stream.write(&version.to_le_bytes()) {
             Ok(_) => Ok(()),
-            _ => Err(ErrorMessage::ErrorWhileWriting),
+            _ => Err(ErrorSerialization::ErrorWhileWriting),
         }
     }
 }
 
 impl Deserializable for ProtocolVersionP2P {
 
-    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorMessage> {
+    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
         let version_int = i32::deserialize(stream)?;
         match version_int.try_into() {
             Ok(version) => Ok(version),
-            _ => Err(ErrorMessage::ErrorInDeserialization(format!("While deserializing p2p protocol version {:?}", version_int))),
+            _ => Err(ErrorSerialization::ErrorInDeserialization(format!("While deserializing p2p protocol version {:?}", version_int))),
         }
     }
 }
@@ -136,13 +136,13 @@ mod tests {
 
     use super::{
         ProtocolVersionP2P,
-        ErrorMessage,
+        ErrorSerialization,
         Serializable,
         Deserializable,
     };
 
     #[test]
-    fn test01_serialize_correctly_protocol_version_p2p() -> Result<(), ErrorMessage> {
+    fn test01_serialize_correctly_protocol_version_p2p() -> Result<(), ErrorSerialization> {
         
         let expected_stream: Vec<u8> = vec![0xAA, 0x7A, 0x00, 0x00];
         
@@ -157,7 +157,7 @@ mod tests {
     }
 
     #[test]
-    fn test02_deserialize_correctly_protocol_version_p2p() -> Result<(), ErrorMessage> {
+    fn test02_deserialize_correctly_protocol_version_p2p() -> Result<(), ErrorSerialization> {
 
         let stream: Vec<u8> = vec![0xAA, 0x7A, 0x00, 0x00];
         let mut stream: &[u8] = &stream;

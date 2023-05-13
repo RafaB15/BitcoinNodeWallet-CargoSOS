@@ -1,18 +1,18 @@
-use super::error_message::ErrorMessage;
+use super::error_serialization::ErrorSerialization;
 use std::net::Ipv6Addr;
 use std::io::Read;
 
 pub trait DeserializableBigEndian : Sized {
 
-    fn deserialize_big_endian(stream: &mut dyn Read) -> Result<Self, ErrorMessage>;
+    fn deserialize_big_endian(stream: &mut dyn Read) -> Result<Self, ErrorSerialization>;
 }
 
 impl DeserializableBigEndian for u16 {
 
-    fn deserialize_big_endian(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
+    fn deserialize_big_endian(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 2];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization("Deserializing u16 in Big endian".to_string()));
+            return Err(ErrorSerialization::ErrorInDeserialization("Deserializing u16 in Big endian".to_string()));
         }
         Ok(u16::from_be_bytes(buffer))
     }
@@ -20,10 +20,10 @@ impl DeserializableBigEndian for u16 {
 
 impl DeserializableBigEndian for Ipv6Addr {
 
-    fn deserialize_big_endian(stream: &mut dyn Read) -> Result<Self, ErrorMessage> {
+    fn deserialize_big_endian(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 16];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization("Deserializing Ipv6Addr in Big endian".to_string()));
+            return Err(ErrorSerialization::ErrorInDeserialization("Deserializing Ipv6Addr in Big endian".to_string()));
         }
         Ok(Ipv6Addr::from(buffer))
     }
@@ -34,13 +34,13 @@ mod tests {
     
     use super::{
         DeserializableBigEndian,
-        ErrorMessage,
+        ErrorSerialization,
     };
 
     use std::net::Ipv6Addr;
 
     #[test]
-    fn test01_deserialize_correctly_u16() -> Result<(), ErrorMessage> {
+    fn test01_deserialize_correctly_u16() -> Result<(), ErrorSerialization> {
         let stream: Vec<u8> = vec![0x3F, 0x9E];
         let mut stream: &[u8] = &stream;
         
@@ -54,7 +54,7 @@ mod tests {
     }
 
     #[test]
-    fn test02_deserialize_correctly_ipv6() -> Result<(), ErrorMessage> {
+    fn test02_deserialize_correctly_ipv6() -> Result<(), ErrorSerialization> {
         let stream: Vec<u8> = vec![0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xc0, 0x0a, 0x02, 0xff];
         let mut stream: &[u8] = &stream;
         

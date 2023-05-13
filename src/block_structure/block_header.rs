@@ -1,7 +1,8 @@
 use super::block_version::BlockVersion;
-use crate::messages::{
+
+use crate::serialization::{
     serializable::Serializable,
-    error_message::ErrorMessage,
+    error_serialization::ErrorSerialization,
 };
 
 use std::io::{
@@ -58,7 +59,7 @@ impl BlockHeader {
 }
 
 impl Serializable for BlockHeader {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
+    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.version.serialize(stream)?;
         self.previous_block_header_hash.serialize(stream)?;
         self.merkle_root_hash.serialize(stream)?;

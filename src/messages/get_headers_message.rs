@@ -1,9 +1,13 @@
 use crate::connections::p2p_protocol::ProtocolVersionP2P;
 
 use super::{
-    serializable::Serializable,
     error_message::ErrorMessage,
     compact_size::CompactSize,
+};
+
+use crate::serialization::{
+    serializable::Serializable,
+    error_serialization::ErrorSerialization,
 };
 
 use std::io::Write;
@@ -37,7 +41,7 @@ impl GetHeadersMessage {
         }
     }
 
-    pub fn serialize_payload(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
+    pub fn serialize_payload(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.version.serialize(stream)?;
         CompactSize::new(self.header_locator_hashes.len() as u64).serialize(stream)?;
         
@@ -49,11 +53,11 @@ impl GetHeadersMessage {
         Ok(())
     }
 
-    pub fn calculate_checksum(payload: &Vec<u8>) -> Result<[u8; 4], ErrorMessage> {
+    pub fn calculate_checksum(payload: &Vec<u8>) -> Result<[u8; 4], ErrorSerialization> {
         let hash_bytes: sha256d::Hash = sha256d::Hash::hash(payload); 
         let checksum: [u8; 4] = match hash_bytes[0..4].try_into() {
             Ok(checksum) => checksum,
-            _ => return Err(ErrorMessage::ErrorChecksum),
+            _ => return Err(ErrorSerialization::ErrorInSerialization("Calculating the checksum".to_string())),
         };
         Ok(checksum)
     }
@@ -62,7 +66,7 @@ impl GetHeadersMessage {
 
 impl Serializable for GetHeadersMessage {
 
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
+    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         let mut serialized_message = Vec::new();
         let mut serialized_payload = Vec::new();
 
@@ -95,7 +99,7 @@ mod tests {
         ProtocolVersionP2P,
         CompactSize,
         Serializable,
-        ErrorMessage, 
+        ErrorSerialization, 
         GET_HEADERS_TYPE,
     };
 
@@ -105,7 +109,7 @@ mod tests {
     };
 
     #[test]
-    fn test01_serialize() -> Result<(), ErrorMessage> {
+    fn test01_serialize() -> Result<(), ErrorSerialization> {
         let magic_bytes: [u8; 4] = [0x55, 0x66, 0xee, 0xee];
         let version = ProtocolVersionP2P::V70015;
         let header_locator_hash: Vec<[u8; 32]> = vec![[1; 32], [2; 32], [0; 32]];
@@ -128,7 +132,7 @@ mod tests {
         let hash_bytes: sha256d::Hash = sha256d::Hash::hash(&payload); 
         let checksum: [u8; 4] = match hash_bytes[0..4].try_into() {
             Ok(checksum) => checksum,
-            _ => return Err(ErrorMessage::ErrorChecksum),
+            _ => return Err(ErrorSerialization::ErrorInSerialization("Calculating the checksum".to_string())),
         };
         checksum.serialize(&mut expected_stream)?;
         payload.serialize(&mut expected_stream)?;

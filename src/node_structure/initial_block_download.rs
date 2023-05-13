@@ -9,11 +9,11 @@ use bitcoin_hashes::{
 };
 
 use crate::messages::{
-    serializable::Serializable,
-    deserializable::Deserializable,
     error_message::ErrorMessage,
     get_headers_message::GetHeadersMessage,
 };
+
+use crate::serialization::serializable::Serializable;
 
 use crate::{
     connections::p2p_protocol::ProtocolVersionP2P, 
