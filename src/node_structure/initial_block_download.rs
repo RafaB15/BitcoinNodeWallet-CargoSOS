@@ -13,7 +13,6 @@ use crate::messages::{
     deserializable::Deserializable,
     error_message::ErrorMessage,
     get_headers_message::GetHeadersMessage,
-    bitfield_services::BitfieldServices,
 };
 
 use crate::{
@@ -25,13 +24,13 @@ const TESTNET_MAGIC_NUMBERS: [u8; 4] = [0x0b, 0x11, 0x09, 0x07];
 const NO_STOP_HASH: [u8; 32] = [0; 32];
 
 pub struct InitialBlockDownload {
-    pub protocol_version: BitfieldServices,
+    pub protocol_version: ProtocolVersionP2P,
     pub peers_adrrs: Vec<SocketAddr>,
     pub header_chain: Vec<BlockHeader>,
 }
 
 impl InitialBlockDownload {
-    pub fn new(protocol_version: BitfieldServices, peers_adrrs: Vec<SocketAddr>, header_chain: Vec<BlockHeader>) -> Self {
+    pub fn new(protocol_version: ProtocolVersionP2P, peers_adrrs: Vec<SocketAddr>, header_chain: Vec<BlockHeader>) -> Self {
         InitialBlockDownload {
             protocol_version,
             peers_adrrs,

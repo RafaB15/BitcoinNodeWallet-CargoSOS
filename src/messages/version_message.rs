@@ -311,9 +311,9 @@ mod tests {
         let relay: bool = false;
         let mut stream: Vec<u8> = Vec::new();
         
-        let mut stream_esperado: Vec<u8> = Vec::new();
-        magic_bytes.serialize(&mut stream_esperado)?;
-        VERSION_TYPE.serialize(&mut stream_esperado)?;
+        let mut expected_stream: Vec<u8> = Vec::new();
+        magic_bytes.serialize(&mut expected_stream)?;
+        VERSION_TYPE.serialize(&mut expected_stream)?;
         
         let mut payload: Vec<u8> = Vec::new();
         version.serialize(&mut payload)?;
@@ -335,14 +335,14 @@ mod tests {
         start_height.serialize(&mut payload)?; 
         relay.serialize(&mut payload)?;
 
-        (payload.len() as u32).serialize(&mut stream_esperado)?;
+        (payload.len() as u32).serialize(&mut expected_stream)?;
         let hash_bytes: sha256d::Hash = sha256d::Hash::hash(&payload); 
         let checksum: [u8; 4] = match hash_bytes[0..4].try_into() {
             Ok(checksum) => checksum,
             _ => return Err(ErrorMessage::ErrorChecksum),
         };
-        checksum.serialize(&mut stream_esperado)?;
-        payload.serialize(&mut stream_esperado)?;
+        checksum.serialize(&mut expected_stream)?;
+        payload.serialize(&mut expected_stream)?;
 
         
 
@@ -364,7 +364,7 @@ mod tests {
 
         version_message.serialize(&mut stream)?;
         
-        assert_eq!(stream_esperado, stream);
+        assert_eq!(expected_stream, stream);
         
         Ok(())
     }
