@@ -1,15 +1,18 @@
 mod error_initialization;
 mod error_execution;
 
+use std::net::SocketAddr;
 use std::{io::BufReader, path::Path};
 use std::fs::File;
 use std::thread::{self, JoinHandle};
 
+use cargosos_bitcoin::configurations::error_configuration::ErrorConfiguration;
 use cargosos_bitcoin::configurations::{
     configuration::config,
     log_config::LogConfig,
 };
 
+use cargosos_bitcoin::connections::error_connection::ErrorConnection;
 use cargosos_bitcoin::logs::{
     logger,
     logger_sender::LoggerSender,
@@ -75,6 +78,33 @@ fn initialize_logs(log_config: LogConfig) -> Result<(JoinHandle<Result<(), Error
     Ok((handle, logger_sender))
 }
 
+fn get_potential_peers(logger_sender: LoggerSender) -> Result<Vec<SocketAddr>, ErrorExecution> {
+    logger_sender.log_connection("Getting potential peers with dns seeder".to_string())?;
+
+    let dns_seeder = DNSSeeder::new("seed.testnet.bitcoin.sprovoost.nl", 18333);
+    let potential_peers = dns_seeder.discover_peers()?;
+
+    for potential_peer in &potential_peers {
+        logger_sender.log_connection(format!("Potential peer: {:?}", potential_peer))?;
+    }
+
+    Ok(potential_peers)
+}
+
+fn connect_to_testnet_peers(logger_sender: LoggerSender, potential_peers: Vec<SocketAddr>) -> Result<Vec<SocketAddr>, ErrorExecution> {
+    logger_sender.log_connection("Connecting to potential peers".to_string())?;
+
+    let mut node = Handshake::new(
+        ProtocolVersionP2P::V70015,
+        BitfieldServices::new(vec![SupportedServices::Unname]),
+        0,
+        logger_sender.clone(),  
+    );
+
+    let peers = node.connect_to_testnet_peers(&potential_peers)?;
+    Ok(peers)
+}
+
 fn main() -> Result<(), ErrorExecution> {
     let arguments: Vec<String> = std::env::args().collect();    
 
@@ -91,20 +121,9 @@ fn main() -> Result<(), ErrorExecution> {
     // Ejecutar programa
 
     {
-        let dns_seeder = DNSSeeder::new("seed.testnet.bitcoin.sprovoost.nl", 18333);
-        let potential_peers = dns_seeder.discover_peers()?;
-        println!("Potential peers: {:?}", potential_peers);
+        let potential_peers = get_potential_peers(logger_sender.clone())?;
 
-        let mut node = Handshake::new(
-            ProtocolVersionP2P::V70015,
-            BitfieldServices::new(vec![SupportedServices::Unname]),
-            0,
-            logger_sender.clone(),  
-        );
-
-        let peers_addrs = node.connect_to_testnet_peers(&potential_peers)?;
-
-        println!("Connection made: {:?}", peers_addrs);
+        let peers = connect_to_testnet_peers(logger_sender.clone(), potential_peers)?;
     }
 
     logger_sender.log_configuration("Closing program".to_string())?;
