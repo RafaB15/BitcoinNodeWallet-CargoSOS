@@ -92,7 +92,7 @@ impl VersionMessage {
         }
     }
 
-    pub(super) fn serializar_payload(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    pub(super) fn serialize_payload(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         
         self.version.serialize(stream)?;
         self.services.serialize(stream)?;
@@ -116,7 +116,7 @@ impl VersionMessage {
         Ok(())
     }
 
-    pub(super) fn deserializar_payload(stream: &mut dyn Read, magic_bytes: [u8; 4]) ->  Result<VersionMessage, ErrorSerialization> {
+    pub(super) fn deserialize_payload(stream: &mut dyn Read, magic_bytes: [u8; 4]) ->  Result<VersionMessage, ErrorSerialization> {
 
         let version = ProtocolVersionP2P::deserialize(stream)?;
         let services =  BitfieldServices::deserialize(stream)?;
@@ -191,7 +191,7 @@ impl Serializable for VersionMessage {
         // command name
         VERSION_TYPE.serialize(&mut serialized_message)?;        
         
-        self.serializar_payload(&mut payload)?;
+        self.serialize_payload(&mut payload)?;
 
         // payload size
         (payload.len() as u32).serialize(&mut serialized_message)?;       
@@ -234,10 +234,10 @@ impl Deserializable for VersionMessage {
             return Err(ErrorSerialization::ErrorWhileReading);
         }
         let mut buffer: &[u8] = &buffer;
-        let version_message = Self::deserializar_payload(&mut buffer, magic_bytes)?;
+        let version_message = Self::deserialize_payload(&mut buffer, magic_bytes)?;
 
         let mut payload_bytes: Vec<u8> = Vec::new();
-        version_message.serializar_payload(&mut payload_bytes)?;
+        version_message.serialize_payload(&mut payload_bytes)?;
         let checksum: HashTypeReduced = hash256d_reduce(&payload_bytes)?;
 
         if !checksum.eq(&receive_checksum) {
