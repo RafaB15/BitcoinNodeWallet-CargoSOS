@@ -9,5 +9,6 @@ pub mod transaction_output;
 pub mod coinbase_transaction;
 pub mod outpoint;
 pub mod hash;
+pub mod compact256;
 
 pub mod error_block;

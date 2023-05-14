@@ -1,0 +1,4 @@
+pub struct Compact256 {
+    
+    
+}
