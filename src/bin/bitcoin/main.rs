@@ -39,6 +39,7 @@ use cargosos_bitcoin::connections::{
     dns_seeder::DNSSeeder,
     p2p_protocol::ProtocolVersionP2P,
     suppored_services::SupportedServices,
+    initial_download_method::InitialDownloadMethod,
     error_connection::ErrorConnection,
 };
 
@@ -160,17 +161,14 @@ fn get_peer_header(
     Ok(())
 }
 
-fn get_initial_download(
+fn get_initial_download_headers_first(
     peers: Vec<SocketAddr>,
+    block_chain: &mut BlockChain,
     logger_sender: LoggerSender, 
-) -> Result<BlockChain, ErrorExecution> 
+) -> Result<(), ErrorExecution> 
 {
-    logger_sender.log_connection("Getting initial download".to_string())?;
+    logger_sender.log_connection("Getting initial download headers first".to_string())?;
 
-    let genesis_header: BlockHeader = BlockHeader::generate_genesis_block_header();
-    let genesis_block: Block = Block::new(genesis_header);
-
-    let mut block_chain: BlockChain = BlockChain::new(genesis_block);
     let block_download = InitialBlockDownload::new(
         ProtocolVersionP2P::V70015,
     );
@@ -179,9 +177,33 @@ fn get_initial_download(
         get_peer_header(
             peer,
             &block_download,
-            &mut block_chain,
+            block_chain,
             &logger_sender,
         )?;
+    }
+
+    Ok(())
+}
+
+fn get_block_chain(
+    peers: Vec<SocketAddr>,
+    logger_sender: LoggerSender, 
+) -> Result<BlockChain, ErrorExecution> 
+{    
+    logger_sender.log_connection("Getting block chain".to_string())?;
+
+    let method = InitialDownloadMethod::HeadersFirst;
+
+    let genesis_header: BlockHeader = BlockHeader::generate_genesis_block_header();
+    let genesis_block: Block = Block::new(genesis_header);
+
+    let mut block_chain: BlockChain = BlockChain::new(genesis_block);
+
+    match method {
+        InitialDownloadMethod::HeadersFirst => {
+            get_initial_download_headers_first(peers, &mut block_chain, logger_sender.clone())?;
+        },
+        InitialDownloadMethod::BlocksFirst => todo!(),
     }
 
     Ok(block_chain)
@@ -206,7 +228,7 @@ fn main() -> Result<(), ErrorExecution> {
 
         let peers = connect_to_testnet_peers(potential_peers, logger_sender.clone())?;
 
-        let block_chain = get_initial_download(peers, logger_sender.clone())?;
+        let block_chain = get_block_chain(peers, logger_sender.clone())?;
 
         println!("Block chain: {:?}", block_chain);
     }
