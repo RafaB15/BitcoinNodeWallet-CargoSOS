@@ -20,6 +20,15 @@ impl Serializable for i32 {
     }
 }
 
+impl Serializable for i64 {
+    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+        match stream.write(&self.to_le_bytes()) {
+            Ok(_) => Ok(()),
+            _ => Err(ErrorSerialization::ErrorInSerialization("Serializing i64".to_string())),
+        }
+    }
+}
+
 impl Serializable for u8 {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         match stream.write(&self.to_le_bytes()) {

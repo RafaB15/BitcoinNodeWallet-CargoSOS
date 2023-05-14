@@ -3,7 +3,6 @@ use crate::serialization::{
     serializable::Serializable,
     error_serialization::ErrorSerialization,
 };
-
 use std::io::Write;
 
 pub struct Outpoint {

@@ -26,8 +26,9 @@ impl Serializable for TransactionInput {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.previous_output.serialize(stream)?;
 
-
+        CompactSize::new(self.signature_script.len() as u64).serialize(stream)?;
         self.signature_script.serialize(stream)?;
+        
         self.sequence.serialize(stream)?;
 
         Ok(())
