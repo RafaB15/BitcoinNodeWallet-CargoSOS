@@ -29,18 +29,21 @@ const NO_STOP_HASH: HashType = [0; 32];
 
 pub struct InitialBlockDownload {
     pub protocol_version: ProtocolVersionP2P,
-    pub peers_adrrs: Vec<SocketAddr>,
 }
 
 impl InitialBlockDownload {
-    pub fn new(protocol_version: ProtocolVersionP2P, peers_adrrs: Vec<SocketAddr>) -> Self {
+    pub fn new(protocol_version: ProtocolVersionP2P) -> Self {
         InitialBlockDownload {
             protocol_version,
-            peers_adrrs,
         }
     }
 
-    pub fn send_get_headers_message(&self, peer_stream: &mut TcpStream, block_chain: BlockChain) -> Result<BlockChain, ErrorMessage>{
+    fn send_get_headers_message(
+        &self, 
+        peer_stream: &mut TcpStream, 
+        block_chain: &mut BlockChain
+    ) -> Result<u32, ErrorMessage>
+    {
         let last_header: &BlockHeader = &block_chain.last().header;
         let mut serialized_header = Vec::new();
 
@@ -55,6 +58,14 @@ impl InitialBlockDownload {
             NO_STOP_HASH,
         );
         get_headers_message.serialize(peer_stream)?;
-        Ok(block_chain)
+        Ok(0)
+    }
+
+    pub fn get_headers(
+        &self, 
+        peer_stream: &mut TcpStream, 
+        block_chain: &mut BlockChain
+    ) -> Result<u32, ErrorMessage> {
+        todo!()
     }
 }

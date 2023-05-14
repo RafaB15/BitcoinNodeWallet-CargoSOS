@@ -1,18 +1,20 @@
 mod error_initialization;
 mod error_execution;
 
-use std::net::SocketAddr;
+use std::net::{
+    SocketAddr,
+    TcpStream,
+};
+
 use std::{io::BufReader, path::Path};
 use std::fs::File;
 use std::thread::{self, JoinHandle};
 
-use cargosos_bitcoin::configurations::error_configuration::ErrorConfiguration;
 use cargosos_bitcoin::configurations::{
     configuration::config,
     log_config::LogConfig,
 };
 
-use cargosos_bitcoin::connections::error_connection::ErrorConnection;
 use cargosos_bitcoin::logs::{
     logger,
     logger_sender::LoggerSender,
@@ -22,15 +24,27 @@ use cargosos_bitcoin::logs::{
 use error_initialization::ErrorInitialization;
 use error_execution::ErrorExecution;
 
-use cargosos_bitcoin::node_structure::handshake::Handshake;
+use cargosos_bitcoin::node_structure::{
+    handshake::Handshake,
+    initial_block_download::InitialBlockDownload,
+};
+
+use cargosos_bitcoin::block_structure::{
+    block_chain::BlockChain,
+    block::Block,
+    block_header::BlockHeader,
+};
 
 use cargosos_bitcoin::connections::{
     dns_seeder::DNSSeeder,
     p2p_protocol::ProtocolVersionP2P,
     suppored_services::SupportedServices,
+    error_connection::ErrorConnection,
 };
 
 use cargosos_bitcoin::messages::bitfield_services::BitfieldServices;
+
+const MAX_HEADERS: u32 = 2000;
 
 /// Get the configuration name given the arguments 
 /// 
@@ -91,7 +105,11 @@ fn get_potential_peers(logger_sender: LoggerSender) -> Result<Vec<SocketAddr>, E
     Ok(potential_peers)
 }
 
-fn connect_to_testnet_peers(logger_sender: LoggerSender, potential_peers: Vec<SocketAddr>) -> Result<Vec<SocketAddr>, ErrorExecution> {
+fn connect_to_testnet_peers(
+    potential_peers: Vec<SocketAddr>,
+    logger_sender: LoggerSender, 
+) -> Result<Vec<SocketAddr>, ErrorExecution> 
+{
     logger_sender.log_connection("Connecting to potential peers".to_string())?;
 
     let mut node = Handshake::new(
@@ -101,8 +119,72 @@ fn connect_to_testnet_peers(logger_sender: LoggerSender, potential_peers: Vec<So
         logger_sender.clone(),  
     );
 
-    let peers = node.connect_to_testnet_peers(&potential_peers)?;
+    let mut peers: Vec<SocketAddr> = Vec::new();
+
+    for potential_peer in potential_peers {
+        let peer = node.connect_to_testnet_peer(potential_peer)?;
+        peers.push(peer);
+    }
+
     Ok(peers)
+}
+
+fn get_peer_header(
+    peer: SocketAddr,
+    block_download: &InitialBlockDownload,
+    block_chain: &mut BlockChain,
+    logger_sender: &LoggerSender,
+) -> Result<(), ErrorExecution> {
+
+    logger_sender.log_connection(format!("Connecting to peer: {:?}", peer))?;
+    let mut peer_stream = match TcpStream::connect(peer) {
+        Ok(stream) => stream,
+        Err(_) => return Err(ErrorConnection::ErrorCannotConnectToAddress.into()),
+    };
+
+    loop {
+        let header_count: u32 = block_download.get_headers(
+            &mut peer_stream,
+            block_chain,
+        )?;
+
+        logger_sender.log_connection(
+            format!("From {:?} we get: {}", peer, header_count)
+        )?;
+
+        if header_count < MAX_HEADERS {
+            break;
+        }        
+    }
+
+    Ok(())
+}
+
+fn get_initial_download(
+    peers: Vec<SocketAddr>,
+    logger_sender: LoggerSender, 
+) -> Result<BlockChain, ErrorExecution> 
+{
+    logger_sender.log_connection("Getting initial download".to_string())?;
+
+    let genesis_header: BlockHeader = BlockHeader::generate_genesis_block_header();
+    let genesis_block: Block = Block::new(genesis_header);
+
+    let mut block_chain: BlockChain = BlockChain::new(genesis_block);
+    let block_download = InitialBlockDownload::new(
+        ProtocolVersionP2P::V70015,
+    );
+
+    for peer in peers {
+        get_peer_header(
+            peer,
+            &block_download,
+            &mut block_chain,
+            &logger_sender,
+        )?;
+    }
+
+    Ok(block_chain)
 }
 
 fn main() -> Result<(), ErrorExecution> {
@@ -114,8 +196,7 @@ fn main() -> Result<(), ErrorExecution> {
     let config_name: String = get_config_name(arguments)?;
     let config_file = open_config_file(config_name)?;
     let (log_config, _connection_config) = config::new(config_file)?;
-
-    
+ 
     let (handle, logger_sender) = initialize_logs(log_config)?;
 
     // Ejecutar programa
@@ -123,7 +204,11 @@ fn main() -> Result<(), ErrorExecution> {
     {
         let potential_peers = get_potential_peers(logger_sender.clone())?;
 
-        let peers = connect_to_testnet_peers(logger_sender.clone(), potential_peers)?;
+        let peers = connect_to_testnet_peers(potential_peers, logger_sender.clone())?;
+
+        let block_chain = get_initial_download(peers, logger_sender.clone())?;
+
+        println!("Block chain: {:?}", block_chain);
     }
 
     logger_sender.log_configuration("Closing program".to_string())?;

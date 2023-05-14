@@ -119,16 +119,13 @@ impl Handshake {
 
     ///Function that tries to do the handshake with the given vector of potential peers.
     //Recordar implementar la funcionalidad con
-    pub fn connect_to_testnet_peers(&mut self, potential_peers: &Vec<SocketAddr>) -> Result<Vec<SocketAddr>, ErrorConnection> {
-        let mut peers_addrs: Vec<SocketAddr> = Vec::new();
-        for potential_peer in potential_peers {
-            if let Err(e) = self.attempt_connection_with_testnet_peer(potential_peer) {
-                let _ = self.sender_log.log_connection(format!("Error while trying to connect to peer {}: {:?}", potential_peer, e));
-            } else {
-                let _ = self.sender_log.log_connection(format!("Connection with peer {} established", potential_peer));
-                peers_addrs.push(*potential_peer);
-            }
+    pub fn connect_to_testnet_peer(&mut self, potential_peer: SocketAddr) -> Result<SocketAddr, ErrorConnection> {
+        
+        if let Err(e) = self.attempt_connection_with_testnet_peer(&potential_peer) {
+            let _ = self.sender_log.log_connection(format!("Error while trying to connect to peer {}: {:?}", potential_peer, e));
+        } else {
+            let _ = self.sender_log.log_connection(format!("Connection with peer {} established", potential_peer));
         }
-        Ok(peers_addrs)
+        Ok(potential_peer)
     }
 }
