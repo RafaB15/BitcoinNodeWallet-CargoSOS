@@ -2,9 +2,11 @@ use crate::connections::{
     type_identifier::TypeIdentifier,
 };
 
-use crate::block_structure::{
-    hash::HashType,
+use crate::block_structure::hash::{
+    HashType,
 };
+
+use std::io::Read;
 
 use crate::serialization::{
     serializable::Serializable,
@@ -15,16 +17,6 @@ use crate::serialization::{
 pub struct InventoryMessage {
     pub type_identifier: TypeIdentifier,
     pub hash_value: HashType,
-}
-
-impl InventoryMessage {
-
-    pub fn new(type_identifier: TypeIdentifier, hash_value: HashType) -> Self {
-        InventoryMessage {
-            type_identifier,
-            hash_value,
-        }
-    }
 }
 
 impl Serializable for InventoryMessage {
@@ -39,9 +31,9 @@ impl Serializable for InventoryMessage {
 
 impl Deserializable for InventoryMessage {
     
-    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
+    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let type_identifier = TypeIdentifier::deserialize(stream)?;
-        let hash_value: HashType = HashType::deserializable(stream)?;
+        let hash_value = HashType::deserialize(stream)?;
         
         Ok(InventoryMessage { 
             type_identifier, 
