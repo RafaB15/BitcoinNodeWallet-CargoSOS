@@ -5,6 +5,7 @@ use super::{
         HashType, 
         hash256d
     },
+    compact256::Compact256,
 };
 
 use crate::serialization::{
@@ -26,7 +27,7 @@ pub struct BlockHeader {
     pub previous_block_header_hash: HashType,
     pub merkle_root_hash: HashType,
     pub time: u32,
-    pub n_bits: u32,
+    pub n_bits: Compact256,
     pub nonce: u32,
 }
 
@@ -61,10 +62,16 @@ impl BlockHeader {
     }
 
     pub fn proof_of_work(&self) -> bool {
-        //serializo
-        //haseho doble
-        //comparo con n_bits (n bit debe ser mayor al hasheo doble)
-        todo!()
+        let mut buffer = vec![];
+        if self.serialize(&mut buffer).is_err() {
+            return false;
+        }
+        let hash: HashType = match hash256d(&buffer){
+            Ok(hash) => hash,
+            Err(_) => return false,
+        };
+        self.n_bits > hash
+
     }
 
     pub fn proof_of_inclusion(&self, transactions: &[Transaction]) -> bool {
