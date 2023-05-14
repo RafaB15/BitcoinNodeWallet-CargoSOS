@@ -10,6 +10,7 @@ use crate::messages::{
 
 use crate::block_structure::{
     block_chain::BlockChain,
+    block::Block,
     block_header::BlockHeader,
     hash::{
         HashType,
@@ -29,6 +30,7 @@ use crate::{
 const TESTNET_MAGIC_NUMBERS: [u8; 4] = [0x0b, 0x11, 0x09, 0x07];
 const NO_STOP_HASH: HashType = [0; 32];
 
+#[derive(Debug, Clone)]
 pub struct InitialBlockDownload {
     pub protocol_version: ProtocolVersionP2P,
 }
@@ -40,7 +42,7 @@ impl InitialBlockDownload {
         }
     }
 
-    pub fn send_get_headers_message(&self, peer_stream: &mut TcpStream, block_chain: &BlockChain) -> Result<(), ErrorMessage>{
+pub fn send_get_headers_message(&self, peer_stream: &mut TcpStream, block_chain: &BlockChain) -> Result<(), ErrorMessage>{
         let last_header: &BlockHeader = &block_chain.last().header;
         let mut serialized_header = Vec::new();
 
@@ -76,5 +78,13 @@ impl InitialBlockDownload {
         let received_headers_message = HeadersMessage::deserialize(peer_stream)?;
         let added_headers = self.add_headers_to_blockchain(block_chain, &received_headers_message)?;
         Ok(added_headers)
+    }
+  
+    pub fn get_data(
+          &self,
+          peer_stream: &mut TcpStream,
+          hashed_header: &HashType,
+      ) -> Result<Block, ErrorMessage> {
+          todo!()
     }
 }

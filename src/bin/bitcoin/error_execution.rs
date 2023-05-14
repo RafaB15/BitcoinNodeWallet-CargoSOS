@@ -4,6 +4,9 @@ use cargosos_bitcoin::{
     logs::error_log::ErrorLog,
     configurations::error_configuration::ErrorConfiguration,
     connections::error_connection::ErrorConnection,
+    messages::error_message::ErrorMessage,
+    block_structure::error_block::ErrorBlock,
+    node_structure::error_node::ErrorNode,
 };
 
 use std::fmt::{
@@ -18,7 +21,12 @@ pub enum ErrorExecution {
     ErrorInitialization(ErrorInitialization),
     ErrorLog(ErrorLog),
     ErrorConfiguration(ErrorConfiguration),
-    ErrorConnection(ErrorConnection)
+    ErrorConnection(ErrorConnection),
+    ErrorMessage(ErrorMessage),
+    ErrorBlock(ErrorBlock),
+    ErrorNode(ErrorNode),
+
+    ErrorFailThread,
 }
 
 impl Debug for ErrorExecution {
@@ -28,6 +36,10 @@ impl Debug for ErrorExecution {
             ErrorExecution::ErrorLog(error_log) => write!(f, "{:?}", error_log),
             ErrorExecution::ErrorConfiguration(error_configuration) => write!(f, "{:?}", error_configuration),
             ErrorExecution::ErrorConnection(error_connection) => write!(f, "{:?}", error_connection),
+            ErrorExecution::ErrorMessage(error_message) => write!(f, "{:?}", error_message),
+            ErrorExecution::ErrorBlock(error_block) => write!(f, "{:?}", error_block),
+            ErrorExecution::ErrorNode(error_node) => write!(f, "{:?}", error_node),
+            ErrorExecution::ErrorFailThread => write!(f, "ErrorFailThread"),
         }
     }
 }
@@ -53,5 +65,23 @@ impl From<ErrorConfiguration> for ErrorExecution {
 impl From<ErrorConnection> for ErrorExecution {
     fn from(value: ErrorConnection) -> Self {
         ErrorExecution::ErrorConnection(value)
+    }
+}
+
+impl From<ErrorMessage> for ErrorExecution {
+    fn from(value: ErrorMessage) -> Self {
+        ErrorExecution::ErrorMessage(value)
+    }
+}
+
+impl From<ErrorBlock> for ErrorExecution {
+    fn from(value: ErrorBlock) -> Self {
+        ErrorExecution::ErrorBlock(value)
+    }
+}
+
+impl From<ErrorNode> for ErrorExecution {
+    fn from(value: ErrorNode) -> Self {
+        ErrorExecution::ErrorNode(value)
     }
 }
