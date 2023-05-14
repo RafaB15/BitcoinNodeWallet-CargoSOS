@@ -8,8 +8,21 @@ use std::net::{
 
 use std::{io::BufReader, path::Path};
 use std::fs::File;
-use std::thread::{self, JoinHandle};
+use std::thread::{
+    self, 
+    JoinHandle,
+};
 
+use std::sync::{
+    RwLock, 
+    RwLockReadGuard,
+    Arc,
+};
+
+use cargosos_bitcoin::block_structure::hash::{
+    HashType,
+    hash256d,
+};
 use cargosos_bitcoin::configurations::{
     configuration::config,
     log_config::LogConfig,
@@ -27,6 +40,10 @@ use error_execution::ErrorExecution;
 use cargosos_bitcoin::node_structure::{
     handshake::Handshake,
     initial_block_download::InitialBlockDownload,
+};
+
+use cargosos_bitcoin::serialization::{
+    serializable::Serializable,
 };
 
 use cargosos_bitcoin::block_structure::{
@@ -131,26 +148,20 @@ fn connect_to_testnet_peers(
 }
 
 fn get_peer_header(
-    peer: SocketAddr,
+    peer_stream: &mut TcpStream,
     block_download: &InitialBlockDownload,
     block_chain: &mut BlockChain,
     logger_sender: &LoggerSender,
 ) -> Result<(), ErrorExecution> {
 
-    logger_sender.log_connection(format!("Connecting to peer: {:?}", peer))?;
-    let mut peer_stream = match TcpStream::connect(peer) {
-        Ok(stream) => stream,
-        Err(_) => return Err(ErrorConnection::ErrorCannotConnectToAddress.into()),
-    };
-
     loop {
         let header_count: u32 = block_download.get_headers(
-            &mut peer_stream,
+            peer_stream,
             block_chain,
         )?;
 
         logger_sender.log_connection(
-            format!("From {:?} we get: {}", peer, header_count)
+            format!("We get: {}", header_count)
         )?;
 
         if header_count < MAX_HEADERS {
@@ -161,25 +172,123 @@ fn get_peer_header(
     Ok(())
 }
 
+fn get_blocks_recursive(
+    peer_stream: &mut TcpStream,
+    block_download: InitialBlockDownload,
+    blocks: &mut Vec<Block>,
+    block_chain_actual: BlockChain,
+) {
+
+    let block_header = block_chain_actual.block.header;
+
+    let mut bytes: Vec<u8> = Vec::new();
+    if block_header.serialize(&mut bytes).is_err() {
+        return;
+    }
+
+    let heashed_header: HashType = match hash256d(&bytes) {
+        Ok(heashed_header) => heashed_header,
+        Err(_) => return,
+    };
+
+    if let Ok(block) = block_download.get_data(
+        peer_stream,
+        &heashed_header,
+    ) {
+
+        blocks.push(block);
+
+        for block_chain in block_chain_actual.next_block {
+            get_blocks_recursive(
+                peer_stream,
+                block_download.clone(),
+                blocks,
+                block_chain,
+            );
+        }
+    }
+}
+
+fn get_blocks(
+    peer_stream: &mut TcpStream,
+    block_download: InitialBlockDownload,
+    block_chain: BlockChain,
+) -> Vec<Block> {
+    let mut blocks: Vec<Block> = Vec::new();
+
+    get_blocks_recursive(
+        peer_stream, 
+        block_download, 
+        &mut blocks, 
+        block_chain,
+    );
+
+    blocks
+}
+
 fn get_initial_download_headers_first(
     peers: Vec<SocketAddr>,
     block_chain: &mut BlockChain,
+    block_download: InitialBlockDownload,
     logger_sender: LoggerSender, 
 ) -> Result<(), ErrorExecution> 
 {
     logger_sender.log_connection("Getting initial download headers first".to_string())?;
 
-    let block_download = InitialBlockDownload::new(
-        ProtocolVersionP2P::V70015,
-    );
+    let mut peer_download_handles: Vec<JoinHandle<Vec<Block>>> = Vec::new();
 
-    for peer in peers {
+    for peer in peers.iter() {
+
+        logger_sender.log_connection(format!("Connecting to peer: {:?}", peer))?;
+        let mut peer_stream = match TcpStream::connect(peer) {
+            Ok(stream) => stream,
+            Err(_) => return Err(ErrorConnection::ErrorCannotConnectToAddress.into()),
+        };
+
         get_peer_header(
-            peer,
+            &mut peer_stream,
             &block_download,
             block_chain,
             &logger_sender,
         )?;
+    }
+
+    let timestamp: u32 = 40000;
+    let partial_block_chain = block_chain.get_block_after_timestamp(timestamp)?;
+
+    for peer in peers {
+        
+        let mut peer_stream = match TcpStream::connect(peer) {
+            Ok(stream) => stream,
+            Err(_) => return Err(ErrorConnection::ErrorCannotConnectToAddress.into()),
+        };
+
+        let block_download_peer = block_download.clone();
+        let block_chain_peer = partial_block_chain.clone();
+
+        let peer_download_handle = thread::spawn(move || {
+            
+            get_blocks(
+                &mut peer_stream,
+                block_download_peer,
+                block_chain_peer,
+            )
+        });
+
+        peer_download_handles.push(peer_download_handle);
+    }
+
+
+
+    for peer_download_handle in peer_download_handles {
+        match peer_download_handle.join() {
+            Ok(blocks) => {
+                for block in blocks {
+                    block_chain.update_block(block)?;
+                }
+            },
+            _ => return Err(ErrorExecution::ErrorFailThread),
+        }
     }
 
     Ok(())
@@ -194,6 +303,10 @@ fn get_block_chain(
 
     let method = InitialDownloadMethod::HeadersFirst;
 
+        let block_download = InitialBlockDownload::new(
+        ProtocolVersionP2P::V70015,
+    );
+
     let genesis_header: BlockHeader = BlockHeader::generate_genesis_block_header();
     let genesis_block: Block = Block::new(genesis_header);
 
@@ -201,7 +314,12 @@ fn get_block_chain(
 
     match method {
         InitialDownloadMethod::HeadersFirst => {
-            get_initial_download_headers_first(peers, &mut block_chain, logger_sender.clone())?;
+            get_initial_download_headers_first(
+                peers, 
+                &mut block_chain, 
+                block_download,
+                logger_sender.clone()
+            )?;
         },
         InitialDownloadMethod::BlocksFirst => todo!(),
     }
@@ -230,14 +348,17 @@ fn main() -> Result<(), ErrorExecution> {
 
         let block_chain = get_block_chain(peers, logger_sender.clone())?;
 
+
+
         println!("Block chain: {:?}", block_chain);
     }
 
     logger_sender.log_configuration("Closing program".to_string())?;
     
     std::mem::drop(logger_sender);
-    if let Ok(resultado) = handle.join() {
-        resultado?;
+    match handle.join() {
+        Ok(result) => result?,
+        _ => return Err(ErrorExecution::ErrorFailThread),
     }
 
     Ok(())

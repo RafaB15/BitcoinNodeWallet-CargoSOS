@@ -21,7 +21,7 @@ const GENESIS_TIME: u32 = 1231013705;
 const GENESIS_N_BITS: u32 = 0x1d00ffff;
 const GENESIS_NONCE: u32 = 2083236893;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockHeader {
     pub version: BlockVersion,
     pub previous_block_header_hash: HashType,

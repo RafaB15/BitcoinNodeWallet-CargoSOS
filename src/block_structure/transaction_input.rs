@@ -1,6 +1,6 @@
 use super::outpoint::Outpoint;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TransactionInput {
     pub previos_output: Outpoint,
     pub signature_script: String,

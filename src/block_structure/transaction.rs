@@ -3,7 +3,7 @@ use super::{
     transaction_output::TransactionOutput,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Transaction {
     pub version: i32,
     pub tx_in: Vec<TransactionInput>,

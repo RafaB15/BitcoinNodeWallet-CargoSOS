@@ -27,6 +27,7 @@ use crate::{
 const TESTNET_MAGIC_NUMBERS: [u8; 4] = [0x0b, 0x11, 0x09, 0x07];
 const NO_STOP_HASH: HashType = [0; 32];
 
+#[derive(Debug, Clone)]
 pub struct InitialBlockDownload {
     pub protocol_version: ProtocolVersionP2P,
 }
@@ -66,6 +67,14 @@ impl InitialBlockDownload {
         peer_stream: &mut TcpStream, 
         block_chain: &mut BlockChain
     ) -> Result<u32, ErrorMessage> {
+        todo!()
+    }
+
+    pub fn get_data(
+        &self,
+        peer_stream: &mut TcpStream,
+        hashed_header: &HashType,
+    ) -> Result<Block, ErrorMessage> {
         todo!()
     }
 }
