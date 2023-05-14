@@ -3,8 +3,8 @@ use super::{
     transaction::Transaction,
     hash::{
         HashType, 
-        hash256, 
-        hash256d},
+        hash256d
+    },
 };
 
 use crate::serialization::{
@@ -12,10 +12,7 @@ use crate::serialization::{
     error_serialization::ErrorSerialization,
 };
 
-use std::{io::{
-    Write,
-}, vec};
-
+use std::io::Write;
 
 const GENESIS_BLOCK_VERSION: BlockVersion = BlockVersion::V1;
 const GENESIS_PREVIOUS_BLOCK_HEADER_HASH: HashType = [0; 32];
@@ -76,7 +73,7 @@ impl BlockHeader {
         //itero por las transacciones
         for tx in transactions {
             let mut vec_tx = Vec::new();
-            let txid = match tx.get_tx_id(&mut vec_tx){
+            match tx.get_tx_id(&mut vec_tx){
                 Ok(txid) => hashes.push(txid),
                 Err(_) => return false,
             };
@@ -84,16 +81,20 @@ impl BlockHeader {
 
         while hashes.len() > 1 {
             if hashes.len() % 2 == 1 {
-                let last_hash = hashes[hashes.len() - 1].clone();
-                hashes.push(last_hash);
+                if let Some(last_hash) = hashes.last() {
+                    hashes.push(last_hash.clone());
+                }
             }
             
             let mut new_hashes = Vec::new();
-            for i in (0..hashes.len()).step_by(2) {
+            for (i, combined) in hashes.iter().enumerate().step_by(2) {
                 // Concatenar dos hashes
-                let mut combined = hashes[i].to_vec();
-                combined.extend_from_slice(&hashes[i + 1]);
-        
+                let mut combined = combined.to_vec();
+                match hashes.get(i + 1) {
+                    Some(combined_next) => combined.extend_from_slice(combined_next),
+                    None => return false,
+                };
+
                 // Calcular el hash combinado
                 let combined_hash = match hash256d(&combined){
                     Ok(combined_hash) => combined_hash,
@@ -102,11 +103,13 @@ impl BlockHeader {
                 new_hashes.push(combined_hash);
             }
         
-            // Actualizar el vector de hashes con los nuevos hashes combinados
             hashes = new_hashes;
 
         };
-        self.merkle_root_hash == hashes[0]
+        if let Some(root) = hashes.get(0) {
+            return *root == self.merkle_root_hash;
+        }
+        false
     }
 
 }

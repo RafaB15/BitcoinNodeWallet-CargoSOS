@@ -1,7 +1,7 @@
 use super::{
     transaction_input::TransactionInput,
     transaction_output::TransactionOutput,
-    hash::hash256,
+    hash::{HashType, hash256},
     error_block::ErrorBlock,
 };
 
@@ -43,7 +43,7 @@ impl Serializable for Transaction {
 }
 
 impl Transaction {
-    pub fn get_tx_id(&self, stream: &mut dyn Write) -> Result<[u8;32], ErrorBlock> {
+    pub fn get_tx_id(&self, stream: &mut dyn Write) -> Result<HashType, ErrorBlock> {
         let mut buffer = vec![];
         if self.serialize(&mut buffer).is_err() {
             return Err(ErrorBlock::ErrorCouldNotGetTxId);

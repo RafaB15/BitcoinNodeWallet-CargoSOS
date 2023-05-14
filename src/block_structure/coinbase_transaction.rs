@@ -19,8 +19,8 @@ impl Serializable for CoinbaseTransaction {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.hash.serialize(stream)?;
         self.index.serialize(stream)?;
-        CompactSize::new(self.script_bytes.len() as u64).serialize(stream)?; //ver esto
-        //self.script_bytes.serialize(stream)?;
+        CompactSize::new(self.script_bytes as u64).serialize(stream)?; //ver esto
+        self.script_bytes.serialize(stream)?;
         self.height.serialize(stream)?;
         self.coinbase_script.serialize(stream)?;
         self.sequence.serialize(stream)?;
