@@ -1,6 +1,7 @@
 use super::{
     block_header::BlockHeader, 
     transaction::Transaction,
+    transaction_output::TransactionOutput,
     error_block::ErrorBlock,
 };
 
@@ -23,6 +24,10 @@ impl Block {
     }
 
     pub fn agregar_transaccion(self, transaction: Transaction) {
+        todo!()
+    }
+
+    pub fn get_utxo_from_address(&self, address: &str) -> Vec<TransactionOutput> {
         todo!()
     }
 }

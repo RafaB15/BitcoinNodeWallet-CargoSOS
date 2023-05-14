@@ -35,7 +35,14 @@ impl BlockChain {
         todo!()
     }
 
-    pub fn get_utxo(&self) -> Vec<TransactionOutput> {
-        todo!()
+    pub fn get_utxo_from_address(&self, address: &str) -> Vec<TransactionOutput> {
+        let mut utxo_from_address = self.block.get_utxo_from_address(address);
+        if !self.next_block.is_empty() {
+            for block in self.next_block.iter() {
+                utxo_from_address.extend(block.get_utxo_from_address(address));
+            }
+        }
+        return utxo_from_address;
+        
     }
 }
