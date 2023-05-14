@@ -2,6 +2,7 @@ use crate::connections::error_connection::ErrorConnection;
 use std::io::Write;
 use crate::serialization::{
     serializable::Serializable,
+    deserializable::Deserializable,
     error_serialization::ErrorSerialization,
 };
 
@@ -50,6 +51,17 @@ impl Serializable for BlockVersion {
         match stream.write(&version.to_le_bytes()) {
             Ok(_) => Ok(()),
             _ => Err(ErrorSerialization::ErrorWhileWriting),
+        }
+    }
+}
+
+impl Deserializable for BlockVersion {
+
+    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
+        let version_int = i32::deserialize(stream)?;
+        match version_int.try_into() {
+            Ok(version) => Ok(version),
+            Err(_) => Err(ErrorSerialization::ErrorInDeserialization(format!("While deserializing {:?}", version_int))),
         }
     }
 }

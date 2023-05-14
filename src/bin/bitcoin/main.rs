@@ -7,7 +7,8 @@ use std::net::{
 };
 
 use std::{io::BufReader, path::Path};
-use std::fs::File;
+use std::fs::{File, OpenOptions};
+use std::io::{self, prelude::*};
 use std::thread::{
     self, 
     JoinHandle,
@@ -90,18 +91,38 @@ fn open_config_file(config_name: String) -> Result<BufReader<File>, ErrorInitial
     Ok(BufReader::new(config_file))   
 }
 
+/// Get the file given by its path. If the file does not exist, it will be created. Evrytime the file is opened, it will be truncated to set the file size to 0 and overwrite the previous content
+/// 
+/// ### Errors
+/// * `ErrorFileNotExist`: It will appear when the file does not exist
+/// * `ErrorCouldNotTruncateFile`: It will appear when the file could not be truncated
+fn open_log_file(log_path: &Path) -> Result<File, ErrorInitialization> {
+    let log_file = match OpenOptions::new().create(true).append(true).open(log_path) {
+        Ok(f) => f,
+        Err(_) => return Err(ErrorInitialization::ErrorLogFileDoesntExist),
+    };
+    
+    match log_file.set_len(0) {
+        Ok(_) => {},
+        Err(_) => return Err(ErrorInitialization::ErrorCouldNotTruncateFile),
+    };
+
+    Ok(log_file)
+}
+
 /// Initialize the logs ready for ejecution
 /// 
 /// ### Errors
-///  * `ErrorFileNotFound`: No se encontro el file
-///  * `ErrorCouldNotWriteInFile`: No se pudo escribir en el file
 ///  * `ErrorCouldNotFindReceiver`: No se encontro el receiver
 ///  * `ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
-fn initialize_logs(log_config: LogConfig) -> Result<(JoinHandle<Result<(), ErrorLog>>, LoggerSender), ErrorLog> {
+///  * `ErrorLogFileDoesNotExist`: No se encontro el archivo de logs
+///  * `ErrorCouldNotTruncateFile`: No se pudo truncar el archivo de logs
+fn initialize_logs(log_config: LogConfig) -> Result<(JoinHandle<Result<(), ErrorLog>>, LoggerSender), ErrorExecution> {
     println!("Creating the logs system");
 
     let filepath_log = Path::new(&log_config.filepath_log);
-    let (logger_sender, logger_receiver) = logger::initialize_logger(filepath_log)?;
+    let log_file = open_log_file(filepath_log)?;
+    let (logger_sender, logger_receiver) = logger::initialize_logger(log_file, false)?;
 
     let handle = thread::spawn(move || logger_receiver.receive_log());       
 

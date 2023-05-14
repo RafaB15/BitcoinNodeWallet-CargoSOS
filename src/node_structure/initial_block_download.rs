@@ -1,16 +1,15 @@
 use std::net::{
-    SocketAddr,
     TcpStream,
 };
 
 use crate::messages::{
     error_message::ErrorMessage,
     get_headers_message::GetHeadersMessage,
+    headers_message::HeadersMessage,
 };
 
 use crate::block_structure::{
     block_chain::BlockChain,
-    block::Block,
     block_header::BlockHeader,
     hash::{
         HashType,
@@ -18,6 +17,9 @@ use crate::block_structure::{
     }
 };
 
+use super::error_node::ErrorNode;
+
+use crate::serialization::deserializable::Deserializable;
 use crate::serialization::serializable::Serializable;
 
 use crate::{
@@ -39,12 +41,7 @@ impl InitialBlockDownload {
         }
     }
 
-    fn send_get_headers_message(
-        &self, 
-        peer_stream: &mut TcpStream, 
-        block_chain: &mut BlockChain
-    ) -> Result<u32, ErrorMessage>
-    {
+pub fn send_get_headers_message(&self, peer_stream: &mut TcpStream, block_chain: &BlockChain) -> Result<(), ErrorMessage>{
         let last_header: &BlockHeader = &block_chain.last().header;
         let mut serialized_header = Vec::new();
 
@@ -59,22 +56,34 @@ impl InitialBlockDownload {
             NO_STOP_HASH,
         );
         get_headers_message.serialize(peer_stream)?;
-        Ok(0)
+        Ok(())
     }
 
-    pub fn get_headers(
-        &self, 
-        peer_stream: &mut TcpStream, 
-        block_chain: &mut BlockChain
-    ) -> Result<u32, ErrorMessage> {
-        todo!()
+    pub fn add_headers_to_blockchain(&self, block_chain: &mut BlockChain, received_headers_message: &HeadersMessage) -> Result<u32,ErrorNode> {
+        let mut added_headers = 0;
+        for header in &received_headers_message.headers {
+            if header.proof_of_work() == false {
+                return Err(ErrorNode::ErrorWhileValidating("Error while validating proof of work".to_string()));
+            }
+            if block_chain.append_header(header.clone()).is_ok() {
+                added_headers += 1;
+            }
+        }
+        Ok(added_headers)
     }
 
+    pub fn get_headers(&self, peer_stream: &mut TcpStream, block_chain: &mut BlockChain) -> Result<u32,ErrorNode>{
+        self.send_get_headers_message(peer_stream, block_chain)?;
+        let received_headers_message = HeadersMessage::deserialize(peer_stream)?;
+        let added_headers = self.add_headers_to_blockchain(block_chain, &received_headers_message)?;
+        Ok(added_headers)
+    }
+  
     pub fn get_data(
-        &self,
-        peer_stream: &mut TcpStream,
-        hashed_header: &HashType,
-    ) -> Result<Block, ErrorMessage> {
-        todo!()
+          &self,
+          peer_stream: &mut TcpStream,
+          hashed_header: &HashType,
+      ) -> Result<Block, ErrorMessage> {
+          todo!()
     }
 }

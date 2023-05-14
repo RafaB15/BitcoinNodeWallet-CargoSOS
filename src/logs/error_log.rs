@@ -6,9 +6,7 @@
 ///  * `ErrorCouldNotWriteInFile`
 #[derive(Debug, PartialEq)]
 pub enum ErrorLog {
-
-    ErrorFileNotFound,
-
+    
     ErrorReceiverNotFound,
 
     ErrorCouldNotWriteInFile,
