@@ -1,6 +1,9 @@
-use super::deserializable::Deserializable;
-use super::serializable::Serializable;
-use super::error_message::ErrorMessage;
+use crate::serialization::{
+    serializable::Serializable,
+    deserializable::Deserializable,
+    error_serialization::ErrorSerialization,
+};
+
 use std::io::Write;
 
 const MAX_U8:  u64 = 0xFC;
@@ -26,7 +29,7 @@ impl CompactSize {
 }
 
 impl Serializable for CompactSize {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorMessage> {
+    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         if self.value <= MAX_U8 {
             (self.value as u8).serialize(stream)?;
 
@@ -49,10 +52,10 @@ impl Serializable for CompactSize {
 
 impl Deserializable for CompactSize {
 
-    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorMessage> {
+    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 1];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorMessage::ErrorInDeserialization("Deserializing CompactSize".to_string()));
+            return Err(ErrorSerialization::ErrorInDeserialization("Deserializing CompactSize".to_string()));
         }
 
         match buffer {
@@ -71,11 +74,11 @@ mod tests {
         CompactSize,
         Deserializable,
         Serializable,
-        ErrorMessage,
+        ErrorSerialization,
     };
 
     #[test]
-    fn test01_serialize_correctly_u8() -> Result<(), ErrorMessage> {
+    fn test01_serialize_correctly_u8() -> Result<(), ErrorSerialization> {
         
         let expected_stream: Vec<u8> = vec![0x54];
         
@@ -91,7 +94,7 @@ mod tests {
     }
 
     #[test]
-    fn test02_deserialize_correctly_compact_size_of_u8() -> Result<(), ErrorMessage> {
+    fn test02_deserialize_correctly_compact_size_of_u8() -> Result<(), ErrorSerialization> {
         
         let stream: Vec<u8> = vec![0x54];
         let mut stream: &[u8] = &stream;
@@ -107,7 +110,7 @@ mod tests {
     }
     
     #[test]
-    fn test03_serialize_correctly_u16() -> Result<(), ErrorMessage> {
+    fn test03_serialize_correctly_u16() -> Result<(), ErrorSerialization> {
         
         let expected_stream: Vec<u8> = vec![0xFD, 0x9E, 0x3F];
         
@@ -123,7 +126,7 @@ mod tests {
     }
     
     #[test]
-    fn test04_deserialize_correctly_compact_size_of_u16() -> Result<(), ErrorMessage> {
+    fn test04_deserialize_correctly_compact_size_of_u16() -> Result<(), ErrorSerialization> {
         
         let stream: Vec<u8> = vec![0xFD, 0x9E, 0x3F];
         let mut stream: &[u8] = &stream;
@@ -139,7 +142,7 @@ mod tests {
     }
 
     #[test]
-    fn test05_serialize_correctly_u32() -> Result<(), ErrorMessage> {
+    fn test05_serialize_correctly_u32() -> Result<(), ErrorSerialization> {
         
         let expected_stream: Vec<u8> = vec![0xFE, 0xAD, 0x83, 0xF8, 0x00];
         
@@ -155,7 +158,7 @@ mod tests {
     }
 
     #[test]
-    fn test06_deserialize_correctly_compact_size_of_u32() -> Result<(), ErrorMessage> {
+    fn test06_deserialize_correctly_compact_size_of_u32() -> Result<(), ErrorSerialization> {
         
         let stream: Vec<u8> = vec![0xFE, 0xAD, 0x83, 0xF8, 0x00];
         let mut stream: &[u8] = &stream;
@@ -171,7 +174,7 @@ mod tests {
     }
 
     #[test]
-    fn test07_serialize_correctly_u64() -> Result<(), ErrorMessage> {
+    fn test07_serialize_correctly_u64() -> Result<(), ErrorSerialization> {
         
         let expected_stream: Vec<u8> = vec![0xFF, 0xC7, 0x01, 0xBD, 0xDE, 0x19, 0x00, 0x00, 0x00];
         
@@ -187,7 +190,7 @@ mod tests {
     }
 
     #[test]
-    fn test08_deserialize_correctly_compact_size_of_u64() -> Result<(), ErrorMessage> {
+    fn test08_deserialize_correctly_compact_size_of_u64() -> Result<(), ErrorSerialization> {
         
         let stream: Vec<u8> = vec![0xFF, 0xC7, 0x01, 0xBD, 0xDE, 0x19, 0x00, 0x00, 0x00];
         let mut stream: &[u8] = &stream;

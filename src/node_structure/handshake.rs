@@ -10,9 +10,12 @@ use crate::messages::{
     version_message::VersionMessage,
     verack_message::VerackMessage,
     bitfield_services::BitfieldServices,
+    error_message::ErrorMessage,
+};
+
+use crate::serialization::{
     serializable::Serializable,
     deserializable::Deserializable,
-    error_message::ErrorMessage,
 };
 
 use std::net::{
