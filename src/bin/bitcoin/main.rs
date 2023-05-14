@@ -6,24 +6,26 @@ use std::net::{
     TcpStream,
 };
 
-use std::{io::BufReader, path::Path};
-use std::fs::{File, OpenOptions};
-use std::io::{self, prelude::*};
+use std::{
+    io::BufReader, 
+    path::Path
+};
+
+use std::fs::{
+    File, 
+    OpenOptions
+};
+
 use std::thread::{
     self, 
     JoinHandle,
-};
-
-use std::sync::{
-    RwLock, 
-    RwLockReadGuard,
-    Arc,
 };
 
 use cargosos_bitcoin::block_structure::hash::{
     HashType,
     hash256d,
 };
+
 use cargosos_bitcoin::configurations::{
     configuration::config,
     log_config::LogConfig,
