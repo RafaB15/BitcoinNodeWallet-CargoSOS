@@ -10,6 +10,7 @@ use crate::messages::{
 
 use crate::block_structure::{
     block_chain::BlockChain,
+    block::Block,
     block_header::BlockHeader,
     hash::{
         HashType,

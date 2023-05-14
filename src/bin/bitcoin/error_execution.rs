@@ -6,6 +6,7 @@ use cargosos_bitcoin::{
     connections::error_connection::ErrorConnection,
     messages::error_message::ErrorMessage,
     block_structure::error_block::ErrorBlock,
+    node_structure::error_node::ErrorNode,
 };
 
 use std::fmt::{
@@ -23,6 +24,7 @@ pub enum ErrorExecution {
     ErrorConnection(ErrorConnection),
     ErrorMessage(ErrorMessage),
     ErrorBlock(ErrorBlock),
+    ErrorNode(ErrorNode),
 
     ErrorFailThread,
 }
@@ -36,6 +38,7 @@ impl Debug for ErrorExecution {
             ErrorExecution::ErrorConnection(error_connection) => write!(f, "{:?}", error_connection),
             ErrorExecution::ErrorMessage(error_message) => write!(f, "{:?}", error_message),
             ErrorExecution::ErrorBlock(error_block) => write!(f, "{:?}", error_block),
+            ErrorExecution::ErrorNode(error_node) => write!(f, "{:?}", error_node),
             ErrorExecution::ErrorFailThread => write!(f, "ErrorFailThread"),
         }
     }
@@ -74,5 +77,11 @@ impl From<ErrorMessage> for ErrorExecution {
 impl From<ErrorBlock> for ErrorExecution {
     fn from(value: ErrorBlock) -> Self {
         ErrorExecution::ErrorBlock(value)
+    }
+}
+
+impl From<ErrorNode> for ErrorExecution {
+    fn from(value: ErrorNode) -> Self {
+        ErrorExecution::ErrorNode(value)
     }
 }
