@@ -9,19 +9,20 @@ use std::{
     /// LoggerReceiver manages the log messages that have to be sent to register the operations
     /// 
     /// ### Errores
-    ///  * `Error::ErrorFileNotFound`: Este error va a aparecer cuando el archivo pasado no se exista
     ///  * `Error::ErrorCouldNotWriteInFile`: Este error va a aparece cuando no se puede agregar más lineas al archivo dado
 #[derive(Debug)]
 pub struct LoggerReceiver<W: Write> {
     receiver: Receiver<MessageLog>,
     output: W,
+    display_in_terminal: bool,
+
 }
 
 impl<W: Write> LoggerReceiver<W> {
     /// Receiver creation from a file path and a channel receiver
-    pub(crate) fn new(output: W, receiver: Receiver<MessageLog>) -> Result<Self, ErrorLog> {
+    pub(crate) fn new(output: W, receiver: Receiver<MessageLog>, display_in_terminal: bool) -> Result<Self, ErrorLog> {
 
-        Ok(LoggerReceiver {receiver, output })
+        Ok(LoggerReceiver {receiver, output, display_in_terminal })
 
     }
 
@@ -40,7 +41,9 @@ impl<W: Write> LoggerReceiver<W> {
             }
 
             //Simplemente para no abrir el logger constantemente
-            print!("{text}");
+            if self.display_in_terminal {
+                print!("{}", text);
+            }
 
         }
 
