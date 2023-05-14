@@ -1,7 +1,10 @@
 use super::{
     block_version::BlockVersion, 
     transaction::Transaction,
-    hash::HashType,
+    hash::{
+        HashType, 
+        hash256, 
+        hash256d},
 };
 
 use crate::serialization::{
@@ -9,9 +12,9 @@ use crate::serialization::{
     error_serialization::ErrorSerialization,
 };
 
-use std::io::{
+use std::{io::{
     Write,
-};
+}, vec};
 
 
 const GENESIS_BLOCK_VERSION: BlockVersion = BlockVersion::V1;
@@ -61,22 +64,51 @@ impl BlockHeader {
     }
 
     pub fn proof_of_work(&self) -> bool {
+        //serializo
+        //haseho doble
+        //comparo con n_bits (n bit debe ser mayor al hasheo doble)
         todo!()
     }
 
     pub fn proof_of_inclusion(&self, transactions: &[Transaction]) -> bool {
-        //iterar por transacciones, calcular hash de cada una y comparar con merkle_root_hash
-        for transaction in transactions {
-            hash(transaction.serialize());
-            /*if transaction.hash() != self.merkle_root_hash {
-                return false;
-            }*/
-        }
-        //1. iterar por transacciones -> obtener el txid -> (serializacion y hash)
-        //2. concatenar cada 2 txid
-        //3. aplicar sha256d
-        //4. repetir desde el paso 2 hasta que quede un solo hash
-        todo!()
+        //creo el vector de hashes
+        let mut hashes = Vec::with_capacity(transactions.len());
+        //itero por las transacciones
+        for tx in transactions {
+            let mut vec_tx = Vec::new();
+            tx.serialize(&mut vec_tx);
+            let txid = match hash256(&vec_tx) {
+                Ok(txid) => txid,
+                Err(_) => return false,
+            };
+            hashes.push(txid);
+        };
+
+        while hashes.len() > 1 {
+            if hashes.len() % 2 == 1 {
+                let last_hash = hashes[hashes.len() - 1].clone();
+                hashes.push(last_hash);
+            }
+            
+            let mut new_hashes = Vec::new();
+            for i in (0..hashes.len()).step_by(2) {
+                // Concatenar dos hashes
+                let mut combined = hashes[i].to_vec();
+                combined.extend_from_slice(&hashes[i + 1]);
+        
+                // Calcular el hash combinado
+                let combined_hash = match hash256d(&combined){
+                    Ok(combined_hash) => combined_hash,
+                    Err(_) => return false,
+                };
+                new_hashes.push(combined_hash);
+            }
+        
+            // Actualizar el vector de hashes con los nuevos hashes combinados
+            hashes = new_hashes;
+
+        };
+        self.merkle_root_hash == hashes[0]
     }
 
 }
