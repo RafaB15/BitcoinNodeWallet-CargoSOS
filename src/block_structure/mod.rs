@@ -6,6 +6,7 @@ pub mod block_version;
 pub mod transaction;
 pub mod transaction_input;
 pub mod transaction_output;
+pub mod coinbase_transaction;
 pub mod outpoint;
 pub mod hash;
 

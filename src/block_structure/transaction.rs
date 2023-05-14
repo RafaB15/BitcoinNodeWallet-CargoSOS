@@ -19,17 +19,6 @@ pub struct Transaction {
     pub time: u32,
 }
 
-impl Transaction {
-    pub fn new(version: i32, tx_in: Vec<TransactionInput>, tx_out: Vec<TransactionOutput>, time: u32) -> Transaction {
-        Transaction {
-            version,
-            tx_in,
-            tx_out,
-            time,
-        }
-    }
-}
-
 impl Serializable for Transaction {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.version.serialize(stream)?;
