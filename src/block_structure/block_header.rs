@@ -76,12 +76,10 @@ impl BlockHeader {
         //itero por las transacciones
         for tx in transactions {
             let mut vec_tx = Vec::new();
-            tx.serialize(&mut vec_tx);
-            let txid = match hash256(&vec_tx) {
-                Ok(txid) => txid,
+            let txid = match tx.get_tx_id(&mut vec_tx){
+                Ok(txid) => hashes.push(txid),
                 Err(_) => return false,
             };
-            hashes.push(txid);
         };
 
         while hashes.len() > 1 {
