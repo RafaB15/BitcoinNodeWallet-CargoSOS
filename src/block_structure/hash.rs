@@ -44,3 +44,4 @@ pub fn hash256d_reduce(bytes: &[u8]) -> Result<HashTypeReduced, ErrorSerializati
 
     Ok(hash_byte_4)
 }
+

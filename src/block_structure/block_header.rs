@@ -8,6 +8,7 @@ use super::{
     compact256::Compact256,
 };
 
+
 use crate::serialization::{
     serializable::Serializable,
     error_serialization::ErrorSerialization,
@@ -37,7 +38,7 @@ impl BlockHeader {
         previous_block_header_hash: HashType,
         merkle_root_hash: HashType,
         time: u32,
-        n_bits: u32,
+        n_bits: Compact256,
         nonce: u32,
     ) -> Self {
         BlockHeader {
