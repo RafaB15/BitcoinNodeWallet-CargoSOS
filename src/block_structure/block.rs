@@ -19,8 +19,8 @@ impl Block {
     }
 
     pub fn proof_of_inclusion(&self) -> bool {
-        //self.block_header.proof_of_inclusion(&self.transactions)
-        todo!()
+        self.header.proof_of_inclusion(&self.transactions);
+        //todo!()
     }
 
     pub fn agregar_transaccion(self, transaction: Transaction) {

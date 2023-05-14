@@ -66,6 +66,16 @@ impl BlockHeader {
 
     pub fn proof_of_inclusion(&self, transactions: &[Transaction]) -> bool {
         //iterar por transacciones, calcular hash de cada una y comparar con merkle_root_hash
+        for transaction in transactions {
+            hash(transaction.serialize());
+            /*if transaction.hash() != self.merkle_root_hash {
+                return false;
+            }*/
+        }
+        //1. iterar por transacciones -> obtener el txid -> (serializacion y hash)
+        //2. concatenar cada 2 txid
+        //3. aplicar sha256d
+        //4. repetir desde el paso 2 hasta que quede un solo hash
         todo!()
     }
 
