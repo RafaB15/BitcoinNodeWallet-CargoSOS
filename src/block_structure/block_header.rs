@@ -6,11 +6,13 @@ use super::{
 
 use crate::serialization::{
     serializable::Serializable,
+    deserializable::Deserializable,
     error_serialization::ErrorSerialization,
 };
 
 use std::io::{
     Write,
+    Read,
 };
 
 
@@ -81,5 +83,26 @@ impl Serializable for BlockHeader {
         self.nonce.serialize(stream)?;
 
         Ok(())
+    }
+}
+
+impl Deserializable for BlockHeader {
+
+    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+        let version = BlockVersion::deserialize(stream)?;
+        let previous_block_header_hash = HashType::deserialize(stream)?;
+        let merkle_root_hash = HashType::deserialize(stream)?;
+        let time = u32::deserialize(stream)?;
+        let n_bits = u32::deserialize(stream)?;
+        let nonce = u32::deserialize(stream)?;
+
+        Ok(BlockHeader::new(
+            version,
+            previous_block_header_hash,
+            merkle_root_hash,
+            time,
+            n_bits,
+            nonce,
+        ))
     }
 }
