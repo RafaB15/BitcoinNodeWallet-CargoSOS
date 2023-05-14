@@ -65,6 +65,7 @@ impl BlockHeader {
     }
 
     pub fn proof_of_inclusion(&self, transactions: &[Transaction]) -> bool {
+        //iterar por transacciones, calcular hash de cada una y comparar con merkle_root_hash
         todo!()
     }
 
