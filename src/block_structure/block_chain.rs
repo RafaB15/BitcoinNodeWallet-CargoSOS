@@ -98,8 +98,19 @@ impl BlockChain {
         Err(ErrorBlock::CouldNotFindBlockFarEnough)
     }
 
-    pub fn last<'b>(&self) -> &'b Block {
-        todo!()
+    pub fn last(&self) -> Vec<Block> {
+        
+        if self.next_blocks.is_empty() {
+            return vec![self.block.clone()];
+        }
+
+        let mut last_blocks: Vec<Block> = Vec::new();
+        for next_block in self.next_blocks.iter() {
+
+            last_blocks.extend(next_block.last());
+        }
+
+        last_blocks
     }
 
     pub fn get_utxo(&self) -> Vec<TransactionOutput> {

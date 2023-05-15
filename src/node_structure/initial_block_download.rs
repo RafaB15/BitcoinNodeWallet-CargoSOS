@@ -60,16 +60,20 @@ impl InitialBlockDownload {
         block_chain: &BlockChain
     ) -> Result<(), ErrorMessage>
     {
-        let last_header: &BlockHeader = &block_chain.last().header;
-        let mut serialized_header = Vec::new();
+        let mut header_locator_hashes: Vec<HashType> = Vec::new();
 
-        last_header.serialize(&mut serialized_header)?;
+        for block in block_chain.last().iter() {
+            let last_header: &BlockHeader = &block.header;
+            let mut serialized_header = Vec::new();
 
-        let hashed_header: HashType = hash256d(&serialized_header)?;
+            last_header.serialize(&mut serialized_header)?;
+
+            header_locator_hashes.push(hash256d(&serialized_header)?);
+        }
 
         let get_headers_message = GetHeadersMessage::new(
             self.protocol_version,
-            vec![hashed_header],
+            header_locator_hashes,
             NO_STOP_HASH,
         );
 
