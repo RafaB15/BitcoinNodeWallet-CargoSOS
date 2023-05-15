@@ -3,10 +3,22 @@ use std::io::{
     Write,
 };
 
+use crate::messages::message_header;
 use crate::messages::{
-    error_message::ErrorMessage,
     get_headers_message::GetHeadersMessage,
     headers_message::HeadersMessage,
+
+    message_header::MessageHeader,
+    command_name::CommandName,
+
+    inventory_message::InventoryMessage,
+    block_message::BlockMessage,
+
+    error_message::ErrorMessage,
+};
+
+use crate::connections::{
+    type_identifier::TypeIdentifier,
 };
 
 use crate::block_structure::{
@@ -105,6 +117,24 @@ impl InitialBlockDownload {
         hashed_header: &HashType,
     ) -> Result<Block, ErrorMessage> 
     {
-        todo!()
+        let inventory_message = InventoryMessage {
+            type_identifier: TypeIdentifier::Block,
+            hash_value: hashed_header.clone(),
+        };
+
+        MessageHeader::serialize_message(
+            peer_stream, 
+            TESTNET_MAGIC_NUMBERS, 
+            CommandName::Inventory, 
+            &inventory_message,
+        )?;
+
+        let header = MessageHeader::deserialize_until_found(peer_stream, CommandName::Block)?;
+        let block_message = BlockMessage::deserialize_message(peer_stream, header)?;
+        
+        match block_message.block.proof_of_inclusion() {
+            true => Ok(block_message.block),
+            false => Err(ErrorMessage::ErrorInDeserialization("Error while receiving block message".to_string())),
+        }
     }
 }

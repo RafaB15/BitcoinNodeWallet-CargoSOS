@@ -24,7 +24,7 @@ const HEADERS_NAME: CommandNameType = [b'h', b'e', b'a', b'd', b'e', b'r', b's',
 const INVENTORY_NAME: CommandNameType = [b'i', b'n', b'v', b'e', b'n', b't', b'o', b'r', b'y', b'\0', b'\0', b'\0'];
 const BLOCK_NAME: CommandNameType = [b'b', b'l', b'o', b'c', b'k', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0'];
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, std::cmp::PartialEq)]
 pub enum CommandName {
     Version,
     Verack,

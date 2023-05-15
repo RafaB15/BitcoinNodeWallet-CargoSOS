@@ -11,7 +11,13 @@ use crate::block_structure::{
     },
 };
 
-use super::command_name::CommandName;
+use super::error_message::ErrorMessage;
+use super::{
+    command_name::CommandName,
+
+    inventory_message::InventoryMessage,
+    block_message::BlockMessage,
+};
 
 use std::io::{
     Read,
@@ -73,6 +79,33 @@ impl MessageHeader {
         let mut buffer: &[u8] = &buffer[..];
 
         MessageHeader::deserialize(&mut buffer)
+    }
+
+    pub fn deserialize_until_found(
+        stream: &mut dyn Read,
+        search_name: CommandName,
+    ) -> Result<MessageHeader, ErrorMessage> 
+    {
+        while let Ok(header) = MessageHeader::deserialize_message(stream) {
+            if header.command_name == search_name {
+                return Ok(header);
+            }
+
+            match header.command_name {
+                CommandName::Version => todo!(),
+                CommandName::Verack => todo!(),
+                CommandName::GetHeaders => todo!(),
+                CommandName::Headers => todo!(),
+                CommandName::Inventory => {
+                    let _ = InventoryMessage::deserialize(stream)?;
+                },
+                CommandName::Block => {
+                    let _ = BlockMessage::deserialize(stream)?;
+                },
+            }
+        }
+
+        Err(ErrorMessage::ErrorWhileReading)
     }
 
 }

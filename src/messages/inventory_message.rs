@@ -1,3 +1,7 @@
+use super::{
+    message_header::MessageHeader,
+};
+
 use crate::connections::{
     type_identifier::TypeIdentifier,
 };
@@ -17,6 +21,26 @@ use crate::serialization::{
 pub struct InventoryMessage {
     pub type_identifier: TypeIdentifier,
     pub hash_value: HashType,
+}
+
+impl InventoryMessage {
+
+    pub fn deserialize_message(
+        stream: &mut dyn Read, 
+        message_header: MessageHeader,
+    ) -> Result<Self, ErrorSerialization> 
+    {
+        let mut buffer: Vec<u8> = vec![0; message_header.payload_size as usize];
+
+        if stream.read_exact(&mut buffer).is_err() {
+            return Err(ErrorSerialization::ErrorWhileReading);
+        }
+        
+        let mut buffer: &[u8] = &buffer[..];
+
+        Ok(InventoryMessage::deserialize(&mut buffer)?)
+    }
+
 }
 
 impl Serializable for InventoryMessage {
