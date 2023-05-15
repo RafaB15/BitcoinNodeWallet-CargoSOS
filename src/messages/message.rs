@@ -19,7 +19,8 @@ use super::{
     inventory_message::InventoryMessage,
     ping_message::PingMessage,
     pong_message::PongMessage,
-
+    send_headers::SendHeadersMessage,
+    send_cmpct::SendCmpctMessage,
 
     message_header::{
         MessageHeader,
@@ -132,6 +133,12 @@ pub fn deserialize_until_found<RW : Read + Write>(
             CommandName::Pong => {
                 let _ = PongMessage::deserialize_message(stream, header)?;
             },
+            CommandName::SendHeaders => {
+                let _ = SendHeadersMessage::deserialize_message(stream, header)?;
+            }
+            CommandName::SendCmpct => {
+                let _ = SendCmpctMessage::deserialize_message(stream, header)?;
+            }
         }
     }
 }

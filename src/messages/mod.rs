@@ -13,6 +13,8 @@ pub mod block_message;
 
 pub mod ping_message;
 pub mod pong_message;
+pub mod send_headers;
+pub mod send_cmpct;
 
 pub mod error_message;
 
