@@ -11,6 +11,7 @@ use std::io::Write;
 
 use crate::block_structure::hash::{
     hash256d_reduce,
+    HashType,
 };
 
 pub const GET_HEADERS_TYPE: &[u8; 12] = b"getheaders\0\0";
@@ -18,16 +19,16 @@ pub const GET_HEADERS_TYPE: &[u8; 12] = b"getheaders\0\0";
 pub struct GetHeadersMessage {
     pub magic_numbers: [u8; 4],
     pub version: ProtocolVersionP2P,
-    pub header_locator_hashes: Vec<[u8; 32]>, //Lista de hashes de los headers que el recv node va a chequear si tiene
-    pub stop_hash: [u8; 32], //El hash hasta el que quiero avanzar. Todos ceros significa que quiero ir hasta el final
+    pub header_locator_hashes: Vec<HashType>, //Lista de hashes de los headers que el recv node va a chequear si tiene
+    pub stop_hash: HashType, //El hash hasta el que quiero avanzar. Todos ceros significa que quiero ir hasta el final
 }
 
 impl GetHeadersMessage {
     pub fn new(
         magic_bytes: [u8; 4],
         version: ProtocolVersionP2P,
-        header_locator_hashes: Vec<[u8; 32]>,
-        stop_hash: [u8; 32],
+        header_locator_hashes: Vec<HashType>,
+        stop_hash: HashType,
     ) -> Self {
         GetHeadersMessage {
             magic_numbers: magic_bytes,
@@ -85,23 +86,23 @@ mod tests {
         GetHeadersMessage,
         ProtocolVersionP2P,
         CompactSize,
+        
         Serializable,
         ErrorSerialization, 
-        GET_HEADERS_TYPE,
-    };
+        
+        HashType,
+        hash256d_reduce,
 
-    use bitcoin_hashes::{
-        sha256d,
-        Hash,
+        GET_HEADERS_TYPE,
     };
 
     #[test]
     fn test01_serialize() -> Result<(), ErrorSerialization> {
         let magic_bytes: [u8; 4] = [0x55, 0x66, 0xee, 0xee];
         let version = ProtocolVersionP2P::V70015;
-        let header_locator_hash: Vec<[u8; 32]> = vec![[1; 32], [2; 32], [0; 32]];
+        let header_locator_hash: Vec<HashType> = vec![[1; 32], [2; 32], [0; 32]];
         let length = CompactSize::new(header_locator_hash.len() as u64);
-        let stop_hash: [u8; 32] = [1; 32];
+        let stop_hash: HashType = [1; 32];
 
         let mut expected_stream: Vec<u8> = Vec::new();
         magic_bytes.serialize(&mut expected_stream)?;
@@ -116,12 +117,7 @@ mod tests {
         stop_hash.serialize(&mut payload)?;
 
         (payload.len() as u32).serialize(&mut expected_stream)?;
-        let hash_bytes: sha256d::Hash = sha256d::Hash::hash(&payload); 
-        let checksum: [u8; 4] = match hash_bytes[0..4].try_into() {
-            Ok(checksum) => checksum,
-            _ => return Err(ErrorSerialization::ErrorInSerialization("Calculating the checksum".to_string())),
-        };
-        checksum.serialize(&mut expected_stream)?;
+        hash256d_reduce(&payload)?.serialize(&mut expected_stream)?;
         payload.serialize(&mut expected_stream)?;
 
         let get_headers_message = GetHeadersMessage::new(

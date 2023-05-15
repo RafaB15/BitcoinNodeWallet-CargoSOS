@@ -1,4 +1,5 @@
 use super::error_serialization::ErrorSerialization;
+
 use std::io::Read;
 
 use chrono::{
@@ -105,7 +106,7 @@ impl Deserializable for [u8; 32] {
     fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 32];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorSerialization::ErrorInDeserialization("Deserializing [u8; 12]".to_string()));
+            return Err(ErrorSerialization::ErrorInDeserialization("Deserializing [u8; 32]".to_string()));
         }
         Ok(buffer)
     }

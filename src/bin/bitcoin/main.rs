@@ -6,24 +6,26 @@ use std::net::{
     TcpStream,
 };
 
-use std::{io::BufReader, path::Path};
-use std::fs::{File, OpenOptions};
-use std::io::{self, prelude::*};
+use std::{
+    io::BufReader, 
+    path::Path
+};
+
+use std::fs::{
+    File, 
+    OpenOptions
+};
+
 use std::thread::{
     self, 
     JoinHandle,
-};
-
-use std::sync::{
-    RwLock, 
-    RwLockReadGuard,
-    Arc,
 };
 
 use cargosos_bitcoin::block_structure::hash::{
     HashType,
     hash256d,
 };
+
 use cargosos_bitcoin::configurations::{
     configuration::config,
     log_config::LogConfig,
@@ -72,7 +74,7 @@ const MAX_HEADERS: u32 = 2000;
 fn get_config_name(arguments: Vec<String>) -> Result<String, ErrorInitialization> {
     let config_name: String = match arguments.get(1) {
         Some(config_name) => config_name.to_owned(),
-        None => return Err(ErrorInitialization::ErrorNoGivenConfigurationFile),
+        None => return Err(ErrorInitialization::NoGivenConfigurationFile),
     };
 
     Ok(config_name)
@@ -85,7 +87,7 @@ fn get_config_name(arguments: Vec<String>) -> Result<String, ErrorInitialization
 fn open_config_file(config_name: String) -> Result<BufReader<File>, ErrorInitialization> {
     let config_file = match File::open(config_name) {
         Ok(config_file) => config_file,
-        Err(_) => return Err(ErrorInitialization::ErrorConfigurationFileDoesntExist),
+        Err(_) => return Err(ErrorInitialization::ConfigurationFileDoesntExist),
     };
 
     Ok(BufReader::new(config_file))   
@@ -99,7 +101,7 @@ fn open_config_file(config_name: String) -> Result<BufReader<File>, ErrorInitial
 fn open_log_file(log_path: &Path) -> Result<File, ErrorInitialization> {
     let log_file = match OpenOptions::new().create(true).append(true).open(log_path) {
         Ok(f) => f,
-        Err(_) => return Err(ErrorInitialization::ErrorLogFileDoesntExist),
+        Err(_) => return Err(ErrorInitialization::LogFileDoesntExist),
     };
     
     match log_file.set_len(0) {
@@ -155,7 +157,7 @@ fn connect_to_testnet_peers(
         ProtocolVersionP2P::V70015,
         BitfieldServices::new(vec![SupportedServices::Unname]),
         0,
-        logger_sender.clone(),  
+        logger_sender
     );
 
     let mut peers: Vec<SocketAddr> = Vec::new();
@@ -308,7 +310,7 @@ fn get_initial_download_headers_first(
                     block_chain.update_block(block)?;
                 }
             },
-            _ => return Err(ErrorExecution::ErrorFailThread),
+            _ => return Err(ErrorExecution::FailThread),
         }
     }
 
@@ -339,7 +341,7 @@ fn get_block_chain(
                 peers, 
                 &mut block_chain, 
                 block_download,
-                logger_sender.clone()
+                logger_sender
             )?;
         },
         InitialDownloadMethod::BlocksFirst => todo!(),
@@ -379,7 +381,7 @@ fn main() -> Result<(), ErrorExecution> {
     std::mem::drop(logger_sender);
     match handle.join() {
         Ok(result) => result?,
-        _ => return Err(ErrorExecution::ErrorFailThread),
+        _ => return Err(ErrorExecution::FailThread),
     }
 
     Ok(())

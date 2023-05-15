@@ -1,4 +1,6 @@
-use crate::serialization::error_serialization::ErrorSerialization;
+use crate::serialization::{
+    error_serialization::ErrorSerialization,
+};
 
 use bitcoin_hashes::{
     sha256d,
