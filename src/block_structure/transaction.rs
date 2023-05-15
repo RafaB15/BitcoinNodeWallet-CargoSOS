@@ -20,7 +20,9 @@ use std::io::{
     Write,
 };
 
-#[derive(Debug, Clone)]
+use std::cmp::PartialEq;
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Transaction {
     pub version: i32,
     pub tx_in: Vec<TransactionInput>,

@@ -12,7 +12,9 @@ use std::io::{
     Write,
 };
 
-#[derive(Debug, Clone)]
+use std::cmp::PartialEq;
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct TransactionOutput {
     pub value: i64,
     pub pk_script: String,

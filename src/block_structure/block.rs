@@ -1,4 +1,8 @@
-use super::{block_header::BlockHeader, error_block::ErrorBlock, transaction::Transaction};
+use super::{
+    block_header::BlockHeader, 
+    transaction::Transaction,
+    error_block::ErrorBlock, 
+};
 
 use crate::serialization::{
     serializable::Serializable,
@@ -28,8 +32,14 @@ impl Block {
         self.header.proof_of_inclusion(&self.transactions)
     }
 
-    pub fn append_transaccion(&mut self, transaction: Transaction) -> Result<(), ErrorBlock>{
-        todo!()
+    pub fn append_transaction(&mut self, transaction: Transaction) -> Result<(), ErrorBlock> {
+
+        match self.transactions.iter().any(|this_transaction| *this_transaction == transaction) {
+            true => return Err(ErrorBlock::TransactionAlreadyInBlock),
+            false => self.transactions.push(transaction),
+        }
+
+        Ok(())
     }
 }
 
@@ -55,9 +65,11 @@ impl Deserializable for Block {
 
         for _ in 0..compact_size.value {
             let transaction = Transaction::deserialize(stream)?;
-            match block.append_transaccion(transaction) {
-                Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => {},
-                _ => return Err(ErrorSerialization::ErrorInDeserialization("Appending transactions to the block".to_string())),
+            match block.append_transaction(transaction) {
+                Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => continue,
+                _ => return Err(ErrorSerialization::ErrorInDeserialization(
+                    "Appending transactions to the block".to_string()
+                )),
             }
         }
 

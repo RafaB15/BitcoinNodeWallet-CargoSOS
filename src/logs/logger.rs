@@ -25,8 +25,7 @@ mod tests {
 
     use super::*;
     use std::fs::File;
-    use std::path::{Path};
-    use super::*;
+    use std::path::Path;
     
     #[test]
     fn correct_log_creation() {

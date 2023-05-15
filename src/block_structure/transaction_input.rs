@@ -1,14 +1,22 @@
 use super::outpoint::Outpoint;
+
 use crate::messages::compact_size::CompactSize;
+
 use crate::serialization::{
     serializable::Serializable,
     deserializable::Deserializable,
     deserializable_fix_size::DeserializableFixSize,
     error_serialization::ErrorSerialization, 
 };
-use std::io::Write;
 
-#[derive(Debug, Clone)]
+use std::io::{
+    Read,
+    Write,
+};
+
+use std::cmp::PartialEq;
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct TransactionInput {
     pub previous_output: Outpoint,
     pub signature_script: String,
@@ -45,7 +53,7 @@ impl Serializable for TransactionInput {
 
 impl Deserializable for TransactionInput {
 
-    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
+    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let previous_output = Outpoint::deserialize(stream)?;
         let length_sginature = CompactSize::deserialize(stream)?;
         let signature_script = String::deserialize_fix_size(stream, length_sginature.value as usize)?;
