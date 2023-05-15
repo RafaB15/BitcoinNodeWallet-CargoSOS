@@ -1,106 +1,94 @@
+use super::{
+    message_header::MessageHeader,
+};
+
 use crate::serialization::{
     deserializable::Deserializable, error_serialization::ErrorSerialization,
     serializable::Serializable,
 };
 
-use std::io::{Read, Write};
+use std::io::{
+    Read, 
+    Write
+};
 
-pub const VERACK_TYPE: &[u8; 12] = b"verack\0\0\0\0\0\0";
 pub const VERACK_CHECKSUM: [u8; 4] = [0x5d, 0xf6, 0xe0, 0xe2];
 
-const MAGIC_BYTES_SIZE: usize = 4;
-const MASSAGE_TYPE_SIZE: usize = 12;
-const PAYLOAD_SIZE: usize = 4;
-const CHECKSUM_SIZE: usize = 4;
-
-const HEADER_SIZE: usize = MAGIC_BYTES_SIZE + MASSAGE_TYPE_SIZE + PAYLOAD_SIZE + CHECKSUM_SIZE;
-
 #[derive(Debug, std::cmp::PartialEq)]
-pub struct VerackMessage {
-    pub magic_bytes: [u8; 4],
-}
+pub struct VerackMessage;
 
 impl VerackMessage {
-    pub fn new(magic_bytes: [u8; 4]) -> Self {
-        VerackMessage { magic_bytes }
+  
+    pub fn deserialize_message(
+        stream: &mut dyn Read, 
+        message_header: MessageHeader,
+    ) -> Result<Self, ErrorSerialization> 
+    {
+        let mut buffer: Vec<u8> = vec![0; message_header.payload_size as usize];
+        if stream.read_exact(&mut buffer).is_err() {
+            return Err(ErrorSerialization::ErrorWhileReading);
+        }
+        let mut buffer: &[u8] = &buffer[..];
+
+        let message = VerackMessage::deserialize(&mut buffer)?;
+
+        if message_header.payload_size != 0 {
+            return Err(ErrorSerialization::ErrorInDeserialization(format!("Payload in verack message has to be 0: {:?}", message_header.payload_size)));
+        }
+        
+        if !VERACK_CHECKSUM.eq(&message_header.checksum) {
+            return Err(ErrorSerialization::ErrorInDeserialization(format!("Checksum isn't the same: {:?} != {:?}", VERACK_CHECKSUM, message_header.checksum)));
+        }
+
+        Ok(message)
     }
 }
 
 impl Serializable for VerackMessage {
-    // magic_bytes: [u8; 4]
-    // message_type: [u8; 12]
-    // payload_size: u32
-    // checksum: [u8; 4]
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        let payload_size: u32 = 0;
-        let mut serialized_message = Vec::new();
 
-        self.magic_bytes.serialize(&mut serialized_message)?;
-        VERACK_TYPE.serialize(&mut serialized_message)?;
-        payload_size.serialize(&mut serialized_message)?;
-        VERACK_CHECKSUM.serialize(&mut serialized_message)?;
-
-        serialized_message.serialize(stream)
+    fn serialize(&self, _: &mut dyn Write) -> Result<(), ErrorSerialization> {
+        Ok(())
     }
 }
 
 impl Deserializable for VerackMessage {
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let mut buffer: Vec<u8> = vec![0; HEADER_SIZE];
-
-        if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorSerialization::ErrorWhileReading);
-        }
-
-        let mut buffer: &[u8] = &buffer[..];
-
-        let magic_bytes = <[u8; MAGIC_BYTES_SIZE] as Deserializable>::deserialize(&mut buffer)?;
-
-        let message_type = <[u8; MASSAGE_TYPE_SIZE] as Deserializable>::deserialize(&mut buffer)?;
-        if !VERACK_TYPE.eq(&message_type) {
-            return Err(ErrorSerialization::ErrorInDeserialization(format!(
-                "Type name not of version: {:?}",
-                message_type
-            )));
-        }
-
-        let payload_size = u32::deserialize(&mut buffer)?;
-        if payload_size != 0 {
-            return Err(ErrorSerialization::ErrorInDeserialization(format!(
-                "Payload in verack message has to be 0: {:?}",
-                payload_size
-            )));
-        }
-
-        let receive_checksum = <[u8; CHECKSUM_SIZE] as Deserializable>::deserialize(&mut buffer)?;
-        if !VERACK_CHECKSUM.eq(&receive_checksum) {
-            return Err(ErrorSerialization::ErrorInDeserialization(format!(
-                "Checksum isn't the same: {:?} != {:?}",
-                VERACK_CHECKSUM, receive_checksum
-            )));
-        }
-
-        Ok(VerackMessage::new(magic_bytes))
+    fn deserialize(_: &mut dyn Read) -> Result<Self, ErrorSerialization> {        
+        Ok(VerackMessage)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Deserializable, ErrorSerialization, Serializable};
+    use super::{
+        Serializable,
+        Deserializable,
+        ErrorSerialization,
+        MessageHeader,
+        VerackMessage,
+        VERACK_CHECKSUM,
+    };
 
-    use super::{VerackMessage, VERACK_CHECKSUM, VERACK_TYPE};
+    use crate::messages::{
+        message,
+        command_name::CommandName,
+    };
 
     #[test]
-    fn test01_serialize() -> Result<(), ErrorSerialization> {
+    fn test01_serialize() -> Result<(), ErrorSerialization>{
         let magic_bytes: [u8; 4] = [0x55, 0x66, 0xee, 0xee];
-        let verack_message = VerackMessage::new(magic_bytes);
+
+        let verack_message = VerackMessage;
         let mut stream: Vec<u8> = Vec::new();
-
-        verack_message.serialize(&mut stream)?;
-
+      
+        message::serialize_message(
+            &mut stream,
+            magic_bytes, 
+            CommandName::Verack, 
+            &verack_message,
+        )?;
         let mut expected_stream: Vec<u8> = Vec::new();
         magic_bytes.serialize(&mut expected_stream)?;
-        VERACK_TYPE.serialize(&mut expected_stream)?;
+        CommandName::Verack.serialize(&mut expected_stream)?;
         vec![0, 0, 0, 0].serialize(&mut expected_stream)?;
         VERACK_CHECKSUM.serialize(&mut expected_stream)?;
 
@@ -113,14 +101,21 @@ mod tests {
     fn test02_deserialize() -> Result<(), ErrorSerialization> {
         let magic_bytes: [u8; 4] = [0x55, 0x66, 0xee, 0xee];
 
+        let header = MessageHeader {
+            magic_numbers: magic_bytes,
+            command_name: CommandName::Verack,
+            payload_size: 0,
+            checksum: VERACK_CHECKSUM,
+        };
+      
         let mut stream: Vec<u8> = Vec::new();
         magic_bytes.serialize(&mut stream)?;
-        VERACK_TYPE.serialize(&mut stream)?;
+        CommandName::Verack.serialize(&mut stream)?;
         vec![0, 0, 0, 0].serialize(&mut stream)?;
         VERACK_CHECKSUM.serialize(&mut stream)?;
         let mut stream: &[u8] = &stream;
 
-        let expected_verack = VerackMessage::new(magic_bytes);
+        let expected_verack = VerackMessage::deserialize_message(&mut stream, header)?;
 
         let verack = VerackMessage::deserialize(&mut stream)?;
 

@@ -1,20 +1,27 @@
 use crate::connections::p2p_protocol::ProtocolVersionP2P;
 
-use super::compact_size::CompactSize;
-
-use crate::serialization::{error_serialization::ErrorSerialization, serializable::Serializable};
-
-use std::io::Write;
-
-use crate::block_structure::hash::{
-    hash256d_reduce,
-    HashType,
+use super::{
+    compact_size::CompactSize,
+    message_header::MessageHeader,
 };
 
-pub const GET_HEADERS_TYPE: &[u8; 12] = b"getheaders\0\0";
+use crate::serialization::{
+    serializable::Serializable,
+    deserializable::Deserializable,
+    error_serialization::ErrorSerialization,
+};
+
+use std::io::{
+    Read,
+    Write,
+};
+
+use crate::block_structure::hash::{
+    HashType,
+    hash256d_reduce,
+};
 
 pub struct GetHeadersMessage {
-    pub magic_numbers: [u8; 4],
     pub version: ProtocolVersionP2P,
     pub header_locator_hashes: Vec<HashType>, //Lista de hashes de los headers que el recv node va a chequear si tiene
     pub stop_hash: HashType, //El hash hasta el que quiero avanzar. Todos ceros significa que quiero ir hasta el final
@@ -22,20 +29,47 @@ pub struct GetHeadersMessage {
 
 impl GetHeadersMessage {
     pub fn new(
-        magic_bytes: [u8; 4],
         version: ProtocolVersionP2P,
         header_locator_hashes: Vec<HashType>,
         stop_hash: HashType,
     ) -> Self {
         GetHeadersMessage {
-            magic_numbers: magic_bytes,
             version,
             header_locator_hashes,
             stop_hash,
         }
     }
 
-    pub fn serialize_payload(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    pub fn deserialize_message(
+        stream: &mut dyn Read, 
+        message_header: MessageHeader,
+    ) -> Result<Self, ErrorSerialization> 
+    {
+        let mut buffer: Vec<u8> = vec![0; message_header.payload_size as usize];
+        if stream.read_exact(&mut buffer).is_err() {
+            return Err(ErrorSerialization::ErrorWhileReading);
+        }
+        let mut buffer: &[u8] = &buffer[..];
+
+        let message = Self::deserialize(&mut buffer)?;
+
+        let mut serialized_message: Vec<u8> = Vec::new();
+        message.serialize(&mut serialized_message)?;
+        
+        let checksum = hash256d_reduce(&serialized_message)?;
+        if !checksum.eq(&message_header.checksum) {
+            return Err(ErrorSerialization::ErrorInDeserialization(
+                format!("Checksum isn't the same: {:?} != {:?}", checksum, message_header.checksum)
+            ));
+        }
+
+        Ok(message)        
+    }
+}
+
+impl Serializable for GetHeadersMessage {
+
+    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.version.serialize(stream)?;
         CompactSize::new(self.header_locator_hashes.len() as u64).serialize(stream)?;
 
@@ -48,29 +82,25 @@ impl GetHeadersMessage {
     }
 }
 
-impl Serializable for GetHeadersMessage {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        let mut serialized_message = Vec::new();
-        let mut serialized_payload = Vec::new();
+impl Deserializable for GetHeadersMessage {
 
-        // magic bytes
-        self.magic_numbers.serialize(&mut serialized_message)?;
+    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
+        let version = ProtocolVersionP2P::deserialize(stream)?;
+        let size = CompactSize::deserialize(stream)?;
 
-        // command name
-        GET_HEADERS_TYPE.serialize(&mut serialized_message)?;
+        let mut header_locator_hashes: Vec<HashType> = Vec::new();
+        for _ in 0..size.value {
+            let header_locator_hash = HashType::deserialize(stream)?;
+            header_locator_hashes.push(header_locator_hash);
+        }
 
-        self.serialize_payload(&mut serialized_payload)?;
+        let stop_hash = HashType::deserialize(stream)?;
 
-        // payload size
-        (serialized_payload.len() as u32).serialize(&mut serialized_message)?;
-
-        //checksum
-        hash256d_reduce(&serialized_payload)?.serialize(&mut serialized_message)?;
-
-        // payload
-        serialized_payload.serialize(&mut serialized_message)?;
-
-        serialized_message.serialize(stream)
+        Ok(GetHeadersMessage { 
+            version, 
+            header_locator_hashes,
+            stop_hash
+        })
     }
 }
 
@@ -86,37 +116,29 @@ mod tests {
         ErrorSerialization, 
         
         HashType,
-        hash256d_reduce,
-
-        GET_HEADERS_TYPE,
     };
 
     #[test]
     fn test01_serialize() -> Result<(), ErrorSerialization> {
-        let magic_bytes: [u8; 4] = [0x55, 0x66, 0xee, 0xee];
         let version = ProtocolVersionP2P::V70015;
         let header_locator_hash: Vec<HashType> = vec![[1; 32], [2; 32], [0; 32]];
         let length = CompactSize::new(header_locator_hash.len() as u64);
         let stop_hash: HashType = [1; 32];
 
         let mut expected_stream: Vec<u8> = Vec::new();
-        magic_bytes.serialize(&mut expected_stream)?;
-        GET_HEADERS_TYPE.serialize(&mut expected_stream)?;
 
-        let mut payload: Vec<u8> = Vec::new();
-        version.serialize(&mut payload)?;
-        length.serialize(&mut payload)?;
+        version.serialize(&mut expected_stream)?;
+        length.serialize(&mut expected_stream)?;
         for header_hash in header_locator_hash.iter() {
-            let _ = header_hash.serialize(&mut payload)?;
+            let _ = header_hash.serialize(&mut expected_stream)?;
         }
-        stop_hash.serialize(&mut payload)?;
+        stop_hash.serialize(&mut expected_stream)?;
 
-        (payload.len() as u32).serialize(&mut expected_stream)?;
-        hash256d_reduce(&payload)?.serialize(&mut expected_stream)?;
-        payload.serialize(&mut expected_stream)?;
-
-        let get_headers_message =
-            GetHeadersMessage::new(magic_bytes, version, header_locator_hash, stop_hash);
+        let get_headers_message = GetHeadersMessage::new(
+            version,
+            header_locator_hash,
+            stop_hash,
+        );
 
         let mut stream: Vec<u8> = Vec::new();
         get_headers_message.serialize(&mut stream)?;

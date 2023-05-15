@@ -7,7 +7,7 @@ use crate::messages::{
     get_headers_message::GetHeadersMessage,
     headers_message::HeadersMessage,
 
-    message_header::MessageHeader,
+    message,
     command_name::CommandName,
 
     inventory_message::InventoryMessage,
@@ -68,12 +68,18 @@ impl InitialBlockDownload {
         let hashed_header: HashType = hash256d(&serialized_header)?;
 
         let get_headers_message = GetHeadersMessage::new(
-            TESTNET_MAGIC_NUMBERS,
             self.protocol_version,
             vec![hashed_header],
             NO_STOP_HASH,
         );
-        get_headers_message.serialize(peer_stream)?;
+
+        message::serialize_message(
+            peer_stream, 
+            TESTNET_MAGIC_NUMBERS, 
+            CommandName::GetHeaders, 
+            &get_headers_message,
+        )?;
+
         Ok(())
     }
 
@@ -118,14 +124,14 @@ impl InitialBlockDownload {
             hash_value: *hashed_header,
         };
 
-        MessageHeader::serialize_message(
+        message::serialize_message(
             peer_stream, 
             TESTNET_MAGIC_NUMBERS, 
             CommandName::Inventory, 
             &inventory_message,
         )?;
 
-        let header = MessageHeader::deserialize_until_found(peer_stream, CommandName::Block)?;
+        let header = message::deserialize_until_found(peer_stream, CommandName::Block)?;
         let block_message = BlockMessage::deserialize_message(peer_stream, header)?;
         
         match block_message.block.proof_of_inclusion() {
