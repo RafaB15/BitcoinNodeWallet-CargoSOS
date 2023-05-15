@@ -1,7 +1,6 @@
 use super::{
     compact_size::CompactSize,
     message_header::MessageHeader,
-    message,
 };
 
 use crate::block_structure::{
@@ -38,7 +37,11 @@ impl HeadersMessage {
         message_header: MessageHeader,
     ) -> Result<Self, ErrorSerialization> 
     {
-        let mut buffer: &[u8] = message::read_exact(stream, message_header.payload_size as usize)?;
+        let mut buffer: Vec<u8> = vec![0; message_header.payload_size as usize];
+        if stream.read_exact(&mut buffer).is_err() {
+            return Err(ErrorSerialization::ErrorWhileReading);
+        }
+        let mut buffer: &[u8] = &buffer[..];
 
         let message = Self::deserialize(&mut buffer)?;
 

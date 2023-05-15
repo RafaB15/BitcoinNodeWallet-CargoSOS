@@ -1,5 +1,4 @@
 use super::{
-    message,
     message_header::MessageHeader,
 };
 
@@ -26,7 +25,11 @@ impl VerackMessage {
         message_header: MessageHeader,
     ) -> Result<Self, ErrorSerialization> 
     {
-        let mut buffer: &[u8] = message::read_exact(stream, message_header.payload_size as usize)?;
+        let mut buffer: Vec<u8> = vec![0; message_header.payload_size as usize];
+        if stream.read_exact(&mut buffer).is_err() {
+            return Err(ErrorSerialization::ErrorWhileReading);
+        }
+        let mut buffer: &[u8] = &buffer[..];
 
         let message = VerackMessage::deserialize(&mut buffer)?;
 
@@ -51,7 +54,7 @@ impl Serializable for VerackMessage {
 
 impl Deserializable for VerackMessage {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {        
+    fn deserialize(_: &mut dyn Read) -> Result<Self, ErrorSerialization> {        
         Ok(VerackMessage)
     }
 
@@ -63,26 +66,20 @@ mod tests {
         Serializable,
         Deserializable,
         ErrorSerialization,
-
-        message,
         MessageHeader,
         VerackMessage,
         VERACK_CHECKSUM,
     };
 
-    use crate::messages::command_name::CommandName;
+    use crate::messages::{
+        message,
+        command_name::CommandName,
+    };
 
     #[test]
     fn test01_serialize() -> Result<(), ErrorSerialization>{
 
         let magic_bytes: [u8; 4] = [0x55, 0x66, 0xee, 0xee];
-
-        let header = MessageHeader {
-            magic_numbers: magic_bytes,
-            command_name: CommandName::Verack,
-            payload_size: 0,
-            checksum: VERACK_CHECKSUM,
-        };
 
         let verack_message = VerackMessage;
         let mut stream: Vec<u8> = Vec::new();

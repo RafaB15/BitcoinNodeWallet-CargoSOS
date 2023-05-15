@@ -31,18 +31,6 @@ const CHECKSUM_SIZE: usize = 4;
 
 const HEADER_SIZE: usize = MAGIC_BYTES_SIZE + MASSAGE_TYPE_SIZE + PAYLOAD_SIZE + CHECKSUM_SIZE;
 
-pub fn read_exact(
-    stream: &mut dyn Read,
-    size: usize,
-) -> Result<&[u8], ErrorSerialization> {
-    let mut buffer: Vec<u8> = vec![0; size];
-    if stream.read_exact(&mut buffer).is_err() {
-        return Err(ErrorSerialization::ErrorWhileReading);
-    }
-    let mut buffer: &[u8] = &buffer[..];
-    Ok(buffer)
-}
-
 pub fn serialize_message(
     stream: &mut dyn Write, 
     magic_numbers: MagicType,
