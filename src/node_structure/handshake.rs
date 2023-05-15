@@ -7,6 +7,8 @@ use crate::connections::{
 use crate::logs::logger_sender::LoggerSender;
 
 use crate::messages::{
+    message,
+    command_name::CommandName,
     version_message::VersionMessage,
     verack_message::VerackMessage,
     bitfield_services::BitfieldServices,
@@ -14,7 +16,6 @@ use crate::messages::{
 };
 
 use crate::serialization::{
-    serializable::Serializable,
     deserializable::Deserializable,
 };
 
@@ -52,9 +53,14 @@ impl Handshake {
     }
 
     ///Function that sends a version message to the given potential peer.
-    pub fn send_testnet_version_message(&self, local_socket_addr: &SocketAddr, potential_peer: &SocketAddr, potencial_peer_stream: &mut TcpStream) -> Result<(), ErrorMessage>{
+    pub fn send_testnet_version_message(
+        &self, 
+        local_socket_addr: &SocketAddr, 
+        potential_peer: &SocketAddr, 
+        potencial_peer_stream: &mut TcpStream
+    ) -> Result<(), ErrorMessage>
+    {
         let version_message = VersionMessage::new(
-            TESTNET_MAGIC_NUMBERS,
             self.protocol_version,
             self.services.clone(),
             BitfieldServices::new(vec![SupportedServices::NodeNetworkLimited]),
@@ -65,14 +71,29 @@ impl Handshake {
             self.blockchain_height,
             NO_NEW_TRANSACTIONS,
         );  
-        version_message.serialize(potencial_peer_stream)?;
+
+        message::serialize_message(
+            potencial_peer_stream, 
+            TESTNET_MAGIC_NUMBERS, 
+            CommandName::Version, 
+            &version_message,
+        )?;
+
         Ok(())
     }
 
     ///Function that sends a verack message to the given potential peer.
-    pub fn send_testnet_verack_message(&self, potencial_peer_stream: &mut TcpStream) -> Result<(), ErrorMessage>{
-        let verack_message = VerackMessage::new(TESTNET_MAGIC_NUMBERS);
-        verack_message.serialize(potencial_peer_stream)?;
+    pub fn send_testnet_verack_message(&self, potencial_peer_stream: &mut TcpStream) -> Result<(), ErrorMessage>{        
+        
+        let verack_message = VerackMessage;
+
+        message::serialize_message(
+            potencial_peer_stream, 
+            TESTNET_MAGIC_NUMBERS, 
+            CommandName::Verack, 
+            &verack_message
+        )?;
+        
         Ok(())
     }
 
