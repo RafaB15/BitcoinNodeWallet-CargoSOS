@@ -221,7 +221,7 @@ fn get_blocks_recursive(
                 blocks,
                 block_chain,
             );
-        }
+        }next_blocks
     }
 }
 
