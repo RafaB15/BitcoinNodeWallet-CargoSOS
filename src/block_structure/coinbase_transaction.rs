@@ -1,18 +1,15 @@
 use super::hash::HashType;
-use crate::serialization::{
-    serializable::Serializable,
-    error_serialization::ErrorSerialization,
-};
 use crate::messages::compact_size::CompactSize;
+use crate::serialization::{error_serialization::ErrorSerialization, serializable::Serializable};
 use std::io::Write;
 
 pub struct CoinbaseTransaction {
-    pub hash: HashType, //should be null [32-byte null]
-    pub index: u32, //should be UINT32_MAX [0xffffffff]
-    pub script_bytes: u32, //ompactSize
-    pub height: u32, //should be script [Varies (4)]
+    pub hash: HashType,       //should be null [32-byte null]
+    pub index: u32,           //should be UINT32_MAX [0xffffffff]
+    pub script_bytes: u32,    //ompactSize
+    pub height: u32,          //should be script [Varies (4)]
     pub coinbase_script: u32, //should be None
-    pub sequence: u32, //should be uint32_t [4]
+    pub sequence: u32,        //should be uint32_t [4]
 }
 
 impl Serializable for CoinbaseTransaction {

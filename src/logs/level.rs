@@ -2,7 +2,7 @@
 pub enum Level {
     NODE,
     WALLET,
-    TRANSACTION, 
+    TRANSACTION,
     CONFIGURATION,
     CONNECTION,
 }

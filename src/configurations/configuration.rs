@@ -2,7 +2,7 @@ pub mod config {
 
     use crate::configurations::{
         connection_config::ConnectionConfig, deserializable_structure::DeserializeStructure,
-        log_config::LogConfig, error_configuration::ErrorConfiguration,
+        error_configuration::ErrorConfiguration, log_config::LogConfig,
     };
     use std::collections::HashMap;
     use std::io::Read;
@@ -93,7 +93,8 @@ pub mod config {
 mod tests {
     use super::config;
     use crate::configurations::{
-        connection_config::ConnectionConfig, log_config::LogConfig, error_configuration::ErrorConfiguration,
+        connection_config::ConnectionConfig, error_configuration::ErrorConfiguration,
+        log_config::LogConfig,
     };
     use crate::connections::{ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P};
 
@@ -156,7 +157,10 @@ mod tests {
             .as_bytes();
         let config_result = config::new(configuration);
 
-        assert_eq!(config_result, Err(ErrorConfiguration::ErrorConfigurationNotFound));
+        assert_eq!(
+            config_result,
+            Err(ErrorConfiguration::ErrorConfigurationNotFound)
+        );
     }
 
     #[test]
@@ -238,6 +242,9 @@ mod tests {
         let configuration = "".as_bytes();
         let config_result = config::new(configuration);
 
-        assert_eq!(config_result, Err(ErrorConfiguration::ErrorIncompleteConfiguration));
+        assert_eq!(
+            config_result,
+            Err(ErrorConfiguration::ErrorIncompleteConfiguration)
+        );
     }
 }

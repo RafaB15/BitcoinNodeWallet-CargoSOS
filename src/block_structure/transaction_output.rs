@@ -1,8 +1,5 @@
-use crate::serialization::{
-    serializable::Serializable,
-    error_serialization::ErrorSerialization,
-};
 use crate::messages::compact_size::CompactSize;
+use crate::serialization::{error_serialization::ErrorSerialization, serializable::Serializable};
 use std::io::Write;
 
 pub struct TransactionOutput {
@@ -17,6 +14,6 @@ impl Serializable for TransactionOutput {
         CompactSize::new(self.public_key.len() as u64).serialize(stream)?;
         self.public_key.serialize(stream)?;
 
-        Ok(()) 
+        Ok(())
     }
 }

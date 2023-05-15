@@ -1,20 +1,15 @@
-use super::{
-    block_header::BlockHeader, 
-    transaction::Transaction,
-    error_block::ErrorBlock,
-};
+use super::{block_header::BlockHeader, error_block::ErrorBlock, transaction::Transaction};
 
 pub struct Block {
     pub header: BlockHeader,
-    pub transactions: Vec<Transaction>
+    pub transactions: Vec<Transaction>,
 }
 
 impl Block {
-
     pub fn new(header: BlockHeader) -> Self {
-        Block { 
-            header, 
-            transactions: vec![] 
+        Block {
+            header,
+            transactions: vec![],
         }
     }
 

@@ -1,19 +1,16 @@
 use super::{
-    block::Block,
-    block_header::BlockHeader,
+    block::Block, block_header::BlockHeader, error_block::ErrorBlock,
     transaction_output::TransactionOutput,
-    error_block::ErrorBlock,
 };
 
 pub struct BlockChain {
     next_block: Vec<BlockChain>,
-    block: Block,   
+    block: Block,
 }
 
 impl BlockChain {
-
     pub fn new(block: Block) -> Self {
-        BlockChain { 
+        BlockChain {
             next_block: vec![],
             block,
         }

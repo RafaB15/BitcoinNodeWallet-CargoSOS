@@ -1,16 +1,11 @@
 use super::error_initialization::ErrorInitialization;
 
 use cargosos_bitcoin::{
-    logs::error_log::ErrorLog,
     configurations::error_configuration::ErrorConfiguration,
-    connections::error_connection::ErrorConnection,
+    connections::error_connection::ErrorConnection, logs::error_log::ErrorLog,
 };
 
-use std::fmt::{
-    Debug,
-    Formatter,
-    Error,
-};
+use std::fmt::{Debug, Error, Formatter};
 
 use std::convert::From;
 
@@ -18,16 +13,22 @@ pub enum ErrorExecution {
     ErrorInitialization(ErrorInitialization),
     ErrorLog(ErrorLog),
     ErrorConfiguration(ErrorConfiguration),
-    ErrorConnection(ErrorConnection)
+    ErrorConnection(ErrorConnection),
 }
 
 impl Debug for ErrorExecution {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         match self {
-            ErrorExecution::ErrorInitialization(error_initialization) => write!(f, "{:?}", error_initialization),
+            ErrorExecution::ErrorInitialization(error_initialization) => {
+                write!(f, "{:?}", error_initialization)
+            }
             ErrorExecution::ErrorLog(error_log) => write!(f, "{:?}", error_log),
-            ErrorExecution::ErrorConfiguration(error_configuration) => write!(f, "{:?}", error_configuration),
-            ErrorExecution::ErrorConnection(error_connection) => write!(f, "{:?}", error_connection),
+            ErrorExecution::ErrorConfiguration(error_configuration) => {
+                write!(f, "{:?}", error_configuration)
+            }
+            ErrorExecution::ErrorConnection(error_connection) => {
+                write!(f, "{:?}", error_connection)
+            }
         }
     }
 }

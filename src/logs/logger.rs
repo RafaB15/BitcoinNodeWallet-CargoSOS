@@ -1,18 +1,18 @@
-use super::error_log::{ErrorLog};
+use super::error_log::ErrorLog;
+use super::level::Level;
 use super::logger_receiver::LoggerReceiver;
 use super::logger_sender::LoggerSender;
-use super::level::Level;
 
 use std::path::Path;
 use std::sync::mpsc;
 
 pub(crate) type MessageLog = (Level, String);
-    /// We create the sender and the receiver for the logger, receiving the path of the file where we want to write the logs
-    /// 
-    /// Errores:
-    /// # ErrorFileNotFound No se encontro el file
-    /// # ErrorCouldNotWriteInFile No se pudo escribir en el file
-    /// # ErrorCouldNotFindReceiver No se encontro el receiver
+/// We create the sender and the receiver for the logger, receiving the path of the file where we want to write the logs
+///
+/// Errores:
+/// # ErrorFileNotFound No se encontro el file
+/// # ErrorCouldNotWriteInFile No se pudo escribir en el file
+/// # ErrorCouldNotFindReceiver No se encontro el receiver
 pub fn initialize_logger(logger_file: &Path) -> Result<(LoggerSender, LoggerReceiver), ErrorLog> {
     let (sender, receiver) = mpsc::channel::<MessageLog>();
 
@@ -25,20 +25,23 @@ pub fn initialize_logger(logger_file: &Path) -> Result<(LoggerSender, LoggerRece
 #[cfg(test)]
 mod tests {
 
+    use super::*;
     use std::fs::File;
     use std::io::Read;
     use std::path::Path;
-    use super::*;
-    
+
     #[test]
     fn correct_log_creation() {
-    
         let log_file = "tests/common/logs/test_log.txt";
 
-        let  (logger_sender, _logger_receiver) = initialize_logger(Path::new(log_file)).unwrap();
+        let (logger_sender, _logger_receiver) = initialize_logger(Path::new(log_file)).unwrap();
 
-        logger_sender.log(Level::NODE,"A block".to_string()).unwrap();
-        logger_sender.log(Level::NODE, "Another block".to_string()).unwrap();
+        logger_sender
+            .log(Level::NODE, "A block".to_string())
+            .unwrap();
+        logger_sender
+            .log(Level::NODE, "Another block".to_string())
+            .unwrap();
 
         //Wait for the logs to be written in the file
         std::thread::sleep(std::time::Duration::from_secs(1));
@@ -49,7 +52,6 @@ mod tests {
 
         assert!(contents.contains("[NODE] A block"));
         assert!(contents.contains("[NODE] Another block"));
-
     }
 
     #[test]
@@ -59,7 +61,6 @@ mod tests {
         let error_message = initialize_logger(Path::new(non_existent_file)).unwrap_err();
 
         assert_eq!(error_message, ErrorLog::ErrorFileNotFound);
-
     }
 
     #[test]
@@ -69,9 +70,10 @@ mod tests {
 
         std::mem::drop(logger_receiver);
 
-        let error_message: ErrorLog = logger_sender.log(Level::NODE,"A block".to_string()).unwrap_err();
+        let error_message: ErrorLog = logger_sender
+            .log(Level::NODE, "A block".to_string())
+            .unwrap_err();
 
         assert_eq!(error_message, ErrorLog::ErrorReceiverNotFound);
-
     }
 }

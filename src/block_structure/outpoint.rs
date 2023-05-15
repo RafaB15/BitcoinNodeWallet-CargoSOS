@@ -1,8 +1,5 @@
 use super::hash::HashType;
-use crate::serialization::{
-    serializable::Serializable,
-    error_serialization::ErrorSerialization,
-};
+use crate::serialization::{error_serialization::ErrorSerialization, serializable::Serializable};
 use std::io::Write;
 
 pub struct Outpoint {

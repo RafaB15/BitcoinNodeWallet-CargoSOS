@@ -1,15 +1,12 @@
 use super::{
+    error_block::ErrorBlock,
+    hash::{hash256, HashType},
     transaction_input::TransactionInput,
     transaction_output::TransactionOutput,
-    hash::{HashType, hash256},
-    error_block::ErrorBlock,
 };
 
 use crate::messages::get_headers_message::GetHeadersMessage;
-use crate::serialization::{
-    serializable::Serializable,
-    error_serialization::ErrorSerialization,
-};
+use crate::serialization::{error_serialization::ErrorSerialization, serializable::Serializable};
 
 use crate::messages::compact_size::CompactSize;
 
@@ -56,7 +53,7 @@ impl Transaction {
         };
 
         // Write the buffer to the stream
-        if stream.write_all(&buffer).is_err(){
+        if stream.write_all(&buffer).is_err() {
             return Err(ErrorBlock::ErrorCouldNotWriteTxId);
         }
 

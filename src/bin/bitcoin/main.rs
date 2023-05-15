@@ -1,36 +1,27 @@
-mod error_initialization;
 mod error_execution;
+mod error_initialization;
 
-use std::{io::BufReader, path::Path};
 use std::fs::File;
 use std::thread::{self, JoinHandle};
+use std::{io::BufReader, path::Path};
 
-use cargosos_bitcoin::configurations::{
-    configuration::config,
-    log_config::LogConfig,
-};
+use cargosos_bitcoin::configurations::{configuration::config, log_config::LogConfig};
 
-use cargosos_bitcoin::logs::{
-    logger,
-    logger_sender::LoggerSender,
-    error_log::ErrorLog,
-};
+use cargosos_bitcoin::logs::{error_log::ErrorLog, logger, logger_sender::LoggerSender};
 
-use error_initialization::ErrorInitialization;
 use error_execution::ErrorExecution;
+use error_initialization::ErrorInitialization;
 
 use cargosos_bitcoin::node_structure::handshake::Handshake;
 
 use cargosos_bitcoin::connections::{
-    dns_seeder::DNSSeeder,
-    p2p_protocol::ProtocolVersionP2P,
-    suppored_services::SupportedServices,
+    dns_seeder::DNSSeeder, p2p_protocol::ProtocolVersionP2P, suppored_services::SupportedServices,
 };
 
 use cargosos_bitcoin::messages::bitfield_services::BitfieldServices;
 
-/// Get the configuration name given the arguments 
-/// 
+/// Get the configuration name given the arguments
+///
 /// ### Errors
 ///  * `ErrorNoGivenFile`: It will appear when there is not argument pass that configuration declaration
 fn get_config_name(arguments: Vec<String>) -> Result<String, ErrorInitialization> {
@@ -43,7 +34,7 @@ fn get_config_name(arguments: Vec<String>) -> Result<String, ErrorInitialization
 }
 
 /// Get the file given by its name
-/// 
+///
 /// ### Errors
 /// * `ErrorFileNotExist`: It will appear when the file does not exist
 fn open_config_file(config_name: String) -> Result<BufReader<File>, ErrorInitialization> {
@@ -52,23 +43,25 @@ fn open_config_file(config_name: String) -> Result<BufReader<File>, ErrorInitial
         Err(_) => return Err(ErrorInitialization::ErrorConfigurationFileDoesntExist),
     };
 
-    Ok(BufReader::new(config_file))   
+    Ok(BufReader::new(config_file))
 }
 
 /// Initialize the logs ready for ejecution
-/// 
+///
 /// ### Errors
 ///  * `ErrorFileNotFound`: No se encontro el file
 ///  * `ErrorCouldNotWriteInFile`: No se pudo escribir en el file
 ///  * `ErrorCouldNotFindReceiver`: No se encontro el receiver
 ///  * `ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
-fn initialize_logs(log_config: LogConfig) -> Result<(JoinHandle<Result<(), ErrorLog>>, LoggerSender), ErrorLog> {
+fn initialize_logs(
+    log_config: LogConfig,
+) -> Result<(JoinHandle<Result<(), ErrorLog>>, LoggerSender), ErrorLog> {
     println!("Creating the logs system");
 
     let filepath_log = Path::new(&log_config.filepath_log);
     let (logger_sender, logger_receiver) = logger::initialize_logger(filepath_log)?;
 
-    let handle = thread::spawn(move || logger_receiver.receive_log());       
+    let handle = thread::spawn(move || logger_receiver.receive_log());
 
     logger_sender.log_configuration("Logs are already configured".to_string())?;
 
@@ -76,7 +69,7 @@ fn initialize_logs(log_config: LogConfig) -> Result<(JoinHandle<Result<(), Error
 }
 
 fn main() -> Result<(), ErrorExecution> {
-    let arguments: Vec<String> = std::env::args().collect();    
+    let arguments: Vec<String> = std::env::args().collect();
 
     println!("\tInitialization");
     println!("Reading the configuration file");
@@ -85,7 +78,6 @@ fn main() -> Result<(), ErrorExecution> {
     let config_file = open_config_file(config_name)?;
     let (log_config, _connection_config) = config::new(config_file)?;
 
-    
     let (handle, logger_sender) = initialize_logs(log_config)?;
 
     // Ejecutar programa
@@ -99,7 +91,7 @@ fn main() -> Result<(), ErrorExecution> {
             ProtocolVersionP2P::V70015,
             BitfieldServices::new(vec![SupportedServices::Unname]),
             0,
-            logger_sender.clone(),  
+            logger_sender.clone(),
         );
 
         let peers_addrs = node.connect_to_testnet_peers(&potential_peers)?;
@@ -108,7 +100,7 @@ fn main() -> Result<(), ErrorExecution> {
     }
 
     logger_sender.log_configuration("Closing program".to_string())?;
-    
+
     std::mem::drop(logger_sender);
     if let Ok(resultado) = handle.join() {
         resultado?;

@@ -2,16 +2,11 @@ use crate::connections::p2p_protocol::ProtocolVersionP2P;
 
 use super::compact_size::CompactSize;
 
-use crate::serialization::{
-    serializable::Serializable,
-    error_serialization::ErrorSerialization,
-};
+use crate::serialization::{error_serialization::ErrorSerialization, serializable::Serializable};
 
 use std::io::Write;
 
-use crate::block_structure::hash::{
-    hash256d_reduce,
-};
+use crate::block_structure::hash::hash256d_reduce;
 
 pub const GET_HEADERS_TYPE: &[u8; 12] = b"getheaders\0\0";
 
@@ -40,26 +35,24 @@ impl GetHeadersMessage {
     pub fn serialize_payload(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.version.serialize(stream)?;
         CompactSize::new(self.header_locator_hashes.len() as u64).serialize(stream)?;
-        
+
         for hash in self.header_locator_hashes.iter() {
             hash.serialize(stream)?;
         }
-        
+
         self.stop_hash.serialize(stream)?;
         Ok(())
     }
-
 }
 
 impl Serializable for GetHeadersMessage {
-
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         let mut serialized_message = Vec::new();
         let mut serialized_payload = Vec::new();
 
         // magic bytes
-        self.magic_numbers.serialize(&mut serialized_message)?; 
-        
+        self.magic_numbers.serialize(&mut serialized_message)?;
+
         // command name
         GET_HEADERS_TYPE.serialize(&mut serialized_message)?;
 
@@ -82,18 +75,11 @@ impl Serializable for GetHeadersMessage {
 mod tests {
 
     use super::{
-        GetHeadersMessage,
-        ProtocolVersionP2P,
-        CompactSize,
-        Serializable,
-        ErrorSerialization, 
+        CompactSize, ErrorSerialization, GetHeadersMessage, ProtocolVersionP2P, Serializable,
         GET_HEADERS_TYPE,
     };
 
-    use bitcoin_hashes::{
-        sha256d,
-        Hash,
-    };
+    use bitcoin_hashes::{sha256d, Hash};
 
     #[test]
     fn test01_serialize() -> Result<(), ErrorSerialization> {
@@ -116,20 +102,20 @@ mod tests {
         stop_hash.serialize(&mut payload)?;
 
         (payload.len() as u32).serialize(&mut expected_stream)?;
-        let hash_bytes: sha256d::Hash = sha256d::Hash::hash(&payload); 
+        let hash_bytes: sha256d::Hash = sha256d::Hash::hash(&payload);
         let checksum: [u8; 4] = match hash_bytes[0..4].try_into() {
             Ok(checksum) => checksum,
-            _ => return Err(ErrorSerialization::ErrorInSerialization("Calculating the checksum".to_string())),
+            _ => {
+                return Err(ErrorSerialization::ErrorInSerialization(
+                    "Calculating the checksum".to_string(),
+                ))
+            }
         };
         checksum.serialize(&mut expected_stream)?;
         payload.serialize(&mut expected_stream)?;
 
-        let get_headers_message = GetHeadersMessage::new(
-            magic_bytes,
-            version,
-            header_locator_hash,
-            stop_hash,
-        );
+        let get_headers_message =
+            GetHeadersMessage::new(magic_bytes, version, header_locator_hash, stop_hash);
 
         let mut stream: Vec<u8> = Vec::new();
         get_headers_message.serialize(&mut stream)?;
@@ -138,6 +124,4 @@ mod tests {
 
         Ok(())
     }
-
 }
-

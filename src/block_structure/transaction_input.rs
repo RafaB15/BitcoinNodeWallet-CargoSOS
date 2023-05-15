@@ -1,9 +1,6 @@
 use super::outpoint::Outpoint;
-use crate::serialization::{
-    serializable::Serializable,
-    error_serialization::ErrorSerialization,
-};
 use crate::messages::compact_size::CompactSize;
+use crate::serialization::{error_serialization::ErrorSerialization, serializable::Serializable};
 use std::io::Write;
 
 pub struct TransactionInput {
@@ -13,7 +10,11 @@ pub struct TransactionInput {
 }
 
 impl TransactionInput {
-    pub fn new(previous_output: Outpoint, signature_script: String, sequence: u32) -> TransactionInput {
+    pub fn new(
+        previous_output: Outpoint,
+        signature_script: String,
+        sequence: u32,
+    ) -> TransactionInput {
         TransactionInput {
             previous_output,
             signature_script,
@@ -28,7 +29,7 @@ impl Serializable for TransactionInput {
 
         CompactSize::new(self.signature_script.len() as u64).serialize(stream)?;
         self.signature_script.serialize(stream)?;
-        
+
         self.sequence.serialize(stream)?;
 
         Ok(())
