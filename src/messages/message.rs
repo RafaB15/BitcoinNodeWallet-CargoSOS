@@ -10,8 +10,14 @@ use crate::block_structure::{
 
 use super::{
     command_name::CommandName,
-    inventory_message::InventoryMessage,
+    
+    version_message::VersionMessage,
+    verack_message::VerackMessage,
+    get_headers_message::GetHeadersMessage,
+    headers_message::HeadersMessage,
     block_message::BlockMessage,
+    inventory_message::InventoryMessage,
+
     message_header::{
         MessageHeader,
         MagicType,
@@ -81,15 +87,23 @@ pub fn deserialize_until_found(
         }
 
         match header.command_name {
-            CommandName::Version => todo!(),
-            CommandName::Verack => todo!(),
-            CommandName::GetHeaders => todo!(),
-            CommandName::Headers => todo!(),
+            CommandName::Version => {
+                let _ = VersionMessage::deserialize_message(stream, header)?;
+            },
+            CommandName::Verack => {
+                let _ = VerackMessage::deserialize_message(stream, header)?;
+            },
+            CommandName::GetHeaders => {
+                let _ = GetHeadersMessage::deserialize_message(stream, header)?;
+            },
+            CommandName::Headers => {
+                let _ = HeadersMessage::deserialize_message(stream, header)?;
+            },
             CommandName::Inventory => {
-                let _ = InventoryMessage::deserialize(stream)?;
+                let _ = InventoryMessage::deserialize_message(stream, header)?;
             },
             CommandName::Block => {
-                let _ = BlockMessage::deserialize(stream)?;
+                let _ = BlockMessage::deserialize_message(stream, header)?;
             },
         }
     }
