@@ -23,6 +23,8 @@ const GET_HEADERS_NAME: CommandNameType = [b'g', b'e', b't', b'h', b'e', b'a', b
 const HEADERS_NAME: CommandNameType = [b'h', b'e', b'a', b'd', b'e', b'r', b's', b'\0', b'\0', b'\0', b'\0', b'\0'];
 const INVENTORY_NAME: CommandNameType = [b'i', b'n', b'v', b'e', b'n', b't', b'o', b'r', b'y', b'\0', b'\0', b'\0'];
 const BLOCK_NAME: CommandNameType = [b'b', b'l', b'o', b'c', b'k', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0'];
+const PING_NAME: CommandNameType = [b'p', b'i', b'n', b'g', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0'];
+const PONG_NAME: CommandNameType = [b'p', b'o', b'n', b'g', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0'];
 
 #[derive(Debug, Copy, Clone, std::cmp::PartialEq)]
 pub enum CommandName {
@@ -32,6 +34,8 @@ pub enum CommandName {
     Headers,
     Inventory,
     Block, 
+    Ping,
+    Pong,
 }
 
 impl TryInto<CommandNameType> for CommandName {
@@ -45,6 +49,8 @@ impl TryInto<CommandNameType> for CommandName {
             CommandName::Headers => HEADERS_NAME,
             CommandName::Inventory => INVENTORY_NAME,
             CommandName::Block => BLOCK_NAME,
+            CommandName::Ping => PING_NAME,
+            CommandName::Pong => PONG_NAME,
         };
 
         Ok(command_name)
@@ -62,6 +68,8 @@ impl TryFrom<CommandNameType> for CommandName {
             HEADERS_NAME => Ok(CommandName::Headers),
             INVENTORY_NAME => Ok(CommandName::Inventory),
             BLOCK_NAME => Ok(CommandName::Block),
+            PING_NAME => Ok(CommandName::Ping),
+            PONG_NAME => Ok(CommandName::Pong),
             _ => Err(ErrorSerialization::ErrorInDeserialization("Invalid command name".to_string())),
         }
     }

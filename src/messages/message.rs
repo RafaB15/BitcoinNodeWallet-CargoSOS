@@ -17,6 +17,9 @@ use super::{
     headers_message::HeadersMessage,
     block_message::BlockMessage,
     inventory_message::InventoryMessage,
+    ping_message::PingMessage,
+    pong_message::PongMessage,
+
 
     message_header::{
         MessageHeader,
@@ -76,8 +79,8 @@ pub fn deserialize_message(
     MessageHeader::deserialize(&mut buffer)
 }
 
-pub fn deserialize_until_found(
-    stream: &mut dyn Read,
+pub fn deserialize_until_found<RW : Read + Write>(
+    stream: &mut RW,
     search_name: CommandName,
 ) -> Result<MessageHeader, ErrorMessage> 
 {
@@ -85,6 +88,8 @@ pub fn deserialize_until_found(
         if header.command_name == search_name {
             return Ok(header);
         }
+
+        let magic_bytes = header.magic_numbers;
 
         match header.command_name {
             CommandName::Version => {
@@ -104,6 +109,23 @@ pub fn deserialize_until_found(
             },
             CommandName::Block => {
                 let _ = BlockMessage::deserialize_message(stream, header)?;
+            },
+            CommandName::Ping => {
+                let ping = PingMessage::deserialize_message(stream, header)?;
+
+                let pong = PongMessage {
+                    nonce: ping.nonce,
+                };
+
+                serialize_message(
+                    stream,
+                    magic_bytes,
+                    CommandName::Pong,
+                    &pong,
+                )?;
+            },
+            CommandName::Pong => {
+                let _ = PongMessage::deserialize_message(stream, header)?;
             },
         }
     }
