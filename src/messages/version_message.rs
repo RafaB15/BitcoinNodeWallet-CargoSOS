@@ -12,36 +12,38 @@ use crate::serialization::{
     error_serialization::ErrorSerialization,
 };
 
+use crate::messages::{
+    message_header::MessageHeader,
+    message,
+};
+
 use crate::block_structure::hash::{
     HashTypeReduced,
     hash256d_reduce,
 };
 
-use std::net::{Ipv6Addr, SocketAddr};
+use std::net::{
+    Ipv6Addr, 
+    SocketAddr
+};
+
 use chrono::{
     DateTime,
     offset::Utc
 };
 
-use std::io::{Read, Write};
+use std::io::{
+    Read, 
+    Write
+};
 
 use crate::connections::{
     p2p_protocol::ProtocolVersionP2P,
     socket_conversion::socket_to_ipv6_port,
 };
 
-pub const VERSION_TYPE: &[u8; 12] = b"version\0\0\0\0\0";
-
-const MAGIC_BYTES_SIZE: usize = 4;
-const MASSAGE_TYPE_SIZE: usize = 12;
-const PAYLOAD_SIZE: usize = 4;
-const CHECKSUM_SIZE: usize = 4;
-
-const HEADER_SIZE: usize = MAGIC_BYTES_SIZE + MASSAGE_TYPE_SIZE + PAYLOAD_SIZE + CHECKSUM_SIZE;
-
 #[derive(Debug, std::cmp::PartialEq)]
 pub struct VersionMessage {
-    pub magic_bytes: [u8; 4],
     pub version: ProtocolVersionP2P,
     pub services: BitfieldServices,
     pub timestamp: DateTime<Utc>,
@@ -59,7 +61,6 @@ pub struct VersionMessage {
 impl VersionMessage {
 
     pub fn new(
-        magic_bytes: [u8; 4],
         version: ProtocolVersionP2P,
         services: BitfieldServices,
         recv_services: BitfieldServices,
@@ -76,7 +77,6 @@ impl VersionMessage {
         let (trans_addr, trans_port) = socket_to_ipv6_port(trans_socket_addr);
 
         Self {
-            magic_bytes,
             version,
             services,
             timestamp,
@@ -92,8 +92,33 @@ impl VersionMessage {
         }
     }
 
-    pub(super) fn serializar_payload(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    pub fn deserialize_message(
+        stream: &mut dyn Read, 
+        message_header: MessageHeader,
+    ) -> Result<Self, ErrorSerialization> 
+    {
+        let mut buffer: &[u8] = message::read_exact(stream, message_header.payload_size as usize)?;
+
+        let message = Self::deserialize(&mut buffer)?;
+
+        let mut serialized_message: Vec<u8> = Vec::new();
+        message.serialize(&mut serialized_message)?;
         
+        let checksum = hash256d_reduce(&serialized_message)?;
+        if !checksum.eq(&message_header.checksum) {
+            return Err(ErrorSerialization::ErrorInDeserialization(
+                format!("Checksum isn't the same: {:?} != {:?}", checksum, message_header.checksum)
+            ));
+        }
+
+        Ok(message)        
+    }
+}
+
+impl Serializable for VersionMessage {
+    
+    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization>{
+    
         self.version.serialize(stream)?;
         self.services.serialize(stream)?;
         self.timestamp.serialize(stream)?;
@@ -115,8 +140,11 @@ impl VersionMessage {
 
         Ok(())
     }
+}
 
-    pub(super) fn deserializar_payload(stream: &mut dyn Read, magic_bytes: [u8; 4]) ->  Result<VersionMessage, ErrorSerialization> {
+impl Deserializable for VersionMessage {
+
+    fn deserialize(stream: &mut dyn Read) ->  Result<Self, ErrorSerialization> {
 
         let version = ProtocolVersionP2P::deserialize(stream)?;
         let services =  BitfieldServices::deserialize(stream)?;
@@ -141,7 +169,6 @@ impl VersionMessage {
         let relay = bool::deserialize(stream)?;
 
         Ok(VersionMessage {
-            magic_bytes,
             version,
             services,
             timestamp,
@@ -154,100 +181,8 @@ impl VersionMessage {
             user_agent,
             start_height,
             relay,
-        })
-    }
-}
-
-impl Serializable for VersionMessage {
-    
-    //magic_bytes
-    //message_type
-    //payload_size: u32
-    //checksum
-    //Since for the checksum we need to hash the payload, we will first serialize the payload without writing it to the stream
-    //version serialization
-    //services serialization
-    //timestamp serialization
-    //recv_services serialization
-    //recv_addr serialization
-    //recv_port serialization
-    //trans services serialization = es el mismo que services_bytes
-    //trans addrs serialization
-    //trans port serialization
-    //nonce serialization
-    //user_agent serialization
-    //start_height serialization
-    //relay serialization
-    //We can now calculate the checksum
-    //Now that we have both the checksum and the payload we can add them to the serialized message vector
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization>{
-    
-        let mut serialized_message = Vec::new();
-        let mut payload = Vec::new();
-        
-        // magic bytes
-        self.magic_bytes.serialize(&mut serialized_message)?;
-
-        // command name
-        VERSION_TYPE.serialize(&mut serialized_message)?;        
-        
-        self.serializar_payload(&mut payload)?;
-
-        // payload size
-        (payload.len() as u32).serialize(&mut serialized_message)?;       
-
-        // checksum
-        hash256d_reduce(&payload)?.serialize(&mut serialized_message)?;
-
-        // payload
-        payload.serialize(&mut serialized_message)?;
-        
-        serialized_message.serialize(stream)?;
-
-        Ok(())
-    }
-}
-
-impl Deserializable for VersionMessage {
-
-
-    fn deserialize(stream: &mut dyn Read) ->  Result<Self, ErrorSerialization> {
-
-        let mut buffer: Vec<u8> = vec![0; HEADER_SIZE];
-        if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorSerialization::ErrorWhileReading);
-        }
-        let mut buffer: &[u8] = &buffer;
-
-        let magic_bytes = <[u8; MAGIC_BYTES_SIZE] as Deserializable>::deserialize(&mut buffer)?;
-
-        let message_type = <[u8; MASSAGE_TYPE_SIZE] as Deserializable>::deserialize(&mut buffer)?;
-        if !VERSION_TYPE.eq(&message_type) {
-            return Err(ErrorSerialization::ErrorInDeserialization(format!("Type name not of version: {:?}", message_type)));
-        }
-
-        let payload_size = u32::deserialize(&mut buffer)?;        
-        let receive_checksum = <[u8; CHECKSUM_SIZE] as Deserializable>::deserialize(&mut buffer)?;
-
-        let mut buffer: Vec<u8> = vec![0; payload_size as usize];
-        if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorSerialization::ErrorWhileReading);
-        }
-        let mut buffer: &[u8] = &buffer;
-        let version_message = Self::deserializar_payload(&mut buffer, magic_bytes)?;
-
-        let mut payload_bytes: Vec<u8> = Vec::new();
-        version_message.serializar_payload(&mut payload_bytes)?;
-        let checksum: HashTypeReduced = hash256d_reduce(&payload_bytes)?;
-
-        if !checksum.eq(&receive_checksum) {
-            return Err(ErrorSerialization::ErrorInDeserialization(format!("Checksum isn't the same: {:?} != {:?}", checksum, receive_checksum)));
-        }
-
-        Ok(version_message)        
-    }
-
-    
+        })       
+    }    
 }
 
 
@@ -270,10 +205,7 @@ mod tests {
         },
     };
 
-    use super::{
-        VersionMessage,
-        VERSION_TYPE,
-    };
+    use super::VersionMessage;
 
     use chrono::{
         DateTime,
@@ -281,16 +213,11 @@ mod tests {
         NaiveDateTime,
     };
 
-    use bitcoin_hashes::{
-        sha256d,
-        Hash,
-    };
-
     use std::net::Ipv6Addr;
     
     #[test]
     fn test01_serialize() -> Result<(), ErrorMessage>{
-        let magic_bytes = [0x55, 0x66, 0xee, 0xee];
+
         let version = ProtocolVersionP2P::V31402;
         let services = BitfieldServices::new(vec![SupportedServices::NodeNetworkLimited]);
 
@@ -310,42 +237,27 @@ mod tests {
         let mut stream: Vec<u8> = Vec::new();
         
         let mut expected_stream: Vec<u8> = Vec::new();
-        magic_bytes.serialize(&mut expected_stream)?;
-        VERSION_TYPE.serialize(&mut expected_stream)?;
         
-        let mut payload: Vec<u8> = Vec::new();
-        version.serialize(&mut payload)?;
-        services.serialize(&mut payload)?;
-        timestamp.serialize(&mut payload)?;
-        recv_services.serialize(&mut payload)?;
+        version.serialize(&mut expected_stream)?;
+        services.serialize(&mut expected_stream)?;
+        timestamp.serialize(&mut expected_stream)?;
+        recv_services.serialize(&mut expected_stream)?;
         
-        recv_addr.serialize_big_endian(&mut payload)?;
-        recv_port.serialize_big_endian(&mut payload)?;
+        recv_addr.serialize_big_endian(&mut expected_stream)?;
+        recv_port.serialize_big_endian(&mut expected_stream)?;
 
-        services.serialize(&mut payload)?;
+        services.serialize(&mut expected_stream)?;
 
-        trans_addr.serialize_big_endian(&mut payload)?;
-        trans_port.serialize_big_endian(&mut payload)?; 
+        trans_addr.serialize_big_endian(&mut expected_stream)?;
+        trans_port.serialize_big_endian(&mut expected_stream)?; 
         
-        nonce.serialize(&mut payload)?;
-        length.serialize(&mut payload)?; 
-        user_agent.serialize(&mut payload)?;
-        start_height.serialize(&mut payload)?; 
-        relay.serialize(&mut payload)?;
-
-        (payload.len() as u32).serialize(&mut expected_stream)?;
-        let hash_bytes: sha256d::Hash = sha256d::Hash::hash(&payload); 
-        let checksum: [u8; 4] = match hash_bytes[0..4].try_into() {
-            Ok(checksum) => checksum,
-            _ => return Err(ErrorMessage::ErrorChecksum),
-        };
-        checksum.serialize(&mut expected_stream)?;
-        payload.serialize(&mut expected_stream)?;
-
-        
+        nonce.serialize(&mut expected_stream)?;
+        length.serialize(&mut expected_stream)?; 
+        user_agent.serialize(&mut expected_stream)?;
+        start_height.serialize(&mut expected_stream)?; 
+        relay.serialize(&mut expected_stream)?;
 
         let version_message = VersionMessage {
-            magic_bytes,
             version,
             services,
             timestamp,
@@ -369,7 +281,6 @@ mod tests {
 
     #[test]
     fn test02_deserialize() -> Result<(), ErrorMessage> {
-        let magic_bytes = [0x55, 0x66, 0xee, 0xee];
         let version = ProtocolVersionP2P::V31402;
         let services = BitfieldServices::new(vec![SupportedServices::NodeNetworkLimited]);
 
@@ -388,43 +299,29 @@ mod tests {
         let relay: bool = false;
 
         let mut stream: Vec<u8> = Vec::new();
-    
-        magic_bytes.serialize(&mut stream)?;
-        VERSION_TYPE.serialize(&mut stream)?;
-        
-        let mut payload: Vec<u8> = Vec::new();
-        version.serialize(&mut payload)?;
-        services.serialize(&mut payload)?;
-        timestamp.serialize(&mut payload)?;
-        recv_services.serialize(&mut payload)?;
-        
-        recv_addr.serialize_big_endian(&mut payload)?;
-        recv_port.serialize_big_endian(&mut payload)?;
 
-        services.serialize(&mut payload)?;
-
-        trans_addr.serialize_big_endian(&mut payload)?;
-        trans_port.serialize_big_endian(&mut payload)?; 
+        version.serialize(&mut stream)?;
+        services.serialize(&mut stream)?;
+        timestamp.serialize(&mut stream)?;
+        recv_services.serialize(&mut stream)?;
         
-        nonce.serialize(&mut payload)?;
-        length.serialize(&mut payload)?; 
-        user_agent.serialize(&mut payload)?;
-        start_height.serialize(&mut payload)?; 
-        relay.serialize(&mut payload)?;
+        recv_addr.serialize_big_endian(&mut stream)?;
+        recv_port.serialize_big_endian(&mut stream)?;
 
-        (payload.len() as u32).serialize(&mut stream)?;
-        let hash_bytes: sha256d::Hash = sha256d::Hash::hash(&payload); 
-        let checksum: [u8; 4] = match hash_bytes[0..4].try_into() {
-            Ok(checksum) => checksum,
-            _ => return Err(ErrorMessage::ErrorChecksum),
-        };
-        checksum.serialize(&mut stream)?;
-        payload.serialize(&mut stream)?;
+        services.serialize(&mut stream)?;
+
+        trans_addr.serialize_big_endian(&mut stream)?;
+        trans_port.serialize_big_endian(&mut stream)?; 
+        
+        nonce.serialize(&mut stream)?;
+        length.serialize(&mut stream)?; 
+        user_agent.serialize(&mut stream)?;
+        start_height.serialize(&mut stream)?; 
+        relay.serialize(&mut stream)?;
         
         let mut stream: &[u8] = &stream;
         
         let version_esperado = VersionMessage {
-            magic_bytes,
             version,
             services,
             timestamp,
