@@ -14,11 +14,10 @@ use crate::messages::{
     error_message::ErrorMessage,
 };
 
-use crate::serialization::{
-    deserializable::Deserializable,
+use std::net::{
+    SocketAddr, 
+    TcpStream
 };
-
-use std::net::{SocketAddr, TcpStream};
 
 const IGNORE_NONCE: u64 = 0;
 const IGNORE_USER_AGENT: &str = "";
@@ -95,7 +94,8 @@ impl Handshake {
     pub fn attempt_connection_with_testnet_peer(
         &self,
         potential_peer: &SocketAddr,
-    ) -> Result<(), ErrorConnection> {
+    ) -> Result<(), ErrorConnection> 
+    {
         let mut potencial_peer_stream = match TcpStream::connect(potential_peer) {
             Ok(stream) => stream,
             Err(_) => return Err(ErrorConnection::ErrorCannotConnectToAddress),
@@ -122,7 +122,20 @@ impl Handshake {
                 .log_connection(format!("Version message sent to peer {}", potential_peer));
         }
 
-        if let Err(e) = VersionMessage::deserialize(&mut potencial_peer_stream) {
+        let header_version = match message::deserialize_until_found(
+            &mut potencial_peer_stream, 
+            CommandName::Version) {
+                Ok(header) => header,
+                Err(e) => {
+                    let _ = self.sender_log.log_connection(format!(
+                        "Error while receiving the header message from peer {}: {:?}",
+                        potential_peer, e
+                    ));
+                    return Err(ErrorConnection::ErrorCannotReceiveMessage);
+                }
+        };
+
+        if let Err(e) = VersionMessage::deserialize_message(&mut potencial_peer_stream, header_version) {
             let _ = self.sender_log.log_connection(format!(
                 "Error while receiving version message from peer {}: {:?}",
                 potential_peer, e
@@ -142,13 +155,30 @@ impl Handshake {
                 .log_connection(format!("Verack message sent to peer {}", potential_peer));
         }
 
-        if let Err(e) = VerackMessage::deserialize(&mut potencial_peer_stream) {
+        let header_verack = match message::deserialize_until_found(
+            &mut potencial_peer_stream, 
+            CommandName::Verack) 
+        {
+            Ok(header) => header,
+            Err(e) => {
+                let _ = self.sender_log.log_connection(format!(
+                    "Error while receiving the header message from peer {}: {:?}",
+                    potential_peer, e
+                ));
+                return Err(ErrorConnection::ErrorCannotReceiveMessage);
+            }
+        };
+
+        if let Err(e) = VerackMessage::deserialize_message(
+            &mut potencial_peer_stream, 
+            header_verack) 
+        {
             let _ = self.sender_log.log_connection(format!(
                 "Error while receiving verack message from peer {}: {:?}",
                 potential_peer, e
             ));
             return Err(ErrorConnection::ErrorCannotReceiveMessage);
-        };
+        }
 
         Ok(())
     }
