@@ -92,14 +92,10 @@ fn open_config_file(config_name: String) -> Result<BufReader<File>, ErrorInitial
 /// * `ErrorFileNotExist`: It will appear when the file does not exist
 /// * `CouldNotTruncateFile`: It will appear when the file could not be truncated
 fn open_log_file(log_path: &Path) -> Result<File, ErrorInitialization> {
-    let log_file = match OpenOptions::new().create(true).append(true).open(log_path) {
-        Ok(f) => f,
-        Err(_) => return Err(ErrorInitialization::LogFileDoesntExist),
-    };
-    
-    match log_file.set_len(0) {
-        Ok(_) => {},
-        Err(_) => return Err(ErrorInitialization::CouldNotTruncateFile),
+
+    let log_file = match OpenOptions::new().write(true).truncate(true).open(log_path) {
+        Ok(log_file) => log_file,
+        _ => return Err(ErrorInitialization::LogFileDoesntExist),
     };
 
     Ok(log_file)
@@ -117,7 +113,7 @@ fn initialize_logs(log_config: LogConfig) -> Result<(JoinHandle<Result<(), Error
 
     let filepath_log = Path::new(&log_config.filepath_log);
     let log_file = open_log_file(filepath_log)?;
-    let (logger_sender, logger_receiver) = logger::initialize_logger(log_file, false)?;
+    let (logger_sender, logger_receiver) = logger::initialize_logger(log_file, true)?;
 
     let handle = thread::spawn(move || logger_receiver.receive_log());
 

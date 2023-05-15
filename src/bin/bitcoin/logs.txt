@@ -1,140 +1,94 @@
-Time: [1684019525.596943472s]: [CONFIGURATION] Logs are already configured
-Time: [1684019525.5971807s]: [CONNECTION] Getting potential peers with dns seeder
-Time: [1684019526.332469964s]: [CONNECTION] Potential peer: [2a01:4f8:190:320c::2]:18333
-Time: [1684019526.332512912s]: [CONNECTION] Potential peer: [2a01:4f9:6b:2ce3::2]:18333
-Time: [1684019526.332523951s]: [CONNECTION] Potential peer: [2a04:52c0:102:49af::1]:18333
-Time: [1684019526.332532098s]: [CONNECTION] Potential peer: [2a01:4f9:c012:6eb0::1]:18333
-Time: [1684019526.332549347s]: [CONNECTION] Potential peer: [2a01:e0a:3b3:1420:68eb:fb27:b21b:caab]:18333
-Time: [1684019526.332559522s]: [CONNECTION] Potential peer: [2001:bc8:1201:409:1618:77ff:fe5f:b12]:18333
-Time: [1684019526.332568363s]: [CONNECTION] Potential peer: [2001:250:4402:2001:dacb:8aff:fe55:3276]:18333
-Time: [1684019526.332578229s]: [CONNECTION] Potential peer: [2604:a880:400:d0::1e09:9001]:18333
-Time: [1684019526.332588071s]: [CONNECTION] Potential peer: [2001:41d0:303:146e::]:18333
-Time: [1684019526.332597699s]: [CONNECTION] Potential peer: [2001:41d0:303:dab7::]:18333
-Time: [1684019526.332607715s]: [CONNECTION] Potential peer: [2603:3026:2db:b000::4367]:18333
-Time: [1684019526.332617247s]: [CONNECTION] Potential peer: [2001:41d0:800:1d55::]:18333
-Time: [1684019526.332627058s]: [CONNECTION] Potential peer: 3.227.252.138:18333
-Time: [1684019526.332636476s]: [CONNECTION] Potential peer: 50.2.13.165:18333
-Time: [1684019526.332645669s]: [CONNECTION] Potential peer: 207.90.193.213:18333
-Time: [1684019526.332655628s]: [CONNECTION] Potential peer: 161.97.88.149:18333
-Time: [1684019526.332665868s]: [CONNECTION] Potential peer: 85.208.69.11:18333
-Time: [1684019526.332675753s]: [CONNECTION] Potential peer: 18.140.86.31:18333
-Time: [1684019526.332685422s]: [CONNECTION] Potential peer: 35.158.243.90:18333
-Time: [1684019526.332695106s]: [CONNECTION] Potential peer: 35.176.160.196:18333
-Time: [1684019526.332704837s]: [CONNECTION] Potential peer: 65.21.205.49:18333
-Time: [1684019526.332714565s]: [CONNECTION] Potential peer: 51.210.216.77:18333
-Time: [1684019526.332724303s]: [CONNECTION] Potential peer: 52.13.95.132:18333
-Time: [1684019526.332734141s]: [CONNECTION] Potential peer: 37.187.130.92:18333
-Time: [1684019526.33274381s]: [CONNECTION] Potential peer: 54.38.192.225:18333
-Time: [1684019526.332753934s]: [CONNECTION] Potential peer: 85.203.53.149:18333
-Time: [1684019526.332764644s]: [CONNECTION] Potential peer: 168.119.50.208:18333
-Time: [1684019526.332774528s]: [CONNECTION] Potential peer: 62.210.207.63:18333
-Time: [1684019526.332787491s]: [CONNECTION] Potential peer: 213.239.215.207:18333
-Time: [1684019526.332797711s]: [CONNECTION] Potential peer: 3.71.96.36:18333
-Time: [1684019526.33281025s]: [CONNECTION] Potential peer: 52.22.147.148:18333
-Time: [1684019526.332820058s]: [CONNECTION] Potential peer: 71.13.92.62:18333
-Time: [1684019526.332829866s]: [CONNECTION] Potential peer: 65.108.11.115:18333
-Time: [1684019526.332838789s]: [CONNECTION] Potential peer: 23.88.114.120:18333
-Time: [1684019526.332848468s]: [CONNECTION] Connecting to potential peers
-Time: [1684019526.574965988s]: [CONNECTION] Version message sent to peer [2a01:4f8:190:320c::2]:18333
-Time: [1684019526.818952618s]: [CONNECTION] Verack message sent to peer [2a01:4f8:190:320c::2]:18333
-Time: [1684019526.81899183s]: [CONNECTION] Connection with peer [2a01:4f8:190:320c::2]:18333 established
-Time: [1684019527.0798823s]: [CONNECTION] Version message sent to peer [2a01:4f9:6b:2ce3::2]:18333
-Time: [1684019527.341316159s]: [CONNECTION] Error while receiving version message from peer [2a01:4f9:6b:2ce3::2]:18333: ErrorInDeserialization("Checksum isn't the same: [145, 0, 225, 4] != [161, 50, 71, 177]")
-Time: [1684019527.341373045s]: [CONNECTION] Error while trying to connect to peer [2a01:4f9:6b:2ce3::2]:18333: ErrorCannotReceiveMessage
-Time: [1684019527.570748273s]: [CONNECTION] Version message sent to peer [2a04:52c0:102:49af::1]:18333
-Time: [1684019527.801376552s]: [CONNECTION] Verack message sent to peer [2a04:52c0:102:49af::1]:18333
-Time: [1684019527.801426379s]: [CONNECTION] Connection with peer [2a04:52c0:102:49af::1]:18333 established
-Time: [1684019528.066992678s]: [CONNECTION] Version message sent to peer [2a01:4f9:c012:6eb0::1]:18333
-Time: [1684019528.332908514s]: [CONNECTION] Verack message sent to peer [2a01:4f9:c012:6eb0::1]:18333
-Time: [1684019528.333027829s]: [CONNECTION] Connection with peer [2a01:4f9:c012:6eb0::1]:18333 established
-Time: [1684019528.566526782s]: [CONNECTION] Version message sent to peer [2a01:e0a:3b3:1420:68eb:fb27:b21b:caab]:18333
-Time: [1684019528.800876983s]: [CONNECTION] Verack message sent to peer [2a01:e0a:3b3:1420:68eb:fb27:b21b:caab]:18333
-Time: [1684019528.800979215s]: [CONNECTION] Connection with peer [2a01:e0a:3b3:1420:68eb:fb27:b21b:caab]:18333 established
-Time: [1684019529.030082027s]: [CONNECTION] Version message sent to peer [2001:bc8:1201:409:1618:77ff:fe5f:b12]:18333
-Time: [1684019529.260570014s]: [CONNECTION] Verack message sent to peer [2001:bc8:1201:409:1618:77ff:fe5f:b12]:18333
-Time: [1684019529.260615489s]: [CONNECTION] Connection with peer [2001:bc8:1201:409:1618:77ff:fe5f:b12]:18333 established
-Time: [1684019529.657770254s]: [CONNECTION] Version message sent to peer [2001:250:4402:2001:dacb:8aff:fe55:3276]:18333
-Time: [1684019530.056431455s]: [CONNECTION] Verack message sent to peer [2001:250:4402:2001:dacb:8aff:fe55:3276]:18333
-Time: [1684019530.05652396s]: [CONNECTION] Connection with peer [2001:250:4402:2001:dacb:8aff:fe55:3276]:18333 established
-Time: [1684019530.229256308s]: [CONNECTION] Version message sent to peer [2604:a880:400:d0::1e09:9001]:18333
-Time: [1684019530.387346707s]: [CONNECTION] Verack message sent to peer [2604:a880:400:d0::1e09:9001]:18333
-Time: [1684019530.387418791s]: [CONNECTION] Connection with peer [2604:a880:400:d0::1e09:9001]:18333 established
-Time: [1684019530.614600034s]: [CONNECTION] Version message sent to peer [2001:41d0:303:146e::]:18333
-Time: [1684019530.842221617s]: [CONNECTION] Verack message sent to peer [2001:41d0:303:146e::]:18333
-Time: [1684019530.842265738s]: [CONNECTION] Connection with peer [2001:41d0:303:146e::]:18333 established
-Time: [1684019531.063437718s]: [CONNECTION] Version message sent to peer [2001:41d0:303:dab7::]:18333
-Time: [1684019531.286302753s]: [CONNECTION] Verack message sent to peer [2001:41d0:303:dab7::]:18333
-Time: [1684019531.28633925s]: [CONNECTION] Connection with peer [2001:41d0:303:dab7::]:18333 established
-Time: [1684019531.47594288s]: [CONNECTION] Version message sent to peer [2603:3026:2db:b000::4367]:18333
-Time: [1684019531.672985513s]: [CONNECTION] Verack message sent to peer [2603:3026:2db:b000::4367]:18333
-Time: [1684019531.673025289s]: [CONNECTION] Connection with peer [2603:3026:2db:b000::4367]:18333 established
-Time: [1684019531.904141563s]: [CONNECTION] Version message sent to peer [2001:41d0:800:1d55::]:18333
-Time: [1684019532.136839428s]: [CONNECTION] Verack message sent to peer [2001:41d0:800:1d55::]:18333
-Time: [1684019532.136880959s]: [CONNECTION] Connection with peer [2001:41d0:800:1d55::]:18333 established
-Time: [1684019532.294347396s]: [CONNECTION] Version message sent to peer 3.227.252.138:18333
-Time: [1684019532.453536772s]: [CONNECTION] Verack message sent to peer 3.227.252.138:18333
-Time: [1684019532.453579033s]: [CONNECTION] Connection with peer 3.227.252.138:18333 established
-Time: [1684019532.602535906s]: [CONNECTION] Version message sent to peer 50.2.13.165:18333
-Time: [1684019532.751799031s]: [CONNECTION] Verack message sent to peer 50.2.13.165:18333
-Time: [1684019532.751828657s]: [CONNECTION] Connection with peer 50.2.13.165:18333 established
-Time: [1684019532.918844298s]: [CONNECTION] Version message sent to peer 207.90.193.213:18333
-Time: [1684019533.085950747s]: [CONNECTION] Verack message sent to peer 207.90.193.213:18333
-Time: [1684019533.086420521s]: [CONNECTION] Connection with peer 207.90.193.213:18333 established
-Time: [1684019533.329332739s]: [CONNECTION] Version message sent to peer 161.97.88.149:18333
-Time: [1684019533.572727064s]: [CONNECTION] Verack message sent to peer 161.97.88.149:18333
-Time: [1684019533.572863849s]: [CONNECTION] Connection with peer 161.97.88.149:18333 established
-Time: [1684019533.811618012s]: [CONNECTION] Version message sent to peer 85.208.69.11:18333
-Time: [1684019534.052783449s]: [CONNECTION] Verack message sent to peer 85.208.69.11:18333
-Time: [1684019534.052831906s]: [CONNECTION] Connection with peer 85.208.69.11:18333 established
-Time: [1684019534.418254928s]: [CONNECTION] Version message sent to peer 18.140.86.31:18333
-Time: [1684019534.785374686s]: [CONNECTION] Verack message sent to peer 18.140.86.31:18333
-Time: [1684019534.78550975s]: [CONNECTION] Connection with peer 18.140.86.31:18333 established
-Time: [1684019535.038514733s]: [CONNECTION] Version message sent to peer 35.158.243.90:18333
-Time: [1684019535.29215926s]: [CONNECTION] Verack message sent to peer 35.158.243.90:18333
-Time: [1684019535.292251882s]: [CONNECTION] Connection with peer 35.158.243.90:18333 established
-Time: [1684019535.514930155s]: [CONNECTION] Version message sent to peer 35.176.160.196:18333
-Time: [1684019535.738192026s]: [CONNECTION] Verack message sent to peer 35.176.160.196:18333
-Time: [1684019535.738280826s]: [CONNECTION] Connection with peer 35.176.160.196:18333 established
-Time: [1684019536.005522537s]: [CONNECTION] Version message sent to peer 65.21.205.49:18333
-Time: [1684019536.273883415s]: [CONNECTION] Verack message sent to peer 65.21.205.49:18333
-Time: [1684019536.27402364s]: [CONNECTION] Connection with peer 65.21.205.49:18333 established
-Time: [1684019536.512714812s]: [CONNECTION] Version message sent to peer 51.210.216.77:18333
-Time: [1684019536.754238228s]: [CONNECTION] Verack message sent to peer 51.210.216.77:18333
-Time: [1684019536.754392884s]: [CONNECTION] Connection with peer 51.210.216.77:18333 established
-Time: [1684019536.989148444s]: [CONNECTION] Version message sent to peer 52.13.95.132:18333
-Time: [1684019537.225267409s]: [CONNECTION] Verack message sent to peer 52.13.95.132:18333
-Time: [1684019537.225319235s]: [CONNECTION] Connection with peer 52.13.95.132:18333 established
-Time: [1684019537.461598949s]: [CONNECTION] Version message sent to peer 37.187.130.92:18333
-Time: [1684019537.700678986s]: [CONNECTION] Verack message sent to peer 37.187.130.92:18333
-Time: [1684019537.700717577s]: [CONNECTION] Connection with peer 37.187.130.92:18333 established
-Time: [1684019537.967846609s]: [CONNECTION] Version message sent to peer 54.38.192.225:18333
-Time: [1684019538.236322556s]: [CONNECTION] Verack message sent to peer 54.38.192.225:18333
-Time: [1684019538.236734915s]: [CONNECTION] Connection with peer 54.38.192.225:18333 established
-Time: [1684019538.491430843s]: [CONNECTION] Version message sent to peer 85.203.53.149:18333
-Time: [1684019538.747436574s]: [CONNECTION] Verack message sent to peer 85.203.53.149:18333
-Time: [1684019538.747476013s]: [CONNECTION] Connection with peer 85.203.53.149:18333 established
-Time: [1684019538.995712553s]: [CONNECTION] Version message sent to peer 168.119.50.208:18333
-Time: [1684019539.243187285s]: [CONNECTION] Verack message sent to peer 168.119.50.208:18333
-Time: [1684019539.243343997s]: [CONNECTION] Connection with peer 168.119.50.208:18333 established
-Time: [1684019539.468057368s]: [CONNECTION] Version message sent to peer 62.210.207.63:18333
-Time: [1684019539.695244845s]: [CONNECTION] Verack message sent to peer 62.210.207.63:18333
-Time: [1684019539.69529258s]: [CONNECTION] Connection with peer 62.210.207.63:18333 established
-Time: [1684019539.938693752s]: [CONNECTION] Version message sent to peer 213.239.215.207:18333
-Time: [1684019540.182889906s]: [CONNECTION] Verack message sent to peer 213.239.215.207:18333
-Time: [1684019540.18301672s]: [CONNECTION] Connection with peer 213.239.215.207:18333 established
-Time: [1684019540.418984596s]: [CONNECTION] Version message sent to peer 3.71.96.36:18333
-Time: [1684019540.655984856s]: [CONNECTION] Error while receiving version message from peer 3.71.96.36:18333: ErrorInDeserialization("Checksum isn't the same: [158, 64, 49, 40] != [249, 184, 251, 166]")
-Time: [1684019540.656025708s]: [CONNECTION] Error while trying to connect to peer 3.71.96.36:18333: ErrorCannotReceiveMessage
-Time: [1684019540.804250621s]: [CONNECTION] Version message sent to peer 52.22.147.148:18333
-Time: [1684019540.953264526s]: [CONNECTION] Verack message sent to peer 52.22.147.148:18333
-Time: [1684019540.953304859s]: [CONNECTION] Connection with peer 52.22.147.148:18333 established
-Time: [1684019541.320898681s]: [CONNECTION] Version message sent to peer 71.13.92.62:18333
-Time: [1684019541.614047031s]: [CONNECTION] Verack message sent to peer 71.13.92.62:18333
-Time: [1684019541.614098334s]: [CONNECTION] Connection with peer 71.13.92.62:18333 established
-Time: [1684019541.882036016s]: [CONNECTION] Version message sent to peer 65.108.11.115:18333
-Time: [1684019542.150302788s]: [CONNECTION] Verack message sent to peer 65.108.11.115:18333
-Time: [1684019542.234121274s]: [CONNECTION] Connection with peer 65.108.11.115:18333 established
-Time: [1684019542.481481843s]: [CONNECTION] Version message sent to peer 23.88.114.120:18333
-Time: [1684019542.730768622s]: [CONNECTION] Verack message sent to peer 23.88.114.120:18333
-Time: [1684019542.730847973s]: [CONNECTION] Connection with peer 23.88.114.120:18333 established
-Time: [1684019542.730869627s]: [CONFIGURATION] Closing program
+Time: [1684171694.5614838s]: [CONFIGURATION] Logs are already configured
+Time: [1684171694.5623389s]: [CONNECTION] Getting potential peers with dns seeder
+Time: [1684171694.5753606s]: [CONNECTION] Potential peer: 104.192.3.78:18333
+Time: [1684171694.5755696s]: [CONNECTION] Potential peer: 95.216.16.210:18333
+Time: [1684171694.5757339s]: [CONNECTION] Potential peer: 35.210.226.46:18333
+Time: [1684171694.5758329s]: [CONNECTION] Potential peer: 51.79.82.75:18333
+Time: [1684171694.5762806s]: [CONNECTION] Potential peer: 65.109.94.214:18333
+Time: [1684171694.5768849s]: [CONNECTION] Potential peer: 43.200.216.62:18333
+Time: [1684171694.5788651s]: [CONNECTION] Potential peer: 18.203.237.26:18333
+Time: [1684171694.5812889s]: [CONNECTION] Potential peer: 92.119.90.95:18333
+Time: [1684171694.5819693s]: [CONNECTION] Potential peer: 176.9.158.59:18333
+Time: [1684171694.582398s]: [CONNECTION] Potential peer: 5.75.244.157:18333
+Time: [1684171694.5826808s]: [CONNECTION] Potential peer: 52.23.216.13:18333
+Time: [1684171694.588743s]: [CONNECTION] Potential peer: 170.75.165.230:18333
+Time: [1684171694.5912845s]: [CONNECTION] Potential peer: 78.47.146.65:18333
+Time: [1684171694.5926464s]: [CONNECTION] Potential peer: 18.219.37.30:18333
+Time: [1684171694.5950204s]: [CONNECTION] Potential peer: 54.215.91.44:18333
+Time: [1684171694.6047656s]: [CONNECTION] Potential peer: 65.108.101.79:18333
+Time: [1684171694.6053333s]: [CONNECTION] Potential peer: 185.185.83.28:18333
+Time: [1684171694.6081803s]: [CONNECTION] Potential peer: 62.171.169.158:18333
+Time: [1684171694.6090685s]: [CONNECTION] Potential peer: 206.204.104.7:18333
+Time: [1684171694.6099573s]: [CONNECTION] Potential peer: 35.87.111.106:18333
+Time: [1684171694.6107798s]: [CONNECTION] Potential peer: 176.9.78.227:18333
+Time: [1684171694.6120802s]: [CONNECTION] Potential peer: 16.162.119.13:18333
+Time: [1684171694.6135673s]: [CONNECTION] Connecting to potential peers
+Time: [1684171694.8248329s]: [CONNECTION] Version message sent to peer 104.192.3.78:18333
+Time: [1684171695.3556692s]: [CONNECTION] Error while receiving version message from peer 104.192.3.78:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171695.3560141s]: [CONNECTION] Error while trying to connect to peer 104.192.3.78:18333: ErrorCannotReceiveMessage
+Time: [1684171695.5953639s]: [CONNECTION] Version message sent to peer 95.216.16.210:18333
+Time: [1684171696.0873861s]: [CONNECTION] Error while receiving version message from peer 95.216.16.210:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171696.08786s]: [CONNECTION] Error while trying to connect to peer 95.216.16.210:18333: ErrorCannotReceiveMessage
+Time: [1684171696.3275735s]: [CONNECTION] Version message sent to peer 35.210.226.46:18333
+Time: [1684171696.8032805s]: [CONNECTION] Error while receiving version message from peer 35.210.226.46:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171696.8040066s]: [CONNECTION] Error while trying to connect to peer 35.210.226.46:18333: ErrorCannotReceiveMessage
+Time: [1684171697.0184435s]: [CONNECTION] Version message sent to peer 51.79.82.75:18333
+Time: [1684171697.4361472s]: [CONNECTION] Error while receiving version message from peer 51.79.82.75:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171697.4398359s]: [CONNECTION] Error while trying to connect to peer 51.79.82.75:18333: ErrorCannotReceiveMessage
+Time: [1684171697.6880158s]: [CONNECTION] Version message sent to peer 65.109.94.214:18333
+Time: [1684171698.1906072s]: [CONNECTION] Error while receiving version message from peer 65.109.94.214:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171698.1912665s]: [CONNECTION] Error while trying to connect to peer 65.109.94.214:18333: ErrorCannotReceiveMessage
+Time: [1684171698.5042436s]: [CONNECTION] Version message sent to peer 43.200.216.62:18333
+Time: [1684171699.1197672s]: [CONNECTION] Error while receiving version message from peer 43.200.216.62:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171699.1207123s]: [CONNECTION] Error while trying to connect to peer 43.200.216.62:18333: ErrorCannotReceiveMessage
+Time: [1684171699.355198s]: [CONNECTION] Version message sent to peer 18.203.237.26:18333
+Time: [1684171699.8233858s]: [CONNECTION] Error while receiving version message from peer 18.203.237.26:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171699.8243401s]: [CONNECTION] Error while trying to connect to peer 18.203.237.26:18333: ErrorCannotReceiveMessage
+Time: [1684171700.0446254s]: [CONNECTION] Version message sent to peer 92.119.90.95:18333
+Time: [1684171700.4893337s]: [CONNECTION] Error while receiving version message from peer 92.119.90.95:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171700.4898238s]: [CONNECTION] Error while trying to connect to peer 92.119.90.95:18333: ErrorCannotReceiveMessage
+Time: [1684171700.7301218s]: [CONNECTION] Version message sent to peer 176.9.158.59:18333
+Time: [1684171701.2043341s]: [CONNECTION] Error while receiving version message from peer 176.9.158.59:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171701.2050928s]: [CONNECTION] Error while trying to connect to peer 176.9.158.59:18333: ErrorCannotReceiveMessage
+Time: [1684171701.4456703s]: [CONNECTION] Version message sent to peer 5.75.244.157:18333
+Time: [1684171701.9110146s]: [CONNECTION] Error while receiving version message from peer 5.75.244.157:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171701.9116887s]: [CONNECTION] Error while trying to connect to peer 5.75.244.157:18333: ErrorCannotReceiveMessage
+Time: [1684171702.0874447s]: [CONNECTION] Version message sent to peer 52.23.216.13:18333
+Time: [1684171702.4392651s]: [CONNECTION] Error while receiving version message from peer 52.23.216.13:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171702.4401011s]: [CONNECTION] Error while trying to connect to peer 52.23.216.13:18333: ErrorCannotReceiveMessage
+Time: [1684171702.6357708s]: [CONNECTION] Version message sent to peer 170.75.165.230:18333
+Time: [1684171703.0162431s]: [CONNECTION] Error while receiving version message from peer 170.75.165.230:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171703.0180941s]: [CONNECTION] Error while trying to connect to peer 170.75.165.230:18333: ErrorCannotReceiveMessage
+Time: [1684171703.2497901s]: [CONNECTION] Version message sent to peer 78.47.146.65:18333
+Time: [1684171703.7095602s]: [CONNECTION] Error while receiving version message from peer 78.47.146.65:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171703.7101305s]: [CONNECTION] Error while trying to connect to peer 78.47.146.65:18333: ErrorCannotReceiveMessage
+Time: [1684171703.8904068s]: [CONNECTION] Version message sent to peer 18.219.37.30:18333
+Time: [1684171704.2505767s]: [CONNECTION] Error while receiving version message from peer 18.219.37.30:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171704.2514519s]: [CONNECTION] Error while trying to connect to peer 18.219.37.30:18333: ErrorCannotReceiveMessage
+Time: [1684171704.4306498s]: [CONNECTION] Version message sent to peer 54.215.91.44:18333
+Time: [1684171704.7876892s]: [CONNECTION] Error while receiving version message from peer 54.215.91.44:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171704.7885799s]: [CONNECTION] Error while trying to connect to peer 54.215.91.44:18333: ErrorCannotReceiveMessage
+Time: [1684171705.0399188s]: [CONNECTION] Version message sent to peer 65.108.101.79:18333
+Time: [1684171705.5395879s]: [CONNECTION] Error while receiving version message from peer 65.108.101.79:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171705.5405217s]: [CONNECTION] Error while trying to connect to peer 65.108.101.79:18333: ErrorCannotReceiveMessage
+Time: [1684171705.7843047s]: [CONNECTION] Version message sent to peer 185.185.83.28:18333
+Time: [1684171706.2667841s]: [CONNECTION] Error while receiving version message from peer 185.185.83.28:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171706.2683153s]: [CONNECTION] Error while trying to connect to peer 185.185.83.28:18333: ErrorCannotReceiveMessage
+Time: [1684171706.5255943s]: [CONNECTION] Version message sent to peer 62.171.169.158:18333
+Time: [1684171707.039437s]: [CONNECTION] Error while receiving version message from peer 62.171.169.158:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171707.0403731s]: [CONNECTION] Error while trying to connect to peer 62.171.169.158:18333: ErrorCannotReceiveMessage
+Time: [1684171707.2237468s]: [CONNECTION] Version message sent to peer 206.204.104.7:18333
+Time: [1684171707.5849084s]: [CONNECTION] Error while receiving version message from peer 206.204.104.7:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171707.5859267s]: [CONNECTION] Error while trying to connect to peer 206.204.104.7:18333: ErrorCannotReceiveMessage
+Time: [1684171707.7985729s]: [CONNECTION] Version message sent to peer 35.87.111.106:18333
+Time: [1684171708.2156549s]: [CONNECTION] Error while receiving version message from peer 35.87.111.106:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171708.216714s]: [CONNECTION] Error while trying to connect to peer 35.87.111.106:18333: ErrorCannotReceiveMessage
+Time: [1684171708.4522305s]: [CONNECTION] Version message sent to peer 176.9.78.227:18333
+Time: [1684171708.9218327s]: [CONNECTION] Error while receiving version message from peer 176.9.78.227:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171708.9222912s]: [CONNECTION] Error while trying to connect to peer 176.9.78.227:18333: ErrorCannotReceiveMessage
+Time: [1684171709.2442234s]: [CONNECTION] Version message sent to peer 16.162.119.13:18333
+Time: [1684171709.8860381s]: [CONNECTION] Error while receiving version message from peer 16.162.119.13:18333: ErrorInDeserialization("While deserializing p2p protocol version 118034699")
+Time: [1684171709.8870401s]: [CONNECTION] Error while trying to connect to peer 16.162.119.13:18333: ErrorCannotReceiveMessage
+Time: [1684171709.8873727s]: [CONNECTION] Getting block chain
+Time: [1684171709.8877346s]: [CONNECTION] Getting initial download headers first
+Time: [1684171709.8881301s]: [CONNECTION] Connecting to peer: 104.192.3.78:18333
