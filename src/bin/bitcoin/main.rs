@@ -93,7 +93,7 @@ fn open_config_file(config_name: String) -> Result<BufReader<File>, ErrorInitial
 /// * `CouldNotTruncateFile`: It will appear when the file could not be truncated
 fn open_log_file(log_path: &Path) -> Result<File, ErrorInitialization> {
 
-    let log_file = match OpenOptions::new().write(true).truncate(true).open(log_path) {
+    let log_file = match OpenOptions::new().create(true).write(true).truncate(true).open(log_path) {
         Ok(log_file) => log_file,
         _ => return Err(ErrorInitialization::LogFileDoesntExist),
     };
@@ -251,7 +251,10 @@ fn get_initial_download_headers_first(
 
     for peer in peers.iter() {
 
-        logger_sender.log_connection(format!("Connecting to peer: {:?}", peer))?;
+        logger_sender.log_connection(
+            format!("Connecting to peer: {:?}", peer)
+        )?;
+
         let mut peer_stream = match TcpStream::connect(peer) {
             Ok(stream) => stream,
             Err(_) => return Err(ErrorConnection::ErrorCannotConnectToAddress.into()),
@@ -315,8 +318,8 @@ fn get_block_chain(
 
     let method = InitialDownloadMethod::HeadersFirst;
 
-        let block_download = InitialBlockDownload::new(
-        ProtocolVersionP2P::V70015,
+    let block_download = InitialBlockDownload::new(
+        ProtocolVersionP2P::V70015, 
     );
 
     let genesis_header: BlockHeader = BlockHeader::generate_genesis_block_header();
