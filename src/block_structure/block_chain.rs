@@ -117,3 +117,49 @@ impl BlockChain {
         todo!()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{block_structure::block_version};
+    use crate::block_structure::{
+        compact256::Compact256,
+        hash::HashType,
+        hash::hash256d,
+    };
+    use crate::serialization::serializable::Serializable;
+    use super::*;
+
+    #[test]
+    fn correct_header_append() {
+        let mut blockchain = BlockChain::new(
+            Block::new(
+                BlockHeader::new(
+                    block_version::BlockVersion::V1,
+                    [0; 32],
+                    [0; 32],
+                    0,
+                    Compact256::from_u32(10),
+                    0,
+                )
+            )
+        );
+        let mut serialized_blockchain_header = Vec::new();
+        blockchain.block.header.serialize(&mut serialized_blockchain_header).unwrap();
+        let hash_of_first_block_header = hash256d(&serialized_blockchain_header).unwrap();
+
+        let block_to_append = Block::new(
+            BlockHeader::new(
+                block_version::BlockVersion::V1,
+                hash_of_first_block_header.clone(),
+                [0; 32],
+                0,
+                Compact256::from_u32(10),
+                0,
+            )
+        );
+
+        blockchain.append_block(block_to_append.clone()).unwrap();
+        assert_eq!(blockchain.next_blocks[0].block, block_to_append);
+
+    }
+}
