@@ -3,7 +3,6 @@ use std::io::{
     Write,
 };
 
-use crate::messages::message_header;
 use crate::messages::{
     get_headers_message::GetHeadersMessage,
     headers_message::HeadersMessage,
@@ -73,7 +72,7 @@ impl InitialBlockDownload {
         
         let get_headers_message = GetHeadersMessage::new(
             TESTNET_MAGIC_NUMBERS,
-            self.protocol_version.clone(),
+            self.protocol_version,
             vec![hashed_header],
             NO_STOP_HASH,
         );
@@ -89,10 +88,10 @@ impl InitialBlockDownload {
     {
         let mut added_headers = 0;
         for header in &received_headers_message.headers {
-            if header.proof_of_work() == false {
+            if !header.proof_of_work() {
                 return Err(ErrorNode::ErrorWhileValidating("Error while validating proof of work".to_string()));
             }
-            if block_chain.append_header(header.clone()).is_ok() {
+            if block_chain.append_header(*header).is_ok() {
                 added_headers += 1;
             }
         }
@@ -119,7 +118,7 @@ impl InitialBlockDownload {
     {
         let inventory_message = InventoryMessage {
             type_identifier: TypeIdentifier::Block,
-            hash_value: hashed_header.clone(),
+            hash_value: *hashed_header,
         };
 
         MessageHeader::serialize_message(

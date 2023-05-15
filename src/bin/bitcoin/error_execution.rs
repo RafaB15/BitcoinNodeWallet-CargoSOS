@@ -18,70 +18,70 @@ use std::fmt::{
 use std::convert::From;
 
 pub enum ErrorExecution {
-    ErrorInitialization(ErrorInitialization),
-    ErrorLog(ErrorLog),
-    ErrorConfiguration(ErrorConfiguration),
-    ErrorConnection(ErrorConnection),
-    ErrorMessage(ErrorMessage),
-    ErrorBlock(ErrorBlock),
-    ErrorNode(ErrorNode),
+    Initialization(ErrorInitialization),
+    Log(ErrorLog),
+    Configuration(ErrorConfiguration),
+    Connection(ErrorConnection),
+    Message(ErrorMessage),
+    Block(ErrorBlock),
+    Node(ErrorNode),
 
-    ErrorFailThread,
+    FailThread,
 }
 
 impl Debug for ErrorExecution {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         match self {
-            ErrorExecution::ErrorInitialization(error_initialization) => write!(f, "{:?}", error_initialization),
-            ErrorExecution::ErrorLog(error_log) => write!(f, "{:?}", error_log),
-            ErrorExecution::ErrorConfiguration(error_configuration) => write!(f, "{:?}", error_configuration),
-            ErrorExecution::ErrorConnection(error_connection) => write!(f, "{:?}", error_connection),
-            ErrorExecution::ErrorMessage(error_message) => write!(f, "{:?}", error_message),
-            ErrorExecution::ErrorBlock(error_block) => write!(f, "{:?}", error_block),
-            ErrorExecution::ErrorNode(error_node) => write!(f, "{:?}", error_node),
-            ErrorExecution::ErrorFailThread => write!(f, "ErrorFailThread"),
+            ErrorExecution::Initialization(error_initialization) => write!(f, "{:?}", error_initialization),
+            ErrorExecution::Log(error_log) => write!(f, "{:?}", error_log),
+            ErrorExecution::Configuration(error_configuration) => write!(f, "{:?}", error_configuration),
+            ErrorExecution::Connection(error_connection) => write!(f, "{:?}", error_connection),
+            ErrorExecution::Message(error_message) => write!(f, "{:?}", error_message),
+            ErrorExecution::Block(error_block) => write!(f, "{:?}", error_block),
+            ErrorExecution::Node(error_node) => write!(f, "{:?}", error_node),
+            ErrorExecution::FailThread => write!(f, "ErrorFailThread"),
         }
     }
 }
 
 impl From<ErrorInitialization> for ErrorExecution {
     fn from(value: ErrorInitialization) -> Self {
-        ErrorExecution::ErrorInitialization(value)
+        ErrorExecution::Initialization(value)
     }
 }
 
 impl From<ErrorLog> for ErrorExecution {
     fn from(value: ErrorLog) -> Self {
-        ErrorExecution::ErrorLog(value)
+        ErrorExecution::Log(value)
     }
 }
 
 impl From<ErrorConfiguration> for ErrorExecution {
     fn from(value: ErrorConfiguration) -> Self {
-        ErrorExecution::ErrorConfiguration(value)
+        ErrorExecution::Configuration(value)
     }
 }
 
 impl From<ErrorConnection> for ErrorExecution {
     fn from(value: ErrorConnection) -> Self {
-        ErrorExecution::ErrorConnection(value)
+        ErrorExecution::Connection(value)
     }
 }
 
 impl From<ErrorMessage> for ErrorExecution {
     fn from(value: ErrorMessage) -> Self {
-        ErrorExecution::ErrorMessage(value)
+        ErrorExecution::Message(value)
     }
 }
 
 impl From<ErrorBlock> for ErrorExecution {
     fn from(value: ErrorBlock) -> Self {
-        ErrorExecution::ErrorBlock(value)
+        ErrorExecution::Block(value)
     }
 }
 
 impl From<ErrorNode> for ErrorExecution {
     fn from(value: ErrorNode) -> Self {
-        ErrorExecution::ErrorNode(value)
+        ErrorExecution::Node(value)
     }
 }

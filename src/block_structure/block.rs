@@ -58,10 +58,10 @@ impl Deserializable for Block {
         
         let mut block = Block::new(header);
 
-        for i in 0..compact_size.value {
+        for _ in 0..compact_size.value {
             let transaction = Transaction::deserialize(stream)?;
             match block.append_transaccion(transaction) {
-                Ok(_) | Err(ErrorBlock::ErrorTransactionAlreadyInBlock) => {},
+                Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => {},
                 _ => return Err(ErrorSerialization::ErrorInDeserialization("Appending transactions to the block".to_string())),
             }
         }

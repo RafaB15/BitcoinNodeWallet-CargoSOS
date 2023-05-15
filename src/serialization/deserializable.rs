@@ -2,10 +2,6 @@ use super::error_serialization::ErrorSerialization;
 
 use std::io::Read;
 
-use crate::block_structure::hash:: {
-    HashType,
-};
-
 use chrono::{
     DateTime,
     NaiveDateTime,

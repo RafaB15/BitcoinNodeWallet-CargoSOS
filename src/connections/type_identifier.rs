@@ -19,26 +19,26 @@ const FILTERED_WITNESS_BLOCK_VALUE: u32 = 0x40000003;
 
 #[derive(Debug)]
 pub enum TypeIdentifier {
-    Transaction_id,
+    TransactionId,
     Block,
-    Filtered_block,
-    Compact_block,
-    Witness_transaction,
-    Witness_block,
-    Filtered_witness_block,
+    FilteredBlock,
+    CompactBlock,
+    WitnessTransaction,
+    WitnessBlock,
+    FilteredWitnessBlock,
 }
 
 impl Serializable for TypeIdentifier {
 
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         let value: u32 = match self {
-            TypeIdentifier::Transaction_id => TRANSACTION_ID_VALUE,
+            TypeIdentifier::TransactionId => TRANSACTION_ID_VALUE,
             TypeIdentifier::Block => BLOCK_VALUE,
-            TypeIdentifier::Filtered_block => FILTERED_BLOCK_VALUE,
-            TypeIdentifier::Compact_block => COMPACT_BLOCK_VALUE,
-            TypeIdentifier::Witness_transaction => WITNESS_TRANSACTION_VALUE,
-            TypeIdentifier::Witness_block => WITNESS_BLOCK_VALUE,
-            TypeIdentifier::Filtered_witness_block => FILTERED_WITNESS_BLOCK_VALUE,
+            TypeIdentifier::FilteredBlock => FILTERED_BLOCK_VALUE,
+            TypeIdentifier::CompactBlock => COMPACT_BLOCK_VALUE,
+            TypeIdentifier::WitnessTransaction => WITNESS_TRANSACTION_VALUE,
+            TypeIdentifier::WitnessBlock => WITNESS_BLOCK_VALUE,
+            TypeIdentifier::FilteredWitnessBlock => FILTERED_WITNESS_BLOCK_VALUE,
         };
 
         match value.serialize(stream) {
@@ -54,13 +54,13 @@ impl Deserializable for TypeIdentifier {
         let value = u32::deserialize(stream)?;
 
         match value {
-            TRANSACTION_ID_VALUE => Ok(TypeIdentifier::Transaction_id),
+            TRANSACTION_ID_VALUE => Ok(TypeIdentifier::TransactionId),
             BLOCK_VALUE => Ok(TypeIdentifier::Block),
-            FILTERED_BLOCK_VALUE => Ok(TypeIdentifier::Filtered_block),
-            COMPACT_BLOCK_VALUE => Ok(TypeIdentifier::Compact_block),
-            WITNESS_TRANSACTION_VALUE => Ok(TypeIdentifier::Witness_transaction),
-            WITNESS_BLOCK_VALUE => Ok(TypeIdentifier::Witness_block),
-            FILTERED_WITNESS_BLOCK_VALUE => Ok(TypeIdentifier::Filtered_witness_block),
+            FILTERED_BLOCK_VALUE => Ok(TypeIdentifier::FilteredBlock),
+            COMPACT_BLOCK_VALUE => Ok(TypeIdentifier::CompactBlock),
+            WITNESS_TRANSACTION_VALUE => Ok(TypeIdentifier::WitnessTransaction),
+            WITNESS_BLOCK_VALUE => Ok(TypeIdentifier::WitnessBlock),
+            FILTERED_WITNESS_BLOCK_VALUE => Ok(TypeIdentifier::FilteredWitnessBlock),
             _ => Err(ErrorSerialization::ErrorInDeserialization("While deserializing the type identifier".to_string())),
         }
     }

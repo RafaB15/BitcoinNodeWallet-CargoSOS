@@ -57,7 +57,7 @@ impl MessageHeader {
             magic_numbers,
             command_name,
             payload_size: serialized_payload.len() as u32,
-            checksum: hash256d_reduce(&serialized_payload)?,
+            checksum: hash256d_reduce(serialized_payload)?,
         };
 
         header.serialize(stream)?;

@@ -38,7 +38,7 @@ impl InventoryMessage {
         
         let mut buffer: &[u8] = &buffer[..];
 
-        Ok(InventoryMessage::deserialize(&mut buffer)?)
+        InventoryMessage::deserialize(&mut buffer)
     }
 
 }

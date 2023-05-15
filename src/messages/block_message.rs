@@ -32,7 +32,7 @@ impl BlockMessage {
 
         let mut buffer: &[u8] = &buffer[..];
 
-        Ok(BlockMessage::deserialize(&mut buffer)?)
+        BlockMessage::deserialize(&mut buffer)
     }
 
 }
