@@ -7,6 +7,16 @@ pub enum ErrorBlock {
     CouldNotWriteTxId,
 
     ///This will appear when the Transaction is already in the block
-    TransactionAlreadyInBlock
+    TransactionAlreadyInBlock,
+
+    CouldNotSerialize,
+
+    CouldNotHash,
+
+    CouldNotAppendBlock,
+
+    CouldNotUpdate,
+
+    CouldNotFindBlockFarEnough,
 }
 

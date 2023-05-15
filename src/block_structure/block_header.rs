@@ -93,7 +93,7 @@ impl BlockHeader {
         while hashes.len() > 1 {
             if hashes.len() % 2 == 1 {
                 if let Some(last_hash) = hashes.last() {
-                    hashes.push(last_hash.clone());
+                    hashes.push(*last_hash);
                 }
             }
 
@@ -116,7 +116,7 @@ impl BlockHeader {
 
             hashes = new_hashes;
         }
-        if let Some(root) = hashes.get(0) {
+        if let Some(root) = hashes.first() {
             return *root == self.merkle_root_hash;
         }
         false

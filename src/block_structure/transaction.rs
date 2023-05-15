@@ -5,17 +5,24 @@ use super::{
     transaction_output::TransactionOutput,
 };
 
-
-use crate::{messages::compact_size::CompactSize, serialization::deserializable::Deserializable};
-
-use std::io::Write;
-
 use crate::serialization::{
     serializable::Serializable,
+    deserializable::Deserializable,
     error_serialization::ErrorSerialization,
 };
 
-#[derive(Debug, Clone)]
+use crate::messages::{
+    compact_size::CompactSize, 
+};
+
+use std::io::{
+    Read,
+    Write,
+};
+
+use std::cmp::PartialEq;
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Transaction {
     pub version: i32,
     pub tx_in: Vec<TransactionInput>,
@@ -24,6 +31,7 @@ pub struct Transaction {
 }
 
 impl Serializable for Transaction {
+
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.version.serialize(stream)?;
 
@@ -44,8 +52,29 @@ impl Serializable for Transaction {
 }
 
 impl Deserializable for Transaction {
-    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
-        todo!()
+
+    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+        let version = i32::deserialize(stream)?;
+        let length_tx_in = CompactSize::deserialize(stream)?;
+        let mut tx_in: Vec<TransactionInput> = Vec::new();
+        for _ in 0..length_tx_in.value {
+            tx_in.push(TransactionInput::deserialize(stream)?);
+        }
+
+        let length_tx_out = CompactSize::deserialize(stream)?;
+        let mut tx_out: Vec<TransactionOutput> = Vec::new();
+        for _ in 0..length_tx_out.value {
+            tx_out.push(TransactionOutput::deserialize(stream)?);
+        }
+
+        let time = u32::deserialize(stream)?;
+        
+        Ok(Transaction { 
+            version,
+            tx_in, 
+            tx_out, 
+            time
+        })
     }
 }
 

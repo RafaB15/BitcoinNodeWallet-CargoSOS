@@ -1,4 +1,7 @@
-use crate::serialization::deserializable::Deserializable;
+use crate::serialization::{
+    deserializable::Deserializable,
+    error_serialization::ErrorSerialization,
+};
 
 const COMPACT256_BASE: u32 = 256;
 const BYTES_IN_SIGNIFICAND: u8 = 3;
@@ -12,17 +15,14 @@ pub struct Compact256 {
 impl Compact256 {
     pub fn to_u32(&self) -> u32 {
         // Convert the mantissa bytes to a u32 value
-        let mut mantissa_u32 = 0;
+        let mut mantissa_u32: u32 = 0;
         for byte in self.mantissa.iter().take(BYTES_IN_SIGNIFICAND as usize) {
             mantissa_u32 <<= 8;
             mantissa_u32 |= *byte as u32;
         }
 
         // Apply the exponent to the mantissa
-        let adjusted_mantissa = mantissa_u32 * (COMPACT256_BASE as u32).pow(self.exponent as u32);
-
-        // Truncate the adjusted mantissa to a u32 value
-        adjusted_mantissa as u32
+        mantissa_u32 * COMPACT256_BASE.pow(self.exponent)
     }
 
     pub fn from_u32(value: u32) -> Compact256 {
@@ -55,9 +55,10 @@ impl Compact256 {
         }
 
         // Construir el Compact256
-        let mut mantissa = [0; 3];
-        for i in 0..3 {
-            mantissa[i] = (mantissa_u32 >> (8 * i)) as u8;
+        let mut mantissa = [0u8; 3];
+
+        for (index, mantissa_byte) in mantissa.iter_mut().enumerate() {
+            *mantissa_byte = (mantissa_u32 >> (8 * index)) as u8;
         }
 
         Compact256 { mantissa, exponent }
@@ -65,7 +66,7 @@ impl Compact256 {
 }
 
 impl Deserializable for Compact256 {
-    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, crate::serialization::error_serialization::ErrorSerialization> {
+    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
         let value = u32::deserialize(stream)?;
         Ok(Compact256::from_u32(value))
     }
