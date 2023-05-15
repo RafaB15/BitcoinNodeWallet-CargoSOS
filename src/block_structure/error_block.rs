@@ -14,5 +14,7 @@ pub enum ErrorBlock {
     CouldNotHash,
 
     CouldNotAppendBlock,
+
+    CouldNotUpdate,
 }
 

@@ -63,7 +63,22 @@ impl BlockChain {
     }
 
     pub fn update_block(&mut self, block: Block) -> Result<(), ErrorBlock> {
-        todo!()
+        
+        if self.block.header == block.header {
+            self.block = block;
+            return Ok(())
+        }
+
+        for next_block in self.next_blocks.iter_mut() {
+
+            let block_clone = block.clone();
+            match next_block.update_block(block_clone) {
+                Err(ErrorBlock::CouldNotUpdate) | Ok(_) => continue,
+                err => return err,
+            }
+        }
+
+        Err(ErrorBlock::CouldNotUpdate)
     }
 
     pub fn get_block_after_timestamp(&self, timestamp: u32) -> Result<BlockChain, ErrorBlock> {
