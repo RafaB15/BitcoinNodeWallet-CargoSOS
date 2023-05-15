@@ -5,13 +5,17 @@ use super::{
     transaction_output::TransactionOutput,
 };
 
-use crate::messages::get_headers_message::GetHeadersMessage;
-use crate::serialization::{error_serialization::ErrorSerialization, serializable::Serializable};
 
-use crate::messages::compact_size::CompactSize;
+use crate::{messages::compact_size::CompactSize, serialization::deserializable::Deserializable};
 
 use std::io::Write;
 
+use crate::serialization::{
+    serializable::Serializable,
+    error_serialization::ErrorSerialization,
+};
+
+#[derive(Debug, Clone)]
 pub struct Transaction {
     pub version: i32,
     pub tx_in: Vec<TransactionInput>,
@@ -39,22 +43,28 @@ impl Serializable for Transaction {
     }
 }
 
+impl Deserializable for Transaction {
+    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
+        todo!()
+    }
+}
+
 impl Transaction {
     pub fn get_tx_id(&self, stream: &mut dyn Write) -> Result<HashType, ErrorBlock> {
         let mut buffer = vec![];
         if self.serialize(&mut buffer).is_err() {
-            return Err(ErrorBlock::ErrorCouldNotGetTxId);
+            return Err(ErrorBlock::CouldNotGetTxId);
         }
 
         // Hash the buffer to get the transaction ID
         let txid = match hash256(&buffer) {
             Ok(txid) => txid,
-            Err(_) => return Err(ErrorBlock::ErrorCouldNotGetTxId),
+            Err(_) => return Err(ErrorBlock::CouldNotGetTxId),
         };
 
         // Write the buffer to the stream
         if stream.write_all(&buffer).is_err() {
-            return Err(ErrorBlock::ErrorCouldNotWriteTxId);
+            return Err(ErrorBlock::CouldNotWriteTxId);
         }
 
         Ok(txid)

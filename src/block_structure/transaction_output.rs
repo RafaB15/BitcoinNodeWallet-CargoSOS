@@ -2,6 +2,7 @@ use crate::messages::compact_size::CompactSize;
 use crate::serialization::{error_serialization::ErrorSerialization, serializable::Serializable};
 use std::io::Write;
 
+#[derive(Debug, Clone)]
 pub struct TransactionOutput {
     pub value: i64,
     pub public_key: String,

@@ -5,9 +5,16 @@ use super::{
     transaction::Transaction,
 };
 
-use crate::serialization::{error_serialization::ErrorSerialization, serializable::Serializable};
+use crate::serialization::{
+    serializable::Serializable,
+    deserializable::Deserializable,
+    error_serialization::ErrorSerialization,
+};
 
-use std::io::Write;
+use std::io::{
+    Write,
+    Read,
+};
 
 const GENESIS_BLOCK_VERSION: BlockVersion = BlockVersion::V1;
 const GENESIS_PREVIOUS_BLOCK_HEADER_HASH: HashType = [0; 32];
@@ -19,6 +26,7 @@ const GENESIS_TIME: u32 = 1231013705;
 const GENESIS_N_BITS: u32 = 0x1d00ffff;
 const GENESIS_NONCE: u32 = 2083236893;
 
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct BlockHeader {
     pub version: BlockVersion,
     pub previous_block_header_hash: HashType,
@@ -125,5 +133,26 @@ impl Serializable for BlockHeader {
         self.nonce.serialize(stream)?;
 
         Ok(())
+    }
+}
+
+impl Deserializable for BlockHeader {
+
+    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+        let version = BlockVersion::deserialize(stream)?;
+        let previous_block_header_hash = HashType::deserialize(stream)?;
+        let merkle_root_hash = HashType::deserialize(stream)?;
+        let time = u32::deserialize(stream)?;
+        let n_bits = Compact256::deserialize(stream)?;
+        let nonce = u32::deserialize(stream)?;
+
+        Ok(BlockHeader::new(
+            version,
+            previous_block_header_hash,
+            merkle_root_hash,
+            time,
+            n_bits,
+            nonce,
+        ))
     }
 }

@@ -1,7 +1,9 @@
+use crate::serialization::deserializable::Deserializable;
+
 const COMPACT256_BASE: u32 = 256;
 const BYTES_IN_SIGNIFICAND: u8 = 3;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub struct Compact256 {
     pub mantissa: [u8; 3],
     pub exponent: u32,
@@ -59,5 +61,12 @@ impl Compact256 {
         }
 
         Compact256 { mantissa, exponent }
+    }
+}
+
+impl Deserializable for Compact256 {
+    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, crate::serialization::error_serialization::ErrorSerialization> {
+        let value = u32::deserialize(stream)?;
+        Ok(Compact256::from_u32(value))
     }
 }

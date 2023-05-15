@@ -1,7 +1,12 @@
+#[derive(Debug)]
 pub enum ErrorBlock {
     /// This will appear when the TxId could not be created
-    ErrorCouldNotGetTxId,
+    CouldNotGetTxId,
 
     /// This will appear when the TxId could not be written
-    ErrorCouldNotWriteTxId,
+    CouldNotWriteTxId,
+
+    ///This will appear when the Transaction is already in the block
+    TransactionAlreadyInBlock
 }
+

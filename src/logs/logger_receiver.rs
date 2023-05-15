@@ -3,59 +3,48 @@ use super::level::Level;
 use super::logger::MessageLog;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{
-    fs::{File, OpenOptions},
     io::Write,
-    path::Path,
     sync::mpsc::Receiver,
 };
-/// LoggerReceiver manages the log messages that have to be sent to register the operations
-///
-/// ### Errores
-///  * `Error::ErrorFileNotFound`: Este error va a aparecer cuando el archivo pasado no se exista
-///  * `Error::ErrorCouldNotWriteInFile`: Este error va a aparece cuando no se puede agregar más lineas al archivo dado
+    /// LoggerReceiver manages the log messages that have to be sent to register the operations
+    /// 
+    /// ### Errores
+    ///  * `Error::CouldNotWriteInFile`: Este error va a aparece cuando no se puede agregar más lineas al archivo dado
 #[derive(Debug)]
-pub struct LoggerReceiver {
+pub struct LoggerReceiver<W: Write> {
     receiver: Receiver<MessageLog>,
-    file: File,
+    output: W,
+    display_in_terminal: bool,
+
 }
 
-impl LoggerReceiver {
+impl<W: Write> LoggerReceiver<W> {
     /// Receiver creation from a file path and a channel receiver
-    ///
-    /// ### Errores
-    ///  * `Error::ErrorFileNotFound`: Este error va a aparecer cuando el archivo pasado no se exista
-    pub(crate) fn new(
-        logger_file: &Path,
-        receiver: Receiver<MessageLog>,
-    ) -> Result<Self, ErrorLog> {
-        let resulting_file = OpenOptions::new().append(true).open(logger_file);
+    pub(crate) fn new(output: W, receiver: Receiver<MessageLog>, display_in_terminal: bool) -> Result<Self, ErrorLog> {
 
-        let file = match resulting_file {
-            Ok(file) => file,
-            _ => {
-                return Err(ErrorLog::ErrorFileNotFound);
-            }
-        };
+        Ok(LoggerReceiver {receiver, output, display_in_terminal })
 
-        Ok(LoggerReceiver { receiver, file })
     }
 
     /// Receive the messages sent by `LoggerSender`
     ///
     /// ### Errores
-    ///  * `Error::ErrorCouldNotWriteInFile`: Este error va a aparece cuando no se puede agregar más lineas al archivo dado
+    ///  * `Error::CouldNotWriteInFile`: Este error va a aparece cuando no se puede agregar más lineas al archivo dado
     pub fn receive_log(self) -> Result<(), ErrorLog> {
-        let mut file = self.file;
+        let mut file = self.output;
 
         for (level, message) in self.receiver {
             let text = Self::format_message(level, message);
 
             if file.write(text.as_bytes()).is_err() {
-                return Err(ErrorLog::ErrorCouldNotWriteInFile);
+                return Err(ErrorLog::CouldNotWriteInFile);
             }
 
             //Simplemente para no abrir el logger constantemente
-            print!("{text}");
+            if self.display_in_terminal {
+                print!("{}", text);
+            }
+
         }
 
         Ok(())

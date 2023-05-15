@@ -3,9 +3,10 @@ use super::{
     transaction_output::TransactionOutput,
 };
 
+#[derive(Debug, Clone)]
 pub struct BlockChain {
-    next_block: Vec<BlockChain>,
-    block: Block,
+    pub next_block: Vec<BlockChain>,
+    pub block: Block,   
 }
 
 impl BlockChain {
@@ -25,6 +26,10 @@ impl BlockChain {
     }
 
     pub fn update_block(&mut self, block: Block) -> Result<(), ErrorBlock> {
+        todo!()
+    }
+
+    pub fn get_block_after_timestamp(&self, timestamp: u32) -> Result<BlockChain, ErrorBlock> {
         todo!()
     }
 
