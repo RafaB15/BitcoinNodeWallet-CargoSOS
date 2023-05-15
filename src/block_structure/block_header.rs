@@ -5,7 +5,10 @@ use super::{
         HashType, 
         hash256d
     },
-    compact256::Compact256,
+    compact256::{
+        Compact256,
+    
+    }
 };
 
 
@@ -57,7 +60,7 @@ impl BlockHeader {
             GENESIS_PREVIOUS_BLOCK_HEADER_HASH,
             GENESIS_MERKLE_ROOT_HASH,
             GENESIS_TIME,
-            GENESIS_N_BITS,
+            GENESIS_N_BITS.from_u32(),
             GENESIS_NONCE,
         )
     }
@@ -71,7 +74,7 @@ impl BlockHeader {
             Ok(hash) => hash,
             Err(_) => return false,
         };
-        self.n_bits > hash
+        self.n_bits.to_u32() > hash.to_compact().to_u32()
 
     }
 
