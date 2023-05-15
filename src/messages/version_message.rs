@@ -1,18 +1,15 @@
 use super::{
-    compact_size::CompactSize, 
-    bitfield_services::BitfieldServices,
+    bitfield_services::BitfieldServices, 
+    compact_size::CompactSize
 };
 
 use crate::serialization::{
-    serializable::Serializable,
-    serializable_big_endian::SerializableBigEndian,
-    deserializable::Deserializable,
-    deserializable_big_endian::DeserializableBigEndian, 
-    deserializable_fix_size::DeserializableFixSize, 
-    error_serialization::ErrorSerialization,
+    deserializable::Deserializable, deserializable_big_endian::DeserializableBigEndian,
+    deserializable_fix_size::DeserializableFixSize, error_serialization::ErrorSerialization,
+    serializable::Serializable, serializable_big_endian::SerializableBigEndian,
 };
 
-use crate::messages::{
+use super::{
     message_header::MessageHeader,
 };
 
@@ -36,7 +33,7 @@ use std::io::{
 };
 
 use crate::connections::{
-    p2p_protocol::ProtocolVersionP2P,
+    p2p_protocol::ProtocolVersionP2P, 
     socket_conversion::socket_to_ipv6_port,
 };
 
@@ -57,7 +54,6 @@ pub struct VersionMessage {
 }
 
 impl VersionMessage {
-
     pub fn new(
         version: ProtocolVersionP2P,
         services: BitfieldServices,
@@ -69,7 +65,6 @@ impl VersionMessage {
         start_height: i32,
         relay: bool,
     ) -> Self {
-
         let timestamp = Utc::now();
         let (recv_addr, recv_port) = socket_to_ipv6_port(recv_socket_addr);
         let (trans_addr, trans_port) = socket_to_ipv6_port(trans_socket_addr);
@@ -80,12 +75,12 @@ impl VersionMessage {
             timestamp,
             recv_services,
             recv_addr,
-            recv_port, 
+            recv_port,
             trans_addr,
-            trans_port, 
-            nonce, 
+            trans_port,
+            nonce,
             user_agent,
-            start_height, 
+            start_height,
             relay,
         }
     }
@@ -120,7 +115,7 @@ impl VersionMessage {
 impl Serializable for VersionMessage {
     
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization>{
-    
+      
         self.version.serialize(stream)?;
         self.services.serialize(stream)?;
         self.timestamp.serialize(stream)?;
@@ -149,16 +144,19 @@ impl Deserializable for VersionMessage {
     fn deserialize(stream: &mut dyn Read) ->  Result<Self, ErrorSerialization> {
 
         let version = ProtocolVersionP2P::deserialize(stream)?;
-        let services =  BitfieldServices::deserialize(stream)?;
+        let services = BitfieldServices::deserialize(stream)?;
         let timestamp = DateTime::<Utc>::deserialize(stream)?;
-        let recv_services =  BitfieldServices::deserialize(stream)?;
+        let recv_services = BitfieldServices::deserialize(stream)?;
 
         let recv_addr = Ipv6Addr::deserialize_big_endian(stream)?;
         let recv_port = u16::deserialize_big_endian(stream)?;
 
-        let trans_services =  BitfieldServices::deserialize(stream)?;
+        let trans_services = BitfieldServices::deserialize(stream)?;
         if trans_services != services {
-            return Err(ErrorSerialization::ErrorInDeserialization(format!("Transceiver service isn't the same as the service: {:?}", trans_services)));
+            return Err(ErrorSerialization::ErrorInDeserialization(format!(
+                "Transceiver service isn't the same as the service: {:?}",
+                trans_services
+            )));
         }
 
         let trans_addr = Ipv6Addr::deserialize_big_endian(stream)?;
@@ -187,36 +185,26 @@ impl Deserializable for VersionMessage {
     }    
 }
 
-
 #[cfg(test)]
 mod tests {
     use crate::{
+        connections::{p2p_protocol::ProtocolVersionP2P, suppored_services::SupportedServices},
         messages::{
-            compact_size::CompactSize,
-            bitfield_services::BitfieldServices,
-            error_message::ErrorMessage, 
-        }, 
-        serialization::{
-            serializable::Serializable, 
-            serializable_big_endian::SerializableBigEndian,
-            deserializable::Deserializable,
+            bitfield_services::BitfieldServices, compact_size::CompactSize,
+            error_message::ErrorMessage,
         },
-        connections::{
-            p2p_protocol::ProtocolVersionP2P, 
-            suppored_services::SupportedServices,
+        serialization::{
+            deserializable::Deserializable, serializable::Serializable,
+            serializable_big_endian::SerializableBigEndian,
         },
     };
 
     use super::VersionMessage;
 
-    use chrono::{
-        DateTime,
-        offset::Utc,
-        NaiveDateTime,
-    };
-
+    use chrono::{offset::Utc, DateTime, NaiveDateTime};
+  
     use std::net::Ipv6Addr;
-    
+
     #[test]
     fn test01_serialize() -> Result<(), ErrorMessage>{
 
@@ -237,7 +225,7 @@ mod tests {
         let start_height: i32 = 3;
         let relay: bool = false;
         let mut stream: Vec<u8> = Vec::new();
-        
+
         let mut expected_stream: Vec<u8> = Vec::new();
         
         version.serialize(&mut expected_stream)?;
@@ -265,19 +253,19 @@ mod tests {
             timestamp,
             recv_services,
             recv_addr,
-            recv_port, 
+            recv_port,
             trans_addr,
-            trans_port, 
-            nonce, 
+            trans_port,
+            nonce,
             user_agent,
-            start_height, 
+            start_height,
             relay,
         };
 
         version_message.serialize(&mut stream)?;
-        
+
         assert_eq!(expected_stream, stream);
-        
+
         Ok(())
     }
 
@@ -322,26 +310,26 @@ mod tests {
         relay.serialize(&mut stream)?;
         
         let mut stream: &[u8] = &stream;
-        
+
         let version_esperado = VersionMessage {
             version,
             services,
             timestamp,
             recv_services,
             recv_addr,
-            recv_port, 
+            recv_port,
             trans_addr,
-            trans_port, 
-            nonce, 
+            trans_port,
+            nonce,
             user_agent,
-            start_height, 
+            start_height,
             relay,
         };
 
         let version = VersionMessage::deserialize(&mut stream)?;
-        
+
         assert_eq!(version_esperado, version);
-        
+
         Ok(())
     }
 }

@@ -1,9 +1,8 @@
 use super::error_connection::ErrorConnection;
 
 use crate::serialization::{
+    deserializable::Deserializable, error_serialization::ErrorSerialization,
     serializable::Serializable,
-    deserializable::Deserializable,
-    error_serialization::ErrorSerialization,
 };
 
 const NODE_UNNAME: u64 = 0x00;
@@ -33,7 +32,6 @@ impl std::str::FromStr for SupportedServices {
     fn from_str(_: &str) -> Result<Self, Self::Err> {
         Err(ErrorConnection::ErrorInvalidInputParse)
     }
-
 }
 
 impl std::convert::TryFrom<u64> for SupportedServices {
@@ -73,7 +71,12 @@ impl Serializable for SupportedServices {
     fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
         let version: u64 = match (*self).try_into() {
             Ok(version) => version,
-            _ => return Err(ErrorSerialization::ErrorInSerialization(format!("While serializing supported services {:?}", self))),
+            _ => {
+                return Err(ErrorSerialization::ErrorInSerialization(format!(
+                    "While serializing supported services {:?}",
+                    self
+                )))
+            }
         };
 
         match stream.write(&version.to_le_bytes()) {
@@ -84,12 +87,14 @@ impl Serializable for SupportedServices {
 }
 
 impl Deserializable for SupportedServices {
-
     fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
         let supported_servicies = u64::deserialize(stream)?;
         match supported_servicies.try_into() {
             Ok(supported_servicies) => Ok(supported_servicies),
-            _ => Err(ErrorSerialization::ErrorInDeserialization(format!("While deserializing supported services {:?}", supported_servicies))),
+            _ => Err(ErrorSerialization::ErrorInDeserialization(format!(
+                "While deserializing supported services {:?}",
+                supported_servicies
+            ))),
         }
     }
 }
@@ -97,18 +102,12 @@ impl Deserializable for SupportedServices {
 #[cfg(test)]
 mod tests {
 
-    use super::{
-        SupportedServices,
-        Serializable,
-        Deserializable,
-        ErrorSerialization,
-    };
+    use super::{Deserializable, ErrorSerialization, Serializable, SupportedServices};
 
     #[test]
     fn test01_serialize_correctly_supported_services() -> Result<(), ErrorSerialization> {
-        
         let expected_stream: Vec<u8> = vec![0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
-        
+
         let mut stream: Vec<u8> = Vec::new();
         let services = SupportedServices::NodeNetworkLimited;
 
@@ -121,10 +120,9 @@ mod tests {
 
     #[test]
     fn test02_deserialize_correctly_supported_services() -> Result<(), ErrorSerialization> {
-        
         let stream: Vec<u8> = vec![0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
         let mut stream: &[u8] = &stream;
-        
+
         let expected_services = SupportedServices::NodeNetworkLimited;
 
         let services = SupportedServices::deserialize(&mut stream)?;

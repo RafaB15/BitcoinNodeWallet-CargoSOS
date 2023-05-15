@@ -1,5 +1,5 @@
-mod error_initialization;
 mod error_execution;
+mod error_initialization;
 
 use std::net::{
     SocketAddr,
@@ -26,19 +26,12 @@ use cargosos_bitcoin::block_structure::hash::{
     hash256d,
 };
 
-use cargosos_bitcoin::configurations::{
-    configuration::config,
-    log_config::LogConfig,
-};
+use cargosos_bitcoin::configurations::{configuration::config, log_config::LogConfig};
 
-use cargosos_bitcoin::logs::{
-    logger,
-    logger_sender::LoggerSender,
-    error_log::ErrorLog,
-};
+use cargosos_bitcoin::logs::{error_log::ErrorLog, logger, logger_sender::LoggerSender};
 
-use error_initialization::ErrorInitialization;
 use error_execution::ErrorExecution;
+use error_initialization::ErrorInitialization;
 
 use cargosos_bitcoin::node_structure::{
     handshake::Handshake,
@@ -81,7 +74,7 @@ fn get_config_name(arguments: Vec<String>) -> Result<String, ErrorInitialization
 }
 
 /// Get the file given by its name
-/// 
+///
 /// ### Errors
 /// * `ErrorFileNotExist`: It will appear when the file does not exist
 fn open_config_file(config_name: String) -> Result<BufReader<File>, ErrorInitialization> {
@@ -90,14 +83,14 @@ fn open_config_file(config_name: String) -> Result<BufReader<File>, ErrorInitial
         Err(_) => return Err(ErrorInitialization::ConfigurationFileDoesntExist),
     };
 
-    Ok(BufReader::new(config_file))   
+    Ok(BufReader::new(config_file))
 }
 
 /// Get the file given by its path. If the file does not exist, it will be created. Evrytime the file is opened, it will be truncated to set the file size to 0 and overwrite the previous content
 /// 
 /// ### Errors
 /// * `ErrorFileNotExist`: It will appear when the file does not exist
-/// * `ErrorCouldNotTruncateFile`: It will appear when the file could not be truncated
+/// * `CouldNotTruncateFile`: It will appear when the file could not be truncated
 fn open_log_file(log_path: &Path) -> Result<File, ErrorInitialization> {
     let log_file = match OpenOptions::new().create(true).append(true).open(log_path) {
         Ok(f) => f,
@@ -106,19 +99,19 @@ fn open_log_file(log_path: &Path) -> Result<File, ErrorInitialization> {
     
     match log_file.set_len(0) {
         Ok(_) => {},
-        Err(_) => return Err(ErrorInitialization::ErrorCouldNotTruncateFile),
+        Err(_) => return Err(ErrorInitialization::CouldNotTruncateFile),
     };
 
     Ok(log_file)
 }
 
 /// Initialize the logs ready for ejecution
-/// 
+///
 /// ### Errors
 ///  * `ErrorCouldNotFindReceiver`: No se encontro el receiver
-///  * `ErrorReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
+///  * `ReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
 ///  * `ErrorLogFileDoesNotExist`: No se encontro el archivo de logs
-///  * `ErrorCouldNotTruncateFile`: No se pudo truncar el archivo de logs
+///  * `CouldNotTruncateFile`: No se pudo truncar el archivo de logs
 fn initialize_logs(log_config: LogConfig) -> Result<(JoinHandle<Result<(), ErrorLog>>, LoggerSender), ErrorExecution> {
     println!("Creating the logs system");
 
@@ -126,7 +119,7 @@ fn initialize_logs(log_config: LogConfig) -> Result<(JoinHandle<Result<(), Error
     let log_file = open_log_file(filepath_log)?;
     let (logger_sender, logger_receiver) = logger::initialize_logger(log_file, false)?;
 
-    let handle = thread::spawn(move || logger_receiver.receive_log());       
+    let handle = thread::spawn(move || logger_receiver.receive_log());
 
     logger_sender.log_configuration("Logs are already configured".to_string())?;
 
@@ -351,7 +344,7 @@ fn get_block_chain(
 }
 
 fn main() -> Result<(), ErrorExecution> {
-    let arguments: Vec<String> = std::env::args().collect();    
+    let arguments: Vec<String> = std::env::args().collect();
 
     println!("\tInitialization");
     println!("Reading the configuration file");
@@ -371,13 +364,11 @@ fn main() -> Result<(), ErrorExecution> {
 
         let block_chain = get_block_chain(peers, logger_sender.clone())?;
 
-
-
         println!("Block chain: {:?}", block_chain);
     }
 
     logger_sender.log_configuration("Closing program".to_string())?;
-    
+
     std::mem::drop(logger_sender);
     match handle.join() {
         Ok(result) => result?,

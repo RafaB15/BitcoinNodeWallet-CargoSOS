@@ -72,11 +72,11 @@ impl Serializable for GetHeadersMessage {
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.version.serialize(stream)?;
         CompactSize::new(self.header_locator_hashes.len() as u64).serialize(stream)?;
-        
+
         for hash in self.header_locator_hashes.iter() {
             hash.serialize(stream)?;
         }
-        
+
         self.stop_hash.serialize(stream)?;
         Ok(())
     }
@@ -147,6 +147,4 @@ mod tests {
 
         Ok(())
     }
-
 }
-

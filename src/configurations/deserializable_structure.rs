@@ -24,7 +24,8 @@ pub(super) trait DeserializeStructure<'d> {
     }
 
     /// Creation of the structure given
-    fn new(settings_dictionary: HashMap<String, String>) -> Result<Self::Value, ErrorConfiguration>;
+    fn new(settings_dictionary: HashMap<String, String>)
+        -> Result<Self::Value, ErrorConfiguration>;
 }
 
 /// Returns the key-values pair for all the configuration of a given structure
