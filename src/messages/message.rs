@@ -84,7 +84,14 @@ pub fn deserialize_until_found<RW : Read + Write>(
     search_name: CommandName,
 ) -> Result<MessageHeader, ErrorMessage> 
 {
-    while let Ok(header) = deserialize_message(stream) {
+    loop {
+        let header = match deserialize_message(stream) {
+            Ok(header) => header,
+            Err(error) => return Err(error.into()),
+        };
+
+        println!("Header: {:?}", header);
+
         if header.command_name == search_name {
             return Ok(header);
         }
@@ -129,6 +136,4 @@ pub fn deserialize_until_found<RW : Read + Write>(
             },
         }
     }
-
-    Err(ErrorMessage::ErrorWhileReading)
 }

@@ -1,6 +1,7 @@
 use crate::serialization::{
+    serializable::Serializable,
     deserializable::Deserializable,
-    error_serialization::ErrorSerialization,
+    error_serialization::ErrorSerialization, 
 };
 
 const COMPACT256_BASE: u32 = 256;
@@ -9,20 +10,13 @@ const BYTES_IN_SIGNIFICAND: u8 = 3;
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub struct Compact256 {
     pub mantissa: [u8; 3],
-    pub exponent: u32,
+    pub exponent: u8,
 }
 
 impl Compact256 {
     pub fn to_u32(&self) -> u32 {
-        // Convert the mantissa bytes to a u32 value
-        let mut mantissa_u32: u32 = 0;
-        for byte in self.mantissa.iter().take(BYTES_IN_SIGNIFICAND as usize) {
-            mantissa_u32 <<= 8;
-            mantissa_u32 |= *byte as u32;
-        }
 
-        // Apply the exponent to the mantissa
-        mantissa_u32 * COMPACT256_BASE.pow(self.exponent)
+        u32::from_le_bytes([self.exponent, self.mantissa[0], self.mantissa[1], self.mantissa[2]])
     }
 
     pub fn from_u32(value: u32) -> Compact256 {
@@ -39,7 +33,7 @@ impl Compact256 {
             exponent += 1;
             index = (exponent as usize) / 8;
         }
-        Compact256 { mantissa, exponent }
+        Compact256 { mantissa, exponent: exponent as u8 }
     }
 
     pub fn from_bytes(bytes: [u8; 32]) -> Compact256 {
@@ -56,12 +50,21 @@ impl Compact256 {
 
         // Construir el Compact256
         let mut mantissa = [0u8; 3];
-
+let mantissa_u32 = u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
         for (index, mantissa_byte) in mantissa.iter_mut().enumerate() {
             *mantissa_byte = (mantissa_u32 >> (8 * index)) as u8;
         }
 
-        Compact256 { mantissa, exponent }
+        Compact256 { mantissa, exponent: exponent as u8 }
+    }
+}
+
+impl Serializable for Compact256 {
+    
+    fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
+        let value = self.to_u32();
+        value.serialize(stream)?;
+        Ok(())
     }
 }
 

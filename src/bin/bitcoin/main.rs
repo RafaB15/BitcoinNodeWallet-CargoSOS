@@ -26,9 +26,16 @@ use cargosos_bitcoin::block_structure::hash::{
     hash256d,
 };
 
-use cargosos_bitcoin::configurations::{configuration::config, log_config::LogConfig};
+use cargosos_bitcoin::configurations::{
+    configuration::config, 
+    log_config::LogConfig,
+};
 
-use cargosos_bitcoin::logs::{error_log::ErrorLog, logger, logger_sender::LoggerSender};
+use cargosos_bitcoin::logs::{
+    logger, 
+    logger_sender::LoggerSender,
+    error_log::ErrorLog, 
+};
 
 use error_execution::ErrorExecution;
 use error_initialization::ErrorInitialization;
@@ -36,6 +43,7 @@ use error_initialization::ErrorInitialization;
 use cargosos_bitcoin::node_structure::{
     handshake::Handshake,
     initial_block_download::InitialBlockDownload,
+    error_node::ErrorNode,
 };
 
 use cargosos_bitcoin::serialization::{
@@ -167,10 +175,18 @@ fn get_peer_header(
 ) -> Result<(), ErrorExecution> {
 
     loop {
-        let header_count: u32 = block_download.get_headers(
+        let header_count: u32 = match block_download.get_headers(
             peer_stream,
             block_chain,
-        )?;
+        ) {
+            Err(ErrorNode::NodeNotResponding) => {
+                logger_sender.log_connection(
+                    "Node not responding".to_string()
+                )?;
+                break;
+            },
+            other_response => other_response?,
+        };
 
         logger_sender.log_connection(
             format!("We get: {}", header_count)
@@ -257,7 +273,12 @@ fn get_initial_download_headers_first(
 
         let mut peer_stream = match TcpStream::connect(peer) {
             Ok(stream) => stream,
-            Err(_) => return Err(ErrorConnection::ErrorCannotConnectToAddress.into()),
+            Err(_) => {
+                logger_sender.log_connection(
+                    format!("Could not connect to peer: {:?}", peer)
+                )?;
+                continue;
+            },
         };
 
         get_peer_header(

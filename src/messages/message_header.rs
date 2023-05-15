@@ -17,6 +17,7 @@ use std::io::{
 
 pub type MagicType = [u8; 4];
 
+#[derive(Debug)]
 pub struct MessageHeader {
     pub magic_numbers: MagicType,
     pub command_name: CommandName,

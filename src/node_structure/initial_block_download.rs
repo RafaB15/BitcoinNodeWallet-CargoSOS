@@ -96,7 +96,7 @@ impl InitialBlockDownload {
         let mut added_headers = 0;
         for header in &received_headers_message.headers {
             if !header.proof_of_work() {
-                return Err(ErrorNode::ErrorWhileValidating("Error while validating proof of work".to_string()));
+                return Err(ErrorNode::WhileValidating("Error while validating proof of work".to_string()));
             }
             if block_chain.append_header(*header).is_ok() {
                 added_headers += 1;
@@ -112,7 +112,16 @@ impl InitialBlockDownload {
     ) -> Result<u32,ErrorNode>
     {
         self.send_get_headers_message(peer_stream, block_chain)?;
-        let received_headers_message = HeadersMessage::deserialize(peer_stream)?;
+
+        let header_headers_message = match message::deserialize_until_found(
+            peer_stream, 
+            CommandName::Headers,
+        ) {
+            Ok(header) => header,
+            _ => return Err(ErrorNode::NodeNotResponding),
+        };
+
+        let received_headers_message = HeadersMessage::deserialize_message(peer_stream, header_headers_message)?;
         let added_headers = self.add_headers_to_blockchain(block_chain, &received_headers_message)?;
         Ok(added_headers)
     }
@@ -140,7 +149,9 @@ impl InitialBlockDownload {
         
         match block_message.block.proof_of_inclusion() {
             true => Ok(block_message.block),
-            false => Err(ErrorMessage::ErrorInDeserialization("Error while receiving block message".to_string())),
+            false => Err(ErrorMessage::ErrorInDeserialization(
+                "Error while receiving block message".to_string()
+            )),
         }
     }
 }

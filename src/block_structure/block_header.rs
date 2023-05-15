@@ -129,7 +129,7 @@ impl Serializable for BlockHeader {
         self.previous_block_header_hash.serialize(stream)?;
         self.merkle_root_hash.serialize(stream)?;
         self.time.serialize(stream)?;
-        self.n_bits.to_u32().serialize(stream)?;
+        self.n_bits.serialize(stream)?;
         self.nonce.serialize(stream)?;
 
         Ok(())
