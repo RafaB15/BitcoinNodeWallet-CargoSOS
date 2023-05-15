@@ -82,7 +82,20 @@ impl BlockChain {
     }
 
     pub fn get_block_after_timestamp(&self, timestamp: u32) -> Result<BlockChain, ErrorBlock> {
-        todo!()
+        
+        if timestamp < self.block.header.time {
+            return Ok(self.clone());
+        }
+
+        for next_block in self.next_blocks.iter() {
+            match next_block.get_block_after_timestamp(timestamp) {
+                Ok(block_after_timestamp) => return Ok(block_after_timestamp),
+                Err(ErrorBlock::CouldNotFindBlockFarEnough) => continue,
+                err => return err,
+            }
+        }
+
+        Err(ErrorBlock::CouldNotFindBlockFarEnough)
     }
 
     pub fn last<'b>(&self) -> &'b Block {
