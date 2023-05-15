@@ -1,5 +1,3 @@
-use bitcoin_hashes::Hash;
-
 use super::{
     block::Block, 
     block_header::BlockHeader, 
@@ -10,8 +8,6 @@ use super::{
     transaction_output::TransactionOutput,
     error_block::ErrorBlock,
 };
-
-use crate::block_structure::hash::HashType;
 
 use crate::serialization::{
     serializable::Serializable,
@@ -119,7 +115,7 @@ impl BlockChain {
 
     pub fn update_utxo_from_address_in_block(&self, address: &str, utxo_from_address: &mut Vec<(TransactionOutput, HashType, u32)>) {
         self.block.update_utxo_from_address(address, utxo_from_address);
-        match self.next_block.iter().next() {
+        match self.next_blocks.iter().next() {
             Some(next_block) => next_block.update_utxo_from_address_in_block(address, utxo_from_address),
             None => (),
         }

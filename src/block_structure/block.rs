@@ -1,5 +1,3 @@
-use bitcoin_hashes::sha256d;
-
 use super::{
     block_header::BlockHeader, 
     transaction::Transaction,
@@ -53,7 +51,7 @@ impl Block {
         for transaction in &self.transactions {
             for input in &transaction.tx_in {
                 for (output, transaction_hash, index) in utxo_from_address.iter_mut() {
-                    if input.previos_output.hash.eq(transaction_hash)  && input.previos_output.index == *index{
+                    if input.previous_output.hash.eq(transaction_hash)  && input.previous_output.index == *index{
                         output.value = 0;
                     }
                 }
@@ -67,7 +65,7 @@ impl Block {
         for transaction in &self.transactions {
             index_utxo = 0;
             for output in &transaction.tx_out {
-                if output.get_public_key_hash() == address {
+                if output.verify_owner(address) {
                     let serialized_transaction = Vec::new();
                     match transaction.serialize(&mut serialized_transaction) {
                         Ok(_) => (),
