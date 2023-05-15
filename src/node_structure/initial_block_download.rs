@@ -21,13 +21,10 @@ use crate::connections::{
 };
 
 use crate::block_structure::{
-    block_chain::BlockChain,
     block::Block,
+    block_chain::BlockChain,
     block_header::BlockHeader,
-    hash::{
-        HashType,
-        hash256d
-    }
+    hash::{hash256d, HashType},
 };
 
 use super::{
@@ -67,9 +64,9 @@ impl InitialBlockDownload {
         let mut serialized_header = Vec::new();
 
         last_header.serialize(&mut serialized_header)?;
-        
+
         let hashed_header: HashType = hash256d(&serialized_header)?;
-        
+
         let get_headers_message = GetHeadersMessage::new(
             TESTNET_MAGIC_NUMBERS,
             self.protocol_version,

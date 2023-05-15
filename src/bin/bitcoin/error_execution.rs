@@ -1,19 +1,15 @@
 use super::error_initialization::ErrorInitialization;
 
 use cargosos_bitcoin::{
-    logs::error_log::ErrorLog,
     configurations::error_configuration::ErrorConfiguration,
     connections::error_connection::ErrorConnection,
+    logs::error_log::ErrorLog,
     messages::error_message::ErrorMessage,
     block_structure::error_block::ErrorBlock,
     node_structure::error_node::ErrorNode,
 };
 
-use std::fmt::{
-    Debug,
-    Formatter,
-    Error,
-};
+use std::fmt::{Debug, Error, Formatter};
 
 use std::convert::From;
 

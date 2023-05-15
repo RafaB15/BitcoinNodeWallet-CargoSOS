@@ -11,5 +11,5 @@ pub enum ErrorInitialization {
     LogFileDoesntExist,
 
     ///It will appear when the file could not be truncated
-    ErrorCouldNotTruncateFile
+    CouldNotTruncateFile
 }

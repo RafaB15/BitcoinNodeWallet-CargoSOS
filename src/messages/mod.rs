@@ -12,5 +12,5 @@ pub mod block_message;
 
 pub mod error_message;
 
-pub mod compact_size;
 pub mod bitfield_services;
+pub mod compact_size;
