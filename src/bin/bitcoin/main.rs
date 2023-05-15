@@ -214,14 +214,14 @@ fn get_blocks_recursive(
 
         blocks.push(block);
 
-        for block_chain in block_chain_actual.next_block {
+        for block_chain in block_chain_actual.next_blocks {
             get_blocks_recursive(
                 peer_stream,
                 block_download.clone(),
                 blocks,
                 block_chain,
             );
-        }next_blocks
+        }
     }
 }
 

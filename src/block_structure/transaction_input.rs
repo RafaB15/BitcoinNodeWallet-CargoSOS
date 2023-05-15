@@ -1,6 +1,11 @@
 use super::outpoint::Outpoint;
 use crate::messages::compact_size::CompactSize;
-use crate::serialization::{error_serialization::ErrorSerialization, serializable::Serializable};
+use crate::serialization::{
+    serializable::Serializable,
+    deserializable::Deserializable,
+    deserializable_fix_size::DeserializableFixSize,
+    error_serialization::ErrorSerialization, 
+};
 use std::io::Write;
 
 #[derive(Debug, Clone)]
@@ -25,6 +30,7 @@ impl TransactionInput {
 }
 
 impl Serializable for TransactionInput {
+
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.previous_output.serialize(stream)?;
 
@@ -34,5 +40,21 @@ impl Serializable for TransactionInput {
         self.sequence.serialize(stream)?;
 
         Ok(())
+    }
+}
+
+impl Deserializable for TransactionInput {
+
+    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
+        let previous_output = Outpoint::deserialize(stream)?;
+        let length_sginature = CompactSize::deserialize(stream)?;
+        let signature_script = String::deserialize_fix_size(stream, length_sginature.value as usize)?;
+        let sequence = u32::deserialize(stream)?;
+
+        Ok(TransactionInput { 
+            previous_output, 
+            signature_script, 
+            sequence
+        })
     }
 }
