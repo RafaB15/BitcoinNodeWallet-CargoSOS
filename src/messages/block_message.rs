@@ -1,11 +1,10 @@
 use super::{
-    compact_size::CompactSize,
     message_header::MessageHeader,
 };
 
 use crate::block_structure::{
-    block_header::BlockHeader, 
-    hash::hash256d_reduce
+    block::Block,
+    hash::hash256d_reduce,
 };
 
 use crate::serialization::{
@@ -19,18 +18,11 @@ use std::io::{
     Write,
 };
 
-pub struct HeadersMessage {
-    pub count: CompactSize,
-    pub headers: Vec<BlockHeader>,
+pub struct BlockMessage {
+    pub block: Block,
 }
 
-impl HeadersMessage {
-    pub fn new(count: CompactSize, headers: Vec<BlockHeader>) -> Self {
-        HeadersMessage { 
-            count, 
-            headers, 
-        }
-    }
+impl BlockMessage {
 
     pub fn deserialize_message(
         stream: &mut dyn Read, 
@@ -57,30 +49,22 @@ impl HeadersMessage {
 
         Ok(message)        
     }
+
 }
 
-impl Serializable for HeadersMessage {
-        
+impl Serializable for BlockMessage {
+    
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        self.count.serialize(stream)?;
-        for header in &self.headers {
-            header.serialize(stream)?;
-        }
+        self.block.serialize(stream)?;
         Ok(())
     }
 }
 
-impl Deserializable for HeadersMessage {
-
+impl Deserializable for BlockMessage {
+    
     fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let count = CompactSize::deserialize(stream)?;
-        let mut headers = Vec::new();
-        for _ in 0..count.value {
-            headers.push(BlockHeader::deserialize(stream)?);
-        }
-        Ok(HeadersMessage::new(count, headers))
+        Ok(BlockMessage { 
+            block: Block::deserialize(stream)?,
+        })
     }
 }
-
-
-

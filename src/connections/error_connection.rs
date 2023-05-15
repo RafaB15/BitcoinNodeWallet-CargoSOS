@@ -1,4 +1,3 @@
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErrorConnection {
     ErrorInvalidInputParse,
@@ -6,5 +5,5 @@ pub enum ErrorConnection {
     ErrorCannotConnectToAddress,
     ErrorCannotObtainOwnAddress,
     ErrorCannotSendMessage,
-    ErrorCannotReceiveMessage
+    ErrorCannotReceiveMessage,
 }

@@ -1,9 +1,4 @@
-use std::net::{
-    IpAddr,
-    Ipv4Addr,
-    Ipv6Addr,
-    SocketAddr
-};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 pub fn socket_to_ipv6_port(socket_addr: &SocketAddr) -> (Ipv6Addr, u16) {
     let ip = match socket_addr.ip() {

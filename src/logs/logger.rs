@@ -1,7 +1,7 @@
-use super::error_log::{ErrorLog};
+use super::error_log::ErrorLog;
+use super::level::Level;
 use super::logger_receiver::LoggerReceiver;
 use super::logger_sender::LoggerSender;
-use super::level::Level;
 use std::io::Write;
 use std::sync::mpsc;
 
@@ -9,7 +9,7 @@ pub(crate) type MessageLog = (Level, String);
     /// We create the sender and the receiver for the logger, receiving the path of the file where we want to write the logs
     /// 
     /// Errores:
-    /// # ErrorCouldNotWriteInFile No se pudo escribir en el file
+    /// # CouldNotWriteInFile No se pudo escribir en el file
     /// # ErrorCouldNotFindReceiver No se encontro el receiver
 pub fn initialize_logger<W: Write>(output: W, display_in_terminal: bool) -> Result<(LoggerSender, LoggerReceiver<W>), ErrorLog> {
     let (sender, receiver) = mpsc::channel::<MessageLog>();
@@ -23,9 +23,9 @@ pub fn initialize_logger<W: Write>(output: W, display_in_terminal: bool) -> Resu
 #[cfg(test)]
 mod tests {
 
-    use std::fs::File;
-    use std::path::{Path};
     use super::*;
+    use std::fs::File;
+    use std::path::Path;
     
     #[test]
     fn correct_log_creation() {
@@ -43,7 +43,6 @@ mod tests {
 
         assert!(contents.contains("[NODE] A block"));
         assert!(contents.contains("[NODE] Another block"));
-
     }
 
     #[test]
@@ -54,9 +53,10 @@ mod tests {
 
         std::mem::drop(logger_receiver);
 
-        let error_message: ErrorLog = logger_sender.log(Level::NODE,"A block".to_string()).unwrap_err();
+        let error_message: ErrorLog = logger_sender
+            .log(Level::NODE, "A block".to_string())
+            .unwrap_err();
 
-        assert_eq!(error_message, ErrorLog::ErrorReceiverNotFound);
-
+        assert_eq!(error_message, ErrorLog::ReceiverNotFound);
     }
 }

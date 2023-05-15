@@ -11,19 +11,27 @@ use super::{
     },
 };
 
-use crate::serialization::serializable::Serializable;
+use crate::serialization::{
+    serializable::Serializable,
+    deserializable::Deserializable,
+    error_serialization::ErrorSerialization,
+};
 
+use crate::messages::{
+    compact_size::CompactSize,
+};
+
+#[derive(Debug, Clone)]
 pub struct Block {
     pub header: BlockHeader,
-    pub transactions: Vec<Transaction>
+    pub transactions: Vec<Transaction>,
 }
 
 impl Block {
-
     pub fn new(header: BlockHeader) -> Self {
-        Block { 
-            header, 
-            transactions: vec![] 
+        Block {
+            header,
+            transactions: vec![],
         }
     }
 
@@ -31,8 +39,14 @@ impl Block {
         self.header.proof_of_inclusion(&self.transactions)
     }
 
-    pub fn agregar_transaccion(self, transaction: Transaction) {
-        todo!()
+    pub fn append_transaction(&mut self, transaction: Transaction) -> Result<(), ErrorBlock> {
+
+        match self.transactions.iter().any(|this_transaction| *this_transaction == transaction) {
+            true => return Err(ErrorBlock::TransactionAlreadyInBlock),
+            false => self.transactions.push(transaction),
+        }
+
+        Ok(())
     }
 
     pub fn remove_spent_transactions(&self, utxo_from_address: &mut Vec<(TransactionOutput, HashType, u32)>) {
@@ -73,5 +87,39 @@ impl Block {
     pub fn update_utxo_from_address(&self, address: &str, utxo_from_address: &mut Vec<(TransactionOutput, HashType, u32)>) {
         self.remove_spent_transactions(utxo_from_address);
         self.add_utxo_from_address(address, utxo_from_address);
+    }
+}
+
+impl Serializable for Block {
+
+    fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
+        self.header.serialize(stream)?;
+        CompactSize::new(self.transactions.len() as u64).serialize(stream)?;
+        for transaction in self.transactions.iter() {
+            transaction.serialize(stream)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl Deserializable for Block {
+    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
+        let header = BlockHeader::deserialize(stream)?;
+        let compact_size = CompactSize::deserialize(stream)?;
+        
+        let mut block = Block::new(header);
+
+        for _ in 0..compact_size.value {
+            let transaction = Transaction::deserialize(stream)?;
+            match block.append_transaction(transaction) {
+                Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => continue,
+                _ => return Err(ErrorSerialization::ErrorInDeserialization(
+                    "Appending transactions to the block".to_string()
+                )),
+            }
+        }
+
+        Ok(block)
     }
 }
