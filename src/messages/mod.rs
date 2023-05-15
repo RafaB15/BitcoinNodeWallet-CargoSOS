@@ -1,3 +1,6 @@
+pub mod message_header;
+pub mod command_name;
+
 pub mod version_message;
 pub mod verack_message;
 
