@@ -1,9 +1,13 @@
+use bitcoin_hashes::Hash;
+
 use super::{
     block::Block,
     block_header::BlockHeader,
     transaction_output::TransactionOutput,
     error_block::ErrorBlock,
 };
+
+use crate::block_structure::hash::HashType;
 
 pub struct BlockChain {
     next_block: Vec<BlockChain>,
@@ -35,7 +39,7 @@ impl BlockChain {
         todo!()
     }
 
-    pub fn update_utxo_from_address_in_block(&self, address: &str, utxo_from_address: &mut Vec<TransactionOutput>) {
+    pub fn update_utxo_from_address_in_block(&self, address: &str, utxo_from_address: &mut Vec<(TransactionOutput, HashType, u32)>) {
         self.block.update_utxo_from_address(address, utxo_from_address);
         match self.next_block.iter().next() {
             Some(next_block) => next_block.update_utxo_from_address_in_block(address, utxo_from_address),
@@ -44,8 +48,8 @@ impl BlockChain {
     }
 
     pub fn get_utxo_from_address(&self, address: &str) -> Vec<TransactionOutput> {
-        let mut utxo_from_address = vec![];
+        let mut utxo_from_address: Vec<(TransactionOutput, HashType, u32)> = vec![];
         self.update_utxo_from_address_in_block(address, &mut utxo_from_address);
-        utxo_from_address
+        utxo_from_address.iter().map(|(output, _, _)| output.clone()).collect()
     }
 }
