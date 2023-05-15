@@ -61,12 +61,11 @@ impl Block {
     }
 
     pub fn add_utxo_from_address(&self, address: &str, utxo_from_address: &mut Vec<(TransactionOutput, HashType, u32)>) {
-        let index_utxo = 0;
         for transaction in &self.transactions {
-            index_utxo = 0;
+            let mut index_utxo = 0;
             for output in &transaction.tx_out {
                 if output.verify_owner(address) {
-                    let serialized_transaction = Vec::new();
+                    let mut serialized_transaction = Vec::new();
                     match transaction.serialize(&mut serialized_transaction) {
                         Ok(_) => (),
                         Err(_) => return,
