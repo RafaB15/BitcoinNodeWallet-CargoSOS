@@ -8,7 +8,7 @@ pub enum ErrorNode {
     WhileReceivingMessage(String),
     WhileSerializing(String),
     WhileDeserializing(String),
-    NodeNotResponding,
+    NodeNotResponding(String),
 }
 
 impl From<ErrorMessage> for ErrorNode {

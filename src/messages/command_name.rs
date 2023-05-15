@@ -20,7 +20,7 @@ type CommandNameType = [u8; 12];
 const VERSION_NAME: CommandNameType = [b'v', b'e', b'r', b's', b'i', b'o', b'n', b'\0', b'\0', b'\0', b'\0', b'\0'];
 const VERACK_NAME: CommandNameType = [b'v', b'e', b'r', b'a', b'c', b'k', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0'];
 const GET_HEADERS_NAME: CommandNameType = [b'g', b'e', b't', b'h', b'e', b'a', b'd', b'e', b'r', b's', b'\0', b'\0'];
-const HEADERS_NAME: CommandNameType = [b'h', b'e', b'a', b'd', b'e', b'r', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0'];
+const HEADERS_NAME: CommandNameType = [b'h', b'e', b'a', b'd', b'e', b'r', b's', b'\0', b'\0', b'\0', b'\0', b'\0'];
 const INVENTORY_NAME: CommandNameType = [b'i', b'n', b'v', b'e', b'n', b't', b'o', b'r', b'y', b'\0', b'\0', b'\0'];
 const BLOCK_NAME: CommandNameType = [b'b', b'l', b'o', b'c', b'k', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0'];
 const PING_NAME: CommandNameType = [b'p', b'i', b'n', b'g', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0'];
@@ -38,11 +38,10 @@ pub enum CommandName {
     Pong,
 }
 
-impl TryInto<CommandNameType> for CommandName {
-    type Error = ErrorSerialization;
+impl Into<CommandNameType> for CommandName {
 
-    fn try_into(self) -> Result<CommandNameType, Self::Error> {
-        let command_name = match self {
+    fn into(self) -> CommandNameType {
+        match self {
             CommandName::Version => VERSION_NAME,
             CommandName::Verack => VERACK_NAME,
             CommandName::GetHeaders => GET_HEADERS_NAME,
@@ -51,9 +50,7 @@ impl TryInto<CommandNameType> for CommandName {
             CommandName::Block => BLOCK_NAME,
             CommandName::Ping => PING_NAME,
             CommandName::Pong => PONG_NAME,
-        };
-
-        Ok(command_name)
+        }
     }
 }
 
@@ -70,7 +67,9 @@ impl TryFrom<CommandNameType> for CommandName {
             BLOCK_NAME => Ok(CommandName::Block),
             PING_NAME => Ok(CommandName::Ping),
             PONG_NAME => Ok(CommandName::Pong),
-            _ => Err(ErrorSerialization::ErrorInDeserialization("Invalid command name".to_string())),
+            _ => Err(ErrorSerialization::ErrorInDeserialization(
+                format!("Invalid command name, we get: {:?}", value)
+            )),
         }
     }
 }
@@ -79,7 +78,7 @@ impl Serializable for CommandName {
     
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
 
-        let command_name: CommandNameType = (*self).try_into()?;
+        let command_name: CommandNameType = (*self).into();
         command_name.serialize(stream)?;
 
         Ok(())
@@ -90,7 +89,7 @@ impl Deserializable for CommandName {
     
     fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
 
-        let command_name: CommandNameType = CommandNameType::deserialize(stream)?;
+        let command_name = CommandNameType::deserialize(stream)?;
         let command_name: CommandName = command_name.try_into()?;
 
         Ok(command_name)

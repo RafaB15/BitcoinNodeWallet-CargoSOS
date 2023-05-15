@@ -146,25 +146,56 @@ fn get_potential_peers(logger_sender: LoggerSender) -> Result<Vec<SocketAddr>, E
 fn connect_to_testnet_peers(
     potential_peers: Vec<SocketAddr>,
     logger_sender: LoggerSender, 
-) -> Result<Vec<SocketAddr>, ErrorExecution> 
+) -> Result<Vec<TcpStream>, ErrorExecution> 
 {
     logger_sender.log_connection("Connecting to potential peers".to_string())?;
 
-    let mut node = Handshake::new(
+    let node = Handshake::new(
         ProtocolVersionP2P::V70015,
         BitfieldServices::new(vec![SupportedServices::Unname]),
         0,
-        logger_sender
+        logger_sender.clone(),
     );
 
-    let mut peers: Vec<SocketAddr> = Vec::new();
+    let mut peer_streams: Vec<TcpStream> = Vec::new();
 
     for potential_peer in potential_peers {
-        let peer = node.connect_to_testnet_peer(potential_peer)?;
-        peers.push(peer);
+
+        let mut peer_stream = match TcpStream::connect(potential_peer) {
+            Ok(stream) => stream,
+            Err(error) => {
+                logger_sender.log_connection(
+                    format!("Cannot connect to address: {:?}, it appear {:?}", potential_peer, error)
+                )?;
+                continue;
+            },
+        };
+
+        let local_socket = match peer_stream.local_addr() {
+            Ok(addr) => addr,
+            Err(error) => {
+                logger_sender.log_connection(
+                    format!("Cannot get local address, it appear {:?}", error)
+                )?;
+                continue;
+            },
+        };
+
+        if let Err(error) = node.connect_to_testnet_peer(
+            &mut peer_stream,
+            &local_socket,
+            &potential_peer,
+        ) {
+            logger_sender.log_connection(
+                format!("Error while connecting to addres: {:?}, it appear {:?}", potential_peer, error)
+            )?;
+            continue;
+        };
+
+        peer_streams.push(peer_stream);
     }
 
-    Ok(peers)
+    Ok(peer_streams)
 }
 
 fn get_peer_header(
@@ -179,9 +210,9 @@ fn get_peer_header(
             peer_stream,
             block_chain,
         ) {
-            Err(ErrorNode::NodeNotResponding) => {
+            Err(ErrorNode::NodeNotResponding(message)) => {
                 logger_sender.log_connection(
-                    "Node not responding".to_string()
+                    format!("Node not responding, send: {}", message)
                 )?;
                 break;
             },
@@ -255,7 +286,7 @@ fn get_blocks(
 }
 
 fn get_initial_download_headers_first(
-    peers: Vec<SocketAddr>,
+    mut peer_streams: Vec<TcpStream>,
     block_chain: &mut BlockChain,
     block_download: InitialBlockDownload,
     logger_sender: LoggerSender, 
@@ -265,21 +296,12 @@ fn get_initial_download_headers_first(
 
     let mut peer_download_handles: Vec<JoinHandle<Vec<Block>>> = Vec::new();
 
-    for peer in peers.iter() {
+    for peer_stream in peer_streams {
+        let mut peer_stream = peer_stream;
 
         logger_sender.log_connection(
-            format!("Connecting to peer: {:?}", peer)
+            format!("Connecting to peer: {:?}", peer_stream)
         )?;
-
-        let mut peer_stream = match TcpStream::connect(peer) {
-            Ok(stream) => stream,
-            Err(_) => {
-                logger_sender.log_connection(
-                    format!("Could not connect to peer: {:?}", peer)
-                )?;
-                continue;
-            },
-        };
 
         get_peer_header(
             &mut peer_stream,
@@ -287,34 +309,23 @@ fn get_initial_download_headers_first(
             block_chain,
             &logger_sender,
         )?;
-    }
 
-    let timestamp: u32 = 40000;
-    let partial_block_chain = block_chain.get_block_after_timestamp(timestamp)?;
-
-    for peer in peers {
-        
-        let mut peer_stream = match TcpStream::connect(peer) {
-            Ok(stream) => stream,
-            Err(_) => return Err(ErrorConnection::ErrorCannotConnectToAddress.into()),
-        };
-
+        let timestamp: u32 = 40000;
+        let partial_block_chain = block_chain.get_block_after_timestamp(timestamp)?;
         let block_download_peer = block_download.clone();
-        let block_chain_peer = partial_block_chain.clone();
 
         let peer_download_handle = thread::spawn(move || {
             
             get_blocks(
                 &mut peer_stream,
                 block_download_peer,
-                block_chain_peer,
+                partial_block_chain,
             )
         });
 
         peer_download_handles.push(peer_download_handle);
+
     }
-
-
 
     for peer_download_handle in peer_download_handles {
         match peer_download_handle.join() {
@@ -331,7 +342,7 @@ fn get_initial_download_headers_first(
 }
 
 fn get_block_chain(
-    peers: Vec<SocketAddr>,
+    mut peer_streams: Vec<TcpStream>,
     logger_sender: LoggerSender, 
 ) -> Result<BlockChain, ErrorExecution> 
 {    
@@ -351,7 +362,7 @@ fn get_block_chain(
     match method {
         InitialDownloadMethod::HeadersFirst => {
             get_initial_download_headers_first(
-                peers, 
+                peer_streams, 
                 &mut block_chain, 
                 block_download,
                 logger_sender
@@ -380,9 +391,9 @@ fn main() -> Result<(), ErrorExecution> {
     {
         let potential_peers = get_potential_peers(logger_sender.clone())?;
 
-        let peers = connect_to_testnet_peers(potential_peers, logger_sender.clone())?;
+        let peer_streams = connect_to_testnet_peers(potential_peers, logger_sender.clone())?;
 
-        let block_chain = get_block_chain(peers, logger_sender.clone())?;
+        let block_chain = get_block_chain(peer_streams, logger_sender.clone())?;
 
         println!("Block chain: {:?}", block_chain);
     }

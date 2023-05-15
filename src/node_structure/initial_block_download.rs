@@ -33,7 +33,6 @@ use super::{
 
 use crate::serialization::{
     serializable::Serializable,
-    deserializable::Deserializable,
 };
 
 use crate::connections::{
@@ -55,7 +54,7 @@ impl InitialBlockDownload {
         }
     }
 
-    pub fn send_get_headers_message<RW : Read + Write>(
+    fn send_get_headers_message<RW : Read + Write>(
         &self, peer_stream: &mut RW, 
         block_chain: &BlockChain
     ) -> Result<(), ErrorMessage>
@@ -87,7 +86,7 @@ impl InitialBlockDownload {
         Ok(())
     }
 
-    pub fn add_headers_to_blockchain(
+    fn add_headers_to_blockchain(
         &self, 
         block_chain: &mut BlockChain, 
         received_headers_message: &HeadersMessage
@@ -98,6 +97,7 @@ impl InitialBlockDownload {
             if !header.proof_of_work() {
                 return Err(ErrorNode::WhileValidating("Error while validating proof of work".to_string()));
             }
+
             if block_chain.append_header(*header).is_ok() {
                 added_headers += 1;
             }
@@ -118,7 +118,9 @@ impl InitialBlockDownload {
             CommandName::Headers,
         ) {
             Ok(header) => header,
-            _ => return Err(ErrorNode::NodeNotResponding),
+            Err(error) => return Err(ErrorNode::NodeNotResponding(
+                format!("Error while receiving headers message: {:?}", error)
+            )),
         };
 
         let received_headers_message = HeadersMessage::deserialize_message(peer_stream, header_headers_message)?;

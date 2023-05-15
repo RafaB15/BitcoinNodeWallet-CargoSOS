@@ -90,8 +90,6 @@ pub fn deserialize_until_found<RW : Read + Write>(
             Err(error) => return Err(error.into()),
         };
 
-        println!("Header: {:?}", header);
-
         if header.command_name == search_name {
             return Ok(header);
         }
