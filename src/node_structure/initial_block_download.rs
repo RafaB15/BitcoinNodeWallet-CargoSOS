@@ -93,15 +93,22 @@ impl InitialBlockDownload {
     ) -> Result<u32,ErrorNode> 
     {
         let mut added_headers = 0;
-        for header in &received_headers_message.headers {
+        for header in received_headers_message.headers.iter() {
+
             if !header.proof_of_work() {
                 return Err(ErrorNode::WhileValidating("Error while validating proof of work".to_string()));
             }
 
-            if block_chain.append_header(*header).is_ok() {
-                added_headers += 1;
+            match block_chain.append_header(*header) {
+                Ok(_) => added_headers += 1,
+                Err(error) => {
+                    println!("Tuvimos {:?}", error);
+                    println!("header obtenido: {:?}", header);
+                    break;                    
+                }
             }
         }
+
         Ok(added_headers)
     }
 
@@ -132,7 +139,7 @@ impl InitialBlockDownload {
                 format!("Error while receiving headers message: {:?}", error)
             )),
         };
-        
+
         let added_headers = self.add_headers_to_blockchain(block_chain, &received_headers_message)?;
         Ok(added_headers)
     }
