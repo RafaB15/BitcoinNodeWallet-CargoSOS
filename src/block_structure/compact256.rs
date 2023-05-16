@@ -14,6 +14,11 @@ use std::io::{
     Write,
 };
 
+use std::cmp::{
+    PartialOrd,
+    Ordering,
+};
+
 const COMPACT256_BASE: u32 = 256;
 const BYTES_IN_SIGNIFICAND: u8 = 3;
 
@@ -39,6 +44,7 @@ impl From<u32> for Compact256 {
 impl From<[u8; 32]> for Compact256 {
 
     fn from(value: [u8; 32]) -> Self {
+
         // Convertir los primeros 4 bytes del array a un u32 en formato little-endian
         let mantissa_u32 = u32::from_le_bytes([value[0], value[1], value[2], value[3]]);
 
@@ -71,6 +77,17 @@ impl Into<u32> for Compact256 {
             self.mantissa[0], 
             self.exponent, 
             ])
+    }
+}
+
+impl PartialOrd for Compact256 {
+    
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match self.mantissa.partial_cmp(&other.mantissa) {
+            Some(Ordering::Equal) => {}
+            ord => return ord,
+        }
+        self.exponent.partial_cmp(&other.exponent)
     }
 }
 
