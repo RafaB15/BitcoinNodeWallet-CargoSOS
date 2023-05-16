@@ -22,6 +22,7 @@ use super::{
     send_headers::SendHeadersMessage,
     send_cmpct::SendCmpctMessage,
     addr_message::AddrMessage,
+    fee_filter_message::FeeFilterMessage,
 
     message_header::{
         MessageHeader,
@@ -142,6 +143,9 @@ pub fn deserialize_until_found<RW : Read + Write>(
             },
             CommandName::Addr => {
                 let _ = AddrMessage::deserialize_message(stream, header)?;
+            },
+            CommandName::FeeFilter => {
+                let _ = FeeFilterMessage::deserialize_message(stream, header)?;
             },
         }
     }

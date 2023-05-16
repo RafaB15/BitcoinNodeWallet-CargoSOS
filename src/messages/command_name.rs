@@ -28,6 +28,7 @@ const PONG_NAME: CommandNameType = [b'p', b'o', b'n', b'g', b'\0', b'\0', b'\0',
 const SEND_HEADERS_NAME: CommandNameType = [b's', b'e', b'n', b'd', b'h', b'e', b'a', b'd', b'e', b'r', b's', b'\0'];
 const SEND_CMPCT_NAME: CommandNameType = [b's', b'e', b'n', b'd', b'c', b'm', b'p', b'c', b't', b'\0', b'\0', b'\0'];
 const ADDR_NAME: CommandNameType = [b'a', b'd', b'd', b'r', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0'];
+const FEE_FILTER_NAME: CommandNameType = [b'f', b'e', b'e', b'f', b'i', b'l', b't', b'e', b'r', b'\0', b'\0', b'\0'];
 
 #[derive(Debug, Copy, Clone, std::cmp::PartialEq)]
 pub enum CommandName {
@@ -42,6 +43,7 @@ pub enum CommandName {
     SendHeaders,
     SendCmpct,
     Addr,
+    FeeFilter,
 }
 
 impl Into<CommandNameType> for CommandName {
@@ -59,6 +61,7 @@ impl Into<CommandNameType> for CommandName {
             CommandName::SendHeaders => SEND_HEADERS_NAME,
             CommandName::SendCmpct => SEND_CMPCT_NAME,
             CommandName::Addr => ADDR_NAME,
+            CommandName::FeeFilter => FEE_FILTER_NAME,
         }
     }
 }
@@ -79,6 +82,7 @@ impl TryFrom<CommandNameType> for CommandName {
             SEND_HEADERS_NAME => Ok(CommandName::SendHeaders),
             SEND_CMPCT_NAME => Ok(CommandName::SendCmpct),
             ADDR_NAME => Ok(CommandName::Addr),
+            FEE_FILTER_NAME => Ok(CommandName::FeeFilter),
             _ => Err(ErrorSerialization::ErrorInDeserialization(
                 format!("Invalid command name, we get: {:?}", value)
             )),
