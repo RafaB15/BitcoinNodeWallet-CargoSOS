@@ -22,7 +22,7 @@ pub struct TransactionOutput {
 
 impl TransactionOutput{
     pub fn verify_owner(&self, address: &str) -> bool {
-        self.pk_script == address
+        todo!()
     }
 }
 
