@@ -20,6 +20,12 @@ pub struct TransactionOutput {
     pub pk_script: String,
 }
 
+impl TransactionOutput{
+    pub fn verify_owner(&self, address: &str) -> bool {
+        todo!()
+    }
+}
+
 impl Serializable for TransactionOutput {
 
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
