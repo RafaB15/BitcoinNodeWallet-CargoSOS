@@ -13,7 +13,7 @@ const PREFIX_U16: u8 = 0xFD;
 const PREFIX_U32: u8 = 0xFE;
 const PREFIX_U64: u8 = 0xFF;
 
-#[derive(Debug, std::cmp::PartialEq)]
+#[derive(Debug, std::cmp::PartialEq, Copy, Clone)]
 pub struct CompactSize {
     pub value: u64,
 }

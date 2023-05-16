@@ -20,14 +20,12 @@ use std::io::{
 };
 
 pub struct HeadersMessage {
-    pub count: CompactSize,
     pub headers: Vec<BlockHeader>,
 }
 
 impl HeadersMessage {
-    pub fn new(count: CompactSize, headers: Vec<BlockHeader>) -> Self {
+    pub fn new(headers: Vec<BlockHeader>) -> Self {
         HeadersMessage { 
-            count, 
             headers, 
         }
     }
@@ -51,7 +49,7 @@ impl HeadersMessage {
         let checksum = hash256d_reduce(&serialized_message)?;
         if !checksum.eq(&message_header.checksum) {
             return Err(ErrorSerialization::ErrorInDeserialization(
-                format!("Checksum isn't the same: {:?} != {:?}", checksum, message_header.checksum)
+                format!("Checksum in headers isn't the same: {:?} != {:?}", checksum, message_header.checksum)
             ));
         }
 
@@ -62,7 +60,7 @@ impl HeadersMessage {
 impl Serializable for HeadersMessage {
         
     fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        self.count.serialize(stream)?;
+        CompactSize::new(self.headers.len() as u64).serialize(stream)?;
         for header in &self.headers {
             header.serialize(stream)?;
         }
@@ -73,12 +71,14 @@ impl Serializable for HeadersMessage {
 impl Deserializable for HeadersMessage {
 
     fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let count = CompactSize::deserialize(stream)?;
+        let count = CompactSize::deserialize(stream)?.value;
         let mut headers = Vec::new();
-        for _ in 0..count.value {
+        for _ in 0..count {
             headers.push(BlockHeader::deserialize(stream)?);
         }
-        Ok(HeadersMessage::new(count, headers))
+        Ok(HeadersMessage::new(
+            headers)
+        )
     }
 }
 

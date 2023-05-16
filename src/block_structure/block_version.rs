@@ -66,7 +66,7 @@ impl Deserializable for BlockVersion {
         let version_int = i32::deserialize(stream)?;
         match version_int.try_into() {
             Ok(version) => Ok(version),
-            Err(_) => Err(ErrorSerialization::ErrorInDeserialization(format!("While deserializing {:?}", version_int))),
+            Err(_) => Err(ErrorSerialization::ErrorInDeserialization(format!("While deserializing block version {:?}", version_int))),
         }
     }
 }

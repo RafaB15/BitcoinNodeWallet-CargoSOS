@@ -327,6 +327,8 @@ fn get_initial_download_headers_first(
 
     }
 
+    println!("block_chain: {:?}", block_chain);
+
     for peer_download_handle in peer_download_handles {
         match peer_download_handle.join() {
             Ok(blocks) => {

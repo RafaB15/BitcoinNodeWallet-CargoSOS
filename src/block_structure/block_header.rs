@@ -5,11 +5,11 @@ use super::{
     transaction::Transaction,
 };
 
-use crate::serialization::{
+use crate::{serialization::{
     serializable::Serializable,
     deserializable::Deserializable,
     error_serialization::ErrorSerialization,
-};
+}, messages::compact_size::CompactSize};
 
 use std::io::{
     Write,
@@ -34,6 +34,7 @@ pub struct BlockHeader {
     pub time: u32,
     pub n_bits: Compact256,
     pub nonce: u32,
+    pub transaction_count: CompactSize,
 }
 
 impl BlockHeader {
@@ -44,6 +45,7 @@ impl BlockHeader {
         time: u32,
         n_bits: Compact256,
         nonce: u32,
+        transaction_count: CompactSize,
     ) -> Self {
         BlockHeader {
             version,
@@ -52,6 +54,7 @@ impl BlockHeader {
             time,
             n_bits,
             nonce,
+            transaction_count,
         }
     }
 
@@ -63,6 +66,7 @@ impl BlockHeader {
             GENESIS_TIME,
             Compact256::from_u32(GENESIS_N_BITS),
             GENESIS_NONCE,
+            CompactSize::new(0),
         )
     }
 
@@ -131,6 +135,7 @@ impl Serializable for BlockHeader {
         self.time.serialize(stream)?;
         self.n_bits.serialize(stream)?;
         self.nonce.serialize(stream)?;
+        self.transaction_count.serialize(stream)?;
 
         Ok(())
     }
@@ -145,6 +150,7 @@ impl Deserializable for BlockHeader {
         let time = u32::deserialize(stream)?;
         let n_bits = Compact256::deserialize(stream)?;
         let nonce = u32::deserialize(stream)?;
+        let transaction_count = CompactSize::deserialize(stream)?;
 
         Ok(BlockHeader::new(
             version,
@@ -153,6 +159,7 @@ impl Deserializable for BlockHeader {
             time,
             n_bits,
             nonce,
+            transaction_count,
         ))
     }
 }

@@ -123,7 +123,16 @@ impl InitialBlockDownload {
             )),
         };
 
-        let received_headers_message = HeadersMessage::deserialize_message(peer_stream, header_headers_message)?;
+        let received_headers_message = match HeadersMessage::deserialize_message(
+            peer_stream, 
+            header_headers_message
+        ) {
+            Ok(headers_message) => headers_message,
+            Err(error) => return Err(ErrorNode::NodeNotResponding(
+                format!("Error while receiving headers message: {:?}", error)
+            )),
+        };
+        
         let added_headers = self.add_headers_to_blockchain(block_chain, &received_headers_message)?;
         Ok(added_headers)
     }
