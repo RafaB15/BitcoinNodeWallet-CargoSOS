@@ -120,17 +120,19 @@ impl BlockChain {
 
 #[cfg(test)]
 mod tests {
-    use crate::{block_structure::block_version};
     use crate::block_structure::{
         compact256::Compact256,
-        hash::HashType,
         hash::hash256d,
+        block_version,
+        transaction_input::TransactionInput,
+        transaction_output::TransactionOutput,
+        transaction::Transaction,
     };
     use crate::serialization::serializable::Serializable;
     use super::*;
 
     #[test]
-    fn correct_header_append() {
+    fn test_01_correct_append_header() {
         let mut blockchain = BlockChain::new(
             Block::new(
                 BlockHeader::new(
@@ -147,10 +149,32 @@ mod tests {
         blockchain.block.header.serialize(&mut serialized_blockchain_header).unwrap();
         let hash_of_first_block_header = hash256d(&serialized_blockchain_header).unwrap();
 
-        let block_to_append = Block::new(
-            BlockHeader::new(
+        let header_to_append = BlockHeader::new(
                 block_version::BlockVersion::V1,
                 hash_of_first_block_header.clone(),
+                [0; 32],
+                0,
+                Compact256::from_u32(10),
+                0,
+        );
+
+        blockchain.append_header(header_to_append.clone()).unwrap();
+        assert_eq!(blockchain.next_blocks[0].block.header, header_to_append);
+
+    }
+
+    #[test]
+    fn test_02_correct_block_update() {
+
+        let mut transaction_input = TransactionInput{
+            [1,32],
+
+        }
+
+        let mut empty_block = Block::new(
+            BlockHeader::new(
+                block_version::BlockVersion::V1,
+                [0; 32],
                 [0; 32],
                 0,
                 Compact256::from_u32(10),
@@ -158,8 +182,8 @@ mod tests {
             )
         );
 
-        blockchain.append_block(block_to_append.clone()).unwrap();
-        assert_eq!(blockchain.next_blocks[0].block, block_to_append);
+        let mut block_with_transactions = empty_block.clone();
 
-    }
+    } 
+
 }
