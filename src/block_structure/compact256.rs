@@ -16,7 +16,7 @@ pub struct Compact256 {
 impl Compact256 {
     pub fn to_u32(&self) -> u32 {
 
-        u32::from_le_bytes([self.exponent, self.mantissa[0], self.mantissa[1], self.mantissa[2]])
+        u32::from_be_bytes([self.exponent, self.mantissa[0], self.mantissa[1], self.mantissa[2]])
     }
 
     pub fn from_u32(value: u32) -> Compact256 {
