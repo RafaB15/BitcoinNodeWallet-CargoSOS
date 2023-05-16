@@ -21,6 +21,7 @@ use super::{
     pong_message::PongMessage,
     send_headers::SendHeadersMessage,
     send_cmpct::SendCmpctMessage,
+    addr_message::AddrMessage,
 
     message_header::{
         MessageHeader,
@@ -135,10 +136,13 @@ pub fn deserialize_until_found<RW : Read + Write>(
             },
             CommandName::SendHeaders => {
                 let _ = SendHeadersMessage::deserialize_message(stream, header)?;
-            }
+            },
             CommandName::SendCmpct => {
                 let _ = SendCmpctMessage::deserialize_message(stream, header)?;
-            }
+            },
+            CommandName::Addr => {
+                let _ = AddrMessage::deserialize_message(stream, header)?;
+            },
         }
     }
 }

@@ -104,7 +104,7 @@ impl VersionMessage {
         let checksum = hash256d_reduce(&serialized_message)?;
         if !checksum.eq(&message_header.checksum) {
             return Err(ErrorSerialization::ErrorInDeserialization(
-                format!("Checksum isn't the same: {:?} != {:?}", checksum, message_header.checksum)
+                format!("Checksum in version isn't the same: {:?} != {:?}", checksum, message_header.checksum)
             ));
         }
 

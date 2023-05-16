@@ -33,11 +33,15 @@ impl SendHeadersMessage {
         let message = SendHeadersMessage::deserialize(&mut buffer)?;
 
         if message_header.payload_size != 0 {
-            return Err(ErrorSerialization::ErrorInDeserialization(format!("Payload in send headers message has to be 0: {:?}", message_header.payload_size)));
+            return Err(ErrorSerialization::ErrorInDeserialization(
+                format!("Payload in send headers message has to be 0: {:?}", message_header.payload_size)
+            ));
         }
         
         if !SEND_HEADERS_CHECKSUM.eq(&message_header.checksum) {
-            return Err(ErrorSerialization::ErrorInDeserialization(format!("Checksum isn't the same: {:?} != {:?}", SEND_HEADERS_CHECKSUM, message_header.checksum)));
+            return Err(ErrorSerialization::ErrorInDeserialization(
+                format!("Checksum isn't the same: {:?} != {:?}", SEND_HEADERS_CHECKSUM, message_header.checksum)
+            ));
         }
 
         Ok(message)

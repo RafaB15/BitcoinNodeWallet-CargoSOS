@@ -7,12 +7,14 @@ use crate::serialization::{
     serializable::Serializable,
 };
 
+use crate::block_structure::{
+    hash::hash256d_reduce,
+};
+
 use std::io::{
     Read, 
     Write
 };
-
-pub const SEND_HEADERS_CHECKSUM: [u8; 4] = [0x5d, 0xf6, 0xe0, 0xe2];
 
 #[derive(Debug, std::cmp::PartialEq)]
 pub struct SendCmpctMessage {
@@ -34,9 +36,15 @@ impl SendCmpctMessage {
         let mut buffer: &[u8] = &buffer[..];
 
         let message = Self::deserialize(&mut buffer)?;
-        
-        if !SEND_HEADERS_CHECKSUM.eq(&message_header.checksum) {
-            return Err(ErrorSerialization::ErrorInDeserialization(format!("Checksum isn't the same: {:?} != {:?}", SEND_HEADERS_CHECKSUM, message_header.checksum)));
+
+        let mut serialized_message: Vec<u8> = Vec::new();
+        message.serialize(&mut serialized_message)?;
+
+        let checksum = hash256d_reduce(&serialized_message)?;
+        if !checksum.eq(&message_header.checksum) {
+            return Err(ErrorSerialization::ErrorInDeserialization(
+                format!("Checksum in send cmpct isn't the same: {:?} != {:?}", checksum, message_header.checksum)
+            ));
         }
 
         Ok(message)

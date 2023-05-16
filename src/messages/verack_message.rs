@@ -37,7 +37,7 @@ impl VerackMessage {
         }
         
         if !VERACK_CHECKSUM.eq(&message_header.checksum) {
-            return Err(ErrorSerialization::ErrorInDeserialization(format!("Checksum isn't the same: {:?} != {:?}", VERACK_CHECKSUM, message_header.checksum)));
+            return Err(ErrorSerialization::ErrorInDeserialization(format!("Checksum in verack isn't the same: {:?} != {:?}", VERACK_CHECKSUM, message_header.checksum)));
         }
 
         Ok(message)
