@@ -61,7 +61,6 @@ use cargosos_bitcoin::connections::{
     p2p_protocol::ProtocolVersionP2P,
     suppored_services::SupportedServices,
     initial_download_method::InitialDownloadMethod,
-    error_connection::ErrorConnection,
 };
 
 use cargosos_bitcoin::messages::bitfield_services::BitfieldServices;
@@ -286,7 +285,7 @@ fn get_blocks(
 }
 
 fn get_initial_download_headers_first(
-    mut peer_streams: Vec<TcpStream>,
+    peer_streams: Vec<TcpStream>,
     block_chain: &mut BlockChain,
     block_download: InitialBlockDownload,
     logger_sender: LoggerSender, 
@@ -344,7 +343,7 @@ fn get_initial_download_headers_first(
 }
 
 fn get_block_chain(
-    mut peer_streams: Vec<TcpStream>,
+    peer_streams: Vec<TcpStream>,
     logger_sender: LoggerSender, 
 ) -> Result<BlockChain, ErrorExecution> 
 {    
@@ -389,9 +388,10 @@ fn main() -> Result<(), ErrorExecution> {
     let (handle, logger_sender) = initialize_logs(log_config)?;
 
     // Ejecutar programa
+    let cantidad_peers: usize = 5;
 
     {
-        let potential_peers = get_potential_peers(logger_sender.clone())?;
+        let potential_peers = get_potential_peers(logger_sender.clone())?[..cantidad_peers].to_vec();
 
         let peer_streams = connect_to_testnet_peers(potential_peers, logger_sender.clone())?;
 

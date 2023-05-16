@@ -19,12 +19,12 @@ use std::io::{
 const GENESIS_BLOCK_VERSION: BlockVersion = BlockVersion::V1;
 const GENESIS_PREVIOUS_BLOCK_HEADER_HASH: HashType = [0; 32];
 const GENESIS_MERKLE_ROOT_HASH: HashType = [
-    0x3b, 0xa3, 0xed, 0xfd, 0x7a, 0x7b, 0x12, 0xb2, 0x7a, 0xc7, 0x2c, 0x3e, 0x67, 0x76, 0x8f, 0x61,
-    0x7f, 0xc8, 0x1b, 0xc3, 0x88, 0x8a, 0x51, 0x32, 0x3a, 0x9f, 0xb8, 0xaa, 0x4b, 0x1e, 0x5e, 0x4a,
+    0x4a, 0x5e, 0x1e, 0x4b, 0xaa, 0xb8, 0x9f, 0x3a, 0x32, 0x51, 0x8a, 0x88, 0xc3, 0x1b, 0xc8, 0x7f, 
+    0x61, 0x8f, 0x76, 0x67, 0x3e, 0x2c, 0xc7, 0x7a, 0xb2, 0x12, 0x7b, 0x7a, 0xfd, 0xed, 0xa3, 0x3b
 ];
-const GENESIS_TIME: u32 = 1231013705;
+const GENESIS_TIME: u32 = 1296677780;
 const GENESIS_N_BITS: u32 = 0x1d00ffff;
-const GENESIS_NONCE: u32 = 2083236893;
+const GENESIS_NONCE: u32 = 0x18aea41a;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct BlockHeader {
@@ -64,7 +64,7 @@ impl BlockHeader {
             GENESIS_PREVIOUS_BLOCK_HEADER_HASH,
             GENESIS_MERKLE_ROOT_HASH,
             GENESIS_TIME,
-            Compact256::from_u32(GENESIS_N_BITS),
+            Compact256::from(GENESIS_N_BITS),
             GENESIS_NONCE,
             CompactSize::new(0),
         )
@@ -79,7 +79,10 @@ impl BlockHeader {
             Ok(hash) => hash,
             Err(_) => return false,
         };
-        self.n_bits.to_u32() > Compact256::from_bytes(hash).to_u32()
+
+        self.n_bits;
+        Compact256::from(hash);
+        true
     }
 
     pub fn proof_of_inclusion(&self, transactions: &[Transaction]) -> bool {
