@@ -16,7 +16,6 @@ use crate::messages::{
 
 use std::net::{
     SocketAddr, 
-    TcpStream
 };
 
 use std::io::{
@@ -129,7 +128,7 @@ impl Handshake {
                 Ok(header) => header,
                 Err(e) => {
                     let _ = self.sender_log.log_connection(format!(
-                        "Error while receiving the header message from peer {}: {:?}",
+                        "Error while receiving the header of version message from peer {}: {:?}",
                         potential_peer, e
                     ));
                     return Err(ErrorConnection::ErrorCannotReceiveMessage);

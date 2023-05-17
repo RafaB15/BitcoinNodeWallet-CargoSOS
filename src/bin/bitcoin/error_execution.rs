@@ -5,6 +5,7 @@ use cargosos_bitcoin::{
     connections::error_connection::ErrorConnection,
     logs::error_log::ErrorLog,
     messages::error_message::ErrorMessage,
+    serialization::error_serialization::ErrorSerialization,
     block_structure::error_block::ErrorBlock,
     node_structure::error_node::ErrorNode,
 };
@@ -18,6 +19,7 @@ pub enum ErrorExecution {
     Log(ErrorLog),
     Configuration(ErrorConfiguration),
     Connection(ErrorConnection),
+    Serialization(ErrorSerialization),
     Message(ErrorMessage),
     Block(ErrorBlock),
     Node(ErrorNode),
@@ -32,6 +34,7 @@ impl Debug for ErrorExecution {
             ErrorExecution::Log(error_log) => write!(f, "{:?}", error_log),
             ErrorExecution::Configuration(error_configuration) => write!(f, "{:?}", error_configuration),
             ErrorExecution::Connection(error_connection) => write!(f, "{:?}", error_connection),
+            ErrorExecution::Serialization(error_serialization) => write!(f, "{:?}", error_serialization),
             ErrorExecution::Message(error_message) => write!(f, "{:?}", error_message),
             ErrorExecution::Block(error_block) => write!(f, "{:?}", error_block),
             ErrorExecution::Node(error_node) => write!(f, "{:?}", error_node),
@@ -79,5 +82,11 @@ impl From<ErrorBlock> for ErrorExecution {
 impl From<ErrorNode> for ErrorExecution {
     fn from(value: ErrorNode) -> Self {
         ErrorExecution::Node(value)
+    }
+}
+
+impl From<ErrorSerialization> for ErrorExecution {
+    fn from(value: ErrorSerialization) -> Self {
+        ErrorExecution::Serialization(value)
     }
 }

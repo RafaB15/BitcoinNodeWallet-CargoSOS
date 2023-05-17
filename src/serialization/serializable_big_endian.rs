@@ -28,6 +28,19 @@ impl SerializableBigEndian for Ipv6Addr {
     }
 }
 
+impl SerializableBigEndian for [u8] {
+    fn serialize_big_endian(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+
+        match stream.write(self) {
+            Ok(_) => Ok(()),
+            _ => Err(ErrorSerialization::ErrorInSerialization(
+                "Serializing Vec<u8>".to_string(),
+            )),
+        }
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
 

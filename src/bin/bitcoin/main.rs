@@ -21,11 +21,6 @@ use std::thread::{
     JoinHandle,
 };
 
-use cargosos_bitcoin::block_structure::hash::{
-    HashType,
-    hash256d,
-};
-
 use cargosos_bitcoin::configurations::{
     configuration::config, 
     log_config::LogConfig,
@@ -53,6 +48,10 @@ use cargosos_bitcoin::serialization::{
 use cargosos_bitcoin::block_structure::{
     block_chain::BlockChain,
     block::Block,
+    hash::{
+        HashType,
+        hash256d,
+    },
     block_header::BlockHeader,
 };
 
@@ -388,9 +387,9 @@ fn main() -> Result<(), ErrorExecution> {
     let (handle, logger_sender) = initialize_logs(log_config)?;
 
     // Ejecutar programa
-    let cantidad_peers: usize = 5;
-
     {
+        let cantidad_peers: usize = 5;
+
         let potential_peers = get_potential_peers(logger_sender.clone())?[..cantidad_peers].to_vec();
 
         let peer_streams = connect_to_testnet_peers(potential_peers, logger_sender.clone())?;
@@ -399,9 +398,10 @@ fn main() -> Result<(), ErrorExecution> {
 
         println!("Block chain: {:?}", block_chain);
     }
-
+    
+    
     logger_sender.log_configuration("Closing program".to_string())?;
-
+    
     std::mem::drop(logger_sender);
     match handle.join() {
         Ok(result) => result?,

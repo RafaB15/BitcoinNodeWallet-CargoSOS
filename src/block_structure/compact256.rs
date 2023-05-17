@@ -20,7 +20,6 @@ use std::cmp::{
 };
 
 const COMPACT256_BASE: u32 = 256;
-const BYTES_IN_SIGNIFICAND: u8 = 3;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Compact256 {
@@ -32,11 +31,11 @@ impl From<u32> for Compact256 {
  
     fn from(value: u32) -> Self {
 
-        let values: [u8; 4] = value.to_le_bytes();
+        let values: [u8; 4] = value.to_be_bytes();
         
         Compact256 {
-            mantissa: [values[2], values[1], values[0]],
-            exponent: values[3],
+            exponent: values[0],
+            mantissa: [values[1], values[2], values[3]],
         }
     }
 }
@@ -71,12 +70,12 @@ impl From<[u8; 32]> for Compact256 {
 impl Into<u32> for Compact256 {
 
     fn into(self) -> u32 {
-        u32::from_le_bytes([
-            self.mantissa[2],
-            self.mantissa[1], 
-            self.mantissa[0], 
+        u32::from_be_bytes([
             self.exponent, 
-            ])
+            self.mantissa[0], 
+            self.mantissa[1], 
+            self.mantissa[2],
+        ])
     }
 }
 
