@@ -227,7 +227,9 @@ mod tests {
         let expected_stream: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19];
 
         let mut stream: Vec<u8> = Vec::new();
-        let vector: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19];
+        let vector: Vec<u8> = vec![
+            0x19, 0xDE, 0xBD, 0x01, 0xC7, 
+        ];
 
         vector.le_serialize(&mut stream)?;
 
@@ -241,7 +243,9 @@ mod tests {
         let expected_stream: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19];
 
         let mut stream: Vec<u8> = Vec::new();
-        let vector: [u8; 5] = [0xC7, 0x01, 0xBD, 0xDE, 0x19];
+        let vector: [u8; 5] = [
+            0x19, 0xDE, 0xBD, 0x01, 0xC7, 
+        ];
 
         vector.le_serialize(&mut stream)?;
 

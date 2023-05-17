@@ -284,7 +284,7 @@ mod tests {
         let stream: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE];
         let mut stream: &[u8] = &stream;
 
-        let expected_vector: [u8; 4] = [0xC7, 0x01, 0xBD, 0xDE];
+        let expected_vector: [u8; 4] = [0xDE, 0xBD, 0x01, 0xC7];
 
         let vector = <[u8; 4] as DeserializableLittleEndian>::le_deserialize(&mut stream)?;
 
@@ -301,7 +301,7 @@ mod tests {
         let mut stream: &[u8] = &stream;
 
         let expected_vector: [u8; 12] = [
-            0xC7, 0x01, 0xBD, 0xDE, 0x19, 0x01, 0xBD, 0xDE, 0x19, 0x01, 0xBD, 0xDE,
+            0xDE, 0xBD, 0x01, 0x19, 0xDE, 0xBD, 0x01, 0x19, 0xDE, 0xBD, 0x01, 0xC7
         ];
 
         let vector = <[u8; 12] as DeserializableLittleEndian>::le_deserialize(&mut stream)?;

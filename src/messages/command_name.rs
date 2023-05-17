@@ -1,6 +1,6 @@
 use crate::serialization::{
-    serializable_little_endian::SerializableLittleEndian,
-    deserializable_little_endian::DeserializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
+    deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization,
 };
 
@@ -90,22 +90,22 @@ impl TryFrom<CommandNameType> for CommandName {
     }
 }
 
-impl SerializableLittleEndian for CommandName {
+impl SerializableInternalOrder for CommandName {
     
-    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
 
         let command_name: CommandNameType = (*self).into();
-        command_name.le_serialize(stream)?;
+        command_name.io_serialize(stream)?;
 
         Ok(())
     }
 }
 
-impl DeserializableLittleEndian for CommandName {
+impl DeserializableInternalOrder for CommandName {
     
-    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
 
-        let command_name = CommandNameType::le_deserialize(stream)?;
+        let command_name = CommandNameType::io_deserialize(stream)?;
         let command_name: CommandName = command_name.try_into()?;
 
         Ok(command_name)

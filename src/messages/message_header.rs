@@ -1,6 +1,8 @@
 use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian,
+    deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization,
 };
 
@@ -40,7 +42,8 @@ impl MessageHeader {
     {
         let mut buffer: Vec<u8> = vec![0; HEADER_SIZE];
     
-        if stream.read_exact(&mut buffer).is_err() {
+        if let Err(error) = stream.read_exact(&mut buffer) {
+            println!("Error while reading: {:?}", error);
             return Err(ErrorSerialization::ErrorWhileReading);
         }
     
@@ -54,10 +57,10 @@ impl SerializableLittleEndian for MessageHeader {
     
     fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
 
-        self.magic_numbers.le_serialize(stream)?;
-        self.command_name.le_serialize(stream)?;
+        self.magic_numbers.io_serialize(stream)?;
+        self.command_name.io_serialize(stream)?;
         self.payload_size.le_serialize(stream)?;
-        self.checksum.le_serialize(stream)?;
+        self.checksum.io_serialize(stream)?;
         Ok(())
     }
 }
@@ -67,10 +70,10 @@ impl DeserializableLittleEndian for MessageHeader {
     fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         
         Ok(MessageHeader {
-            magic_numbers: MagicType::le_deserialize(stream)?,
-            command_name: CommandName::le_deserialize(stream)?,
+            magic_numbers: MagicType::io_deserialize(stream)?,
+            command_name: CommandName::io_deserialize(stream)?,
             payload_size: u32::le_deserialize(stream)?,
-            checksum: HashTypeReduced::le_deserialize(stream)?,
+            checksum: HashTypeReduced::io_deserialize(stream)?,
         })
     }
 }
