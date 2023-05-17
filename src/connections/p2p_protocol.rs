@@ -117,10 +117,7 @@ impl SerializableLittleEndian for ProtocolVersionP2P {
             }
         };
 
-        match stream.write(&version.to_le_bytes()) {
-            Ok(_) => Ok(()),
-            _ => Err(ErrorSerialization::ErrorWhileWriting),
-        }
+        version.le_serialize(stream)
     }
 }
 

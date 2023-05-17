@@ -53,8 +53,7 @@ impl SerializableLittleEndian for BitfieldServices {
             sum += element_value;
         }
 
-        sum.le_serialize(stream)?;
-        Ok(())
+        sum.le_serialize(stream)
     }
 }
 
