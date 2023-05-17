@@ -78,17 +78,9 @@ impl InitialBlockDownload {
 
         for block in block_chain.last().iter() {
 
-            
             let last_header: &BlockHeader = &block.header;
-            let _ = self.sender_log.log_connection(format!(
-                "Sending {:?}", last_header
-            ));
 
-            let mut serialized_header = Vec::new();
-
-            last_header.io_serialize(&mut serialized_header)?;
-
-            header_locator_hashes.push(hash256d(&serialized_header)?);
+            header_locator_hashes.push(last_header.get_hash256d()?);
         }
 
         let get_headers_message = GetHeadersMessage::new(
@@ -127,7 +119,9 @@ impl InitialBlockDownload {
                 Ok(_) => added_headers += 1,
                 Err(error) => {
                     let _ = self.sender_log.log_connection(format!(
-                        "Could not append header, we get {:?}", error
+                        "Could not append header, we get {:?}\nWith hash {:?}", 
+                        error,
+                        header.previous_block_header_hash,
                     ));
                     break;                    
                 }

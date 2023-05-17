@@ -35,15 +35,13 @@ impl BlockChain {
     
         let previous_hashed_header: HashType = block.header.previous_block_header_hash;
 
-        let mut serialized_header: Vec<u8> = Vec::new();
-        if self.block.header.io_serialize(&mut serialized_header).is_err() {
-            return Err(ErrorBlock::CouldNotSerialize);
-        }
-
-        let hashed_header: HashType = match hash256d(&serialized_header) {
+        let hashed_header: HashType = match self.block.header.get_hash256d() {
             Ok(hashed_header) => hashed_header,
             _ => return Err(ErrorBlock::CouldNotHash),
         };
+
+        println!("nuestro hash: {:?}", hashed_header);
+        println!("otro hash   : {:?}", previous_hashed_header);
 
         if previous_hashed_header == hashed_header {
             self.next_blocks.push(BlockChain::new(block));    

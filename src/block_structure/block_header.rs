@@ -133,6 +133,30 @@ impl BlockHeader {
         }
         false
     }
+
+    pub fn get_hash256d(&self) -> Result<HashType, ErrorSerialization> {
+        let mut buffer = vec![];
+
+        self.version.le_serialize(&mut buffer)?;
+        self.previous_block_header_hash.le_serialize(&mut buffer)?;
+        self.merkle_root_hash.be_serialize(&mut buffer)?;
+        self.time.le_serialize(&mut buffer)?;
+        self.n_bits.le_serialize(&mut buffer)?;
+        self.nonce.le_serialize(&mut buffer)?;
+
+        let buffer = {
+
+            let mut temp: Vec<u8> = Vec::new();
+
+            for byte in hash256d(&buffer)?.iter().rev() {
+                temp.push(*byte);
+            }
+
+            temp
+        };
+
+        Ok((*buffer.as_slice()).try_into().unwrap())
+    }
 }
 
 impl SerializableInternalOrder for BlockHeader {
