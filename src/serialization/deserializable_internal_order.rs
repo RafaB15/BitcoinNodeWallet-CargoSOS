@@ -1,5 +1,5 @@
 use super::error_serialization::ErrorSerialization;
-use std::io::Write;
+use std::io::Read;
 
 pub trait DeserializableInternalOrder: Sized {
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization>;

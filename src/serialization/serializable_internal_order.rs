@@ -5,7 +5,7 @@ pub trait SerializableInternalOrder {
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization>;
 }
 
-impl SerializableInternal for [u8] {
+impl SerializableInternalOrder for [u8] {
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         match stream.write(self) {
             Ok(_) => Ok(()),
