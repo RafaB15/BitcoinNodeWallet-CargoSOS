@@ -127,6 +127,7 @@ mod tests {
         transaction_input::TransactionInput,
         transaction_output::TransactionOutput,
         transaction::Transaction,
+        outpoint::Outpoint,
     };
     use crate::serialization::serializable::Serializable;
     use super::*;
@@ -166,12 +167,25 @@ mod tests {
     #[test]
     fn test_02_correct_block_update() {
 
-        let mut transaction_input = TransactionInput{
-            [1,32],
+        let transaction_input = TransactionInput::new(
+            Outpoint { hash: [1;32], index: 23 },
+            String::from("Prueba in"),
+            24
+        );
 
-        }
+        let transaction_output = TransactionOutput{
+            value: 10, 
+            pk_script: String::from("Prueba out")
+        };
 
-        let mut empty_block = Block::new(
+        let transaction = Transaction {
+            version : 1,
+            tx_in: vec![transaction_input.clone()],
+            tx_out: vec![transaction_output.clone()],
+            time: 0,
+        };
+
+        let empty_block = Block::new(
             BlockHeader::new(
                 block_version::BlockVersion::V1,
                 [0; 32],
@@ -183,6 +197,13 @@ mod tests {
         );
 
         let mut block_with_transactions = empty_block.clone();
+        block_with_transactions.append_transaction(transaction.clone()).unwrap();
+
+        let mut blockchain = BlockChain::new(empty_block);
+
+        blockchain.update_block(block_with_transactions).unwrap();
+
+        assert_eq!(blockchain.block.transactions[0], transaction);
 
     } 
 
