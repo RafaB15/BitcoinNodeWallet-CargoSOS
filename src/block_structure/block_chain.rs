@@ -10,7 +10,7 @@ use super::{
 };
 
 use crate::serialization::{
-    serializable_little_endian::SerializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
 };
 
 #[derive(Debug, Clone)]
@@ -36,7 +36,7 @@ impl BlockChain {
         let previous_hashed_header: HashType = block.header.previous_block_header_hash;
 
         let mut serialized_header: Vec<u8> = Vec::new();
-        if self.block.header.le_serialize(&mut serialized_header).is_err() {
+        if self.block.header.io_serialize(&mut serialized_header).is_err() {
             return Err(ErrorBlock::CouldNotSerialize);
         }
 

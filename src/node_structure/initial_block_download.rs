@@ -37,7 +37,7 @@ use super::{
 };
 
 use crate::serialization::{
-    serializable_little_endian::SerializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
 };
 
 use crate::connections::{
@@ -86,7 +86,7 @@ impl InitialBlockDownload {
 
             let mut serialized_header = Vec::new();
 
-            last_header.le_serialize(&mut serialized_header)?;
+            last_header.io_serialize(&mut serialized_header)?;
 
             header_locator_hashes.push(hash256d(&serialized_header)?);
         }

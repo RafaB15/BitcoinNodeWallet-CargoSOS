@@ -7,9 +7,11 @@ use super::{
 
 use crate::{serialization::{
     serializable_little_endian::SerializableLittleEndian,
-    //serializable_big_endian::SerializableBigEndian,
+    serializable_internal_order::SerializableInternalOrder,
+    serializable_big_endian::SerializableBigEndian,
     deserializable_little_endian::DeserializableLittleEndian,
-    //deserializable_big_endian::DeserializableBigEndian,
+    deserializable_internal_order::DeserializableInternalOrder,
+    deserializable_big_endian::DeserializableBigEndian,
     error_serialization::ErrorSerialization, 
 }, messages::compact_size::CompactSize};
 
@@ -29,7 +31,7 @@ const GENESIS_MERKLE_ROOT_HASH: HashType = [
 const GENESIS_TIME: u32 = 0x4d49e5da;
 const GENESIS_N_BITS: u32 = 0x1d00ffff;
 const GENESIS_NONCE: u32 = 0x18aea41a;
-const GENESIS_TRANSACTION_COUNT: u64 = 1;
+const GENESIS_TRANSACTION_COUNT: u64 = 0;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct BlockHeader {
@@ -77,7 +79,7 @@ impl BlockHeader {
 
     pub fn proof_of_work(&self) -> bool {
         let mut buffer = vec![];
-        if self.le_serialize(&mut buffer).is_err() {
+        if self.io_serialize(&mut buffer).is_err() {
             return false;
         }
         let hash: HashType = match hash256d(&buffer) {
@@ -133,11 +135,13 @@ impl BlockHeader {
     }
 }
 
-impl SerializableLittleEndian for BlockHeader {
-    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+impl SerializableInternalOrder for BlockHeader {
+    
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+        
         self.version.le_serialize(stream)?;
         self.previous_block_header_hash.le_serialize(stream)?;
-        self.merkle_root_hash.le_serialize(stream)?;
+        self.merkle_root_hash.be_serialize(stream)?;
         self.time.le_serialize(stream)?;
         self.n_bits.le_serialize(stream)?;
         self.nonce.le_serialize(stream)?;
@@ -147,14 +151,14 @@ impl SerializableLittleEndian for BlockHeader {
     }
 }
 
-impl DeserializableLittleEndian for BlockHeader {
+impl DeserializableInternalOrder for BlockHeader {
 
-    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
 
         Ok(BlockHeader{
             version: BlockVersion::le_deserialize(stream)?,
             previous_block_header_hash: HashType::le_deserialize(stream)?,
-            merkle_root_hash: HashType::le_deserialize(stream)?,
+            merkle_root_hash: HashType::be_deserialize(stream)?,
             time: u32::le_deserialize(stream)?,
             n_bits: Compact256::le_deserialize(stream)?,
             nonce: u32::le_deserialize(stream)?,

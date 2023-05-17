@@ -42,7 +42,7 @@ use cargosos_bitcoin::node_structure::{
 };
 
 use cargosos_bitcoin::serialization::{
-    serializable_little_endian::SerializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
 };
 
 use cargosos_bitcoin::block_structure::{
@@ -239,7 +239,7 @@ fn get_blocks_recursive(
     let block_header = block_chain_actual.block.header;
 
     let mut bytes: Vec<u8> = Vec::new();
-    if block_header.le_serialize(&mut bytes).is_err() {
+    if block_header.io_serialize(&mut bytes).is_err() {
         return;
     }
 
@@ -386,7 +386,7 @@ fn main() -> Result<(), ErrorExecution> {
     let (log_config, _connection_config) = config::new(config_file)?;
  
     let (handle, logger_sender) = initialize_logs(log_config)?;
-
+    
     /*
     let deberia_dar = [
         // Version
@@ -406,7 +406,7 @@ fn main() -> Result<(), ErrorExecution> {
         
         // timestamp
         0xda, 0xe5, 0x49, 0x4d, 
-
+        
         // bits
         0xff, 0xff, 0x00, 0x1d, 
 
@@ -414,17 +414,17 @@ fn main() -> Result<(), ErrorExecution> {
         0x1a, 0xa4, 0xae, 0x18, 
         
         // transaction counter
-        0x01
+        0x00
     ];
-
+    
     let header = BlockHeader::generate_genesis_block_header();
-
+    
     let mut bytes: Vec<u8> = Vec::new();
-    header.serialize(&mut bytes)?;
-
+    header.io_serialize(&mut bytes)?;
+    
     assert_eq!(bytes, deberia_dar);
     */
-
+        
     // Ejecutar programa
     {
         let cantidad_peers: usize = 5;

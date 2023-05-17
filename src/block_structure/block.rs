@@ -6,7 +6,9 @@ use super::{
 
 use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian,
+    deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization,
 };
 
@@ -46,7 +48,7 @@ impl Block {
 impl SerializableLittleEndian for Block {
 
     fn le_serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
-        self.header.le_serialize(stream)?;
+        self.header.io_serialize(stream)?;
         CompactSize::new(self.transactions.len() as u64).le_serialize(stream)?;
         for transaction in self.transactions.iter() {
             transaction.le_serialize(stream)?;
@@ -58,7 +60,7 @@ impl SerializableLittleEndian for Block {
 
 impl DeserializableLittleEndian for Block {
     fn le_deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
-        let header = BlockHeader::le_deserialize(stream)?;
+        let header = BlockHeader::io_deserialize(stream)?;
         let compact_size = CompactSize::le_deserialize(stream)?;
         
         let mut block = Block::new(header);

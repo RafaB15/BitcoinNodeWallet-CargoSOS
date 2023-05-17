@@ -37,7 +37,7 @@ impl SerializableInternalOrder for HeadersMessage {
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         CompactSize::new(self.headers.len() as u64).le_serialize(stream)?;
         for header in &self.headers {
-            header.le_serialize(stream)?;
+            header.io_serialize(stream)?;
         }
         Ok(())
     }
@@ -49,7 +49,7 @@ impl DeserializableInternalOrder for HeadersMessage {
         let count = CompactSize::le_deserialize(stream)?.value;
         let mut headers = Vec::new();
         for _ in 0..count {
-            headers.push(BlockHeader::le_deserialize(stream)?);
+            headers.push(BlockHeader::io_deserialize(stream)?);
         }
         Ok(HeadersMessage{
             headers,
