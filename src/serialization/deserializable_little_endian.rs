@@ -88,6 +88,20 @@ impl DeserializableLittleEndian for [u8; 4] {
                 "Deserializing [u8; 4]".to_string(),
             ));
         }
+
+        let mut rev: Vec<u8> = Vec::new();
+        
+        for byte in buffer.iter().rev() {
+            rev.push(*byte);
+        }
+        
+        let buffer: [u8; 4] = match rev[0..4].try_into() {
+            Ok(buffer) => buffer,
+            _ => return Err(ErrorSerialization::ErrorInDeserialization(
+                "Deserializing [u8; 4]".to_string(),
+            )),
+        };
+
         Ok(buffer)
     }
 }
@@ -100,6 +114,19 @@ impl DeserializableLittleEndian for [u8; 12] {
                 "Deserializing [u8; 12]".to_string(),
             ));
         }
+
+        let mut rev: Vec<u8> = Vec::new();
+        
+        for byte in buffer.iter().rev() {
+            rev.push(*byte);
+        }
+        
+        let buffer: [u8; 12] = match rev[0..12].try_into() {
+            Ok(buffer) => buffer,
+            _ => return Err(ErrorSerialization::ErrorInDeserialization(
+                "Deserializing [u8; 12]".to_string(),
+            )),
+        };
 
         Ok(buffer)
     }
@@ -114,6 +141,19 @@ impl DeserializableLittleEndian for [u8; 32] {
                 "Deserializing [u8; 32]".to_string()
             ));
         }
+
+        let mut rev: Vec<u8> = Vec::new();
+        
+        for byte in buffer.iter().rev() {
+            rev.push(*byte);
+        }
+        
+        let buffer: [u8; 32] = match rev[0..32].try_into() {
+            Ok(buffer) => buffer,
+            _ => return Err(ErrorSerialization::ErrorInDeserialization(
+                "Deserializing [u8; 32]".to_string(),
+            )),
+        };
         
         Ok(buffer)
     }
