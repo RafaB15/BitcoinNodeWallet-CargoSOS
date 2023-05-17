@@ -7,8 +7,10 @@ use super::{
 
 use crate::{serialization::{
     serializable::Serializable,
+    //serializable_big_endian::SerializableBigEndian,
     deserializable::Deserializable,
-    error_serialization::ErrorSerialization,
+    //deserializable_big_endian::DeserializableBigEndian,
+    error_serialization::ErrorSerialization, 
 }, messages::compact_size::CompactSize};
 
 use std::io::{
@@ -19,13 +21,15 @@ use std::io::{
 const GENESIS_BLOCK_VERSION: BlockVersion = BlockVersion::V1;
 const GENESIS_PREVIOUS_BLOCK_HEADER_HASH: HashType = [0; 32];
 const GENESIS_MERKLE_ROOT_HASH: HashType = [
-    0x4a, 0x5e, 0x1e, 0x4b, 0xaa, 0xb8, 0x9f, 0x3a, 0x32, 0x51, 0x8a, 0x88, 0xc3, 0x1b, 0xc8, 0x7f, 
-    0x61, 0x8f, 0x76, 0x67, 0x3e, 0x2c, 0xc7, 0x7a, 0xb2, 0x12, 0x7b, 0x7a, 0xfd, 0xed, 0xa3, 0x3b
+    0x3b, 0xa3, 0xed, 0xfd, 0x7a, 0x7b, 0x12, 0xb2, 
+    0x7a, 0xc7, 0x2c, 0x3e, 0x67, 0x76, 0x8f, 0x61, 
+    0x7f, 0xc8, 0x1b, 0xc3, 0x88, 0x8a, 0x51, 0x32, 
+    0x3a, 0x9f, 0xb8, 0xaa, 0x4b, 0x1e, 0x5e, 0x4a, 
 ];
 const GENESIS_TIME: u32 = 0x4d49e5da;
 const GENESIS_N_BITS: u32 = 0x1d00ffff;
 const GENESIS_NONCE: u32 = 0x18aea41a;
-const GENESIS_TRANSACTION_COUNT: u64 = 0;
+const GENESIS_TRANSACTION_COUNT: u64 = 1;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct BlockHeader {
@@ -146,22 +150,15 @@ impl Serializable for BlockHeader {
 impl Deserializable for BlockHeader {
 
     fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let version = BlockVersion::deserialize(stream)?;
-        let previous_block_header_hash = HashType::deserialize(stream)?;
-        let merkle_root_hash = HashType::deserialize(stream)?;
-        let time = u32::deserialize(stream)?;
-        let n_bits = Compact256::deserialize(stream)?;
-        let nonce = u32::deserialize(stream)?;
-        let transaction_count = CompactSize::deserialize(stream)?;
 
-        Ok(BlockHeader::new(
-            version,
-            previous_block_header_hash,
-            merkle_root_hash,
-            time,
-            n_bits,
-            nonce,
-            transaction_count,
-        ))
+        Ok(BlockHeader{
+            version: BlockVersion::deserialize(stream)?,
+            previous_block_header_hash: HashType::deserialize(stream)?,
+            merkle_root_hash: HashType::deserialize(stream)?,
+            time: u32::deserialize(stream)?,
+            n_bits: Compact256::deserialize(stream)?,
+            nonce: u32::deserialize(stream)?,
+            transaction_count: CompactSize::deserialize(stream)?,
+        })
     }
 }

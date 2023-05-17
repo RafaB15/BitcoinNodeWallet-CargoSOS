@@ -31,10 +31,15 @@ impl SerializableBigEndian for Ipv6Addr {
 impl SerializableBigEndian for [u8] {
     fn serialize_big_endian(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
 
-        match stream.write(self) {
+        let mut little_endian: Vec<u8> = Vec::new();
+        for byte in self.iter().rev() {
+            little_endian.push(*byte);
+        }
+
+        match stream.write(little_endian.as_slice()) {
             Ok(_) => Ok(()),
             _ => Err(ErrorSerialization::ErrorInSerialization(
-                "Serializing Vec<u8>".to_string(),
+                "Serializing [u8]".to_string(),
             )),
         }
     }

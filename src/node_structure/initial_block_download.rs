@@ -70,10 +70,20 @@ impl InitialBlockDownload {
         block_chain: &BlockChain
     ) -> Result<(), ErrorMessage>
     {
+        let _ = self.sender_log.log_connection(
+            "Serializing last headers from blockchain".to_string()    
+        );
+
         let mut header_locator_hashes: Vec<HashType> = Vec::new();
 
         for block in block_chain.last().iter() {
+
+            
             let last_header: &BlockHeader = &block.header;
+            let _ = self.sender_log.log_connection(format!(
+                "Sending {:?}", last_header
+            ));
+
             let mut serialized_header = Vec::new();
 
             last_header.serialize(&mut serialized_header)?;
@@ -86,12 +96,16 @@ impl InitialBlockDownload {
             header_locator_hashes,
             NO_STOP_HASH,
         );
-
+        
         GetHeadersMessage::serialize_message(
             peer_stream, 
             TESTNET_MAGIC_NUMBERS, 
             &get_headers_message,
         )?;
+        
+        let _ = self.sender_log.log_connection(
+            "Sending the message".to_string()    
+        );
 
         Ok(())
     }
