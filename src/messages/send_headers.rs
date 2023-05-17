@@ -21,7 +21,7 @@ pub struct SendHeadersMessage;
 impl Message for SendHeadersMessage {
 
     fn calculate_checksum(
-        message: &Self,
+        _: &[u8],
     ) -> Result<[u8; 4], ErrorSerialization> 
     {
         Ok(SEND_HEADERS_CHECKSUM)

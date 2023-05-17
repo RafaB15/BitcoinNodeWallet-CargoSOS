@@ -89,7 +89,7 @@ pub trait Message: Serializable + Deserializable{
             ));
         }
         
-        let checksum = Self::calculate_checksum(&message)?;
+        let checksum = Self::calculate_checksum(&serialized_message)?;
         if !checksum.eq(&message_header.checksum) {
             return Err(ErrorSerialization::ErrorInDeserialization(
                 format!(
@@ -105,13 +105,9 @@ pub trait Message: Serializable + Deserializable{
     }
 
     fn calculate_checksum(
-        message: &Self,
-    ) -> Result<[u8; 4], ErrorSerialization> {
-
-        let mut serialized_message: Vec<u8> = Vec::new();
-        message.serialize(&mut serialized_message)?;
-        
-        hash256d_reduce(&serialized_message)
+        serialized_message: &[u8],
+    ) -> Result<[u8; 4], ErrorSerialization> {        
+        hash256d_reduce(serialized_message)
     }
 
     fn get_command_name() -> CommandName;

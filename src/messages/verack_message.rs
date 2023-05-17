@@ -26,7 +26,7 @@ impl Message for VerackMessage {
     }
 
     fn calculate_checksum(
-        message: &Self,
+        _: &[u8],
     ) -> Result<[u8; 4], ErrorSerialization> {
 
         Ok(VERACK_CHECKSUM)
