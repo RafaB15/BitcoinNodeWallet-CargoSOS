@@ -1,6 +1,6 @@
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization,
 };
 
@@ -46,31 +46,31 @@ impl MessageHeader {
     
         let mut buffer: &[u8] = &buffer[..];
     
-        MessageHeader::deserialize(&mut buffer)
+        MessageHeader::le_deserialize(&mut buffer)
     }
 }
 
-impl Serializable for MessageHeader {
+impl SerializableLittleEndian for MessageHeader {
     
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
 
-        self.magic_numbers.serialize(stream)?;
-        self.command_name.serialize(stream)?;
-        self.payload_size.serialize(stream)?;
-        self.checksum.serialize(stream)?;
+        self.magic_numbers.le_serialize(stream)?;
+        self.command_name.le_serialize(stream)?;
+        self.payload_size.le_serialize(stream)?;
+        self.checksum.le_serialize(stream)?;
         Ok(())
     }
 }
 
-impl Deserializable for MessageHeader {
+impl DeserializableLittleEndian for MessageHeader {
     
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         
         Ok(MessageHeader {
-            magic_numbers: MagicType::deserialize(stream)?,
-            command_name: CommandName::deserialize(stream)?,
-            payload_size: u32::deserialize(stream)?,
-            checksum: HashTypeReduced::deserialize(stream)?,
+            magic_numbers: MagicType::le_deserialize(stream)?,
+            command_name: CommandName::le_deserialize(stream)?,
+            payload_size: u32::le_deserialize(stream)?,
+            checksum: HashTypeReduced::le_deserialize(stream)?,
         })
     }
 }

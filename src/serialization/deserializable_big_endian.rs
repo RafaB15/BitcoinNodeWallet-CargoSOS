@@ -3,11 +3,11 @@ use std::io::Read;
 use std::net::Ipv6Addr;
 
 pub trait DeserializableBigEndian: Sized {
-    fn deserialize_big_endian(stream: &mut dyn Read) -> Result<Self, ErrorSerialization>;
+    fn be_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization>;
 }
 
 impl DeserializableBigEndian for u16 {
-    fn deserialize_big_endian(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+    fn be_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 2];
         if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorSerialization::ErrorInDeserialization(
@@ -19,7 +19,7 @@ impl DeserializableBigEndian for u16 {
 }
 
 impl DeserializableBigEndian for Ipv6Addr {
-    fn deserialize_big_endian(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+    fn be_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 16];
         if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorSerialization::ErrorInDeserialization(
@@ -32,7 +32,7 @@ impl DeserializableBigEndian for Ipv6Addr {
 
 impl DeserializableBigEndian for [u8; 32] {
 
-    fn deserialize_big_endian(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+    fn be_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 32];
         if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorSerialization::ErrorInDeserialization(
@@ -69,7 +69,7 @@ mod tests {
 
         let expected_number: u16 = 16286;
 
-        let number = u16::deserialize_big_endian(&mut stream)?;
+        let number = u16::be_deserialize(&mut stream)?;
 
         assert_eq!(expected_number, number);
 
@@ -86,7 +86,7 @@ mod tests {
 
         let expected_ip: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0xffff, 0xc00a, 0x02ff);
 
-        let ip = Ipv6Addr::deserialize_big_endian(&mut stream)?;
+        let ip = Ipv6Addr::be_deserialize(&mut stream)?;
 
         assert_eq!(expected_ip, ip);
 

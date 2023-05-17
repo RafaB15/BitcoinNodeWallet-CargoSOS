@@ -8,8 +8,8 @@ use crate::block_structure::{
 };
 
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization,
 };
 
@@ -29,19 +29,19 @@ impl Message for BlockMessage {
     }
 }
 
-impl Serializable for BlockMessage {
+impl SerializableLittleEndian for BlockMessage {
     
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        self.block.serialize(stream)?;
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+        self.block.le_serialize(stream)?;
         Ok(())
     }
 }
 
-impl Deserializable for BlockMessage {
+impl DeserializableLittleEndian for BlockMessage {
     
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         Ok(BlockMessage { 
-            block: Block::deserialize(stream)?,
+            block: Block::le_deserialize(stream)?,
         })
     }
 }

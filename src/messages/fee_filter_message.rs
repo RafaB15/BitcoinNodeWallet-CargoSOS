@@ -4,8 +4,8 @@ use super::{
 };
 
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable, 
+    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian, 
     error_serialization::ErrorSerialization,
 };
 use std::io::{
@@ -25,21 +25,21 @@ impl Message for FeeFilterMessage {
     }
 }
 
-impl Serializable for FeeFilterMessage {
+impl SerializableLittleEndian for FeeFilterMessage {
 
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
 
-        self.feerate.serialize(stream)?;
+        self.feerate.le_serialize(stream)?;
 
         Ok(())
     }
 }
 
-impl Deserializable for FeeFilterMessage {
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {    
+impl DeserializableLittleEndian for FeeFilterMessage {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {    
 
         Ok(FeeFilterMessage{
-            feerate: u64::deserialize(stream)?,
+            feerate: u64::le_deserialize(stream)?,
         })
     }
 }

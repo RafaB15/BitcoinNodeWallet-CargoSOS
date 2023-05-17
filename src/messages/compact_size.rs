@@ -1,6 +1,6 @@
 use crate::serialization::{
-    deserializable::Deserializable, error_serialization::ErrorSerialization,
-    serializable::Serializable,
+    deserializable_little_endian::DeserializableLittleEndian, error_serialization::ErrorSerialization,
+    serializable_little_endian::SerializableLittleEndian,
 };
 
 use std::io::Write;
@@ -24,27 +24,27 @@ impl CompactSize {
     }
 }
 
-impl Serializable for CompactSize {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+impl SerializableLittleEndian for CompactSize {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         if self.value <= MAX_U8 {
-            (self.value as u8).serialize(stream)?;
+            (self.value as u8).le_serialize(stream)?;
         } else if self.value <= MAX_U16 {
-            PREFIX_U16.serialize(stream)?;
-            (self.value as u16).serialize(stream)?;
+            PREFIX_U16.le_serialize(stream)?;
+            (self.value as u16).le_serialize(stream)?;
         } else if self.value <= MAX_U32 {
-            PREFIX_U32.serialize(stream)?;
-            (self.value as u32).serialize(stream)?;
+            PREFIX_U32.le_serialize(stream)?;
+            (self.value as u32).le_serialize(stream)?;
         } else {
-            PREFIX_U64.serialize(stream)?;
-            self.value.serialize(stream)?;
+            PREFIX_U64.le_serialize(stream)?;
+            self.value.le_serialize(stream)?;
         }
 
         Ok(())
     }
 }
 
-impl Deserializable for CompactSize {
-    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
+impl DeserializableLittleEndian for CompactSize {
+    fn le_deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 1];
         if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorSerialization::ErrorInDeserialization(
@@ -53,9 +53,9 @@ impl Deserializable for CompactSize {
         }
 
         match buffer {
-            [PREFIX_U16] => Ok(CompactSize::new(u16::deserialize(stream)? as u64)),
-            [PREFIX_U32] => Ok(CompactSize::new(u32::deserialize(stream)? as u64)),
-            [PREFIX_U64] => Ok(CompactSize::new(u64::deserialize(stream)?)),
+            [PREFIX_U16] => Ok(CompactSize::new(u16::le_deserialize(stream)? as u64)),
+            [PREFIX_U32] => Ok(CompactSize::new(u32::le_deserialize(stream)? as u64)),
+            [PREFIX_U64] => Ok(CompactSize::new(u64::le_deserialize(stream)?)),
             [value] => Ok(CompactSize::new(value as u64)),
         }
     }
@@ -64,7 +64,7 @@ impl Deserializable for CompactSize {
 #[cfg(test)]
 mod tests {
 
-    use super::{CompactSize, Deserializable, ErrorSerialization, Serializable};
+    use super::{CompactSize, DeserializableLittleEndian, ErrorSerialization, SerializableLittleEndian};
 
     #[test]
     fn test01_serialize_correctly_u8() -> Result<(), ErrorSerialization> {
@@ -74,7 +74,7 @@ mod tests {
         let number: u8 = 84;
         let compact: CompactSize = CompactSize::new(number as u64);
 
-        compact.serialize(&mut stream)?;
+        compact.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -89,7 +89,7 @@ mod tests {
         let expected_number: u8 = 84;
         let expected_compact: CompactSize = CompactSize::new(expected_number as u64);
 
-        let compact = CompactSize::deserialize(&mut stream)?;
+        let compact = CompactSize::le_deserialize(&mut stream)?;
 
         assert_eq!(expected_compact, compact);
 
@@ -104,7 +104,7 @@ mod tests {
         let number: u16 = 16286;
         let compact: CompactSize = CompactSize::new(number as u64);
 
-        compact.serialize(&mut stream)?;
+        compact.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -119,7 +119,7 @@ mod tests {
         let expected_number: u16 = 16286;
         let expected_compact: CompactSize = CompactSize::new(expected_number as u64);
 
-        let compact = CompactSize::deserialize(&mut stream)?;
+        let compact = CompactSize::le_deserialize(&mut stream)?;
 
         assert_eq!(expected_compact, compact);
 
@@ -134,7 +134,7 @@ mod tests {
         let number: u32 = 16_286_637;
         let compact: CompactSize = CompactSize::new(number as u64);
 
-        compact.serialize(&mut stream)?;
+        compact.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -149,7 +149,7 @@ mod tests {
         let expected_number: u32 = 16_286_637;
         let expected_compact: CompactSize = CompactSize::new(expected_number as u64);
 
-        let compact = CompactSize::deserialize(&mut stream)?;
+        let compact = CompactSize::le_deserialize(&mut stream)?;
 
         assert_eq!(expected_compact, compact);
 
@@ -164,7 +164,7 @@ mod tests {
         let number: u64 = 1111_1111_1111;
         let compact: CompactSize = CompactSize::new(number as u64);
 
-        compact.serialize(&mut stream)?;
+        compact.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -179,7 +179,7 @@ mod tests {
         let expected_number: u64 = 1111_1111_1111;
         let expected_compact: CompactSize = CompactSize::new(expected_number as u64);
 
-        let compact = CompactSize::deserialize(&mut stream)?;
+        let compact = CompactSize::le_deserialize(&mut stream)?;
 
         assert_eq!(expected_compact, compact);
 

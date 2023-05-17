@@ -4,8 +4,8 @@ use super::{
 };
 
 use crate::serialization::{
-    deserializable::Deserializable, error_serialization::ErrorSerialization,
-    serializable::Serializable,
+    deserializable_little_endian::DeserializableLittleEndian, error_serialization::ErrorSerialization,
+    serializable_little_endian::SerializableLittleEndian,
 };
 
 use std::io::{
@@ -32,15 +32,15 @@ impl Message for SendHeadersMessage {
     }
 }
 
-impl Serializable for SendHeadersMessage {
+impl SerializableLittleEndian for SendHeadersMessage {
 
-    fn serialize(&self, _: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn le_serialize(&self, _: &mut dyn Write) -> Result<(), ErrorSerialization> {
         Ok(())
     }
 }
 
-impl Deserializable for SendHeadersMessage {
-    fn deserialize(_: &mut dyn Read) -> Result<Self, ErrorSerialization> {        
+impl DeserializableLittleEndian for SendHeadersMessage {
+    fn le_deserialize(_: &mut dyn Read) -> Result<Self, ErrorSerialization> {        
         Ok(SendHeadersMessage)
     }
 }

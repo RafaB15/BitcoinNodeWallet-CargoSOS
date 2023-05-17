@@ -14,8 +14,8 @@ use crate::block_structure::hash::{
 use std::io::Read;
 
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization,
 };
 
@@ -31,21 +31,21 @@ impl Message for InventoryMessage {
     }
 }
 
-impl Serializable for InventoryMessage {
+impl SerializableLittleEndian for InventoryMessage {
     
-    fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
-        self.type_identifier.serialize(stream)?;
-        self.hash_value.serialize(stream)?;
+    fn le_serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
+        self.type_identifier.le_serialize(stream)?;
+        self.hash_value.le_serialize(stream)?;
         
         Ok(())
     }
 }
 
-impl Deserializable for InventoryMessage {
+impl DeserializableLittleEndian for InventoryMessage {
     
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let type_identifier = TypeIdentifier::deserialize(stream)?;
-        let hash_value = HashType::deserialize(stream)?;
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+        let type_identifier = TypeIdentifier::le_deserialize(stream)?;
+        let hash_value = HashType::le_deserialize(stream)?;
         
         Ok(InventoryMessage { 
             type_identifier, 

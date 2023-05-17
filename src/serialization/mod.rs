@@ -1,7 +1,7 @@
-pub mod serializable;
+pub mod serializable_little_endian;
 pub mod serializable_big_endian;
 
-pub mod deserializable;
+pub mod deserializable_little_endian;
 pub mod deserializable_big_endian;
 pub mod deserializable_fix_size;
 

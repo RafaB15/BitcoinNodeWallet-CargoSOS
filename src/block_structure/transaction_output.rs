@@ -1,8 +1,8 @@
 use crate::messages::compact_size::CompactSize;
 
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
     deserializable_fix_size::DeserializableFixSize,
     error_serialization::ErrorSerialization, 
 };
@@ -20,23 +20,23 @@ pub struct TransactionOutput {
     pub pk_script: String,
 }
 
-impl Serializable for TransactionOutput {
+impl SerializableLittleEndian for TransactionOutput {
 
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        self.value.serialize(stream)?;
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+        self.value.le_serialize(stream)?;
 
-        CompactSize::new(self.pk_script.len() as u64).serialize(stream)?;
-        self.pk_script.serialize(stream)?;
+        CompactSize::new(self.pk_script.len() as u64).le_serialize(stream)?;
+        self.pk_script.le_serialize(stream)?;
 
         Ok(())
     }
 }
 
-impl Deserializable for TransactionOutput {
+impl DeserializableLittleEndian for TransactionOutput {
     
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let value = i64::deserialize(stream)?;
-        let length_pk_script = CompactSize::deserialize(stream)?;
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+        let value = i64::le_deserialize(stream)?;
+        let length_pk_script = CompactSize::le_deserialize(stream)?;
         let pk_script = String::deserialize_fix_size(stream, length_pk_script.value as usize)?;
 
         Ok(TransactionOutput { 

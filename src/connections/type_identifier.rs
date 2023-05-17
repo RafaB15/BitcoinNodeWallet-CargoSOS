@@ -1,6 +1,6 @@
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization,
 };
 
@@ -28,9 +28,9 @@ pub enum TypeIdentifier {
     FilteredWitnessBlock,
 }
 
-impl Serializable for TypeIdentifier {
+impl SerializableLittleEndian for TypeIdentifier {
 
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         let value: u32 = match self {
             TypeIdentifier::TransactionId => TRANSACTION_ID_VALUE,
             TypeIdentifier::Block => BLOCK_VALUE,
@@ -41,17 +41,17 @@ impl Serializable for TypeIdentifier {
             TypeIdentifier::FilteredWitnessBlock => FILTERED_WITNESS_BLOCK_VALUE,
         };
 
-        match value.serialize(stream) {
+        match value.le_serialize(stream) {
             Err(_) => Err(ErrorSerialization::ErrorInSerialization(format!("While serializing the type identifier {:?}", self))),
             _ => Ok(()),
         }
     }
 }
 
-impl Deserializable for TypeIdentifier {
+impl DeserializableLittleEndian for TypeIdentifier {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let value = u32::deserialize(stream)?;
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+        let value = u32::le_deserialize(stream)?;
 
         match value {
             TRANSACTION_ID_VALUE => Ok(TypeIdentifier::TransactionId),

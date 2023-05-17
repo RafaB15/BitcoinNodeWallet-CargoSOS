@@ -1,6 +1,6 @@
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization,
 };
 
@@ -36,16 +36,16 @@ use std::io::{
     Write,
 };
 
-pub trait Message: Serializable + Deserializable{
+pub trait Message: SerializableLittleEndian + DeserializableLittleEndian{
     
     fn serialize_message(
         stream: &mut dyn Write, 
         magic_numbers: MagicType,
-        payload: &dyn Serializable,
+        payload: &dyn SerializableLittleEndian,
     ) -> Result<(), ErrorSerialization> 
     {
         let mut serialized_payload: Vec<u8> = Vec::new();
-        payload.serialize(&mut serialized_payload)?;
+        payload.le_serialize(&mut serialized_payload)?;
         let serialized_payload: &[u8] = &serialized_payload;
     
         let header = MessageHeader {
@@ -55,8 +55,8 @@ pub trait Message: Serializable + Deserializable{
             checksum: hash256d_reduce(serialized_payload)?,
         };
     
-        header.serialize(stream)?;
-        serialized_payload.serialize(stream)?;        
+        header.le_serialize(stream)?;
+        serialized_payload.le_serialize(stream)?;        
     
         Ok(())
     }
@@ -72,10 +72,10 @@ pub trait Message: Serializable + Deserializable{
             return Err(ErrorSerialization::ErrorWhileReading);
         }
         let mut buffer: &[u8] = &buffer[..];
-        let message = Self::deserialize(&mut buffer)?;
+        let message = Self::le_deserialize(&mut buffer)?;
 
         let mut serialized_message: Vec<u8> = Vec::new();
-        message.serialize(&mut serialized_message)?;
+        message.le_serialize(&mut serialized_message)?;
 
         let length = serialized_message.len();
         if length != message_header.payload_size as usize {

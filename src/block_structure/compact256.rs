@@ -1,6 +1,6 @@
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization, 
 };
 
@@ -90,22 +90,22 @@ impl PartialOrd for Compact256 {
     }
 }
 
-impl Serializable for Compact256 {
+impl SerializableLittleEndian for Compact256 {
     
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         
         let value: u32 = (*self).into();
-        value.serialize(stream)?;
+        value.le_serialize(stream)?;
 
         Ok(())
     }
 }
 
-impl Deserializable for Compact256 {
+impl DeserializableLittleEndian for Compact256 {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
     
-        let value = u32::deserialize(stream)?;
+        let value = u32::le_deserialize(stream)?;
         Ok(value.into())
     }
 }

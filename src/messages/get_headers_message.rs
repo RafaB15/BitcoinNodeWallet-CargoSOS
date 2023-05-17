@@ -7,8 +7,8 @@ use super::{
 };
 
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization,
 };
 
@@ -48,34 +48,34 @@ impl Message for GetHeadersMessage {
     }
 }
 
-impl Serializable for GetHeadersMessage {
+impl SerializableLittleEndian for GetHeadersMessage {
 
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        self.version.serialize(stream)?;
-        CompactSize::new(self.header_locator_hashes.len() as u64).serialize(stream)?;
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+        self.version.le_serialize(stream)?;
+        CompactSize::new(self.header_locator_hashes.len() as u64).le_serialize(stream)?;
 
         for hash in self.header_locator_hashes.iter() {
-            hash.serialize(stream)?;
+            hash.le_serialize(stream)?;
         }
 
-        self.stop_hash.serialize(stream)?;
+        self.stop_hash.le_serialize(stream)?;
         Ok(())
     }
 }
 
-impl Deserializable for GetHeadersMessage {
+impl DeserializableLittleEndian for GetHeadersMessage {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let version = ProtocolVersionP2P::deserialize(stream)?;
-        let size = CompactSize::deserialize(stream)?;
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+        let version = ProtocolVersionP2P::le_deserialize(stream)?;
+        let size = CompactSize::le_deserialize(stream)?;
 
         let mut header_locator_hashes: Vec<HashType> = Vec::new();
         for _ in 0..size.value {
-            let header_locator_hash = HashType::deserialize(stream)?;
+            let header_locator_hash = HashType::le_deserialize(stream)?;
             header_locator_hashes.push(header_locator_hash);
         }
 
-        let stop_hash = HashType::deserialize(stream)?;
+        let stop_hash = HashType::le_deserialize(stream)?;
 
         Ok(GetHeadersMessage { 
             version, 
@@ -93,7 +93,7 @@ mod tests {
         ProtocolVersionP2P,
         CompactSize,
         
-        Serializable,
+        SerializableLittleEndian,
         ErrorSerialization, 
         
         HashType,
@@ -108,12 +108,12 @@ mod tests {
 
         let mut expected_stream: Vec<u8> = Vec::new();
 
-        version.serialize(&mut expected_stream)?;
-        length.serialize(&mut expected_stream)?;
+        version.le_serialize(&mut expected_stream)?;
+        length.le_serialize(&mut expected_stream)?;
         for header_hash in header_locator_hash.iter() {
-            let _ = header_hash.serialize(&mut expected_stream)?;
+            let _ = header_hash.le_serialize(&mut expected_stream)?;
         }
-        stop_hash.serialize(&mut expected_stream)?;
+        stop_hash.le_serialize(&mut expected_stream)?;
 
         let get_headers_message = GetHeadersMessage::new(
             version,
@@ -122,7 +122,7 @@ mod tests {
         );
 
         let mut stream: Vec<u8> = Vec::new();
-        get_headers_message.serialize(&mut stream)?;
+        get_headers_message.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 

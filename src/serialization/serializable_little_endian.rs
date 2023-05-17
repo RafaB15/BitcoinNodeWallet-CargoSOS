@@ -3,12 +3,12 @@ use std::io::Write;
 
 use chrono::{offset::Utc, DateTime};
 
-pub trait Serializable {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization>;
+pub trait SerializableLittleEndian {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization>;
 }
 
-impl Serializable for i32 {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+impl SerializableLittleEndian for i32 {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         match stream.write(&self.to_le_bytes()) {
             Ok(_) => Ok(()),
             _ => Err(ErrorSerialization::ErrorInSerialization(
@@ -18,8 +18,8 @@ impl Serializable for i32 {
     }
 }
 
-impl Serializable for i64 {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+impl SerializableLittleEndian for i64 {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         match stream.write(&self.to_le_bytes()) {
             Ok(_) => Ok(()),
             _ => Err(ErrorSerialization::ErrorInSerialization(
@@ -29,8 +29,8 @@ impl Serializable for i64 {
     }
 }
 
-impl Serializable for u8 {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+impl SerializableLittleEndian for u8 {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         match stream.write(&self.to_le_bytes()) {
             Ok(_) => Ok(()),
             _ => Err(ErrorSerialization::ErrorInSerialization(
@@ -40,8 +40,8 @@ impl Serializable for u8 {
     }
 }
 
-impl Serializable for u16 {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+impl SerializableLittleEndian for u16 {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         match stream.write(&self.to_le_bytes()) {
             Ok(_) => Ok(()),
             _ => Err(ErrorSerialization::ErrorInSerialization(
@@ -51,8 +51,8 @@ impl Serializable for u16 {
     }
 }
 
-impl Serializable for u32 {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+impl SerializableLittleEndian for u32 {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         match stream.write(&self.to_le_bytes()) {
             Ok(_) => Ok(()),
             _ => Err(ErrorSerialization::ErrorInSerialization(
@@ -62,8 +62,8 @@ impl Serializable for u32 {
     }
 }
 
-impl Serializable for u64 {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+impl SerializableLittleEndian for u64 {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         match stream.write(&self.to_le_bytes()) {
             Ok(_) => Ok(()),
             _ => Err(ErrorSerialization::ErrorInSerialization(
@@ -73,8 +73,8 @@ impl Serializable for u64 {
     }
 }
 
-impl Serializable for Vec<u8> {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+impl SerializableLittleEndian for Vec<u8> {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         match stream.write(self.as_slice()) {
             Ok(_) => Ok(()),
             _ => Err(ErrorSerialization::ErrorInSerialization(
@@ -84,8 +84,8 @@ impl Serializable for Vec<u8> {
     }
 }
 
-impl Serializable for [u8] {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+impl SerializableLittleEndian for [u8] {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         match stream.write(self) {
             Ok(_) => Ok(()),
             _ => Err(ErrorSerialization::ErrorInSerialization(
@@ -95,8 +95,8 @@ impl Serializable for [u8] {
     }
 }
 
-impl Serializable for bool {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+impl SerializableLittleEndian for bool {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         let boolean: [u8; 1] = match self {
             true => [0x01],
             false => [0x00],
@@ -111,8 +111,8 @@ impl Serializable for bool {
     }
 }
 
-impl Serializable for String {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+impl SerializableLittleEndian for String {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         match stream.write(self.as_bytes()) {
             Ok(_) => Ok(()),
             _ => Err(ErrorSerialization::ErrorInSerialization(
@@ -122,8 +122,8 @@ impl Serializable for String {
     }
 }
 
-impl Serializable for DateTime<Utc> {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+impl SerializableLittleEndian for DateTime<Utc> {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         match stream.write(&self.timestamp().to_le_bytes()) {
             Ok(_) => Ok(()),
             _ => Err(ErrorSerialization::ErrorInSerialization(
@@ -136,7 +136,7 @@ impl Serializable for DateTime<Utc> {
 #[cfg(test)]
 mod tests {
 
-    use super::{ErrorSerialization, Serializable};
+    use super::{ErrorSerialization, SerializableLittleEndian};
 
     use chrono::{offset::Utc, DateTime, NaiveDateTime};
 
@@ -147,7 +147,7 @@ mod tests {
         let mut stream: Vec<u8> = Vec::new();
         let number: i32 = 1628;
 
-        number.serialize(&mut stream)?;
+        number.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -161,7 +161,7 @@ mod tests {
         let mut stream: Vec<u8> = Vec::new();
         let number: u8 = 84;
 
-        number.serialize(&mut stream)?;
+        number.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -175,7 +175,7 @@ mod tests {
         let mut stream: Vec<u8> = Vec::new();
         let number: u16 = 16286;
 
-        number.serialize(&mut stream)?;
+        number.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -189,7 +189,7 @@ mod tests {
         let mut stream: Vec<u8> = Vec::new();
         let number: u32 = 16_286_637;
 
-        number.serialize(&mut stream)?;
+        number.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -203,7 +203,7 @@ mod tests {
         let mut stream: Vec<u8> = Vec::new();
         let number: u64 = 1111_1111_1111;
 
-        number.serialize(&mut stream)?;
+        number.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -217,7 +217,7 @@ mod tests {
         let mut stream: Vec<u8> = Vec::new();
         let vector: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19];
 
-        vector.serialize(&mut stream)?;
+        vector.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -231,7 +231,7 @@ mod tests {
         let mut stream: Vec<u8> = Vec::new();
         let vector: [u8; 5] = [0xC7, 0x01, 0xBD, 0xDE, 0x19];
 
-        vector.serialize(&mut stream)?;
+        vector.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -245,7 +245,7 @@ mod tests {
         let mut stream: Vec<u8> = Vec::new();
         let boolean: bool = true;
 
-        boolean.serialize(&mut stream)?;
+        boolean.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -254,7 +254,7 @@ mod tests {
         let mut stream: Vec<u8> = Vec::new();
         let boolean: bool = false;
 
-        boolean.serialize(&mut stream)?;
+        boolean.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -268,7 +268,7 @@ mod tests {
         let mut stream: Vec<u8> = Vec::new();
         let string: String = "buu".to_string();
 
-        string.serialize(&mut stream)?;
+        string.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -283,7 +283,7 @@ mod tests {
         let naive = NaiveDateTime::from_timestamp_opt(1628, 0).unwrap();
         let date: DateTime<Utc> = DateTime::<Utc>::from_utc(naive, Utc);
 
-        date.serialize(&mut stream)?;
+        date.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 

@@ -1,8 +1,8 @@
 use super::error_connection::ErrorConnection;
 
 use crate::serialization::{
-    deserializable::Deserializable, error_serialization::ErrorSerialization,
-    serializable::Serializable,
+    deserializable_little_endian::DeserializableLittleEndian, error_serialization::ErrorSerialization,
+    serializable_little_endian::SerializableLittleEndian,
 };
 
 const NODE_UNNAME: u64 = 0x00;
@@ -67,8 +67,8 @@ impl std::convert::TryInto<u64> for SupportedServices {
     }
 }
 
-impl Serializable for SupportedServices {
-    fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
+impl SerializableLittleEndian for SupportedServices {
+    fn le_serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
         let version: u64 = match (*self).try_into() {
             Ok(version) => version,
             _ => {
@@ -86,9 +86,9 @@ impl Serializable for SupportedServices {
     }
 }
 
-impl Deserializable for SupportedServices {
-    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
-        let supported_servicies = u64::deserialize(stream)?;
+impl DeserializableLittleEndian for SupportedServices {
+    fn le_deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
+        let supported_servicies = u64::le_deserialize(stream)?;
         match supported_servicies.try_into() {
             Ok(supported_servicies) => Ok(supported_servicies),
             _ => Err(ErrorSerialization::ErrorInDeserialization(format!(
@@ -102,7 +102,7 @@ impl Deserializable for SupportedServices {
 #[cfg(test)]
 mod tests {
 
-    use super::{Deserializable, ErrorSerialization, Serializable, SupportedServices};
+    use super::{DeserializableLittleEndian, ErrorSerialization, SerializableLittleEndian, SupportedServices};
 
     #[test]
     fn test01_serialize_correctly_supported_services() -> Result<(), ErrorSerialization> {
@@ -111,7 +111,7 @@ mod tests {
         let mut stream: Vec<u8> = Vec::new();
         let services = SupportedServices::NodeNetworkLimited;
 
-        services.serialize(&mut stream)?;
+        services.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -125,7 +125,7 @@ mod tests {
 
         let expected_services = SupportedServices::NodeNetworkLimited;
 
-        let services = SupportedServices::deserialize(&mut stream)?;
+        let services = SupportedServices::le_deserialize(&mut stream)?;
 
         assert_eq!(expected_services, services);
 

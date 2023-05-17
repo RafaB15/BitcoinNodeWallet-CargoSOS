@@ -6,9 +6,9 @@ use super::{
 };
 
 use crate::{serialization::{
-    serializable::Serializable,
+    serializable_little_endian::SerializableLittleEndian,
     //serializable_big_endian::SerializableBigEndian,
-    deserializable::Deserializable,
+    deserializable_little_endian::DeserializableLittleEndian,
     //deserializable_big_endian::DeserializableBigEndian,
     error_serialization::ErrorSerialization, 
 }, messages::compact_size::CompactSize};
@@ -77,7 +77,7 @@ impl BlockHeader {
 
     pub fn proof_of_work(&self) -> bool {
         let mut buffer = vec![];
-        if self.serialize(&mut buffer).is_err() {
+        if self.le_serialize(&mut buffer).is_err() {
             return false;
         }
         let hash: HashType = match hash256d(&buffer) {
@@ -133,32 +133,32 @@ impl BlockHeader {
     }
 }
 
-impl Serializable for BlockHeader {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        self.version.serialize(stream)?;
-        self.previous_block_header_hash.serialize(stream)?;
-        self.merkle_root_hash.serialize(stream)?;
-        self.time.serialize(stream)?;
-        self.n_bits.serialize(stream)?;
-        self.nonce.serialize(stream)?;
-        self.transaction_count.serialize(stream)?;
+impl SerializableLittleEndian for BlockHeader {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+        self.version.le_serialize(stream)?;
+        self.previous_block_header_hash.le_serialize(stream)?;
+        self.merkle_root_hash.le_serialize(stream)?;
+        self.time.le_serialize(stream)?;
+        self.n_bits.le_serialize(stream)?;
+        self.nonce.le_serialize(stream)?;
+        self.transaction_count.le_serialize(stream)?;
 
         Ok(())
     }
 }
 
-impl Deserializable for BlockHeader {
+impl DeserializableLittleEndian for BlockHeader {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
 
         Ok(BlockHeader{
-            version: BlockVersion::deserialize(stream)?,
-            previous_block_header_hash: HashType::deserialize(stream)?,
-            merkle_root_hash: HashType::deserialize(stream)?,
-            time: u32::deserialize(stream)?,
-            n_bits: Compact256::deserialize(stream)?,
-            nonce: u32::deserialize(stream)?,
-            transaction_count: CompactSize::deserialize(stream)?,
+            version: BlockVersion::le_deserialize(stream)?,
+            previous_block_header_hash: HashType::le_deserialize(stream)?,
+            merkle_root_hash: HashType::le_deserialize(stream)?,
+            time: u32::le_deserialize(stream)?,
+            n_bits: Compact256::le_deserialize(stream)?,
+            nonce: u32::le_deserialize(stream)?,
+            transaction_count: CompactSize::le_deserialize(stream)?,
         })
     }
 }

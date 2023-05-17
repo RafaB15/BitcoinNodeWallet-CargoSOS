@@ -42,7 +42,7 @@ use cargosos_bitcoin::node_structure::{
 };
 
 use cargosos_bitcoin::serialization::{
-    serializable::Serializable,
+    serializable_little_endian::SerializableLittleEndian,
 };
 
 use cargosos_bitcoin::block_structure::{
@@ -239,7 +239,7 @@ fn get_blocks_recursive(
     let block_header = block_chain_actual.block.header;
 
     let mut bytes: Vec<u8> = Vec::new();
-    if block_header.serialize(&mut bytes).is_err() {
+    if block_header.le_serialize(&mut bytes).is_err() {
         return;
     }
 

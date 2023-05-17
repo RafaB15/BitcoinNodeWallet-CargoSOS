@@ -9,8 +9,8 @@ use crate::block_structure::{
 };
 
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization,
 };
 
@@ -30,24 +30,24 @@ impl Message for HeadersMessage {
     }
 }
 
-impl Serializable for HeadersMessage {
+impl SerializableLittleEndian for HeadersMessage {
         
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        CompactSize::new(self.headers.len() as u64).serialize(stream)?;
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+        CompactSize::new(self.headers.len() as u64).le_serialize(stream)?;
         for header in &self.headers {
-            header.serialize(stream)?;
+            header.le_serialize(stream)?;
         }
         Ok(())
     }
 }
 
-impl Deserializable for HeadersMessage {
+impl DeserializableLittleEndian for HeadersMessage {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let count = CompactSize::deserialize(stream)?.value;
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+        let count = CompactSize::le_deserialize(stream)?.value;
         let mut headers = Vec::new();
         for _ in 0..count {
-            headers.push(BlockHeader::deserialize(stream)?);
+            headers.push(BlockHeader::le_deserialize(stream)?);
         }
         Ok(HeadersMessage{
             headers,

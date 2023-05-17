@@ -4,8 +4,8 @@ use super::{
 };
 
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization,
 };
 
@@ -25,18 +25,18 @@ impl Message for PingMessage {
     }
 }
 
-impl Serializable for PingMessage {
+impl SerializableLittleEndian for PingMessage {
     
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        self.nonce.serialize(stream)
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+        self.nonce.le_serialize(stream)
     }
 }
 
-impl Deserializable for PingMessage {
+impl DeserializableLittleEndian for PingMessage {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         Ok(PingMessage {
-            nonce: u64::deserialize(stream)?,
+            nonce: u64::le_deserialize(stream)?,
         })
     }
 }

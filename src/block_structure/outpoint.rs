@@ -1,8 +1,8 @@
 use super::hash::HashType;
 
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization, 
 };
 use std::io::{
@@ -18,20 +18,20 @@ pub struct Outpoint {
     pub index: u32,
 }
 
-impl Serializable for Outpoint {
+impl SerializableLittleEndian for Outpoint {
     
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        self.hash.serialize(stream)?;
-        self.index.serialize(stream)?;
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+        self.hash.le_serialize(stream)?;
+        self.index.le_serialize(stream)?;
         Ok(())
     }
 }
 
-impl Deserializable for Outpoint {
+impl DeserializableLittleEndian for Outpoint {
     
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let hash = HashType::deserialize(stream)?;
-        let index = u32::deserialize(stream)?;
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+        let hash = HashType::le_deserialize(stream)?;
+        let index = u32::le_deserialize(stream)?;
 
         Ok(Outpoint { 
             hash, 

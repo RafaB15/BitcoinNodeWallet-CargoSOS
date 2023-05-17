@@ -1,7 +1,7 @@
 use crate::serialization::{
-    serializable::Serializable,
+    serializable_little_endian::SerializableLittleEndian,
     serializable_big_endian::SerializableBigEndian,
-    deserializable::Deserializable, 
+    deserializable_little_endian::DeserializableLittleEndian, 
     deserializable_big_endian::DeserializableBigEndian,
     error_serialization::ErrorSerialization,
 };
@@ -27,28 +27,28 @@ pub struct NetworkIpAddres {
     pub port: u16,
 }
 
-impl Serializable for NetworkIpAddres {
+impl SerializableLittleEndian for NetworkIpAddres {
     
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         
-        self.time.serialize(stream)?;
-        self.services.serialize(stream)?;
-        self.ip_address.serialize_big_endian(stream)?;
-        self.port.serialize_big_endian(stream)?;
+        self.time.le_serialize(stream)?;
+        self.services.le_serialize(stream)?;
+        self.ip_address.be_serialize(stream)?;
+        self.port.be_serialize(stream)?;
 
         Ok(())
     }
 }
 
-impl Deserializable for NetworkIpAddres {
+impl DeserializableLittleEndian for NetworkIpAddres {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
 
         Ok(NetworkIpAddres {
-            time: u32::deserialize(stream)?,
-            services: BitfieldServices::deserialize(stream)?,
-            ip_address: Ipv6Addr::deserialize_big_endian(stream)?,
-            port: u16::deserialize_big_endian(stream)?,
+            time: u32::le_deserialize(stream)?,
+            services: BitfieldServices::le_deserialize(stream)?,
+            ip_address: Ipv6Addr::be_deserialize(stream)?,
+            port: u16::be_deserialize(stream)?,
         })
     }
 }

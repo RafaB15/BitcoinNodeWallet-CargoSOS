@@ -5,8 +5,8 @@ use super::{
 };
 
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization,
 };
 
@@ -43,28 +43,28 @@ impl Block {
     }
 }
 
-impl Serializable for Block {
+impl SerializableLittleEndian for Block {
 
-    fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
-        self.header.serialize(stream)?;
-        CompactSize::new(self.transactions.len() as u64).serialize(stream)?;
+    fn le_serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
+        self.header.le_serialize(stream)?;
+        CompactSize::new(self.transactions.len() as u64).le_serialize(stream)?;
         for transaction in self.transactions.iter() {
-            transaction.serialize(stream)?;
+            transaction.le_serialize(stream)?;
         }
 
         Ok(())
     }
 }
 
-impl Deserializable for Block {
-    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
-        let header = BlockHeader::deserialize(stream)?;
-        let compact_size = CompactSize::deserialize(stream)?;
+impl DeserializableLittleEndian for Block {
+    fn le_deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
+        let header = BlockHeader::le_deserialize(stream)?;
+        let compact_size = CompactSize::le_deserialize(stream)?;
         
         let mut block = Block::new(header);
 
         for _ in 0..compact_size.value {
-            let transaction = Transaction::deserialize(stream)?;
+            let transaction = Transaction::le_deserialize(stream)?;
             match block.append_transaction(transaction) {
                 Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => continue,
                 _ => return Err(ErrorSerialization::ErrorInDeserialization(
