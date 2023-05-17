@@ -7,8 +7,8 @@ use super::{
 };
 
 use crate::serialization::{
-    serializable_little_endian::SerializableLittleEndian,
-    deserializable_little_endian::DeserializableLittleEndian, 
+    serializable_internal_order::SerializableInternalOrder,
+    deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization,
 };
 
@@ -34,15 +34,15 @@ impl Message for VerackMessage {
     }
 }
 
-impl SerializableLittleEndian for VerackMessage {
+impl SerializableInternalOrder for VerackMessage {
 
-    fn le_serialize(&self, _: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn io_serialize(&self, _: &mut dyn Write) -> Result<(), ErrorSerialization> {
         Ok(())
     }
 }
 
-impl DeserializableLittleEndian for VerackMessage {
-    fn le_deserialize(_: &mut dyn Read) -> Result<Self, ErrorSerialization> {        
+impl DeserializableInternalOrder for VerackMessage {
+    fn io_deserialize(_: &mut dyn Read) -> Result<Self, ErrorSerialization> {        
         Ok(VerackMessage)
     }
 }
@@ -50,8 +50,8 @@ impl DeserializableLittleEndian for VerackMessage {
 #[cfg(test)]
 mod tests {
     use super::{
-        SerializableLittleEndian,
-        DeserializableLittleEndian,
+        SerializableInternalOrder,
+        DeserializableInternalOrder,
         ErrorSerialization,
         VerackMessage,
         CHECKSUM_EMPTY_PAYLOAD,
@@ -64,7 +64,7 @@ mod tests {
     };
 
     use crate::serialization::{
-        serializable_internal_order::SerializableInternalOrder,
+        serializable_little_endian::SerializableLittleEndian,
     };
 
     #[test]
@@ -111,7 +111,7 @@ mod tests {
 
         let expected_verack = VerackMessage::deserialize_message(&mut stream, header)?;
 
-        let verack = VerackMessage::le_deserialize(&mut stream)?;
+        let verack = VerackMessage::io_deserialize(&mut stream)?;
 
         assert_eq!(expected_verack, verack);
 

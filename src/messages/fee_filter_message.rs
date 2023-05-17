@@ -5,7 +5,9 @@ use super::{
 
 use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian, 
+    deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization,
 };
 use std::io::{
@@ -25,9 +27,9 @@ impl Message for FeeFilterMessage {
     }
 }
 
-impl SerializableLittleEndian for FeeFilterMessage {
+impl SerializableInternalOrder for FeeFilterMessage {
 
-    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
 
         self.feerate.le_serialize(stream)?;
 
@@ -35,8 +37,8 @@ impl SerializableLittleEndian for FeeFilterMessage {
     }
 }
 
-impl DeserializableLittleEndian for FeeFilterMessage {
-    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {    
+impl DeserializableInternalOrder for FeeFilterMessage {
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {    
 
         Ok(FeeFilterMessage{
             feerate: u64::le_deserialize(stream)?,

@@ -4,9 +4,14 @@ use super::{
 };
 
 use crate::serialization::{
-    deserializable_little_endian::DeserializableLittleEndian, deserializable_big_endian::DeserializableBigEndian,
-    deserializable_fix_size::DeserializableFixSize, error_serialization::ErrorSerialization,
-    serializable_little_endian::SerializableLittleEndian, serializable_big_endian::SerializableBigEndian,
+    deserializable_little_endian::DeserializableLittleEndian, 
+    deserializable_big_endian::DeserializableBigEndian,
+    deserializable_fix_size::DeserializableFixSize, 
+    deserializable_internal_order::DeserializableInternalOrder,
+    serializable_little_endian::SerializableLittleEndian, 
+    serializable_big_endian::SerializableBigEndian,
+    serializable_internal_order::SerializableInternalOrder,
+    error_serialization::ErrorSerialization,
 };
 
 use super::{
@@ -89,9 +94,9 @@ impl Message for VersionMessage {
     }
 }
 
-impl SerializableLittleEndian for VersionMessage {
+impl SerializableInternalOrder for VersionMessage {
     
-    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization>{
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization>{
       
         self.version.le_serialize(stream)?;
         self.services.le_serialize(stream)?;
@@ -116,9 +121,9 @@ impl SerializableLittleEndian for VersionMessage {
     }
 }
 
-impl DeserializableLittleEndian for VersionMessage {
+impl DeserializableInternalOrder for VersionMessage {
 
-    fn le_deserialize(stream: &mut dyn Read) ->  Result<Self, ErrorSerialization> {
+    fn io_deserialize(stream: &mut dyn Read) ->  Result<Self, ErrorSerialization> {
 
         let version = ProtocolVersionP2P::le_deserialize(stream)?;
         let services = BitfieldServices::le_deserialize(stream)?;
@@ -170,13 +175,16 @@ mod tests {
             bitfield_services::BitfieldServices, compact_size::CompactSize,
             error_message::ErrorMessage,
         },
-        serialization::{
-            deserializable_little_endian::DeserializableLittleEndian, serializable_little_endian::SerializableLittleEndian,
-            serializable_big_endian::SerializableBigEndian,
-        },
     };
 
-    use super::VersionMessage;
+    use super::{
+        VersionMessage,
+        SerializableLittleEndian,
+        SerializableInternalOrder,
+        SerializableBigEndian,
+
+        DeserializableInternalOrder
+    };
 
     use chrono::{offset::Utc, DateTime, NaiveDateTime};
   
@@ -239,7 +247,7 @@ mod tests {
             relay,
         };
 
-        version_message.le_serialize(&mut stream)?;
+        version_message.io_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -303,7 +311,7 @@ mod tests {
             relay,
         };
 
-        let version = VersionMessage::le_deserialize(&mut stream)?;
+        let version = VersionMessage::io_deserialize(&mut stream)?;
 
         assert_eq!(version_esperado, version);
 

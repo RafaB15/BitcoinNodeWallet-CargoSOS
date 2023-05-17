@@ -15,7 +15,9 @@ use std::io::Read;
 
 use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian,
+    deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization,
 };
 
@@ -31,9 +33,9 @@ impl Message for InventoryMessage {
     }
 }
 
-impl SerializableLittleEndian for InventoryMessage {
+impl SerializableInternalOrder for InventoryMessage {
     
-    fn le_serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
+    fn io_serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
         self.type_identifier.le_serialize(stream)?;
         self.hash_value.le_serialize(stream)?;
         
@@ -41,9 +43,9 @@ impl SerializableLittleEndian for InventoryMessage {
     }
 }
 
-impl DeserializableLittleEndian for InventoryMessage {
+impl DeserializableInternalOrder for InventoryMessage {
     
-    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let type_identifier = TypeIdentifier::le_deserialize(stream)?;
         let hash_value = HashType::le_deserialize(stream)?;
         

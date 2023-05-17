@@ -9,7 +9,9 @@ use crate::block_structure::{
 
 use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian,
+    deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization,
 };
 
@@ -29,17 +31,17 @@ impl Message for BlockMessage {
     }
 }
 
-impl SerializableLittleEndian for BlockMessage {
+impl SerializableInternalOrder for BlockMessage {
     
-    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.block.le_serialize(stream)?;
         Ok(())
     }
 }
 
-impl DeserializableLittleEndian for BlockMessage {
+impl DeserializableInternalOrder for BlockMessage {
     
-    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         Ok(BlockMessage { 
             block: Block::le_deserialize(stream)?,
         })

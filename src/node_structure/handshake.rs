@@ -72,7 +72,7 @@ impl Handshake {
             IGNORE_USER_AGENT.to_string(),
             self.blockchain_height,
             NO_NEW_TRANSACTIONS,
-        );  
+        );
 
         VersionMessage::serialize_message(
             peer_stream, 

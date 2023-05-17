@@ -8,7 +8,9 @@ use super::{
 
 use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian,
+    deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization,
 };
 
@@ -48,9 +50,9 @@ impl Message for GetHeadersMessage {
     }
 }
 
-impl SerializableLittleEndian for GetHeadersMessage {
+impl SerializableInternalOrder for GetHeadersMessage {
 
-    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.version.le_serialize(stream)?;
         CompactSize::new(self.header_locator_hashes.len() as u64).le_serialize(stream)?;
 
@@ -63,9 +65,9 @@ impl SerializableLittleEndian for GetHeadersMessage {
     }
 }
 
-impl DeserializableLittleEndian for GetHeadersMessage {
+impl DeserializableInternalOrder for GetHeadersMessage {
 
-    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let version = ProtocolVersionP2P::le_deserialize(stream)?;
         let size = CompactSize::le_deserialize(stream)?;
 
@@ -94,6 +96,7 @@ mod tests {
         CompactSize,
         
         SerializableLittleEndian,
+        SerializableInternalOrder,
         ErrorSerialization, 
         
         HashType,
@@ -122,7 +125,7 @@ mod tests {
         );
 
         let mut stream: Vec<u8> = Vec::new();
-        get_headers_message.le_serialize(&mut stream)?;
+        get_headers_message.io_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 

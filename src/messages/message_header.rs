@@ -49,13 +49,13 @@ impl MessageHeader {
     
         let mut buffer: &[u8] = &buffer[..];
     
-        MessageHeader::le_deserialize(&mut buffer)
+        MessageHeader::io_deserialize(&mut buffer)
     }
 }
 
-impl SerializableLittleEndian for MessageHeader {
+impl SerializableInternalOrder for MessageHeader {
     
-    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
 
         self.magic_numbers.io_serialize(stream)?;
         self.command_name.io_serialize(stream)?;
@@ -65,9 +65,9 @@ impl SerializableLittleEndian for MessageHeader {
     }
 }
 
-impl DeserializableLittleEndian for MessageHeader {
+impl DeserializableInternalOrder for MessageHeader {
     
-    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         
         Ok(MessageHeader {
             magic_numbers: MagicType::io_deserialize(stream)?,

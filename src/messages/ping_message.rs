@@ -5,7 +5,9 @@ use super::{
 
 use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian,
+    deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization,
 };
 
@@ -25,16 +27,16 @@ impl Message for PingMessage {
     }
 }
 
-impl SerializableLittleEndian for PingMessage {
+impl SerializableInternalOrder for PingMessage {
     
-    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.nonce.le_serialize(stream)
     }
 }
 
-impl DeserializableLittleEndian for PingMessage {
+impl DeserializableInternalOrder for PingMessage {
 
-    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         Ok(PingMessage {
             nonce: u64::le_deserialize(stream)?,
         })

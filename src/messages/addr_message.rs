@@ -6,7 +6,9 @@ use super::{
 
 use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian, 
+    deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization,
 };
 
@@ -31,9 +33,9 @@ impl Message for AddrMessage {
     }
 }
 
-impl SerializableLittleEndian for AddrMessage {
+impl SerializableInternalOrder for AddrMessage {
 
-    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
 
         CompactSize::new(self.ip_addresses.len() as u64).le_serialize(stream)?;
         for ip_address in self.ip_addresses.iter() {
@@ -44,8 +46,9 @@ impl SerializableLittleEndian for AddrMessage {
     }
 }
 
-impl DeserializableLittleEndian for AddrMessage {
-    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {    
+impl DeserializableInternalOrder for AddrMessage {
+
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {    
 
         let ip_address_count = CompactSize::le_deserialize(stream)?.value;
         let mut ip_addresses: Vec<NetworkIpAddres> = Vec::new();

@@ -4,8 +4,11 @@ use super::{
 };
 
 use crate::serialization::{
-    deserializable_little_endian::DeserializableLittleEndian, error_serialization::ErrorSerialization,
     serializable_little_endian::SerializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
+    deserializable_little_endian::DeserializableLittleEndian,
+    deserializable_internal_order::DeserializableInternalOrder,
+    error_serialization::ErrorSerialization,
 };
 
 use std::io::{
@@ -26,17 +29,18 @@ impl Message for SendCmpctMessage {
     }
 }
 
-impl SerializableLittleEndian for SendCmpctMessage {
+impl SerializableInternalOrder for SendCmpctMessage {
 
-    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.announce.le_serialize(stream)?;
         self.version.le_serialize(stream)?;
         Ok(())
     }
 }
 
-impl DeserializableLittleEndian for SendCmpctMessage {
-    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {        
+impl DeserializableInternalOrder for SendCmpctMessage {
+    
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {        
         Ok(SendCmpctMessage{
             announce: bool::le_deserialize(stream)?,
             version: u64::le_deserialize(stream)?,

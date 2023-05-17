@@ -1,6 +1,6 @@
 use crate::serialization::{
-    serializable_little_endian::SerializableLittleEndian,
-    deserializable_little_endian::DeserializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
+    deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization,
 };
 
@@ -38,16 +38,16 @@ use std::io::{
 
 pub const CHECKSUM_EMPTY_PAYLOAD: MagicType = [0x5d, 0xf6, 0xe0, 0xe2];
 
-pub trait Message: SerializableLittleEndian + DeserializableLittleEndian{
+pub trait Message: SerializableInternalOrder + DeserializableInternalOrder {
     
     fn serialize_message(
         stream: &mut dyn Write, 
         magic_numbers: MagicType,
-        payload: &dyn SerializableLittleEndian,
+        payload: &dyn SerializableInternalOrder,
     ) -> Result<(), ErrorSerialization> 
     {
         let mut serialized_payload: Vec<u8> = Vec::new();
-        payload.le_serialize(&mut serialized_payload)?;
+        payload.io_serialize(&mut serialized_payload)?;
         let serialized_payload: &[u8] = &serialized_payload;
     
         let header = MessageHeader {
@@ -57,8 +57,8 @@ pub trait Message: SerializableLittleEndian + DeserializableLittleEndian{
             checksum: hash256d_reduce(serialized_payload)?,
         };
     
-        header.le_serialize(stream)?;
-        serialized_payload.le_serialize(stream)?;        
+        header.io_serialize(stream)?;
+        serialized_payload.io_serialize(stream)?;
     
         Ok(())
     }
@@ -74,10 +74,10 @@ pub trait Message: SerializableLittleEndian + DeserializableLittleEndian{
             return Err(ErrorSerialization::ErrorWhileReading);
         }
         let mut buffer: &[u8] = &buffer[..];
-        let message = Self::le_deserialize(&mut buffer)?;
+        let message = Self::io_deserialize(&mut buffer)?;
 
         let mut serialized_message: Vec<u8> = Vec::new();
-        message.le_serialize(&mut serialized_message)?;
+        message.io_serialize(&mut serialized_message)?;
 
         let length = serialized_message.len();
         if length != message_header.payload_size as usize {

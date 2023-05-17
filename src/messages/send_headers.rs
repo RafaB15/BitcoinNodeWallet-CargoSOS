@@ -7,8 +7,9 @@ use super::{
 };
 
 use crate::serialization::{
-    deserializable_little_endian::DeserializableLittleEndian, error_serialization::ErrorSerialization,
-    serializable_little_endian::SerializableLittleEndian,
+    deserializable_internal_order::DeserializableInternalOrder, 
+    serializable_internal_order::SerializableInternalOrder,
+    error_serialization::ErrorSerialization,
 };
 
 use std::io::{
@@ -33,15 +34,15 @@ impl Message for SendHeadersMessage {
     }
 }
 
-impl SerializableLittleEndian for SendHeadersMessage {
+impl SerializableInternalOrder for SendHeadersMessage {
 
-    fn le_serialize(&self, _: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn io_serialize(&self, _: &mut dyn Write) -> Result<(), ErrorSerialization> {
         Ok(())
     }
 }
 
-impl DeserializableLittleEndian for SendHeadersMessage {
-    fn le_deserialize(_: &mut dyn Read) -> Result<Self, ErrorSerialization> {        
+impl DeserializableInternalOrder for SendHeadersMessage {
+    fn io_deserialize(_: &mut dyn Read) -> Result<Self, ErrorSerialization> {        
         Ok(SendHeadersMessage)
     }
 }
