@@ -19,6 +19,8 @@ use crate::messages::{
     error_message::ErrorMessage,
 };
 
+use crate::logs::logger_sender::LoggerSender;
+
 use crate::connections::{
     type_identifier::TypeIdentifier,
 };
@@ -48,12 +50,18 @@ const NO_STOP_HASH: HashType = [0; 32];
 #[derive(Debug, Clone)]
 pub struct InitialBlockDownload {
     pub protocol_version: ProtocolVersionP2P,
+    sender_log: LoggerSender,
 }
 
 impl InitialBlockDownload {
-    pub fn new(protocol_version: ProtocolVersionP2P) -> Self {
+    pub fn new(
+        protocol_version: ProtocolVersionP2P,
+        sender_log: LoggerSender,
+    ) -> Self 
+    {
         InitialBlockDownload {
             protocol_version,
+            sender_log,
         }
     }
 
@@ -104,8 +112,9 @@ impl InitialBlockDownload {
             match block_chain.append_header(*header) {
                 Ok(_) => added_headers += 1,
                 Err(error) => {
-                    println!("Tuvimos {:?}", error);
-                    println!("header obtenido: {:?}", header);
+                    let _ = self.sender_log.log_connection(format!(
+                        "Could not append header, we get {:?}", error
+                    ));
                     break;                    
                 }
             }
@@ -120,6 +129,10 @@ impl InitialBlockDownload {
         block_chain: &mut BlockChain
     ) -> Result<u32,ErrorNode>
     {
+        let _ = self.sender_log.log_connection(
+            "Sending get headers message".to_string()    
+        );
+
         self.send_get_headers_message(peer_stream, block_chain)?;
 
         let header_headers_message = match message::deserialize_until_found(
@@ -131,6 +144,10 @@ impl InitialBlockDownload {
                 format!("Error while receiving headers message: {:?}", error)
             )),
         };
+
+        let _ = self.sender_log.log_connection(
+            "Receiving headers message".to_string()    
+        );
 
         let received_headers_message = match HeadersMessage::deserialize_message(
             peer_stream, 
@@ -152,6 +169,10 @@ impl InitialBlockDownload {
         hashed_header: &HashType,
     ) -> Result<Block, ErrorMessage> 
     {
+        let _ = self.sender_log.log_connection(
+            "Getting data".to_string()    
+        );
+
         let inventory_message = InventoryMessage {
             type_identifier: TypeIdentifier::Block,
             hash_value: *hashed_header,

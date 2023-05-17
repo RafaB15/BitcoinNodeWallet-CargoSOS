@@ -58,7 +58,6 @@ impl Serializable for MessageHeader {
         self.command_name.serialize(stream)?;
         self.payload_size.serialize(stream)?;
         self.checksum.serialize(stream)?;
-
         Ok(())
     }
 }
