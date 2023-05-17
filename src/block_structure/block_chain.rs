@@ -207,4 +207,75 @@ mod tests {
 
     } 
 
+    #[test]
+    fn test_03_correct_get_block_after_timestamp() {
+
+        let mut blockchain = BlockChain::new(
+            Block::new(
+                BlockHeader::new(
+                    block_version::BlockVersion::V1,
+                    [0; 32],
+                    [0; 32],
+                    0,
+                    Compact256::from_u32(10),
+                    0,
+                )
+            )
+        );
+
+        let mut serialized_blockchain_header = Vec::new();
+        blockchain.block.header.serialize(&mut serialized_blockchain_header).unwrap();
+        let hash_of_first_block_header = hash256d(&serialized_blockchain_header).unwrap();
+
+        let header_to_append = BlockHeader::new(
+                block_version::BlockVersion::V1,
+                hash_of_first_block_header.clone(),
+                [3; 32],
+                5,
+                Compact256::from_u32(10),
+                21,
+        );
+
+        blockchain.append_header(header_to_append.clone()).unwrap();
+
+        let block_after_timestamp = blockchain.get_block_after_timestamp(3).unwrap();
+        assert_eq!(block_after_timestamp.block.header, header_to_append);
+
+    }
+
+    #[test]
+    fn test_04_correct_get_last() {
+    
+            let mut blockchain = BlockChain::new(
+                Block::new(
+                    BlockHeader::new(
+                        block_version::BlockVersion::V1,
+                        [0; 32],
+                        [0; 32],
+                        0,
+                        Compact256::from_u32(10),
+                        0,
+                    )
+                )
+            );
+    
+            let mut serialized_blockchain_header = Vec::new();
+            blockchain.block.header.serialize(&mut serialized_blockchain_header).unwrap();
+            let hash_of_first_block_header = hash256d(&serialized_blockchain_header).unwrap();
+    
+            let header_to_append = BlockHeader::new(
+                    block_version::BlockVersion::V1,
+                    hash_of_first_block_header.clone(),
+                    [3; 32],
+                    5,
+                    Compact256::from_u32(10),
+                    21,
+            );
+    
+            blockchain.append_header(header_to_append.clone()).unwrap();
+    
+            let last_blocks = blockchain.last();
+            assert_eq!(last_blocks[0].header, header_to_append);
+    }
+
 }
