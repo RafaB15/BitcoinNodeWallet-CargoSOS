@@ -79,6 +79,7 @@ impl Handshake {
             TESTNET_MAGIC_NUMBERS, 
             &version_message,
         )?;
+
         Ok(())
     }
 
@@ -98,7 +99,7 @@ impl Handshake {
     }
 
     ///Function that tries to do the handshake with the given potential peer.
-    pub fn attempt_connection_with_testnet_peer<RW : Read + Write>(
+    fn attempt_connection_with_testnet_peer<RW : Read + Write>(
         &self,
         peer_stream: &mut RW,
         local_socket: &SocketAddr,

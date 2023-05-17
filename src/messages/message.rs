@@ -36,6 +36,8 @@ use std::io::{
     Write,
 };
 
+pub const CHECKSUM_EMPTY_PAYLOAD: MagicType = [0x5d, 0xf6, 0xe0, 0xe2];
+
 pub trait Message: SerializableLittleEndian + DeserializableLittleEndian{
     
     fn serialize_message(

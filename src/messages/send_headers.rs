@@ -1,5 +1,8 @@
 use super::{
-    message::Message,
+    message::{
+        Message,
+        CHECKSUM_EMPTY_PAYLOAD,
+    },
     command_name::CommandName,
 };
 
@@ -13,8 +16,6 @@ use std::io::{
     Write
 };
 
-pub const SEND_HEADERS_CHECKSUM: [u8; 4] = [0x5d, 0xf6, 0xe0, 0xe2];
-
 #[derive(Debug, std::cmp::PartialEq)]
 pub struct SendHeadersMessage;
 
@@ -24,7 +25,7 @@ impl Message for SendHeadersMessage {
         _: &[u8],
     ) -> Result<[u8; 4], ErrorSerialization> 
     {
-        Ok(SEND_HEADERS_CHECKSUM)
+        Ok(CHECKSUM_EMPTY_PAYLOAD)
     }
 
     fn get_command_name() -> CommandName {
