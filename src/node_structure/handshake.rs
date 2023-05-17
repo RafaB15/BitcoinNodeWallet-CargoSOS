@@ -1,12 +1,16 @@
 use crate::connections::{
-    error_connection::ErrorConnection, p2p_protocol::ProtocolVersionP2P,
+    p2p_protocol::ProtocolVersionP2P,
     suppored_services::SupportedServices,
+    error_connection::ErrorConnection, 
 };
 
 use crate::logs::logger_sender::LoggerSender;
 
 use crate::messages::{
-    message,
+    message::{
+        self,
+        Message,
+    },
     command_name::CommandName,
     version_message::VersionMessage,
     verack_message::VerackMessage,
@@ -70,10 +74,9 @@ impl Handshake {
             NO_NEW_TRANSACTIONS,
         );  
 
-        message::serialize_message(
+        VersionMessage::serialize_message(
             peer_stream, 
             TESTNET_MAGIC_NUMBERS, 
-            CommandName::Version, 
             &version_message,
         )?;
         Ok(())
@@ -85,14 +88,10 @@ impl Handshake {
         peer_stream: &mut RW
     ) -> Result<(), ErrorMessage>
     {        
-        
-        let verack_message = VerackMessage;
-
-        message::serialize_message(
+        VerackMessage::serialize_message(
             peer_stream, 
             TESTNET_MAGIC_NUMBERS, 
-            CommandName::Verack, 
-            &verack_message
+            &VerackMessage
         )?;
       
         Ok(())

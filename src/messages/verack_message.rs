@@ -1,10 +1,12 @@
 use super::{
-    message_header::MessageHeader,
+    message::Message,
+    command_name::CommandName,
 };
 
 use crate::serialization::{
-    deserializable::Deserializable, error_serialization::ErrorSerialization,
     serializable::Serializable,
+    deserializable::Deserializable, 
+    error_serialization::ErrorSerialization,
 };
 
 use std::io::{
@@ -17,30 +19,17 @@ pub const VERACK_CHECKSUM: [u8; 4] = [0x5d, 0xf6, 0xe0, 0xe2];
 #[derive(Debug, std::cmp::PartialEq)]
 pub struct VerackMessage;
 
-impl VerackMessage {
-  
-    pub fn deserialize_message(
-        stream: &mut dyn Read, 
-        message_header: MessageHeader,
-    ) -> Result<Self, ErrorSerialization> 
-    {
-        let mut buffer: Vec<u8> = vec![0; message_header.payload_size as usize];
-        if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorSerialization::ErrorWhileReading);
-        }
-        let mut buffer: &[u8] = &buffer[..];
+impl Message for VerackMessage {
 
-        let message = VerackMessage::deserialize(&mut buffer)?;
+    fn get_command_name() -> CommandName {
+        CommandName::Verack
+    }
 
-        if message_header.payload_size != 0 {
-            return Err(ErrorSerialization::ErrorInDeserialization(format!("Payload in verack message has to be 0: {:?}", message_header.payload_size)));
-        }
-        
-        if !VERACK_CHECKSUM.eq(&message_header.checksum) {
-            return Err(ErrorSerialization::ErrorInDeserialization(format!("Checksum in verack isn't the same: {:?} != {:?}", VERACK_CHECKSUM, message_header.checksum)));
-        }
+    fn calculate_checksum(
+        message: &Self,
+    ) -> Result<[u8; 4], ErrorSerialization> {
 
-        Ok(message)
+        Ok(VERACK_CHECKSUM)
     }
 }
 
@@ -63,13 +52,13 @@ mod tests {
         Serializable,
         Deserializable,
         ErrorSerialization,
-        MessageHeader,
         VerackMessage,
         VERACK_CHECKSUM,
     };
 
     use crate::messages::{
-        message,
+        message::Message,
+        message_header::MessageHeader,
         command_name::CommandName,
     };
 
@@ -80,10 +69,9 @@ mod tests {
         let verack_message = VerackMessage;
         let mut stream: Vec<u8> = Vec::new();
       
-        message::serialize_message(
+        VerackMessage::serialize_message(
             &mut stream,
             magic_bytes, 
-            CommandName::Verack, 
             &verack_message,
         )?;
         let mut expected_stream: Vec<u8> = Vec::new();

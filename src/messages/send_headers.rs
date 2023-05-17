@@ -1,5 +1,6 @@
 use super::{
-    message_header::MessageHeader,
+    message::Message,
+    command_name::CommandName,
 };
 
 use crate::serialization::{
@@ -17,34 +18,17 @@ pub const SEND_HEADERS_CHECKSUM: [u8; 4] = [0x5d, 0xf6, 0xe0, 0xe2];
 #[derive(Debug, std::cmp::PartialEq)]
 pub struct SendHeadersMessage;
 
-impl SendHeadersMessage {
-  
-    pub fn deserialize_message(
-        stream: &mut dyn Read, 
-        message_header: MessageHeader,
-    ) -> Result<Self, ErrorSerialization> 
+impl Message for SendHeadersMessage {
+
+    fn calculate_checksum(
+        message: &Self,
+    ) -> Result<[u8; 4], ErrorSerialization> 
     {
-        let mut buffer: Vec<u8> = vec![0; message_header.payload_size as usize];
-        if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorSerialization::ErrorWhileReading);
-        }
-        let mut buffer: &[u8] = &buffer[..];
+        Ok(SEND_HEADERS_CHECKSUM)
+    }
 
-        let message = SendHeadersMessage::deserialize(&mut buffer)?;
-
-        if message_header.payload_size != 0 {
-            return Err(ErrorSerialization::ErrorInDeserialization(
-                format!("Payload in send headers message has to be 0: {:?}", message_header.payload_size)
-            ));
-        }
-        
-        if !SEND_HEADERS_CHECKSUM.eq(&message_header.checksum) {
-            return Err(ErrorSerialization::ErrorInDeserialization(
-                format!("Checksum isn't the same: {:?} != {:?}", SEND_HEADERS_CHECKSUM, message_header.checksum)
-            ));
-        }
-
-        Ok(message)
+    fn get_command_name() -> CommandName {
+        CommandName::SendHeaders
     }
 }
 

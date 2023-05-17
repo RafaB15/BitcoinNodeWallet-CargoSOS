@@ -2,7 +2,8 @@ use crate::connections::p2p_protocol::ProtocolVersionP2P;
 
 use super::{
     compact_size::CompactSize,
-    message_header::MessageHeader,
+    message::Message,
+    command_name::CommandName,
 };
 
 use crate::serialization::{
@@ -18,7 +19,6 @@ use std::io::{
 
 use crate::block_structure::hash::{
     HashType,
-    hash256d_reduce,
 };
 
 pub struct GetHeadersMessage {
@@ -39,31 +39,12 @@ impl GetHeadersMessage {
             stop_hash,
         }
     }
+}
 
-    pub fn deserialize_message(
-        stream: &mut dyn Read, 
-        message_header: MessageHeader,
-    ) -> Result<Self, ErrorSerialization> 
-    {
-        let mut buffer: Vec<u8> = vec![0; message_header.payload_size as usize];
-        if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorSerialization::ErrorWhileReading);
-        }
-        let mut buffer: &[u8] = &buffer[..];
+impl Message for GetHeadersMessage {
 
-        let message = Self::deserialize(&mut buffer)?;
-
-        let mut serialized_message: Vec<u8> = Vec::new();
-        message.serialize(&mut serialized_message)?;
-        
-        let checksum = hash256d_reduce(&serialized_message)?;
-        if !checksum.eq(&message_header.checksum) {
-            return Err(ErrorSerialization::ErrorInDeserialization(
-                format!("Checksum in get headers isn't the same: {:?} != {:?}", checksum, message_header.checksum)
-            ));
-        }
-
-        Ok(message)        
+    fn get_command_name() -> CommandName {
+        CommandName::GetHeaders
     }
 }
 
@@ -84,7 +65,7 @@ impl Serializable for GetHeadersMessage {
 
 impl Deserializable for GetHeadersMessage {
 
-    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
+    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let version = ProtocolVersionP2P::deserialize(stream)?;
         let size = CompactSize::deserialize(stream)?;
 

@@ -36,50 +36,85 @@ use std::io::{
     Write,
 };
 
-const MAGIC_BYTES_SIZE: usize = 4;
-const MASSAGE_TYPE_SIZE: usize = 12;
-const PAYLOAD_SIZE: usize = 4;
-const CHECKSUM_SIZE: usize = 4;
-
-const HEADER_SIZE: usize = MAGIC_BYTES_SIZE + MASSAGE_TYPE_SIZE + PAYLOAD_SIZE + CHECKSUM_SIZE;
-
-pub fn serialize_message(
-    stream: &mut dyn Write, 
-    magic_numbers: MagicType,
-    command_name: CommandName,
-    payload: &dyn Serializable,
-) -> Result<(), ErrorSerialization> 
-{
-    let mut serialized_payload: Vec<u8> = Vec::new();
-    payload.serialize(&mut serialized_payload)?;
-    let serialized_payload: &[u8] = &serialized_payload;
-
-    let header = MessageHeader {
-        magic_numbers,
-        command_name,
-        payload_size: serialized_payload.len() as u32,
-        checksum: hash256d_reduce(serialized_payload)?,
-    };
-
-    header.serialize(stream)?;
-    serialized_payload.serialize(stream)?;        
-
-    Ok(())
-}
-
-pub fn deserialize_message(
-    stream: &mut dyn Read,
-) -> Result<MessageHeader, ErrorSerialization> 
-{
-    let mut buffer: Vec<u8> = vec![0; HEADER_SIZE];
-
-    if stream.read_exact(&mut buffer).is_err() {
-        return Err(ErrorSerialization::ErrorWhileReading);
+pub trait Message: Serializable + Deserializable{
+    
+    fn serialize_message(
+        stream: &mut dyn Write, 
+        magic_numbers: MagicType,
+        payload: &dyn Serializable,
+    ) -> Result<(), ErrorSerialization> 
+    {
+        let mut serialized_payload: Vec<u8> = Vec::new();
+        payload.serialize(&mut serialized_payload)?;
+        let serialized_payload: &[u8] = &serialized_payload;
+    
+        let header = MessageHeader {
+            magic_numbers,
+            command_name: Self::get_command_name(),
+            payload_size: serialized_payload.len() as u32,
+            checksum: hash256d_reduce(serialized_payload)?,
+        };
+    
+        header.serialize(stream)?;
+        serialized_payload.serialize(stream)?;        
+    
+        Ok(())
     }
 
-    let mut buffer: &[u8] = &buffer[..];
+    fn deserialize_message(
+        stream: &mut dyn Read, 
+        message_header: MessageHeader,
+    ) -> Result<Self, ErrorSerialization> 
+    {
+        let mut buffer: Vec<u8> = vec![0; message_header.payload_size as usize];
+        if stream.read_exact(&mut buffer).is_err() {
 
-    MessageHeader::deserialize(&mut buffer)
+            return Err(ErrorSerialization::ErrorWhileReading);
+        }
+        let mut buffer: &[u8] = &buffer[..];
+        let message = Self::deserialize(&mut buffer)?;
+
+        let mut serialized_message: Vec<u8> = Vec::new();
+        message.serialize(&mut serialized_message)?;
+
+        let length = serialized_message.len();
+        if length != message_header.payload_size as usize {
+            return Err(ErrorSerialization::ErrorInDeserialization(
+                format!(
+                    "Payload size {:?} in {:?} isn't the same as receive: {:?}", 
+                    length, 
+                    Self::get_command_name(), 
+                    message_header.payload_size
+                )
+            ));
+        }
+        
+        let checksum = Self::calculate_checksum(&message)?;
+        if !checksum.eq(&message_header.checksum) {
+            return Err(ErrorSerialization::ErrorInDeserialization(
+                format!(
+                    "Checksum {:?} in {:?}  isn't the same as receive: {:?}", 
+                    checksum, 
+                    Self::get_command_name(),
+                    message_header.checksum
+                )
+            ));
+        }
+
+        Ok(message)
+    }
+
+    fn calculate_checksum(
+        message: &Self,
+    ) -> Result<[u8; 4], ErrorSerialization> {
+
+        let mut serialized_message: Vec<u8> = Vec::new();
+        message.serialize(&mut serialized_message)?;
+        
+        hash256d_reduce(&serialized_message)
+    }
+
+    fn get_command_name() -> CommandName;
 }
 
 pub fn deserialize_until_found<RW : Read + Write>(
@@ -88,7 +123,7 @@ pub fn deserialize_until_found<RW : Read + Write>(
 ) -> Result<MessageHeader, ErrorMessage> 
 {
     loop {
-        let header = match deserialize_message(stream) {
+        let header = match MessageHeader::deserialize_header(stream) {
             Ok(header) => header,
             Err(error) => return Err(error.into()),
         };
@@ -125,10 +160,9 @@ pub fn deserialize_until_found<RW : Read + Write>(
                     nonce: ping.nonce,
                 };
 
-                serialize_message(
+                PongMessage::serialize_message(
                     stream,
                     magic_bytes,
-                    CommandName::Pong,
                     &pong,
                 )?;
             },

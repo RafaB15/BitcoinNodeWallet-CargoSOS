@@ -7,7 +7,10 @@ use crate::messages::{
     get_headers_message::GetHeadersMessage,
     headers_message::HeadersMessage,
 
-    message,
+    message::{
+        self,
+        Message,
+    },
     command_name::CommandName,
 
     inventory_message::InventoryMessage,
@@ -76,10 +79,9 @@ impl InitialBlockDownload {
             NO_STOP_HASH,
         );
 
-        message::serialize_message(
+        GetHeadersMessage::serialize_message(
             peer_stream, 
             TESTNET_MAGIC_NUMBERS, 
-            CommandName::GetHeaders, 
             &get_headers_message,
         )?;
 
@@ -155,10 +157,9 @@ impl InitialBlockDownload {
             hash_value: *hashed_header,
         };
 
-        message::serialize_message(
+        InventoryMessage::serialize_message(
             peer_stream, 
             TESTNET_MAGIC_NUMBERS, 
-            CommandName::Inventory, 
             &inventory_message,
         )?;
 

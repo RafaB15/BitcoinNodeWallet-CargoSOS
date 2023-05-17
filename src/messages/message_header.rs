@@ -15,6 +15,13 @@ use std::io::{
     Write,
 };
 
+const MAGIC_BYTES_SIZE: usize = 4;
+const MASSAGE_TYPE_SIZE: usize = 12;
+const PAYLOAD_SIZE: usize = 4;
+const CHECKSUM_SIZE: usize = 4;
+
+const HEADER_SIZE: usize = MAGIC_BYTES_SIZE + MASSAGE_TYPE_SIZE + PAYLOAD_SIZE + CHECKSUM_SIZE;
+
 pub type MagicType = [u8; 4];
 
 #[derive(Debug)]
@@ -23,6 +30,24 @@ pub struct MessageHeader {
     pub command_name: CommandName,
     pub payload_size: u32,
     pub checksum: HashTypeReduced,
+}
+
+impl MessageHeader {
+
+    pub fn deserialize_header(
+        stream: &mut dyn Read,
+    ) -> Result<MessageHeader, ErrorSerialization> 
+    {
+        let mut buffer: Vec<u8> = vec![0; HEADER_SIZE];
+    
+        if stream.read_exact(&mut buffer).is_err() {
+            return Err(ErrorSerialization::ErrorWhileReading);
+        }
+    
+        let mut buffer: &[u8] = &buffer[..];
+    
+        MessageHeader::deserialize(&mut buffer)
+    }
 }
 
 impl Serializable for MessageHeader {

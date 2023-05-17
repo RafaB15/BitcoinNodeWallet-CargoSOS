@@ -10,11 +10,8 @@ use crate::serialization::{
 };
 
 use super::{
-    message_header::MessageHeader,
-};
-
-use crate::block_structure::hash::{
-    hash256d_reduce,
+    message::Message,
+    command_name::CommandName,
 };
 
 use std::net::{
@@ -84,32 +81,11 @@ impl VersionMessage {
             relay,
         }
     }
+}
 
-    pub fn deserialize_message(
-        stream: &mut dyn Read, 
-        message_header: MessageHeader,
-    ) -> Result<Self, ErrorSerialization> 
-    {
-        let mut buffer: Vec<u8> = vec![0; message_header.payload_size as usize];
-        if stream.read_exact(&mut buffer).is_err() {
-
-            return Err(ErrorSerialization::ErrorWhileReading);
-        }
-        let mut buffer: &[u8] = &buffer[..];
-
-        let message = Self::deserialize(&mut buffer)?;
-
-        let mut serialized_message: Vec<u8> = Vec::new();
-        message.serialize(&mut serialized_message)?;
-        
-        let checksum = hash256d_reduce(&serialized_message)?;
-        if !checksum.eq(&message_header.checksum) {
-            return Err(ErrorSerialization::ErrorInDeserialization(
-                format!("Checksum in version isn't the same: {:?} != {:?}", checksum, message_header.checksum)
-            ));
-        }
-
-        Ok(message)        
+impl Message for VersionMessage {
+    fn get_command_name() -> CommandName {
+        CommandName::Version
     }
 }
 
