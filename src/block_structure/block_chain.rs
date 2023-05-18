@@ -6,6 +6,7 @@ use super::{
     error_block::ErrorBlock,
 };
 
+#[derive(Debug, Clone)]
 pub struct BlockChain {
     
     blocks: Vec<NodeChain>,
@@ -33,9 +34,9 @@ impl BlockChain {
 
     pub fn append_block(&mut self, block: Block) -> Result<(), ErrorBlock> {
 
-        for index_last_block in self.last_blocks.iter_mut() {
+        for index_last_block in self.last_blocks.clone().iter_mut() {
 
-            let mut last_block = self.get_block_at(*index_last_block)?;
+            let last_block = self.get_block_at_mut(*index_last_block)?;
 
             if last_block.is_equal(&block) {
                 return Err(ErrorBlock::TransactionAlreadyInBlock);
@@ -53,7 +54,7 @@ impl BlockChain {
 
             while let Some(index_previous_node) = last_block.index_previous_node {
 
-                last_block = self.get_block_at(*index_last_block)?;
+                let last_block = self.get_block_at_mut(index_previous_node)?;
 
                 if last_block.is_equal(&block) {
                     return Err(ErrorBlock::TransactionAlreadyInBlock);
@@ -74,9 +75,9 @@ impl BlockChain {
         Err(ErrorBlock::CouldNotAppendBlock)
     }
 
-    pub fn update_block(&self, block: Block) -> Result<(), ErrorBlock> {
+    pub fn update_block(&mut self, block: Block) -> Result<(), ErrorBlock> {
 
-        for current_block in self.blocks.iter() {
+        for current_block in self.blocks.iter_mut() {
 
             if current_block.is_equal(&block) {
 
@@ -124,9 +125,16 @@ impl BlockChain {
         todo!()
     }
 
-    fn get_block_at(&self, index: usize) -> Result<&NodeChain, ErrorBlock> {
+    fn get_block_at(&self, index: usize) -> Result<NodeChain, ErrorBlock> {
         match self.blocks.get(index) {
-            Some(block) => Ok(block),
+            Some(block) => Ok(block.clone()),
+            None => Err(ErrorBlock::NodeChainReferenceNotFound),
+        }
+    }
+
+    fn get_block_at_mut(&mut self, index: usize) -> Result<NodeChain, ErrorBlock> {
+        match self.blocks.get(index) {
+            Some(block) => Ok(block.clone()),
             None => Err(ErrorBlock::NodeChainReferenceNotFound),
         }
     }

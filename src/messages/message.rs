@@ -79,7 +79,7 @@ pub trait Message: SerializableInternalOrder + DeserializableInternalOrder {
         let mut serialized_message: Vec<u8> = Vec::new();
         message.io_serialize(&mut serialized_message)?;
 
-        let length = Self::calculate_length(&serialized_message)?;
+        let length = serialized_message.len();
         if length != message_header.payload_size as usize {
             return Err(ErrorSerialization::ErrorInDeserialization(
                 format!(
@@ -110,12 +110,6 @@ pub trait Message: SerializableInternalOrder + DeserializableInternalOrder {
         serialized_message: &[u8],
     ) -> Result<[u8; 4], ErrorSerialization> {        
         hash256d_reduce(serialized_message)
-    }
-
-    fn calculate_length(
-        serialized_message: &[u8],
-    ) -> Result<usize, ErrorSerialization> {
-        Ok(serialized_message.len())
     }
 
     fn get_command_name() -> CommandName;

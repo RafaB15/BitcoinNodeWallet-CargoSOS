@@ -229,56 +229,28 @@ fn get_peer_header(
     Ok(())
 }
 
-fn get_blocks_recursive(
-    peer_stream: &mut TcpStream,
-    block_download: InitialBlockDownload,
-    blocks: &mut Vec<Block>,
-    block_chain_actual: BlockChain,
-) {
-
-    let block_header = block_chain_actual.block.header;
-
-    let mut bytes: Vec<u8> = Vec::new();
-    if block_header.io_serialize(&mut bytes).is_err() {
-        return;
-    }
-
-    let heashed_header: HashType = match hash256d(&bytes) {
-        Ok(heashed_header) => heashed_header,
-        Err(_) => return,
-    };
-
-    if let Ok(block) = block_download.get_data(
-        peer_stream,
-        &heashed_header,
-    ) {
-
-        blocks.push(block);
-
-        for block_chain in block_chain_actual.next_blocks {
-            get_blocks_recursive(
-                peer_stream,
-                block_download.clone(),
-                blocks,
-                *block_chain,
-            );
-        }
-    }
-}
-
 fn get_blocks(
     peer_stream: &mut TcpStream,
     block_download: InitialBlockDownload,
-    block_chain: BlockChain,
-) -> Vec<Block> {
+    list_of_blocks: Vec<Block>,
+) -> Vec<Block> 
+{
     let mut blocks: Vec<Block> = Vec::new();
 
-    get_blocks_recursive(
-        peer_stream, 
-        block_download, 
-        &mut blocks, 
-        block_chain,
-    );
+    for block in list_of_blocks {
+        
+        let header_hash = match block.header.get_hash256d(){
+            Ok(header_hash) => header_hash,
+            Err(_) => continue,
+        };
+
+        if let Ok(block) = block_download.get_data(
+            peer_stream,
+            &header_hash,
+        ) {
+            blocks.push(block);
+        } 
+    }
 
     blocks
 }
@@ -309,7 +281,7 @@ fn get_initial_download_headers_first(
         )?;
 
         let timestamp: u32 = 1681703228;
-        let partial_block_chain = block_chain.get_block_after_timestamp(timestamp)?;
+        let list_of_blocks = block_chain.get_blocks_after_timestamp(timestamp)?;
         let block_download_peer = block_download.clone();
 
         let peer_download_handle = thread::spawn(move || {
@@ -317,7 +289,7 @@ fn get_initial_download_headers_first(
             get_blocks(
                 &mut peer_stream,
                 block_download_peer,
-                partial_block_chain,
+                list_of_blocks,
             )
         });
 
@@ -356,7 +328,7 @@ fn get_block_chain(
     let genesis_header: BlockHeader = BlockHeader::generate_genesis_block_header();
     let genesis_block: Block = Block::new(genesis_header);
 
-    let mut block_chain: BlockChain = BlockChain::new(genesis_block);
+    let mut block_chain: BlockChain = BlockChain::new(genesis_block)?;
 
     match method {
         InitialDownloadMethod::HeadersFirst => {
@@ -395,7 +367,7 @@ fn main() -> Result<(), ErrorExecution> {
 
         let block_chain = get_block_chain(peer_streams, logger_sender.clone())?;
 
-        println!("Las elements: {:?}", block_chain.last());
+        println!("Las elements: {:?}", block_chain.latest());
     }
     
     

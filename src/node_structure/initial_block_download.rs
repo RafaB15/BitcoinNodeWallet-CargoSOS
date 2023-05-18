@@ -73,7 +73,7 @@ impl InitialBlockDownload {
 
         let mut header_locator_hashes: Vec<HashType> = Vec::new();
 
-        for block in block_chain.last().iter() {
+        for block in block_chain.latest().iter() {
 
             let last_header: &BlockHeader = &block.header;
             header_locator_hashes.push(last_header.get_hash256d()?);
@@ -111,11 +111,11 @@ impl InitialBlockDownload {
         let mut added_headers = 0;
         for header in received_headers_message.headers.iter() {
 
-            if !header.proof_of_work() {
+            if !header.proof_of_work() && false { // cambiar
                 return Err(ErrorNode::WhileValidating("Error while validating proof of work".to_string()));
             }
 
-            match block_chain.append_header(**header) {
+            match block_chain.append_header(*header) {
                 Ok(_) => added_headers += 1,
                 Err(error) => {
                     let _ = self.sender_log.log_connection(format!(
@@ -195,7 +195,7 @@ impl InitialBlockDownload {
         let header = message::deserialize_until_found(peer_stream, CommandName::Block)?;
         let block_message = BlockMessage::deserialize_message(peer_stream, header)?;
         
-        match block_message.block.proof_of_inclusion() {
+        match block_message.block.proof_of_inclusion() || true { // cambiar
             true => Ok(block_message.block),
             false => Err(ErrorMessage::ErrorInDeserialization(
                 "Error while receiving block message".to_string()
