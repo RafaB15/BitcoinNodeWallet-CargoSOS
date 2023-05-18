@@ -9,6 +9,7 @@ use std::io::{
     Write,
 };
 
+const ERROR_VALUE: u32 = 0x00;
 const TRANSACTION_ID_VALUE: u32 = 0x01;
 const BLOCK_VALUE: u32 = 0x02;
 const FILTERED_BLOCK_VALUE: u32 = 0x03;
@@ -19,6 +20,7 @@ const FILTERED_WITNESS_BLOCK_VALUE: u32 = 0x40000003;
 
 #[derive(Debug)]
 pub enum TypeIdentifier {
+    Error,
     TransactionId,
     Block,
     FilteredBlock,
@@ -32,6 +34,7 @@ impl SerializableLittleEndian for TypeIdentifier {
 
     fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         let value: u32 = match self {
+            TypeIdentifier::Error => ERROR_VALUE,
             TypeIdentifier::TransactionId => TRANSACTION_ID_VALUE,
             TypeIdentifier::Block => BLOCK_VALUE,
             TypeIdentifier::FilteredBlock => FILTERED_BLOCK_VALUE,
@@ -42,7 +45,9 @@ impl SerializableLittleEndian for TypeIdentifier {
         };
 
         match value.le_serialize(stream) {
-            Err(_) => Err(ErrorSerialization::ErrorInSerialization(format!("While serializing the type identifier {:?}", self))),
+            Err(_) => Err(ErrorSerialization::ErrorInSerialization(
+                format!("While serializing the type identifier {:?}", self)
+            )),
             _ => Ok(()),
         }
     }
@@ -54,6 +59,7 @@ impl DeserializableLittleEndian for TypeIdentifier {
         let value = u32::le_deserialize(stream)?;
 
         match value {
+            ERROR_VALUE => Ok(TypeIdentifier::Error),
             TRANSACTION_ID_VALUE => Ok(TypeIdentifier::TransactionId),
             BLOCK_VALUE => Ok(TypeIdentifier::Block),
             FILTERED_BLOCK_VALUE => Ok(TypeIdentifier::FilteredBlock),
@@ -61,7 +67,10 @@ impl DeserializableLittleEndian for TypeIdentifier {
             WITNESS_TRANSACTION_VALUE => Ok(TypeIdentifier::WitnessTransaction),
             WITNESS_BLOCK_VALUE => Ok(TypeIdentifier::WitnessBlock),
             FILTERED_WITNESS_BLOCK_VALUE => Ok(TypeIdentifier::FilteredWitnessBlock),
-            _ => Err(ErrorSerialization::ErrorInDeserialization("While deserializing the type identifier".to_string())),
+            _ => Err(ErrorSerialization::ErrorInDeserialization(format!(
+                "While deserializing the type identifier, we get: {}",
+                value,
+            ))),
         }
     }
 }

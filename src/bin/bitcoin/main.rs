@@ -359,7 +359,7 @@ fn main() -> Result<(), ErrorExecution> {
         
     // Ejecutar programa
     {
-        let cantidad_peers: usize = 1;
+        let cantidad_peers: usize = 3;
         
         let potential_peers = get_potential_peers(logger_sender.clone())?[..cantidad_peers].to_vec();
         
