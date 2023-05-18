@@ -113,17 +113,18 @@ impl BlockChain {
         last_blocks
     }
 
-    pub fn update_utxo_from_address_in_block(&self, address: &str, utxo_from_address: &mut Vec<(TransactionOutput, HashType, u32)>) {
-        self.block.update_utxo_from_address(address, utxo_from_address);
+    pub fn update_utxo_list_in_block(&self, utxo: &mut Vec<(TransactionOutput, HashType, u32)>) {
+        self.block.update_utxo_list(utxo);
         match self.next_blocks.iter().next() {
-            Some(next_block) => next_block.update_utxo_from_address_in_block(address, utxo_from_address),
+            Some(next_block) => next_block.update_utxo_list_in_block(utxo),
             None => (),
         }
     }
 
-    pub fn get_utxo_from_address(&self, address: &str) -> Vec<TransactionOutput> {
-        let mut utxo_from_address: Vec<(TransactionOutput, HashType, u32)> = vec![];
-        self.update_utxo_from_address_in_block(address, &mut utxo_from_address);
-        utxo_from_address.iter().map(|(output, _, _)| output.clone()).collect()
+    pub fn get_utxo(&self) -> Vec<TransactionOutput> {
+        let mut utxo: Vec<(TransactionOutput, HashType, u32)> = vec![];
+        self.update_utxo_list_in_block(&mut utxo);
+        utxo.retain(|(output, _, _)| output.value != 0);
+        utxo.iter().map(|(output, _, _)| output.clone()).collect()
     }
 }
