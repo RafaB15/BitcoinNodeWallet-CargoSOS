@@ -19,6 +19,6 @@ pub enum ErrorBlock {
 
     CouldNotFindBlockFarEnough,
 
-    CouldNotModify,
+    NodeChainReferenceNotFound,
 }
 

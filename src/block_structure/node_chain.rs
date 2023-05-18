@@ -1,21 +1,16 @@
 use super::{
     block::Block,
-    block_chain::NodeChainRef, 
     hash::HashType,
     error_block::ErrorBlock,
 };
 
-
-
-use std::{sync::Arc};
-
 #[derive(Debug, Clone)]
 pub struct NodeChain {
 
-    pub previous_node: Option<NodeChainRef>,
-
     pub block: Block,
     pub header_hash: HashType,
+
+    pub index_previous_node: Option<usize>,
 }
 
 impl NodeChain {
@@ -28,13 +23,13 @@ impl NodeChain {
         };
 
         Ok(NodeChain { 
-            previous_node: None, 
+            index_previous_node: None, 
             header_hash, 
             block, 
         })
     }
 
-    pub fn new(block: Block, previous_node: NodeChainRef) -> Result<Self, ErrorBlock> {
+    pub fn new(block: Block, index_previous_node: usize) -> Result<Self, ErrorBlock> {
 
         let header_hash = match block.header.get_hash256d() {
             Ok(hash) => hash,
@@ -42,7 +37,7 @@ impl NodeChain {
         };
 
         Ok(NodeChain { 
-            previous_node: Some(previous_node), 
+            index_previous_node: Some(index_previous_node), 
             header_hash, 
             block, 
         })
@@ -61,13 +56,11 @@ impl NodeChain {
 
     pub fn is_equal(&self, block: &Block) -> bool {
 
-        let given_hash = match block.header.get_hash256d() {
-            Ok(hash) => hash,
-            _ => return false,
-        };
-
-        let hash = match self.block.header.get_hash256d() {
-            Ok(hash) => hash,
+        let (given_hash, hash) = match (
+            block.header.get_hash256d(), 
+            self.block.header.get_hash256d()
+        ) {
+            (Ok(given_hash), Ok(hash)) => (given_hash, hash),
             _ => return false,
         };
 
