@@ -12,6 +12,11 @@ pub struct BlockChain {
     last_blocks: Vec<usize>,
 }
 
+use crate::block_structure::{
+    transaction_output::TransactionOutput,
+    hash::HashType,
+};
+
 impl BlockChain {
 
     pub fn new(block: Block) -> Result<Self, ErrorBlock> {
@@ -134,6 +139,17 @@ impl BlockChain {
             None => Err(ErrorBlock::NodeChainReferenceNotFound),
         }
     }
+
+    pub fn get_utxo(&self) -> Vec<TransactionOutput> {
+        let mut utxo: Vec<(TransactionOutput, HashType, u32)> = vec![];
+        for node_chain in self.blocks.iter() {
+            node_chain.block.update_utxo_list(&mut utxo);
+        }
+        utxo.retain(|(output, _, _)| output.value != -1);
+        utxo.iter().map(|(output, _, _)| output.clone()).collect()
+    }
+
+
 }
 
 #[cfg(test)]
