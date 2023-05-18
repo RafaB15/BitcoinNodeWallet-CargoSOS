@@ -127,3 +127,165 @@ impl BlockChain {
         utxo_from_address.iter().map(|(output, _, _)| output.clone()).collect()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::block_structure::{
+        compact256::Compact256,
+        hash::hash256d,
+        block_version,
+        transaction_input::TransactionInput,
+        transaction_output::TransactionOutput,
+        transaction::Transaction,
+        outpoint::Outpoint,
+    };
+    use crate::serialization::serializable::Serializable;
+    use super::*;
+
+    #[test]
+    fn test_01_correct_append_header() {
+        let mut blockchain = BlockChain::new(
+            Block::new(
+                BlockHeader::new(
+                    block_version::BlockVersion::V1,
+                    [0; 32],
+                    [0; 32],
+                    0,
+                    Compact256::from_u32(10),
+                    0,
+                )
+            )
+        );
+        let mut serialized_blockchain_header = Vec::new();
+        blockchain.block.header.serialize(&mut serialized_blockchain_header).unwrap();
+        let hash_of_first_block_header = hash256d(&serialized_blockchain_header).unwrap();
+
+        let header_to_append = BlockHeader::new(
+                block_version::BlockVersion::V1,
+                hash_of_first_block_header.clone(),
+                [0; 32],
+                0,
+                Compact256::from_u32(10),
+                0,
+        );
+
+        blockchain.append_header(header_to_append.clone()).unwrap();
+        assert_eq!(blockchain.next_blocks[0].block.header, header_to_append);
+
+    }
+
+    #[test]
+    fn test_02_correct_block_update() {
+
+        let transaction_input = TransactionInput::new(
+            Outpoint { hash: [1;32], index: 23 },
+            String::from("Prueba in"),
+            24
+        );
+
+        let transaction_output = TransactionOutput{
+            value: 10, 
+            pk_script: String::from("Prueba out")
+        };
+
+        let transaction = Transaction {
+            version : 1,
+            tx_in: vec![transaction_input.clone()],
+            tx_out: vec![transaction_output.clone()],
+            time: 0,
+        };
+
+        let empty_block = Block::new(
+            BlockHeader::new(
+                block_version::BlockVersion::V1,
+                [0; 32],
+                [0; 32],
+                0,
+                Compact256::from_u32(10),
+                0,
+            )
+        );
+
+        let mut block_with_transactions = empty_block.clone();
+        block_with_transactions.append_transaction(transaction.clone()).unwrap();
+
+        let mut blockchain = BlockChain::new(empty_block);
+
+        blockchain.update_block(block_with_transactions).unwrap();
+
+        assert_eq!(blockchain.block.transactions[0], transaction);
+
+    } 
+
+    #[test]
+    fn test_03_correct_get_block_after_timestamp() {
+
+        let mut blockchain = BlockChain::new(
+            Block::new(
+                BlockHeader::new(
+                    block_version::BlockVersion::V1,
+                    [0; 32],
+                    [0; 32],
+                    0,
+                    Compact256::from_u32(10),
+                    0,
+                )
+            )
+        );
+
+        let mut serialized_blockchain_header = Vec::new();
+        blockchain.block.header.serialize(&mut serialized_blockchain_header).unwrap();
+        let hash_of_first_block_header = hash256d(&serialized_blockchain_header).unwrap();
+
+        let header_to_append = BlockHeader::new(
+                block_version::BlockVersion::V1,
+                hash_of_first_block_header.clone(),
+                [3; 32],
+                5,
+                Compact256::from_u32(10),
+                21,
+        );
+
+        blockchain.append_header(header_to_append.clone()).unwrap();
+
+        let block_after_timestamp = blockchain.get_block_after_timestamp(3).unwrap();
+        assert_eq!(block_after_timestamp.block.header, header_to_append);
+
+    }
+
+    #[test]
+    fn test_04_correct_get_last() {
+    
+            let mut blockchain = BlockChain::new(
+                Block::new(
+                    BlockHeader::new(
+                        block_version::BlockVersion::V1,
+                        [0; 32],
+                        [0; 32],
+                        0,
+                        Compact256::from_u32(10),
+                        0,
+                    )
+                )
+            );
+    
+            let mut serialized_blockchain_header = Vec::new();
+            blockchain.block.header.serialize(&mut serialized_blockchain_header).unwrap();
+            let hash_of_first_block_header = hash256d(&serialized_blockchain_header).unwrap();
+    
+            let header_to_append = BlockHeader::new(
+                    block_version::BlockVersion::V1,
+                    hash_of_first_block_header.clone(),
+                    [3; 32],
+                    5,
+                    Compact256::from_u32(10),
+                    21,
+            );
+    
+            blockchain.append_header(header_to_append.clone()).unwrap();
+    
+            let last_blocks = blockchain.last();
+            assert_eq!(last_blocks[0].header, header_to_append);
+    }
+
+}

@@ -19,7 +19,7 @@ use crate::messages::{
     compact_size::CompactSize,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Block {
     pub header: BlockHeader,
     pub transactions: Vec<Transaction>,
