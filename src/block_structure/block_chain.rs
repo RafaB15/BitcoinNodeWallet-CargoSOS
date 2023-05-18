@@ -1,16 +1,9 @@
 use super::{
     block::Block, 
     block_header::BlockHeader, 
-    hash::{
-        HashType,
-        hash256d,
-    },
+    hash::HashType,
     transaction_output::TransactionOutput,
     error_block::ErrorBlock,
-};
-
-use crate::serialization::{
-    serializable_internal_order::SerializableInternalOrder,
 };
 
 #[derive(Debug, Clone)]
@@ -40,11 +33,8 @@ impl BlockChain {
             _ => return Err(ErrorBlock::CouldNotHash),
         };
 
-        println!("nuestro hash: {:?}", hashed_header);
-        println!("otro hash   : {:?}", previous_hashed_header);
-
-        if previous_hashed_header == hashed_header {
-            self.next_blocks.push(BlockChain::new(block));    
+        if previous_hashed_header.eq(&hashed_header) {
+            self.next_blocks.push(BlockChain::new(block));
             return Ok(())
         }
         
@@ -52,7 +42,8 @@ impl BlockChain {
 
             let block_clone = block.clone();
             match next_block.append_block(block_clone) {
-                Err(ErrorBlock::CouldNotAppendBlock) | Ok(_) => continue,
+                Ok(_) => return Ok(()),
+                Err(ErrorBlock::CouldNotAppendBlock) => continue,
                 err => return err,
             }
         }

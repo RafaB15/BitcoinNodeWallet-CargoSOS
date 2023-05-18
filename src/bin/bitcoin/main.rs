@@ -308,7 +308,7 @@ fn get_initial_download_headers_first(
             &logger_sender,
         )?;
 
-        let timestamp: u32 = 40000;
+        let timestamp: u32 = 1681703228;
         let partial_block_chain = block_chain.get_block_after_timestamp(timestamp)?;
         let block_download_peer = block_download.clone();
 
@@ -324,8 +324,6 @@ fn get_initial_download_headers_first(
         peer_download_handles.push(peer_download_handle);
 
     }
-
-    println!("block_chain: {:?}", block_chain);
 
     for peer_download_handle in peer_download_handles {
         match peer_download_handle.join() {
@@ -427,7 +425,7 @@ fn main() -> Result<(), ErrorExecution> {
         
     // Ejecutar programa
     {
-        let cantidad_peers: usize = 3;
+        let cantidad_peers: usize = 1;
         
         let potential_peers = get_potential_peers(logger_sender.clone())?[..cantidad_peers].to_vec();
         

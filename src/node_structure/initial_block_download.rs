@@ -29,16 +29,13 @@ use crate::block_structure::{
     block::Block,
     block_chain::BlockChain,
     block_header::BlockHeader,
-    hash::{hash256d, HashType},
+    hash::HashType,
 };
 
 use super::{
     error_node::ErrorNode
 };
 
-use crate::serialization::{
-    serializable_internal_order::SerializableInternalOrder,
-};
 
 use crate::connections::{
     p2p_protocol::ProtocolVersionP2P, 
@@ -79,7 +76,6 @@ impl InitialBlockDownload {
         for block in block_chain.last().iter() {
 
             let last_header: &BlockHeader = &block.header;
-
             header_locator_hashes.push(last_header.get_hash256d()?);
         }
 
