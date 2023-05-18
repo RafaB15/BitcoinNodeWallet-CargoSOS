@@ -45,13 +45,7 @@ impl NodeChain {
     }
 
     pub fn is_previous_of(&self, block: &Block) -> bool {
-        
-        let previous_hash = match block.header.get_hash256d() {
-            Ok(hash) => hash,
-            _ => return false,
-        };
-
-        self.header_hash.eq(&previous_hash)
+        self.header_hash.eq(&block.header.previous_block_header_hash)
     }
 
     pub fn is_equal(&self, block: &Block) -> bool {

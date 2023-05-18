@@ -2,7 +2,6 @@ use super::{
     block::Block, 
     block_header::BlockHeader, 
     node_chain::NodeChain,
-    transaction_output::TransactionOutput,
     error_block::ErrorBlock,
 };
 
@@ -34,9 +33,9 @@ impl BlockChain {
 
     pub fn append_block(&mut self, block: Block) -> Result<(), ErrorBlock> {
 
-        for index_last_block in self.last_blocks.clone().iter_mut() {
+        for (i, index_last_block) in self.last_blocks.clone().iter().enumerate() {
 
-            let last_block = self.get_block_at_mut(*index_last_block)?;
+            let last_block = self.get_block_at(*index_last_block)?;
 
             if last_block.is_equal(&block) {
                 return Err(ErrorBlock::TransactionAlreadyInBlock);
@@ -47,7 +46,7 @@ impl BlockChain {
                 let node = NodeChain::new(block, *index_last_block)?;
                 self.blocks.push(node);
 
-                *index_last_block = self.blocks.len() - 1;
+                self.last_blocks[i] = self.blocks.len() - 1;
 
                 return Ok(());
             }
@@ -105,7 +104,9 @@ impl BlockChain {
 
     pub fn latest(&self) -> Vec<Block> {
         
-        let mut last_blocks: Vec<Block> = Vec::new();
+        let mut latest: Vec<Block> = Vec::new();
+
+        println!("Last blocks: {:?}", self.last_blocks);
 
         for index_last_block in self.last_blocks.iter() {
 
@@ -114,25 +115,10 @@ impl BlockChain {
                 Err(_) => continue,
             };
 
-            last_blocks.push(last_block.block.clone());
+            latest.push(last_block.block.clone());
         }
 
-        last_blocks
-
-    }
-
-    pub fn update_utxo_from_address_in_block(&self, address: &str, utxo_from_address: &mut Vec<(TransactionOutput, HashType, u32)>) {
-        self.block.update_utxo_from_address(address, utxo_from_address);
-        match self.next_blocks.iter().next() {
-            Some(next_block) => next_block.update_utxo_from_address_in_block(address, utxo_from_address),
-            None => (),
-        }
-    }
-
-    pub fn get_utxo_from_address(&self, address: &str) -> Vec<TransactionOutput> {
-        let mut utxo_from_address: Vec<(TransactionOutput, HashType, u32)> = vec![];
-        self.update_utxo_from_address_in_block(address, &mut utxo_from_address);
-        utxo_from_address.iter().map(|(output, _, _)| output.clone()).collect()
+        latest
     }
 
     fn get_block_at(&self, index: usize) -> Result<NodeChain, ErrorBlock> {
@@ -154,45 +140,45 @@ impl BlockChain {
 mod tests {
     use crate::block_structure::{
         compact256::Compact256,
-        hash::hash256d,
         block_version,
         transaction_input::TransactionInput,
         transaction_output::TransactionOutput,
         transaction::Transaction,
         outpoint::Outpoint,
     };
-    use crate::serialization::serializable::Serializable;
+    use crate::messages::compact_size::CompactSize;
     use super::*;
 
     #[test]
     fn test_01_correct_append_header() {
-        let mut blockchain = BlockChain::new(
-            Block::new(
-                BlockHeader::new(
-                    block_version::BlockVersion::V1,
-                    [0; 32],
-                    [0; 32],
-                    0,
-                    Compact256::from_u32(10),
-                    0,
-                )
-            )
-        );
-        let mut serialized_blockchain_header = Vec::new();
-        blockchain.block.header.serialize(&mut serialized_blockchain_header).unwrap();
-        let hash_of_first_block_header = hash256d(&serialized_blockchain_header).unwrap();
-
-        let header_to_append = BlockHeader::new(
+        let block = Block::new(
+            BlockHeader::new(
                 block_version::BlockVersion::V1,
-                hash_of_first_block_header.clone(),
+                [0; 32],
                 [0; 32],
                 0,
-                Compact256::from_u32(10),
+                Compact256::from(10),
                 0,
+                CompactSize::new(0),
+            )
+        );
+
+        let hash_of_first_block_header = block.header.get_hash256d().unwrap();
+
+        let mut blockchain = BlockChain::new(block).unwrap();
+
+        let header_to_append = BlockHeader::new(
+            block_version::BlockVersion::V1,
+            hash_of_first_block_header.clone(),
+            [0; 32],
+            0,
+            Compact256::from(10),
+            0,
+            CompactSize::new(0),
         );
 
         blockchain.append_header(header_to_append.clone()).unwrap();
-        assert_eq!(blockchain.next_blocks[0].block.header, header_to_append);
+        assert_eq!(blockchain.blocks[1].block.header, header_to_append);
 
     }
 
@@ -223,91 +209,91 @@ mod tests {
                 [0; 32],
                 [0; 32],
                 0,
-                Compact256::from_u32(10),
+                Compact256::from(10),
                 0,
+                CompactSize::new(0),
             )
         );
 
         let mut block_with_transactions = empty_block.clone();
         block_with_transactions.append_transaction(transaction.clone()).unwrap();
 
-        let mut blockchain = BlockChain::new(empty_block);
+        let mut blockchain = BlockChain::new(empty_block).unwrap();
 
         blockchain.update_block(block_with_transactions).unwrap();
 
-        assert_eq!(blockchain.block.transactions[0], transaction);
+        assert_eq!(blockchain.blocks[0].block.transactions[0], transaction);
 
     } 
 
     #[test]
     fn test_03_correct_get_block_after_timestamp() {
 
-        let mut blockchain = BlockChain::new(
-            Block::new(
-                BlockHeader::new(
-                    block_version::BlockVersion::V1,
-                    [0; 32],
-                    [0; 32],
-                    0,
-                    Compact256::from_u32(10),
-                    0,
-                )
+        let block = Block::new(
+            BlockHeader::new(
+                block_version::BlockVersion::V1,
+                [0; 32],
+                [0; 32],
+                0,
+                Compact256::from(10),
+                0,
+                CompactSize::new(0),
             )
         );
 
-        let mut serialized_blockchain_header = Vec::new();
-        blockchain.block.header.serialize(&mut serialized_blockchain_header).unwrap();
-        let hash_of_first_block_header = hash256d(&serialized_blockchain_header).unwrap();
+        let hash_of_first_block_header = block.header.get_hash256d().unwrap();
+
+        let mut blockchain = BlockChain::new(block).unwrap();
 
         let header_to_append = BlockHeader::new(
-                block_version::BlockVersion::V1,
-                hash_of_first_block_header.clone(),
-                [3; 32],
-                5,
-                Compact256::from_u32(10),
-                21,
+            block_version::BlockVersion::V1,
+            hash_of_first_block_header.clone(),
+            [3; 32],
+            5,
+            Compact256::from(10),
+            21,
+            CompactSize::new(0),
         );
 
         blockchain.append_header(header_to_append.clone()).unwrap();
 
-        let block_after_timestamp = blockchain.get_block_after_timestamp(3).unwrap();
-        assert_eq!(block_after_timestamp.block.header, header_to_append);
-
+        let block_after_timestamp = blockchain.get_blocks_after_timestamp(3).unwrap();
+        assert_eq!(block_after_timestamp[0].header, header_to_append);
     }
 
     #[test]
-    fn test_04_correct_get_last() {
+    fn test_04_correct_get_latest() {
+
+        let block = Block::new(
+            BlockHeader::new(
+                block_version::BlockVersion::V1,
+                [0; 32],
+                [0; 32],
+                0,
+                Compact256::from(10),
+                0,
+                CompactSize::new(0),
+            )
+        );
+
+        let hash_of_first_block_header = block.header.get_hash256d().unwrap();
     
-            let mut blockchain = BlockChain::new(
-                Block::new(
-                    BlockHeader::new(
-                        block_version::BlockVersion::V1,
-                        [0; 32],
-                        [0; 32],
-                        0,
-                        Compact256::from_u32(10),
-                        0,
-                    )
-                )
-            );
-    
-            let mut serialized_blockchain_header = Vec::new();
-            blockchain.block.header.serialize(&mut serialized_blockchain_header).unwrap();
-            let hash_of_first_block_header = hash256d(&serialized_blockchain_header).unwrap();
-    
-            let header_to_append = BlockHeader::new(
-                    block_version::BlockVersion::V1,
-                    hash_of_first_block_header.clone(),
-                    [3; 32],
-                    5,
-                    Compact256::from_u32(10),
-                    21,
-            );
-    
-            blockchain.append_header(header_to_append.clone()).unwrap();
-    
-            let last_blocks = blockchain.last();
-            assert_eq!(last_blocks[0].header, header_to_append);
+        let mut blockchain = BlockChain::new(block).unwrap();
+
+        let header_to_append = BlockHeader::new(
+            block_version::BlockVersion::V1,
+            hash_of_first_block_header.clone(),
+            [3; 32],
+            5,
+            Compact256::from(10),
+            21,
+            CompactSize::new(0),
+        );
+
+        blockchain.append_header(header_to_append.clone()).unwrap();
+
+        let last_blocks = blockchain.latest();
+        assert_eq!(last_blocks[0].header, header_to_append);
     }
 
 }
