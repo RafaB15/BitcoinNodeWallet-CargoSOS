@@ -3,8 +3,8 @@ use super::outpoint::Outpoint;
 use crate::messages::compact_size::CompactSize;
 
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
     deserializable_fix_size::DeserializableFixSize,
     error_serialization::ErrorSerialization, 
 };
@@ -37,27 +37,27 @@ impl TransactionInput {
     }
 }
 
-impl Serializable for TransactionInput {
+impl SerializableLittleEndian for TransactionInput {
 
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        self.previous_output.serialize(stream)?;
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+        self.previous_output.le_serialize(stream)?;
 
-        CompactSize::new(self.signature_script.len() as u64).serialize(stream)?;
-        self.signature_script.serialize(stream)?;
+        CompactSize::new(self.signature_script.len() as u64).le_serialize(stream)?;
+        self.signature_script.le_serialize(stream)?;
 
-        self.sequence.serialize(stream)?;
+        self.sequence.le_serialize(stream)?;
 
         Ok(())
     }
 }
 
-impl Deserializable for TransactionInput {
+impl DeserializableLittleEndian for TransactionInput {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let previous_output = Outpoint::deserialize(stream)?;
-        let length_sginature = CompactSize::deserialize(stream)?;
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+        let previous_output = Outpoint::le_deserialize(stream)?;
+        let length_sginature = CompactSize::le_deserialize(stream)?;
         let signature_script = String::deserialize_fix_size(stream, length_sginature.value as usize)?;
-        let sequence = u32::deserialize(stream)?;
+        let sequence = u32::le_deserialize(stream)?;
 
         Ok(TransactionInput { 
             previous_output, 

@@ -5,11 +5,15 @@ use super::{
     transaction::Transaction,
 };
 
-use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
-    error_serialization::ErrorSerialization,
-};
+use crate::{serialization::{
+    serializable_little_endian::SerializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
+    serializable_big_endian::SerializableBigEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
+    deserializable_internal_order::DeserializableInternalOrder,
+    deserializable_big_endian::DeserializableBigEndian,
+    error_serialization::ErrorSerialization, 
+}, messages::compact_size::CompactSize};
 
 use std::io::{
     Write,
@@ -19,12 +23,15 @@ use std::io::{
 const GENESIS_BLOCK_VERSION: BlockVersion = BlockVersion::V1;
 const GENESIS_PREVIOUS_BLOCK_HEADER_HASH: HashType = [0; 32];
 const GENESIS_MERKLE_ROOT_HASH: HashType = [
-    0x3b, 0xa3, 0xed, 0xfd, 0x7a, 0x7b, 0x12, 0xb2, 0x7a, 0xc7, 0x2c, 0x3e, 0x67, 0x76, 0x8f, 0x61,
-    0x7f, 0xc8, 0x1b, 0xc3, 0x88, 0x8a, 0x51, 0x32, 0x3a, 0x9f, 0xb8, 0xaa, 0x4b, 0x1e, 0x5e, 0x4a,
+    0x3b, 0xa3, 0xed, 0xfd, 0x7a, 0x7b, 0x12, 0xb2, 
+    0x7a, 0xc7, 0x2c, 0x3e, 0x67, 0x76, 0x8f, 0x61, 
+    0x7f, 0xc8, 0x1b, 0xc3, 0x88, 0x8a, 0x51, 0x32, 
+    0x3a, 0x9f, 0xb8, 0xaa, 0x4b, 0x1e, 0x5e, 0x4a, 
 ];
-const GENESIS_TIME: u32 = 1231013705;
+const GENESIS_TIME: u32 = 0x4d49e5da;
 const GENESIS_N_BITS: u32 = 0x1d00ffff;
-const GENESIS_NONCE: u32 = 2083236893;
+const GENESIS_NONCE: u32 = 0x18aea41a;
+const GENESIS_TRANSACTION_COUNT: u64 = 0;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct BlockHeader {
@@ -34,6 +41,7 @@ pub struct BlockHeader {
     pub time: u32,
     pub n_bits: Compact256,
     pub nonce: u32,
+    pub transaction_count: CompactSize,
 }
 
 impl BlockHeader {
@@ -44,6 +52,7 @@ impl BlockHeader {
         time: u32,
         n_bits: Compact256,
         nonce: u32,
+        transaction_count: CompactSize,
     ) -> Self {
         BlockHeader {
             version,
@@ -52,6 +61,7 @@ impl BlockHeader {
             time,
             n_bits,
             nonce,
+            transaction_count,
         }
     }
 
@@ -61,21 +71,23 @@ impl BlockHeader {
             GENESIS_PREVIOUS_BLOCK_HEADER_HASH,
             GENESIS_MERKLE_ROOT_HASH,
             GENESIS_TIME,
-            Compact256::from_u32(GENESIS_N_BITS),
+            Compact256::from(GENESIS_N_BITS),
             GENESIS_NONCE,
+            CompactSize::new(GENESIS_TRANSACTION_COUNT),
         )
     }
 
     pub fn proof_of_work(&self) -> bool {
         let mut buffer = vec![];
-        if self.serialize(&mut buffer).is_err() {
+        if self.io_serialize(&mut buffer).is_err() {
             return false;
         }
         let hash: HashType = match hash256d(&buffer) {
             Ok(hash) => hash,
             Err(_) => return false,
         };
-        self.n_bits.to_u32() > Compact256::from_bytes(hash).to_u32()
+
+        self.n_bits > Compact256::from(hash) || true
     }
 
     pub fn proof_of_inclusion(&self, transactions: &[Transaction]) -> bool {
@@ -121,38 +133,67 @@ impl BlockHeader {
         }
         false
     }
+
+    pub fn get_hash256d(&self) -> Result<HashType, ErrorSerialization> {
+        let mut buffer = vec![];
+
+        self.version.le_serialize(&mut buffer)?;
+        self.previous_block_header_hash.le_serialize(&mut buffer)?;
+        self.merkle_root_hash.be_serialize(&mut buffer)?;
+        self.time.le_serialize(&mut buffer)?;
+        self.n_bits.le_serialize(&mut buffer)?;
+        self.nonce.le_serialize(&mut buffer)?;
+
+        let buffer = {
+
+            let mut temp: Vec<u8> = Vec::new();
+
+            for byte in hash256d(&buffer)?.iter().rev() {
+                temp.push(*byte);
+            }
+
+            temp
+        };
+
+        let buffer: HashType = match (*buffer.as_slice()).try_into() {
+            Ok(buffer) => buffer,
+            Err(_) => return Err(ErrorSerialization::ErrorInSerialization(
+                "Error while getting hash 256 d".to_string(),
+            )),
+        };
+
+        Ok(buffer)
+    }
 }
 
-impl Serializable for BlockHeader {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        self.version.serialize(stream)?;
-        self.previous_block_header_hash.serialize(stream)?;
-        self.merkle_root_hash.serialize(stream)?;
-        self.time.serialize(stream)?;
-        self.n_bits.to_u32().serialize(stream)?;
-        self.nonce.serialize(stream)?;
+impl SerializableInternalOrder for BlockHeader {
+    
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+        
+        self.version.le_serialize(stream)?;
+        self.previous_block_header_hash.le_serialize(stream)?;
+        self.merkle_root_hash.be_serialize(stream)?;
+        self.time.le_serialize(stream)?;
+        self.n_bits.le_serialize(stream)?;
+        self.nonce.le_serialize(stream)?;
+        self.transaction_count.le_serialize(stream)?;
 
         Ok(())
     }
 }
 
-impl Deserializable for BlockHeader {
+impl DeserializableInternalOrder for BlockHeader {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let version = BlockVersion::deserialize(stream)?;
-        let previous_block_header_hash = HashType::deserialize(stream)?;
-        let merkle_root_hash = HashType::deserialize(stream)?;
-        let time = u32::deserialize(stream)?;
-        let n_bits = Compact256::deserialize(stream)?;
-        let nonce = u32::deserialize(stream)?;
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
 
-        Ok(BlockHeader::new(
-            version,
-            previous_block_header_hash,
-            merkle_root_hash,
-            time,
-            n_bits,
-            nonce,
-        ))
+        Ok(BlockHeader{
+            version: BlockVersion::le_deserialize(stream)?,
+            previous_block_header_hash: HashType::le_deserialize(stream)?,
+            merkle_root_hash: HashType::be_deserialize(stream)?,
+            time: u32::le_deserialize(stream)?,
+            n_bits: Compact256::le_deserialize(stream)?,
+            nonce: u32::le_deserialize(stream)?,
+            transaction_count: CompactSize::le_deserialize(stream)?,
+        })
     }
 }

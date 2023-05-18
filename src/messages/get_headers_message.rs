@@ -2,12 +2,15 @@ use crate::connections::p2p_protocol::ProtocolVersionP2P;
 
 use super::{
     compact_size::CompactSize,
-    message_header::MessageHeader,
+    message::Message,
+    command_name::CommandName,
 };
 
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_little_endian::SerializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
+    deserializable_little_endian::DeserializableLittleEndian,
+    deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization,
 };
 
@@ -18,7 +21,6 @@ use std::io::{
 
 use crate::block_structure::hash::{
     HashType,
-    hash256d_reduce,
 };
 
 pub struct GetHeadersMessage {
@@ -39,62 +41,43 @@ impl GetHeadersMessage {
             stop_hash,
         }
     }
+}
 
-    pub fn deserialize_message(
-        stream: &mut dyn Read, 
-        message_header: MessageHeader,
-    ) -> Result<Self, ErrorSerialization> 
-    {
-        let mut buffer: Vec<u8> = vec![0; message_header.payload_size as usize];
-        if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorSerialization::ErrorWhileReading);
-        }
-        let mut buffer: &[u8] = &buffer[..];
+impl Message for GetHeadersMessage {
 
-        let message = Self::deserialize(&mut buffer)?;
-
-        let mut serialized_message: Vec<u8> = Vec::new();
-        message.serialize(&mut serialized_message)?;
-        
-        let checksum = hash256d_reduce(&serialized_message)?;
-        if !checksum.eq(&message_header.checksum) {
-            return Err(ErrorSerialization::ErrorInDeserialization(
-                format!("Checksum isn't the same: {:?} != {:?}", checksum, message_header.checksum)
-            ));
-        }
-
-        Ok(message)        
+    fn get_command_name() -> CommandName {
+        CommandName::GetHeaders
     }
 }
 
-impl Serializable for GetHeadersMessage {
+impl SerializableInternalOrder for GetHeadersMessage {
 
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        self.version.serialize(stream)?;
-        CompactSize::new(self.header_locator_hashes.len() as u64).serialize(stream)?;
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+        self.version.le_serialize(stream)?;
+        CompactSize::new(self.header_locator_hashes.len() as u64).le_serialize(stream)?;
 
         for hash in self.header_locator_hashes.iter() {
-            hash.serialize(stream)?;
+            hash.le_serialize(stream)?;
         }
 
-        self.stop_hash.serialize(stream)?;
+        self.stop_hash.le_serialize(stream)?;
         Ok(())
     }
 }
 
-impl Deserializable for GetHeadersMessage {
+impl DeserializableInternalOrder for GetHeadersMessage {
 
-    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
-        let version = ProtocolVersionP2P::deserialize(stream)?;
-        let size = CompactSize::deserialize(stream)?;
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+        let version = ProtocolVersionP2P::le_deserialize(stream)?;
+        let size = CompactSize::le_deserialize(stream)?;
 
         let mut header_locator_hashes: Vec<HashType> = Vec::new();
         for _ in 0..size.value {
-            let header_locator_hash = HashType::deserialize(stream)?;
+            let header_locator_hash = HashType::le_deserialize(stream)?;
             header_locator_hashes.push(header_locator_hash);
         }
 
-        let stop_hash = HashType::deserialize(stream)?;
+        let stop_hash = HashType::le_deserialize(stream)?;
 
         Ok(GetHeadersMessage { 
             version, 
@@ -112,7 +95,8 @@ mod tests {
         ProtocolVersionP2P,
         CompactSize,
         
-        Serializable,
+        SerializableLittleEndian,
+        SerializableInternalOrder,
         ErrorSerialization, 
         
         HashType,
@@ -127,12 +111,12 @@ mod tests {
 
         let mut expected_stream: Vec<u8> = Vec::new();
 
-        version.serialize(&mut expected_stream)?;
-        length.serialize(&mut expected_stream)?;
+        version.le_serialize(&mut expected_stream)?;
+        length.le_serialize(&mut expected_stream)?;
         for header_hash in header_locator_hash.iter() {
-            let _ = header_hash.serialize(&mut expected_stream)?;
+            let _ = header_hash.le_serialize(&mut expected_stream)?;
         }
-        stop_hash.serialize(&mut expected_stream)?;
+        stop_hash.le_serialize(&mut expected_stream)?;
 
         let get_headers_message = GetHeadersMessage::new(
             version,
@@ -141,7 +125,7 @@ mod tests {
         );
 
         let mut stream: Vec<u8> = Vec::new();
-        get_headers_message.serialize(&mut stream)?;
+        get_headers_message.io_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 

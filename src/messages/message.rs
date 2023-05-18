@@ -1,6 +1,6 @@
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_internal_order::SerializableInternalOrder,
+    deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization,
 };
 
@@ -17,6 +17,12 @@ use super::{
     headers_message::HeadersMessage,
     block_message::BlockMessage,
     inventory_message::InventoryMessage,
+    ping_message::PingMessage,
+    pong_message::PongMessage,
+    send_headers::SendHeadersMessage,
+    send_cmpct::SendCmpctMessage,
+    addr_message::AddrMessage,
+    fee_filter_message::FeeFilterMessage,
 
     message_header::{
         MessageHeader,
@@ -30,61 +36,101 @@ use std::io::{
     Write,
 };
 
-const MAGIC_BYTES_SIZE: usize = 4;
-const MASSAGE_TYPE_SIZE: usize = 12;
-const PAYLOAD_SIZE: usize = 4;
-const CHECKSUM_SIZE: usize = 4;
+pub const CHECKSUM_EMPTY_PAYLOAD: MagicType = [0x5d, 0xf6, 0xe0, 0xe2];
 
-const HEADER_SIZE: usize = MAGIC_BYTES_SIZE + MASSAGE_TYPE_SIZE + PAYLOAD_SIZE + CHECKSUM_SIZE;
-
-pub fn serialize_message(
-    stream: &mut dyn Write, 
-    magic_numbers: MagicType,
-    command_name: CommandName,
-    payload: &dyn Serializable,
-) -> Result<(), ErrorSerialization> 
-{
-    let mut serialized_payload: Vec<u8> = Vec::new();
-    payload.serialize(&mut serialized_payload)?;
-    let serialized_payload: &[u8] = &serialized_payload;
-
-    let header = MessageHeader {
-        magic_numbers,
-        command_name,
-        payload_size: serialized_payload.len() as u32,
-        checksum: hash256d_reduce(serialized_payload)?,
-    };
-
-    header.serialize(stream)?;
-    serialized_payload.serialize(stream)?;        
-
-    Ok(())
-}
-
-pub fn deserialize_message(
-    stream: &mut dyn Read,
-) -> Result<MessageHeader, ErrorSerialization> 
-{
-    let mut buffer: Vec<u8> = vec![0; HEADER_SIZE];
-
-    if stream.read_exact(&mut buffer).is_err() {
-        return Err(ErrorSerialization::ErrorWhileReading);
+pub trait Message: SerializableInternalOrder + DeserializableInternalOrder {
+    
+    fn serialize_message(
+        stream: &mut dyn Write, 
+        magic_numbers: MagicType,
+        payload: &dyn SerializableInternalOrder,
+    ) -> Result<(), ErrorSerialization> 
+    {
+        let mut serialized_payload: Vec<u8> = Vec::new();
+        payload.io_serialize(&mut serialized_payload)?;
+        let serialized_payload: &[u8] = &serialized_payload;
+    
+        let header = MessageHeader {
+            magic_numbers,
+            command_name: Self::get_command_name(),
+            payload_size: serialized_payload.len() as u32,
+            checksum: hash256d_reduce(serialized_payload)?,
+        };
+    
+        header.io_serialize(stream)?;
+        serialized_payload.io_serialize(stream)?;
+    
+        Ok(())
     }
 
-    let mut buffer: &[u8] = &buffer[..];
+    fn deserialize_message(
+        stream: &mut dyn Read, 
+        message_header: MessageHeader,
+    ) -> Result<Self, ErrorSerialization> 
+    {
+        let mut buffer: Vec<u8> = vec![0; message_header.payload_size as usize];
+        if stream.read_exact(&mut buffer).is_err() {
 
-    MessageHeader::deserialize(&mut buffer)
+            return Err(ErrorSerialization::ErrorWhileReading);
+        }
+        let mut buffer: &[u8] = &buffer[..];
+        let message = Self::io_deserialize(&mut buffer)?;
+
+        let mut serialized_message: Vec<u8> = Vec::new();
+        message.io_serialize(&mut serialized_message)?;
+
+        let length = serialized_message.len();
+        if length != message_header.payload_size as usize {
+            return Err(ErrorSerialization::ErrorInDeserialization(
+                format!(
+                    "Payload size {:?} in {:?} isn't the same as receive: {:?}", 
+                    length, 
+                    Self::get_command_name(), 
+                    message_header.payload_size
+                )
+            ));
+        }
+        
+        let checksum = Self::calculate_checksum(&serialized_message)?;
+        if !checksum.eq(&message_header.checksum) {
+            return Err(ErrorSerialization::ErrorInDeserialization(
+                format!(
+                    "Checksum {:?} in {:?}  isn't the same as receive: {:?}", 
+                    checksum, 
+                    Self::get_command_name(),
+                    message_header.checksum
+                )
+            ));
+        }
+
+        Ok(message)
+    }
+
+    fn calculate_checksum(
+        serialized_message: &[u8],
+    ) -> Result<[u8; 4], ErrorSerialization> {        
+        hash256d_reduce(serialized_message)
+    }
+
+    fn get_command_name() -> CommandName;
 }
 
-pub fn deserialize_until_found(
-    stream: &mut dyn Read,
+pub fn deserialize_until_found<RW : Read + Write>(
+    stream: &mut RW,
     search_name: CommandName,
 ) -> Result<MessageHeader, ErrorMessage> 
 {
-    while let Ok(header) = deserialize_message(stream) {
+    loop {
+        let header = match MessageHeader::deserialize_header(stream) {
+            Ok(header) => header,
+            Err(error) => return Err(error.into()),
+        };
+
         if header.command_name == search_name {
             return Ok(header);
         }
+
+        let magic_bytes = header.magic_numbers;
 
         match header.command_name {
             CommandName::Version => {
@@ -105,8 +151,34 @@ pub fn deserialize_until_found(
             CommandName::Block => {
                 let _ = BlockMessage::deserialize_message(stream, header)?;
             },
+            CommandName::Ping => {
+                let ping = PingMessage::deserialize_message(stream, header)?;
+
+                let pong = PongMessage {
+                    nonce: ping.nonce,
+                };
+
+                PongMessage::serialize_message(
+                    stream,
+                    magic_bytes,
+                    &pong,
+                )?;
+            },
+            CommandName::Pong => {
+                let _ = PongMessage::deserialize_message(stream, header)?;
+            },
+            CommandName::SendHeaders => {
+                let _ = SendHeadersMessage::deserialize_message(stream, header)?;
+            },
+            CommandName::SendCmpct => {
+                let _ = SendCmpctMessage::deserialize_message(stream, header)?;
+            },
+            CommandName::Addr => {
+                let _ = AddrMessage::deserialize_message(stream, header)?;
+            },
+            CommandName::FeeFilter => {
+                let _ = FeeFilterMessage::deserialize_message(stream, header)?;
+            },
         }
     }
-
-    Err(ErrorMessage::ErrorWhileReading)
 }

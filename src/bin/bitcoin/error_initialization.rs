@@ -9,7 +9,4 @@ pub enum ErrorInitialization {
 
     /// It will appear when the file does not exist
     LogFileDoesntExist,
-
-    ///It will appear when the file could not be truncated
-    CouldNotTruncateFile
 }

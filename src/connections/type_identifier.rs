@@ -1,6 +1,6 @@
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization,
 };
 
@@ -9,6 +9,7 @@ use std::io::{
     Write,
 };
 
+const ERROR_VALUE: u32 = 0x00;
 const TRANSACTION_ID_VALUE: u32 = 0x01;
 const BLOCK_VALUE: u32 = 0x02;
 const FILTERED_BLOCK_VALUE: u32 = 0x03;
@@ -19,6 +20,7 @@ const FILTERED_WITNESS_BLOCK_VALUE: u32 = 0x40000003;
 
 #[derive(Debug)]
 pub enum TypeIdentifier {
+    Error,
     TransactionId,
     Block,
     FilteredBlock,
@@ -28,10 +30,11 @@ pub enum TypeIdentifier {
     FilteredWitnessBlock,
 }
 
-impl Serializable for TypeIdentifier {
+impl SerializableLittleEndian for TypeIdentifier {
 
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         let value: u32 = match self {
+            TypeIdentifier::Error => ERROR_VALUE,
             TypeIdentifier::TransactionId => TRANSACTION_ID_VALUE,
             TypeIdentifier::Block => BLOCK_VALUE,
             TypeIdentifier::FilteredBlock => FILTERED_BLOCK_VALUE,
@@ -41,19 +44,22 @@ impl Serializable for TypeIdentifier {
             TypeIdentifier::FilteredWitnessBlock => FILTERED_WITNESS_BLOCK_VALUE,
         };
 
-        match value.serialize(stream) {
-            Err(_) => Err(ErrorSerialization::ErrorInSerialization(format!("While serializing the type identifier {:?}", self))),
+        match value.le_serialize(stream) {
+            Err(_) => Err(ErrorSerialization::ErrorInSerialization(
+                format!("While serializing the type identifier {:?}", self)
+            )),
             _ => Ok(()),
         }
     }
 }
 
-impl Deserializable for TypeIdentifier {
+impl DeserializableLittleEndian for TypeIdentifier {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let value = u32::deserialize(stream)?;
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+        let value = u32::le_deserialize(stream)?;
 
         match value {
+            ERROR_VALUE => Ok(TypeIdentifier::Error),
             TRANSACTION_ID_VALUE => Ok(TypeIdentifier::TransactionId),
             BLOCK_VALUE => Ok(TypeIdentifier::Block),
             FILTERED_BLOCK_VALUE => Ok(TypeIdentifier::FilteredBlock),
@@ -61,7 +67,10 @@ impl Deserializable for TypeIdentifier {
             WITNESS_TRANSACTION_VALUE => Ok(TypeIdentifier::WitnessTransaction),
             WITNESS_BLOCK_VALUE => Ok(TypeIdentifier::WitnessBlock),
             FILTERED_WITNESS_BLOCK_VALUE => Ok(TypeIdentifier::FilteredWitnessBlock),
-            _ => Err(ErrorSerialization::ErrorInDeserialization("While deserializing the type identifier".to_string())),
+            _ => Err(ErrorSerialization::ErrorInDeserialization(format!(
+                "While deserializing the type identifier, we get: {}",
+                value,
+            ))),
         }
     }
 }

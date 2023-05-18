@@ -3,10 +3,6 @@ use super::{
     command_name::CommandName,
 };
 
-use crate::block_structure::{
-    block::Block,
-};
-
 use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
     serializable_internal_order::SerializableInternalOrder,
@@ -20,30 +16,29 @@ use std::io::{
     Write,
 };
 
-pub struct BlockMessage {
-    pub block: Block,
+pub struct PongMessage {
+    pub nonce: u64,
 }
 
-impl Message for BlockMessage {
-    
+impl Message for PongMessage {
+
     fn get_command_name() -> CommandName {
-        CommandName::Block
+        CommandName::Pong
     }
 }
 
-impl SerializableInternalOrder for BlockMessage {
+impl SerializableInternalOrder for PongMessage {
     
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        self.block.le_serialize(stream)?;
-        Ok(())
+        self.nonce.le_serialize(stream)
     }
 }
 
-impl DeserializableInternalOrder for BlockMessage {
-    
+impl DeserializableInternalOrder for PongMessage {
+
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        Ok(BlockMessage { 
-            block: Block::le_deserialize(stream)?,
+        Ok(PongMessage {
+            nonce: u64::le_deserialize(stream)?,
         })
     }
 }

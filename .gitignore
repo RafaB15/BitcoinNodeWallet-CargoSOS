@@ -14,3 +14,4 @@ Cargo.lock
 *.pdb
 
 .vscode/
+src/bin/bitcoin/logs.txt
