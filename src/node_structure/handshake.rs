@@ -1,12 +1,16 @@
 use crate::connections::{
-    error_connection::ErrorConnection, p2p_protocol::ProtocolVersionP2P,
+    p2p_protocol::ProtocolVersionP2P,
     suppored_services::SupportedServices,
+    error_connection::ErrorConnection, 
 };
 
 use crate::logs::logger_sender::LoggerSender;
 
 use crate::messages::{
-    message,
+    message::{
+        self,
+        Message,
+    },
     command_name::CommandName,
     version_message::VersionMessage,
     verack_message::VerackMessage,
@@ -14,11 +18,14 @@ use crate::messages::{
     error_message::ErrorMessage,
 };
 
-use crate::serialization::{
-    deserializable::Deserializable,
+use std::net::{
+    SocketAddr, 
 };
 
-use std::net::{SocketAddr, TcpStream};
+use std::io::{
+    Read,
+    Write,
+};
 
 const IGNORE_NONCE: u64 = 0;
 const IGNORE_USER_AGENT: &str = "";
@@ -48,11 +55,11 @@ impl Handshake {
     }
 
     ///Function that sends a version message to the given potential peer.
-    pub fn send_testnet_version_message(
+    pub fn send_testnet_version_message<RW : Read + Write>(
         &self, 
         local_socket_addr: &SocketAddr, 
         potential_peer: &SocketAddr, 
-        potencial_peer_stream: &mut TcpStream
+        peer_stream: &mut RW
     ) -> Result<(), ErrorMessage>
     {
         let version_message = VersionMessage::new(
@@ -65,51 +72,44 @@ impl Handshake {
             IGNORE_USER_AGENT.to_string(),
             self.blockchain_height,
             NO_NEW_TRANSACTIONS,
-        );  
+        );
 
-        message::serialize_message(
-            potencial_peer_stream, 
+        VersionMessage::serialize_message(
+            peer_stream, 
             TESTNET_MAGIC_NUMBERS, 
-            CommandName::Version, 
             &version_message,
         )?;
+
         Ok(())
     }
 
     ///Function that sends a verack message to the given potential peer.
-    pub fn send_testnet_verack_message(&self, potencial_peer_stream: &mut TcpStream) -> Result<(), ErrorMessage>{        
-        
-        let verack_message = VerackMessage;
-
-        message::serialize_message(
-            potencial_peer_stream, 
+    pub fn send_testnet_verack_message<RW : Read + Write>(
+        &self, 
+        peer_stream: &mut RW
+    ) -> Result<(), ErrorMessage>
+    {        
+        VerackMessage::serialize_message(
+            peer_stream, 
             TESTNET_MAGIC_NUMBERS, 
-            CommandName::Verack, 
-            &verack_message
+            &VerackMessage
         )?;
       
         Ok(())
     }
 
     ///Function that tries to do the handshake with the given potential peer.
-    pub fn attempt_connection_with_testnet_peer(
+    fn attempt_connection_with_testnet_peer<RW : Read + Write>(
         &self,
+        peer_stream: &mut RW,
+        local_socket: &SocketAddr,
         potential_peer: &SocketAddr,
-    ) -> Result<(), ErrorConnection> {
-        let mut potencial_peer_stream = match TcpStream::connect(potential_peer) {
-            Ok(stream) => stream,
-            Err(_) => return Err(ErrorConnection::ErrorCannotConnectToAddress),
-        };
-
-        let local_socket_addr = match potencial_peer_stream.local_addr() {
-            Ok(addr) => addr,
-            Err(_) => return Err(ErrorConnection::ErrorCannotObtainOwnAddress),
-        };
-
+    ) -> Result<(), ErrorConnection> 
+    {
         if let Err(e) = self.send_testnet_version_message(
-            &local_socket_addr,
+            &local_socket,
             potential_peer,
-            &mut potencial_peer_stream,
+            peer_stream,
         ) {
             let _ = self.sender_log.log_connection(format!(
                 "Error while sending version message to peer {}: {:?}",
@@ -122,7 +122,23 @@ impl Handshake {
                 .log_connection(format!("Version message sent to peer {}", potential_peer));
         }
 
-        if let Err(e) = VersionMessage::deserialize(&mut potencial_peer_stream) {
+        let header_version = match message::deserialize_until_found(
+            peer_stream, 
+            CommandName::Version) {
+                Ok(header) => header,
+                Err(e) => {
+                    let _ = self.sender_log.log_connection(format!(
+                        "Error while receiving the header of version message from peer {}: {:?}",
+                        potential_peer, e
+                    ));
+                    return Err(ErrorConnection::ErrorCannotReceiveMessage);
+                }
+        };
+
+        if let Err(e) = VersionMessage::deserialize_message(
+            peer_stream, 
+            header_version
+        ) {
             let _ = self.sender_log.log_connection(format!(
                 "Error while receiving version message from peer {}: {:?}",
                 potential_peer, e
@@ -130,7 +146,7 @@ impl Handshake {
             return Err(ErrorConnection::ErrorCannotReceiveMessage);
         }
 
-        if let Err(e) = self.send_testnet_verack_message(&mut potencial_peer_stream) {
+        if let Err(e) = self.send_testnet_verack_message(peer_stream) {
             let _ = self.sender_log.log_connection(format!(
                 "Error while sending verack message to peer {}: {:?}",
                 potential_peer, e
@@ -142,26 +158,59 @@ impl Handshake {
                 .log_connection(format!("Verack message sent to peer {}", potential_peer));
         }
 
-        if let Err(e) = VerackMessage::deserialize(&mut potencial_peer_stream) {
+        let header_verack = match message::deserialize_until_found(
+            peer_stream, 
+            CommandName::Verack) 
+        {
+            Ok(header) => header,
+            Err(e) => {
+                let _ = self.sender_log.log_connection(format!(
+                    "Error while receiving the header message from peer {}: {:?}",
+                    potential_peer, e
+                ));
+                return Err(ErrorConnection::ErrorCannotReceiveMessage);
+            }
+        };
+
+        if let Err(e) = VerackMessage::deserialize_message(
+            peer_stream, 
+            header_verack) 
+        {
             let _ = self.sender_log.log_connection(format!(
                 "Error while receiving verack message from peer {}: {:?}",
                 potential_peer, e
             ));
             return Err(ErrorConnection::ErrorCannotReceiveMessage);
-        };
+        }
 
         Ok(())
     }
 
     ///Function that tries to do the handshake with the given vector of potential peers.
     //Recordar implementar la funcionalidad con
-    pub fn connect_to_testnet_peer(&mut self, potential_peer: SocketAddr) -> Result<SocketAddr, ErrorConnection> {
+    pub fn connect_to_testnet_peer<RW: Read + Write>(
+        &self, 
+        peer_stream: &mut RW,
+        local_socket: &SocketAddr,
+        potential_peer: &SocketAddr,
+    ) -> Result<(), ErrorConnection> 
+    {
         
-        if let Err(e) = self.attempt_connection_with_testnet_peer(&potential_peer) {
-            let _ = self.sender_log.log_connection(format!("Error while trying to connect to peer {}: {:?}", potential_peer, e));
+        if let Err(e) = self.attempt_connection_with_testnet_peer(
+            peer_stream, 
+            local_socket,
+            &potential_peer
+        ) {
+            let _ = self.sender_log.log_connection(
+                format!("Error while trying to connect to peer {}: {:?}", potential_peer, e)
+            );
+
+            Err(ErrorConnection::ErrorCannotConnectToAddress)
         } else {
-            let _ = self.sender_log.log_connection(format!("Connection with peer {} established", potential_peer));
+            let _ = self.sender_log.log_connection(
+                format!("Connection with peer {} established", potential_peer)
+            );
+            Ok(())
         }
-        Ok(potential_peer)
     }
 }

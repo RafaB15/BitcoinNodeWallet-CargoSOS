@@ -1,6 +1,6 @@
 use crate::serialization::{
-    deserializable::Deserializable, error_serialization::ErrorSerialization,
-    serializable::Serializable,
+    deserializable_little_endian::DeserializableLittleEndian, error_serialization::ErrorSerialization,
+    serializable_little_endian::SerializableLittleEndian,
 };
 
 use crate::connections::suppored_services::SupportedServices;
@@ -38,8 +38,8 @@ impl PartialEq for BitfieldServices {
     }
 }
 
-impl Serializable for BitfieldServices {
-    fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
+impl SerializableLittleEndian for BitfieldServices {
+    fn le_serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
         let mut sum: u64 = 0;
         for element in self.elements.clone() {
             let element_value: u64 = match element.try_into() {
@@ -53,13 +53,12 @@ impl Serializable for BitfieldServices {
             sum += element_value;
         }
 
-        sum.serialize(stream)?;
-        Ok(())
+        sum.le_serialize(stream)
     }
 }
 
-impl Deserializable for BitfieldServices {
-    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
+impl DeserializableLittleEndian for BitfieldServices {
+    fn le_deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
         let possibles_supported = [
             SupportedServices::NodeNetwork,
             SupportedServices::NodeGetUTXO,
@@ -69,7 +68,7 @@ impl Deserializable for BitfieldServices {
             SupportedServices::NodeNetworkLimited,
         ];
 
-        let bitfield: u64 = u64::deserialize(stream)?;
+        let bitfield: u64 = u64::le_deserialize(stream)?;
 
         let mut elements: Vec<SupportedServices> = Vec::new();
 
@@ -97,7 +96,7 @@ impl Deserializable for BitfieldServices {
 mod tests {
 
     use super::{
-        BitfieldServices, Deserializable, ErrorSerialization, Serializable, SupportedServices,
+        BitfieldServices, DeserializableLittleEndian, ErrorSerialization, SerializableLittleEndian, SupportedServices,
     };
 
     #[test]
@@ -111,7 +110,7 @@ mod tests {
             SupportedServices::NodeNetwork,
         ]);
 
-        services.serialize(&mut stream)?;
+        services.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -129,7 +128,7 @@ mod tests {
             SupportedServices::NodeNetwork,
         ]);
 
-        let services = BitfieldServices::deserialize(&mut stream)?;
+        let services = BitfieldServices::le_deserialize(&mut stream)?;
 
         assert_eq!(expected_services, services);
 

@@ -1,6 +1,6 @@
 use super::hash::HashType;
 use crate::messages::compact_size::CompactSize;
-use crate::serialization::{error_serialization::ErrorSerialization, serializable::Serializable};
+use crate::serialization::{error_serialization::ErrorSerialization, serializable_little_endian::SerializableLittleEndian};
 use std::io::Write;
 
 pub struct CoinbaseTransaction {
@@ -12,15 +12,15 @@ pub struct CoinbaseTransaction {
     pub sequence: u32,        //should be uint32_t [4]
 }
 
-impl Serializable for CoinbaseTransaction {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        self.hash.serialize(stream)?;
-        self.index.serialize(stream)?;
-        CompactSize::new(self.script_bytes as u64).serialize(stream)?; //ver esto
-        self.script_bytes.serialize(stream)?;
-        self.height.serialize(stream)?;
-        self.coinbase_script.serialize(stream)?;
-        self.sequence.serialize(stream)?;
+impl SerializableLittleEndian for CoinbaseTransaction {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+        self.hash.le_serialize(stream)?;
+        self.index.le_serialize(stream)?;
+        CompactSize::new(self.script_bytes as u64).le_serialize(stream)?; //ver esto
+        self.script_bytes.le_serialize(stream)?;
+        self.height.le_serialize(stream)?;
+        self.coinbase_script.le_serialize(stream)?;
+        self.sequence.le_serialize(stream)?;
         Ok(())
     }
 }

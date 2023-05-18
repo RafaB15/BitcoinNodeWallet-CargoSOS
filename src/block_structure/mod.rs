@@ -1,5 +1,6 @@
 pub mod block;
 pub mod block_chain;
+pub mod node_chain;
 pub mod block_header;
 pub mod block_version;
 

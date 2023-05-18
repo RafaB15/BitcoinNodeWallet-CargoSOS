@@ -11,6 +11,13 @@ pub mod inventory_message;
 pub mod headers_message;
 pub mod block_message;
 
+pub mod ping_message;
+pub mod pong_message;
+pub mod send_headers;
+pub mod send_cmpct;
+pub mod addr_message;
+pub mod fee_filter_message;
+
 pub mod error_message;
 
 pub mod bitfield_services;

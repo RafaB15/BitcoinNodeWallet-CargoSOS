@@ -6,8 +6,8 @@ use super::{
 };
 
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization,
 };
 
@@ -30,44 +30,44 @@ pub struct Transaction {
     pub time: u32,
 }
 
-impl Serializable for Transaction {
+impl SerializableLittleEndian for Transaction {
 
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        self.version.serialize(stream)?;
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+        self.version.le_serialize(stream)?;
 
-        CompactSize::new(self.tx_in.len() as u64).serialize(stream)?;
+        CompactSize::new(self.tx_in.len() as u64).le_serialize(stream)?;
         for tx_in in &self.tx_in {
-            tx_in.serialize(stream)?;
+            tx_in.le_serialize(stream)?;
         }
 
-        CompactSize::new(self.tx_out.len() as u64).serialize(stream)?;
+        CompactSize::new(self.tx_out.len() as u64).le_serialize(stream)?;
 
         for tx_out in &self.tx_out {
-            tx_out.serialize(stream)?;
+            tx_out.le_serialize(stream)?;
         }
 
-        self.time.serialize(stream)?;
+        self.time.le_serialize(stream)?;
         Ok(())
     }
 }
 
-impl Deserializable for Transaction {
+impl DeserializableLittleEndian for Transaction {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let version = i32::deserialize(stream)?;
-        let length_tx_in = CompactSize::deserialize(stream)?;
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+        let version = i32::le_deserialize(stream)?;
+        let length_tx_in = CompactSize::le_deserialize(stream)?;
         let mut tx_in: Vec<TransactionInput> = Vec::new();
         for _ in 0..length_tx_in.value {
-            tx_in.push(TransactionInput::deserialize(stream)?);
+            tx_in.push(TransactionInput::le_deserialize(stream)?);
         }
 
-        let length_tx_out = CompactSize::deserialize(stream)?;
+        let length_tx_out = CompactSize::le_deserialize(stream)?;
         let mut tx_out: Vec<TransactionOutput> = Vec::new();
         for _ in 0..length_tx_out.value {
-            tx_out.push(TransactionOutput::deserialize(stream)?);
+            tx_out.push(TransactionOutput::le_deserialize(stream)?);
         }
 
-        let time = u32::deserialize(stream)?;
+        let time = u32::le_deserialize(stream)?;
         
         Ok(Transaction { 
             version,
@@ -81,7 +81,7 @@ impl Deserializable for Transaction {
 impl Transaction {
     pub fn get_tx_id(&self, stream: &mut dyn Write) -> Result<HashType, ErrorBlock> {
         let mut buffer = vec![];
-        if self.serialize(&mut buffer).is_err() {
+        if self.le_serialize(&mut buffer).is_err() {
             return Err(ErrorBlock::CouldNotGetTxId);
         }
 

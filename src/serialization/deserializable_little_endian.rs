@@ -4,12 +4,12 @@ use std::io::Read;
 
 use chrono::{offset::Utc, DateTime, NaiveDateTime};
 
-pub trait Deserializable: Sized {
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization>;
+pub trait DeserializableLittleEndian: Sized {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization>;
 }
 
-impl Deserializable for i32 {
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+impl DeserializableLittleEndian for i32 {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 4];
         if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorSerialization::ErrorInDeserialization(
@@ -20,8 +20,8 @@ impl Deserializable for i32 {
     }
 }
 
-impl Deserializable for i64 {
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+impl DeserializableLittleEndian for i64 {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 8];
         if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorSerialization::ErrorInDeserialization(
@@ -32,8 +32,8 @@ impl Deserializable for i64 {
     }
 }
 
-impl Deserializable for u8 {
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+impl DeserializableLittleEndian for u8 {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 1];
         if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorSerialization::ErrorInDeserialization(
@@ -44,8 +44,8 @@ impl Deserializable for u8 {
     }
 }
 
-impl Deserializable for u16 {
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+impl DeserializableLittleEndian for u16 {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 2];
         if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorSerialization::ErrorInDeserialization(
@@ -56,8 +56,8 @@ impl Deserializable for u16 {
     }
 }
 
-impl Deserializable for u32 {
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+impl DeserializableLittleEndian for u32 {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 4];
         if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorSerialization::ErrorInDeserialization(
@@ -68,8 +68,8 @@ impl Deserializable for u32 {
     }
 }
 
-impl Deserializable for u64 {
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+impl DeserializableLittleEndian for u64 {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 8];
         if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorSerialization::ErrorInDeserialization(
@@ -80,43 +80,87 @@ impl Deserializable for u64 {
     }
 }
 
-impl Deserializable for [u8; 4] {
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+impl DeserializableLittleEndian for [u8; 4] {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 4];
         if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorSerialization::ErrorInDeserialization(
                 "Deserializing [u8; 4]".to_string(),
             ));
         }
+
+        let mut rev: Vec<u8> = Vec::new();
+        
+        for byte in buffer.iter().rev() {
+            rev.push(*byte);
+        }
+        
+        let buffer: [u8; 4] = match rev[0..4].try_into() {
+            Ok(buffer) => buffer,
+            _ => return Err(ErrorSerialization::ErrorInDeserialization(
+                "Deserializing [u8; 4]".to_string(),
+            )),
+        };
+
         Ok(buffer)
     }
 }
 
-impl Deserializable for [u8; 12] {
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+impl DeserializableLittleEndian for [u8; 12] {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 12];
         if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorSerialization::ErrorInDeserialization(
                 "Deserializing [u8; 12]".to_string(),
             ));
         }
+
+        let mut rev: Vec<u8> = Vec::new();
+        
+        for byte in buffer.iter().rev() {
+            rev.push(*byte);
+        }
+        
+        let buffer: [u8; 12] = match rev[0..12].try_into() {
+            Ok(buffer) => buffer,
+            _ => return Err(ErrorSerialization::ErrorInDeserialization(
+                "Deserializing [u8; 12]".to_string(),
+            )),
+        };
+
         Ok(buffer)
     }
 }
 
-impl Deserializable for [u8; 32] {
+impl DeserializableLittleEndian for [u8; 32] {
 
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 32];
         if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorSerialization::ErrorInDeserialization("Deserializing [u8; 32]".to_string()));
+            return Err(ErrorSerialization::ErrorInDeserialization(
+                "Deserializing [u8; 32]".to_string()
+            ));
         }
+
+        let mut rev: Vec<u8> = Vec::new();
+        
+        for byte in buffer.iter().rev() {
+            rev.push(*byte);
+        }
+        
+        let buffer: [u8; 32] = match rev[0..32].try_into() {
+            Ok(buffer) => buffer,
+            _ => return Err(ErrorSerialization::ErrorInDeserialization(
+                "Deserializing [u8; 32]".to_string(),
+            )),
+        };
+        
         Ok(buffer)
     }
 }
 
-impl Deserializable for bool {
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+impl DeserializableLittleEndian for bool {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 1];
         if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorSerialization::ErrorInDeserialization(
@@ -134,9 +178,9 @@ impl Deserializable for bool {
     }
 }
 
-impl Deserializable for DateTime<Utc> {
-    fn deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let timestamp_int = i64::deserialize(stream)?;
+impl DeserializableLittleEndian for DateTime<Utc> {
+    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+        let timestamp_int = i64::le_deserialize(stream)?;
         match NaiveDateTime::from_timestamp_opt(timestamp_int, 0) {
             Some(utc_timestamp) => Ok(DateTime::<Utc>::from_utc(utc_timestamp, Utc)),
             _ => Err(ErrorSerialization::ErrorInDeserialization(
@@ -149,7 +193,7 @@ impl Deserializable for DateTime<Utc> {
 #[cfg(test)]
 mod tests {
 
-    use super::{Deserializable, ErrorSerialization};
+    use super::{DeserializableLittleEndian, ErrorSerialization};
 
     use chrono::{offset::Utc, DateTime, NaiveDateTime};
 
@@ -159,7 +203,7 @@ mod tests {
         let mut stream: &[u8] = &stream;
         let number: i32 = 1628;
 
-        let expected_number = i32::deserialize(&mut stream)?;
+        let expected_number = i32::le_deserialize(&mut stream)?;
 
         assert_eq!(expected_number, number);
 
@@ -172,7 +216,7 @@ mod tests {
         let mut stream: &[u8] = &stream;
         let number: i64 = 1628;
 
-        let expected_number = i64::deserialize(&mut stream)?;
+        let expected_number = i64::le_deserialize(&mut stream)?;
 
         assert_eq!(expected_number, number);
 
@@ -186,7 +230,7 @@ mod tests {
 
         let expected_number: u8 = 84;
 
-        let number = u8::deserialize(&mut stream)?;
+        let number = u8::le_deserialize(&mut stream)?;
 
         assert_eq!(expected_number, number);
 
@@ -200,7 +244,7 @@ mod tests {
 
         let expected_number: u16 = 16286;
 
-        let number = u16::deserialize(&mut stream)?;
+        let number = u16::le_deserialize(&mut stream)?;
 
         assert_eq!(expected_number, number);
 
@@ -214,7 +258,7 @@ mod tests {
 
         let expected_number: u32 = 16_286_637;
 
-        let number = u32::deserialize(&mut stream)?;
+        let number = u32::le_deserialize(&mut stream)?;
 
         assert_eq!(expected_number, number);
 
@@ -228,7 +272,7 @@ mod tests {
 
         let expected_number: u64 = 1111_1111_1111;
 
-        let number = u64::deserialize(&mut stream)?;
+        let number = u64::le_deserialize(&mut stream)?;
 
         assert_eq!(expected_number, number);
 
@@ -240,9 +284,9 @@ mod tests {
         let stream: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE];
         let mut stream: &[u8] = &stream;
 
-        let expected_vector: [u8; 4] = [0xC7, 0x01, 0xBD, 0xDE];
+        let expected_vector: [u8; 4] = [0xDE, 0xBD, 0x01, 0xC7];
 
-        let vector = <[u8; 4] as Deserializable>::deserialize(&mut stream)?;
+        let vector = <[u8; 4] as DeserializableLittleEndian>::le_deserialize(&mut stream)?;
 
         assert_eq!(expected_vector, vector);
 
@@ -257,10 +301,10 @@ mod tests {
         let mut stream: &[u8] = &stream;
 
         let expected_vector: [u8; 12] = [
-            0xC7, 0x01, 0xBD, 0xDE, 0x19, 0x01, 0xBD, 0xDE, 0x19, 0x01, 0xBD, 0xDE,
+            0xDE, 0xBD, 0x01, 0x19, 0xDE, 0xBD, 0x01, 0x19, 0xDE, 0xBD, 0x01, 0xC7
         ];
 
-        let vector = <[u8; 12] as Deserializable>::deserialize(&mut stream)?;
+        let vector = <[u8; 12] as DeserializableLittleEndian>::le_deserialize(&mut stream)?;
 
         assert_eq!(expected_vector, vector);
 
@@ -274,7 +318,7 @@ mod tests {
 
         let expected_boolean: bool = true;
 
-        let boolean = bool::deserialize(&mut stream)?;
+        let boolean = bool::le_deserialize(&mut stream)?;
 
         assert_eq!(expected_boolean, boolean);
 
@@ -283,7 +327,7 @@ mod tests {
 
         let expected_boolean: bool = false;
 
-        let boolean = bool::deserialize(&mut stream)?;
+        let boolean = bool::le_deserialize(&mut stream)?;
 
         assert_eq!(expected_boolean, boolean);
 
@@ -298,7 +342,7 @@ mod tests {
         let naive = NaiveDateTime::from_timestamp_opt(1628, 0).unwrap();
         let expected_date: DateTime<Utc> = DateTime::<Utc>::from_utc(naive, Utc);
 
-        let date = DateTime::deserialize(&mut stream)?;
+        let date = DateTime::le_deserialize(&mut stream)?;
 
         assert_eq!(expected_date, date);
 

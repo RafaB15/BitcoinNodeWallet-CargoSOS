@@ -3,11 +3,11 @@ use std::io::Write;
 use std::net::Ipv6Addr;
 
 pub trait SerializableBigEndian {
-    fn serialize_big_endian(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization>;
+    fn be_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization>;
 }
 
 impl SerializableBigEndian for u16 {
-    fn serialize_big_endian(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn be_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         match stream.write(&self.to_be_bytes()) {
             Ok(_) => Ok(()),
             _ => Err(ErrorSerialization::ErrorInSerialization(
@@ -18,7 +18,7 @@ impl SerializableBigEndian for u16 {
 }
 
 impl SerializableBigEndian for Ipv6Addr {
-    fn serialize_big_endian(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn be_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         match stream.write(&self.octets()) {
             Ok(_) => Ok(()),
             _ => Err(ErrorSerialization::ErrorInSerialization(
@@ -27,6 +27,19 @@ impl SerializableBigEndian for Ipv6Addr {
         }
     }
 }
+
+impl SerializableBigEndian for [u8] {
+    fn be_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+
+        match stream.write(self) {
+            Ok(_) => Ok(()),
+            _ => Err(ErrorSerialization::ErrorInSerialization(
+                "Serializing [u8]".to_string(),
+            )),
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -42,7 +55,7 @@ mod tests {
         let mut stream: Vec<u8> = Vec::new();
         let number: u16 = 16286;
 
-        number.serialize_big_endian(&mut stream)?;
+        number.be_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -60,7 +73,7 @@ mod tests {
 
         let ip: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0xffff, 0xc00a, 0x02ff);
 
-        ip.serialize_big_endian(&mut stream)?;
+        ip.be_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 

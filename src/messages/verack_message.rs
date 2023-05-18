@@ -1,10 +1,15 @@
 use super::{
-    message_header::MessageHeader,
+    message::{
+        Message,
+        CHECKSUM_EMPTY_PAYLOAD,
+    },
+    command_name::CommandName,
 };
 
 use crate::serialization::{
-    deserializable::Deserializable, error_serialization::ErrorSerialization,
-    serializable::Serializable,
+    serializable_internal_order::SerializableInternalOrder,
+    deserializable_internal_order::DeserializableInternalOrder,
+    error_serialization::ErrorSerialization,
 };
 
 use std::io::{
@@ -12,47 +17,32 @@ use std::io::{
     Write
 };
 
-pub const VERACK_CHECKSUM: [u8; 4] = [0x5d, 0xf6, 0xe0, 0xe2];
-
 #[derive(Debug, std::cmp::PartialEq)]
 pub struct VerackMessage;
 
-impl VerackMessage {
-  
-    pub fn deserialize_message(
-        stream: &mut dyn Read, 
-        message_header: MessageHeader,
-    ) -> Result<Self, ErrorSerialization> 
-    {
-        let mut buffer: Vec<u8> = vec![0; message_header.payload_size as usize];
-        if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorSerialization::ErrorWhileReading);
-        }
-        let mut buffer: &[u8] = &buffer[..];
+impl Message for VerackMessage {
 
-        let message = VerackMessage::deserialize(&mut buffer)?;
+    fn get_command_name() -> CommandName {
+        CommandName::Verack
+    }
 
-        if message_header.payload_size != 0 {
-            return Err(ErrorSerialization::ErrorInDeserialization(format!("Payload in verack message has to be 0: {:?}", message_header.payload_size)));
-        }
-        
-        if !VERACK_CHECKSUM.eq(&message_header.checksum) {
-            return Err(ErrorSerialization::ErrorInDeserialization(format!("Checksum isn't the same: {:?} != {:?}", VERACK_CHECKSUM, message_header.checksum)));
-        }
+    fn calculate_checksum(
+        _: &[u8],
+    ) -> Result<[u8; 4], ErrorSerialization> {
 
-        Ok(message)
+        Ok(CHECKSUM_EMPTY_PAYLOAD)
     }
 }
 
-impl Serializable for VerackMessage {
+impl SerializableInternalOrder for VerackMessage {
 
-    fn serialize(&self, _: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn io_serialize(&self, _: &mut dyn Write) -> Result<(), ErrorSerialization> {
         Ok(())
     }
 }
 
-impl Deserializable for VerackMessage {
-    fn deserialize(_: &mut dyn Read) -> Result<Self, ErrorSerialization> {        
+impl DeserializableInternalOrder for VerackMessage {
+    fn io_deserialize(_: &mut dyn Read) -> Result<Self, ErrorSerialization> {        
         Ok(VerackMessage)
     }
 }
@@ -60,17 +50,21 @@ impl Deserializable for VerackMessage {
 #[cfg(test)]
 mod tests {
     use super::{
-        Serializable,
-        Deserializable,
+        SerializableInternalOrder,
+        DeserializableInternalOrder,
         ErrorSerialization,
-        MessageHeader,
         VerackMessage,
-        VERACK_CHECKSUM,
+        CHECKSUM_EMPTY_PAYLOAD,
     };
 
     use crate::messages::{
-        message,
+        message::Message,
+        message_header::MessageHeader,
         command_name::CommandName,
+    };
+
+    use crate::serialization::{
+        serializable_little_endian::SerializableLittleEndian,
     };
 
     #[test]
@@ -80,17 +74,17 @@ mod tests {
         let verack_message = VerackMessage;
         let mut stream: Vec<u8> = Vec::new();
       
-        message::serialize_message(
+        VerackMessage::serialize_message(
             &mut stream,
             magic_bytes, 
-            CommandName::Verack, 
             &verack_message,
         )?;
+
         let mut expected_stream: Vec<u8> = Vec::new();
-        magic_bytes.serialize(&mut expected_stream)?;
-        CommandName::Verack.serialize(&mut expected_stream)?;
-        vec![0, 0, 0, 0].serialize(&mut expected_stream)?;
-        VERACK_CHECKSUM.serialize(&mut expected_stream)?;
+        magic_bytes.io_serialize(&mut expected_stream)?;
+        CommandName::Verack.io_serialize(&mut expected_stream)?;
+        vec![0, 0, 0, 0].le_serialize(&mut expected_stream)?;
+        CHECKSUM_EMPTY_PAYLOAD.io_serialize(&mut expected_stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -105,19 +99,19 @@ mod tests {
             magic_numbers: magic_bytes,
             command_name: CommandName::Verack,
             payload_size: 0,
-            checksum: VERACK_CHECKSUM,
+            checksum: CHECKSUM_EMPTY_PAYLOAD,
         };
       
         let mut stream: Vec<u8> = Vec::new();
-        magic_bytes.serialize(&mut stream)?;
-        CommandName::Verack.serialize(&mut stream)?;
-        vec![0, 0, 0, 0].serialize(&mut stream)?;
-        VERACK_CHECKSUM.serialize(&mut stream)?;
+        magic_bytes.io_serialize(&mut stream)?;
+        CommandName::Verack.io_serialize(&mut stream)?;
+        vec![0, 0, 0, 0].le_serialize(&mut stream)?;
+        CHECKSUM_EMPTY_PAYLOAD.io_serialize(&mut stream)?;
         let mut stream: &[u8] = &stream;
 
         let expected_verack = VerackMessage::deserialize_message(&mut stream, header)?;
 
-        let verack = VerackMessage::deserialize(&mut stream)?;
+        let verack = VerackMessage::io_deserialize(&mut stream)?;
 
         assert_eq!(expected_verack, verack);
 

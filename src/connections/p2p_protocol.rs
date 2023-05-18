@@ -1,6 +1,6 @@
 use crate::serialization::{
-    deserializable::Deserializable, error_serialization::ErrorSerialization,
-    serializable::Serializable,
+    deserializable_little_endian::DeserializableLittleEndian, error_serialization::ErrorSerialization,
+    serializable_little_endian::SerializableLittleEndian,
 };
 
 use super::error_connection::ErrorConnection;
@@ -105,8 +105,8 @@ impl std::convert::TryInto<i32> for ProtocolVersionP2P {
     }
 }
 
-impl Serializable for ProtocolVersionP2P {
-    fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
+impl SerializableLittleEndian for ProtocolVersionP2P {
+    fn le_serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
         let version: i32 = match (*self).try_into() {
             Ok(version) => version,
             _ => {
@@ -117,16 +117,13 @@ impl Serializable for ProtocolVersionP2P {
             }
         };
 
-        match stream.write(&version.to_le_bytes()) {
-            Ok(_) => Ok(()),
-            _ => Err(ErrorSerialization::ErrorWhileWriting),
-        }
+        version.le_serialize(stream)
     }
 }
 
-impl Deserializable for ProtocolVersionP2P {
-    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
-        let version_int = i32::deserialize(stream)?;
+impl DeserializableLittleEndian for ProtocolVersionP2P {
+    fn le_deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
+        let version_int = i32::le_deserialize(stream)?;
         match version_int.try_into() {
             Ok(version) => Ok(version),
             _ => Err(ErrorSerialization::ErrorInDeserialization(format!(
@@ -140,7 +137,7 @@ impl Deserializable for ProtocolVersionP2P {
 #[cfg(test)]
 mod tests {
 
-    use super::{Deserializable, ErrorSerialization, ProtocolVersionP2P, Serializable};
+    use super::{DeserializableLittleEndian, ErrorSerialization, ProtocolVersionP2P, SerializableLittleEndian};
 
     #[test]
     fn test01_serialize_correctly_protocol_version_p2p() -> Result<(), ErrorSerialization> {
@@ -149,7 +146,7 @@ mod tests {
         let mut stream: Vec<u8> = Vec::new();
         let protocol: ProtocolVersionP2P = ProtocolVersionP2P::V31402;
 
-        protocol.serialize(&mut stream)?;
+        protocol.le_serialize(&mut stream)?;
 
         assert_eq!(expected_stream, stream);
 
@@ -162,7 +159,7 @@ mod tests {
         let mut stream: &[u8] = &stream;
         let protocol: ProtocolVersionP2P = ProtocolVersionP2P::V31402;
 
-        let expected_protocol = ProtocolVersionP2P::deserialize(&mut stream)?;
+        let expected_protocol = ProtocolVersionP2P::le_deserialize(&mut stream)?;
 
         assert_eq!(expected_protocol, protocol);
 

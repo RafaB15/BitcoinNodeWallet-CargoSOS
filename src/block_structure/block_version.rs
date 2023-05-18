@@ -1,8 +1,8 @@
 use crate::connections::error_connection::ErrorConnection;
 use std::io::Write;
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization,
 };
 
@@ -42,8 +42,8 @@ impl std::convert::TryInto<i32> for BlockVersion {
     }
 }
 
-impl Serializable for BlockVersion {
-    fn serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+impl SerializableLittleEndian for BlockVersion {
+    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         let version: i32 = match (*self).try_into() {
             Ok(version) => version,
             Err(_) => {
@@ -60,13 +60,13 @@ impl Serializable for BlockVersion {
     }
 }
 
-impl Deserializable for BlockVersion {
+impl DeserializableLittleEndian for BlockVersion {
 
-    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
-        let version_int = i32::deserialize(stream)?;
+    fn le_deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
+        let version_int = i32::le_deserialize(stream)?;
         match version_int.try_into() {
             Ok(version) => Ok(version),
-            Err(_) => Err(ErrorSerialization::ErrorInDeserialization(format!("While deserializing {:?}", version_int))),
+            Err(_) => Err(ErrorSerialization::ErrorInDeserialization(format!("While deserializing block version {:?}", version_int))),
         }
     }
 }

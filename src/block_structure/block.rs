@@ -10,8 +10,10 @@ use super::{
 };
 
 use crate::serialization::{
-    serializable::Serializable,
-    deserializable::Deserializable,
+    serializable_little_endian::SerializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
+    deserializable_little_endian::DeserializableLittleEndian,
+    deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization,
 };
 
@@ -19,7 +21,7 @@ use crate::messages::{
     compact_size::CompactSize,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Block {
     pub header: BlockHeader,
     pub transactions: Vec<Transaction>,
@@ -45,69 +47,31 @@ impl Block {
         }
 
         Ok(())
-    }
-
-    pub fn remove_spent_transactions_in_list(&self, utxo: &mut Vec<(TransactionOutput, HashType, u32)>) {
-        for transaction in &self.transactions {
-            for input in &transaction.tx_in {
-                for (output, transaction_hash, index) in utxo.iter_mut() {
-                    if input.previous_output.hash.eq(transaction_hash)  && input.previous_output.index == *index{
-                        output.value = 0;
-                    }
-                }
-            }
-        } 
-    }
-
-    pub fn add_utxo_to_list(&self, utxo: &mut Vec<(TransactionOutput, HashType, u32)>) {
-        for transaction in &self.transactions {
-            let mut serialized_transaction = Vec::new();
-            match transaction.serialize(&mut serialized_transaction) {
-                Ok(_) => (),
-                Err(_) => return,
-            }
-            let hashed_transaction = match hash256d(&serialized_transaction) {
-                Ok(hashed_transaction) => hashed_transaction,
-                Err(_) => return,
-            };
-
-            let mut index_utxo = 0;
-
-            for output in &transaction.tx_out {
-                utxo.push((output.clone(), hashed_transaction, index_utxo));
-                index_utxo += 1;
-            }
-        }
-    }
-
-    pub fn update_utxo_list(&self, utxo: &mut Vec<(TransactionOutput, HashType, u32)>) {
-        self.add_utxo_to_list(utxo);
-        self.remove_spent_transactions_in_list(utxo);
-    }
+    }    
 }
 
-impl Serializable for Block {
+impl SerializableLittleEndian for Block {
 
-    fn serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
-        self.header.serialize(stream)?;
-        CompactSize::new(self.transactions.len() as u64).serialize(stream)?;
+    fn le_serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
+        self.header.io_serialize(stream)?;
+        CompactSize::new(self.transactions.len() as u64).le_serialize(stream)?;
         for transaction in self.transactions.iter() {
-            transaction.serialize(stream)?;
+            transaction.le_serialize(stream)?;
         }
 
         Ok(())
     }
 }
 
-impl Deserializable for Block {
-    fn deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
-        let header = BlockHeader::deserialize(stream)?;
-        let compact_size = CompactSize::deserialize(stream)?;
+impl DeserializableLittleEndian for Block {
+    fn le_deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
+        let header = BlockHeader::io_deserialize(stream)?;
+        let compact_size = CompactSize::le_deserialize(stream)?;
         
         let mut block = Block::new(header);
 
         for _ in 0..compact_size.value {
-            let transaction = Transaction::deserialize(stream)?;
+            let transaction = Transaction::le_deserialize(stream)?;
             match block.append_transaction(transaction) {
                 Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => continue,
                 _ => return Err(ErrorSerialization::ErrorInDeserialization(
