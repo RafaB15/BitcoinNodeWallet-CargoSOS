@@ -46,12 +46,10 @@ impl SerializableInternalOrder for InventoryMessage {
 impl DeserializableInternalOrder for InventoryMessage {
     
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let type_identifier = TypeIdentifier::le_deserialize(stream)?;
-        let hash_value = HashType::le_deserialize(stream)?;
         
         Ok(InventoryMessage { 
-            type_identifier, 
-            hash_value 
+            type_identifier: TypeIdentifier::le_deserialize(stream)?, 
+            hash_value: HashType::le_deserialize(stream)?, 
         })
     }
 }

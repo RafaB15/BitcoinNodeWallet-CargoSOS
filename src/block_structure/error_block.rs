@@ -18,5 +18,7 @@ pub enum ErrorBlock {
     CouldNotUpdate,
 
     CouldNotFindBlockFarEnough,
+
+    CouldNotModify,
 }
 

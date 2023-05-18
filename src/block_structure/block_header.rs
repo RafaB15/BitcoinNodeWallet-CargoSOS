@@ -155,7 +155,14 @@ impl BlockHeader {
             temp
         };
 
-        Ok((*buffer.as_slice()).try_into().unwrap())
+        let buffer: HashType = match (*buffer.as_slice()).try_into() {
+            Ok(buffer) => buffer,
+            Err(_) => return Err(ErrorSerialization::ErrorInSerialization(
+                "Error while getting hash 256 d".to_string(),
+            )),
+        };
+
+        Ok(buffer)
     }
 }
 

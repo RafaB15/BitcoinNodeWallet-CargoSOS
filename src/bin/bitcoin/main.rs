@@ -260,7 +260,7 @@ fn get_blocks_recursive(
                 peer_stream,
                 block_download.clone(),
                 blocks,
-                block_chain,
+                *block_chain,
             );
         }
     }
@@ -384,44 +384,6 @@ fn main() -> Result<(), ErrorExecution> {
     let (log_config, _connection_config) = config::new(config_file)?;
  
     let (handle, logger_sender) = initialize_logs(log_config)?;
-    
-    /*
-    let deberia_dar = [
-        // Version
-        0x01, 0x00, 0x00, 0x00, 
-        
-        // previus hash
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-        
-        // merkle root
-        0x3b, 0xa3, 0xed, 0xfd, 0x7a, 0x7b, 0x12, 0xb2, 
-        0x7a, 0xc7, 0x2c, 0x3e, 0x67, 0x76, 0x8f, 0x61, 
-        0x7f, 0xc8, 0x1b, 0xc3, 0x88, 0x8a, 0x51, 0x32, 
-        0x3a, 0x9f, 0xb8, 0xaa, 0x4b, 0x1e, 0x5e, 0x4a, 
-        
-        // timestamp
-        0xda, 0xe5, 0x49, 0x4d, 
-        
-        // bits
-        0xff, 0xff, 0x00, 0x1d, 
-
-        // nonce
-        0x1a, 0xa4, 0xae, 0x18, 
-        
-        // transaction counter
-        0x00
-    ];
-    
-    let header = BlockHeader::generate_genesis_block_header();
-    
-    let mut bytes: Vec<u8> = Vec::new();
-    header.io_serialize(&mut bytes)?;
-    
-    assert_eq!(bytes, deberia_dar);
-    */
         
     // Ejecutar programa
     {
@@ -432,8 +394,8 @@ fn main() -> Result<(), ErrorExecution> {
         let peer_streams = connect_to_testnet_peers(potential_peers, logger_sender.clone())?;
 
         let block_chain = get_block_chain(peer_streams, logger_sender.clone())?;
-        
-        println!("Block chain: {:?}", block_chain);
+
+        println!("Las elements: {:?}", block_chain.last());
     }
     
     

@@ -104,6 +104,10 @@ impl InitialBlockDownload {
         received_headers_message: &HeadersMessage
     ) -> Result<u32,ErrorNode> 
     {
+        let _ = self.sender_log.log_connection(
+            "Adding headers to the blockchain".to_string()    
+        );
+
         let mut added_headers = 0;
         for header in received_headers_message.headers.iter() {
 
@@ -111,7 +115,7 @@ impl InitialBlockDownload {
                 return Err(ErrorNode::WhileValidating("Error while validating proof of work".to_string()));
             }
 
-            match block_chain.append_header(*header) {
+            match block_chain.append_header(**header) {
                 Ok(_) => added_headers += 1,
                 Err(error) => {
                     let _ = self.sender_log.log_connection(format!(
