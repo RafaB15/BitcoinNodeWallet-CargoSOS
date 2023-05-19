@@ -242,6 +242,7 @@ fn get_blocks(
     peer_stream: &mut TcpStream,
     block_download: InitialBlockDownload,
     list_of_blocks: Vec<Block>,
+    logger_sender: LoggerSender,
 ) -> Vec<Block> 
 {
     let mut blocks: Vec<Block> = Vec::new();
@@ -253,12 +254,17 @@ fn get_blocks(
             Err(_) => continue,
         };
 
-        if let Ok(block) = block_download.get_data(
+        match block_download.get_data(
             peer_stream,
             &header_hash,
         ) {
-            blocks.push(block);
-        } 
+            Ok(block) => blocks.push(block),
+            Err(error) => {
+                let _ = logger_sender.log_connection(
+                    format!("Cannot get block with hashed header: {:?}, we get {:?}", header_hash, error)
+                );
+            }
+        }
     }
 
     blocks
@@ -293,17 +299,18 @@ fn get_initial_download_headers_first(
         let list_of_blocks = block_chain.get_blocks_after_timestamp(timestamp)?;
         let block_download_peer = block_download.clone();
 
+        let logger_sender_clone = logger_sender.clone();
         let peer_download_handle = thread::spawn(move || {
             
             get_blocks(
                 &mut peer_stream,
                 block_download_peer,
                 list_of_blocks,
+                logger_sender_clone,
             )
         });
 
         peer_download_handles.push(peer_download_handle);
-
     }
 
     for peer_download_handle in peer_download_handles {
@@ -434,7 +441,7 @@ fn main() -> Result<(), ErrorExecution> {
 
     // Ejecutar programa
     {
-        let peer_count_max: usize = 2;
+        let peer_count_max: usize = 10;
         
         let potential_peers = get_potential_peers(
             peer_count_max,
@@ -448,7 +455,8 @@ fn main() -> Result<(), ErrorExecution> {
         println!("Las elements: {:?}", block_chain.latest());
     }
     
-    let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
+    //let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
+    let posible_path: Option<&Path> = None;
     save_block_chain(
         &block_chain, 
         posible_path,
