@@ -12,18 +12,15 @@ use crate::messages::{
         Message,
     },
     command_name::CommandName,
+    inventory_vector::InventoryVector, 
+    get_data_message::GetDataMessage,
 
-    inventory_message::InventoryMessage,
     block_message::BlockMessage,
 
-    error_message::ErrorMessage,
+    error_message::ErrorMessage, 
 };
 
 use crate::logs::logger_sender::LoggerSender;
-
-use crate::connections::{
-    type_identifier::TypeIdentifier,
-};
 
 use crate::block_structure::{
     block::Block,
@@ -43,6 +40,8 @@ use crate::connections::{
 
 const TESTNET_MAGIC_NUMBERS: [u8; 4] = [0x0b, 0x11, 0x09, 0x07];
 const NO_STOP_HASH: HashType = [0; 32];
+
+const MAX_HEADERS_COUNT: usize = 50_000;
 
 #[derive(Debug, Clone)]
 pub struct InitialBlockDownload {
@@ -173,32 +172,46 @@ impl InitialBlockDownload {
     pub fn get_data<RW : Read + Write>(
         &self,
         peer_stream: &mut RW,
-        hashed_header: &HashType,
-    ) -> Result<Block, ErrorMessage> 
+        hashed_headers: Vec<HashType>,
+    ) -> Result<Vec<Block>, ErrorMessage> 
     {
         let _ = self.sender_log.log_connection(
             "Getting data".to_string()    
         );
 
-        let inventory_message = InventoryMessage {
-            type_identifier: TypeIdentifier::Block,
-            hash_value: *hashed_header,
-        };
+        let headers_count = hashed_headers.len();
 
-        InventoryMessage::serialize_message(
+        if headers_count >= MAX_HEADERS_COUNT {
+            let _ = self.sender_log.log_connection(
+                "More headers than possible".to_string()    
+            );
+            return Err(ErrorMessage::RequestedDataTooBig);
+        }
+
+        let get_data_message = GetDataMessage::new(hashed_headers);
+
+        GetDataMessage::serialize_message(
             peer_stream, 
             TESTNET_MAGIC_NUMBERS, 
-            &inventory_message,
+            &get_data_message,
         )?;
 
-        let header = message::deserialize_until_found(peer_stream, CommandName::Block)?;
-        let block_message = BlockMessage::deserialize_message(peer_stream, header)?;
-        
-        match block_message.block.proof_of_inclusion() || true { // cambiar
-            true => Ok(block_message.block),
-            false => Err(ErrorMessage::ErrorInDeserialization(
-                "Error while receiving block message".to_string()
-            )),
+        let mut blocks: Vec<Block> = Vec::new();
+
+        for _ in 0..headers_count {
+            let header = message::deserialize_until_found(peer_stream, CommandName::Block)?;
+            let block_message = BlockMessage::deserialize_message(peer_stream, header)?;
+            
+            let block = match true || block_message.block.proof_of_inclusion() { // cambiar
+                true => block_message.block,
+                false => return Err(ErrorMessage::InDeserialization(
+                    "Error while receiving block message".to_string()
+                )),
+            };
+
+            blocks.push(block);
         }
+
+        Ok(blocks)
     }
 }

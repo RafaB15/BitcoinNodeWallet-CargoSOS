@@ -9,18 +9,20 @@ pub enum ErrorNode {
     WhileSerializing(String),
     WhileDeserializing(String),
     NodeNotResponding(String),
+    RequestedDataTooBig,
 }
 
 impl From<ErrorMessage> for ErrorNode {
     fn from(value: ErrorMessage) -> Self {
         match value {
-            ErrorMessage::ErrorInMessage => ErrorNode::WhileSendingMessage("Error in message".to_string()),
-            ErrorMessage::ErrorInSerialization(error) => ErrorNode::WhileSerializing(error),
-            ErrorMessage::ErrorInDeserialization(error) => ErrorNode::WhileDeserializing(error),
-            ErrorMessage::ErrorMessageUnknown => ErrorNode::WhileSendingMessage("Error in message".to_string()),
-            ErrorMessage::ErrorWhileWriting => ErrorNode::WhileSendingMessage("Error in message".to_string()),
-            ErrorMessage::ErrorWhileReading => ErrorNode::WhileReceivingMessage("Error in message".to_string()),
-            ErrorMessage::ErrorChecksum => ErrorNode::WhileValidating("Error in message".to_string()),
+            ErrorMessage::InMessage => ErrorNode::WhileSendingMessage("Error in message".to_string()),
+            ErrorMessage::InSerialization(error) => ErrorNode::WhileSerializing(error),
+            ErrorMessage::InDeserialization(error) => ErrorNode::WhileDeserializing(error),
+            ErrorMessage::MessageUnknown => ErrorNode::WhileSendingMessage("Error in message".to_string()),
+            ErrorMessage::WhileWriting => ErrorNode::WhileSendingMessage("Error in message".to_string()),
+            ErrorMessage::WhileReading => ErrorNode::WhileReceivingMessage("Error in message".to_string()),
+            ErrorMessage::Checksum => ErrorNode::WhileValidating("Error in message".to_string()),
+            ErrorMessage::RequestedDataTooBig => ErrorNode::RequestedDataTooBig,
         }
     }
 }

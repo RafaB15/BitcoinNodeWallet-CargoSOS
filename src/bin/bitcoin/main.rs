@@ -21,6 +21,7 @@ use std::thread::{
     JoinHandle,
 };
 
+use cargosos_bitcoin::block_structure::hash::HashType;
 use error_execution::ErrorExecution;
 use error_initialization::ErrorInitialization;
 
@@ -240,26 +241,33 @@ fn get_blocks(
     peer_stream: &mut TcpStream,
     block_download: InitialBlockDownload,
     list_of_blocks: Vec<Block>,
+    logger_sender: LoggerSender,
 ) -> Vec<Block> 
 {
-    let mut blocks: Vec<Block> = Vec::new();
+    let mut headers: Vec<HashType> = Vec::new();
 
     for block in list_of_blocks {
-        
+
         let header_hash = match block.header.get_hash256d(){
             Ok(header_hash) => header_hash,
             Err(_) => continue,
         };
 
-        if let Ok(block) = block_download.get_data(
-            peer_stream,
-            &header_hash,
-        ) {
-            blocks.push(block);
-        } 
+        headers.push(header_hash);
     }
 
-    blocks
+    match block_download.get_data(
+        peer_stream,
+        headers,
+    ) {
+        Ok(blocks) => blocks,
+        Err(error) => {
+            let _ = logger_sender.log_connection(
+                format!("Cannot get block, we get {:?}", error)
+            );
+            vec![]
+        }
+    }
 }
 
 fn get_initial_download_headers_first(
@@ -287,21 +295,22 @@ fn get_initial_download_headers_first(
             &logger_sender,
         )?;
 
-        let timestamp: u32 = 1681703228;
+        let timestamp: u32 = 1681703228; 
         let list_of_blocks = block_chain.get_blocks_after_timestamp(timestamp)?;
         let block_download_peer = block_download.clone();
 
+        let logger_sender_clone = logger_sender.clone();
         let peer_download_handle = thread::spawn(move || {
             
             get_blocks(
                 &mut peer_stream,
                 block_download_peer,
                 list_of_blocks,
+                logger_sender_clone,
             )
         });
 
         peer_download_handles.push(peer_download_handle);
-
     }
 
     for peer_download_handle in peer_download_handles {
@@ -432,7 +441,7 @@ fn main() -> Result<(), ErrorExecution> {
 
     // Ejecutar programa
     {
-        let peer_count_max: usize = 1;
+        let peer_count_max: usize = 10;
         
         let potential_peers = get_potential_peers(
             peer_count_max,
@@ -446,7 +455,8 @@ fn main() -> Result<(), ErrorExecution> {
         println!("Last elements: {:?}", block_chain.latest());
     }
     
-    let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
+    //let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
+    let posible_path: Option<&Path> = None;
     save_block_chain(
         &block_chain, 
         posible_path,

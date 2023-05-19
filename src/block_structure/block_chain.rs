@@ -238,7 +238,7 @@ mod tests {
     fn test_01_correct_append_header() {
         let block = Block::new(
             BlockHeader::new(
-                block_version::BlockVersion::V1,
+                block_version::BlockVersion::version(1),
                 [0; 32],
                 [0; 32],
                 0,
@@ -253,7 +253,7 @@ mod tests {
         let mut blockchain = BlockChain::new(block).unwrap();
 
         let header_to_append = BlockHeader::new(
-            block_version::BlockVersion::V1,
+            block_version::BlockVersion::version(1),
             hash_of_first_block_header.clone(),
             [0; 32],
             0,
@@ -290,7 +290,7 @@ mod tests {
 
         let empty_block = Block::new(
             BlockHeader::new(
-                block_version::BlockVersion::V1,
+                block_version::BlockVersion::version(1),
                 [0; 32],
                 [0; 32],
                 0,
@@ -316,7 +316,7 @@ mod tests {
 
         let block = Block::new(
             BlockHeader::new(
-                block_version::BlockVersion::V1,
+                block_version::BlockVersion::version(1),
                 [0; 32],
                 [0; 32],
                 0,
@@ -331,7 +331,7 @@ mod tests {
         let mut blockchain = BlockChain::new(block).unwrap();
 
         let header_to_append = BlockHeader::new(
-            block_version::BlockVersion::V1,
+            block_version::BlockVersion::version(1),
             hash_of_first_block_header.clone(),
             [3; 32],
             5,
@@ -351,7 +351,7 @@ mod tests {
 
         let block = Block::new(
             BlockHeader::new(
-                block_version::BlockVersion::V1,
+                block_version::BlockVersion::version(1),
                 [0; 32],
                 [0; 32],
                 0,
@@ -366,7 +366,7 @@ mod tests {
         let mut blockchain = BlockChain::new(block).unwrap();
 
         let header_to_append = BlockHeader::new(
-            block_version::BlockVersion::V1,
+            block_version::BlockVersion::version(1),
             hash_of_first_block_header.clone(),
             [3; 32],
             5,
