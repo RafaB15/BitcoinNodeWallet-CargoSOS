@@ -48,8 +48,15 @@ impl DeserializableInternalOrder for HeadersMessage {
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let count = CompactSize::le_deserialize(stream)?.value;
         let mut headers = Vec::new();
-        for _ in 0..count {
-            headers.push(BlockHeader::io_deserialize(stream)?);
+        for i in 0..count {
+            let block_header = match BlockHeader::io_deserialize(stream){
+                Ok(block_header) => block_header,
+                Err(error) => {
+                    println!("At: {}", i);
+                    return Err(error);
+                },
+            };
+            headers.push(block_header);
         }
         Ok(HeadersMessage{
             headers,

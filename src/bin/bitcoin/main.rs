@@ -289,7 +289,7 @@ fn get_initial_download_headers_first(
             &logger_sender,
         )?;
 
-        let timestamp: u32 = 1681703228;
+        let timestamp: u32 = 1681703228; 
         let list_of_blocks = block_chain.get_blocks_after_timestamp(timestamp)?;
         let block_download_peer = block_download.clone();
 
@@ -434,7 +434,7 @@ fn main() -> Result<(), ErrorExecution> {
 
     // Ejecutar programa
     {
-        let peer_count_max: usize = 3;
+        let peer_count_max: usize = 2;
         
         let potential_peers = get_potential_peers(
             peer_count_max,
