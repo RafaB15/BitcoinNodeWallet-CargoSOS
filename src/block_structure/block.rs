@@ -1,7 +1,12 @@
 use super::{
     block_header::BlockHeader, 
     transaction::Transaction,
+    transaction_output::TransactionOutput,
     error_block::ErrorBlock,
+    hash::{
+        HashType,
+        hash256d,
+    },
 };
 
 use crate::serialization::{
@@ -15,6 +20,7 @@ use crate::serialization::{
 use crate::messages::{
     compact_size::CompactSize,
 };
+
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Block {
