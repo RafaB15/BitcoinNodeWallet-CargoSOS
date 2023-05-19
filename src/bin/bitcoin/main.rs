@@ -63,8 +63,6 @@ use cargosos_bitcoin::messages::{
     bitfield_services::BitfieldServices,
 };
 
-const MAX_HEADERS: u32 = 2000;
-
 /// Get the configuration name given the arguments 
 /// 
 /// ### Errors
@@ -230,7 +228,7 @@ fn get_peer_header(
             format!("We get: {}", header_count)
         )?;
 
-        if header_count < MAX_HEADERS {
+        if header_count <= 0 {
             break;
         }        
     }
@@ -434,7 +432,7 @@ fn main() -> Result<(), ErrorExecution> {
 
     // Ejecutar programa
     {
-        let peer_count_max: usize = 3;
+        let peer_count_max: usize = 1;
         
         let potential_peers = get_potential_peers(
             peer_count_max,
@@ -445,7 +443,7 @@ fn main() -> Result<(), ErrorExecution> {
 
         get_block_chain(peer_streams, &mut block_chain, logger_sender.clone())?;
 
-        println!("Las elements: {:?}", block_chain.latest());
+        println!("Last elements: {:?}", block_chain.latest());
     }
     
     let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
