@@ -9,32 +9,34 @@ use crate::serialization::error_serialization::ErrorSerialization;
 ///  * 'ErrorInSerialization'
 #[derive(Debug, PartialEq)]
 pub enum ErrorMessage {
-    ErrorInMessage,
+    InMessage,
 
-    ErrorInSerialization(String),
+    InSerialization(String),
 
-    ErrorInDeserialization(String),
+    InDeserialization(String),
 
-    ErrorMessageUnknown,
+    MessageUnknown,
 
-    ErrorWhileWriting,
+    WhileWriting,
 
-    ErrorWhileReading,
+    WhileReading,
 
-    ErrorChecksum,
+    Checksum,
+
+    RequestedDataTooBig,
 }
 
 impl From<ErrorSerialization> for ErrorMessage {
     fn from(value: ErrorSerialization) -> Self {
         match value {
             ErrorSerialization::ErrorInSerialization(error) => {
-                ErrorMessage::ErrorInSerialization(error)
+                ErrorMessage::InSerialization(error)
             }
             ErrorSerialization::ErrorInDeserialization(error) => {
-                ErrorMessage::ErrorInDeserialization(error)
+                ErrorMessage::InDeserialization(error)
             }
-            ErrorSerialization::ErrorWhileWriting => ErrorMessage::ErrorWhileWriting,
-            ErrorSerialization::ErrorWhileReading => ErrorMessage::ErrorWhileReading,
+            ErrorSerialization::ErrorWhileWriting => ErrorMessage::WhileWriting,
+            ErrorSerialization::ErrorWhileReading => ErrorMessage::WhileReading,
         }
     }
 }

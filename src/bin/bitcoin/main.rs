@@ -21,6 +21,7 @@ use std::thread::{
     JoinHandle,
 };
 
+use cargosos_bitcoin::block_structure::hash::HashType;
 use error_execution::ErrorExecution;
 use error_initialization::ErrorInitialization;
 
@@ -245,29 +246,30 @@ fn get_blocks(
     logger_sender: LoggerSender,
 ) -> Vec<Block> 
 {
-    let mut blocks: Vec<Block> = Vec::new();
+    let mut headers: Vec<HashType> = Vec::new();
 
     for block in list_of_blocks {
-        
+
         let header_hash = match block.header.get_hash256d(){
             Ok(header_hash) => header_hash,
             Err(_) => continue,
         };
 
-        match block_download.get_data(
-            peer_stream,
-            &header_hash,
-        ) {
-            Ok(block) => blocks.push(block),
-            Err(error) => {
-                let _ = logger_sender.log_connection(
-                    format!("Cannot get block with hashed header: {:?}, we get {:?}", header_hash, error)
-                );
-            }
-        }
+        headers.push(header_hash);
     }
 
-    blocks
+    match block_download.get_data(
+        peer_stream,
+        headers,
+    ) {
+        Ok(blocks) => blocks,
+        Err(error) => {
+            let _ = logger_sender.log_connection(
+                format!("Cannot get block, we get {:?}", error)
+            );
+            vec![]
+        }
+    }
 }
 
 fn get_initial_download_headers_first(
