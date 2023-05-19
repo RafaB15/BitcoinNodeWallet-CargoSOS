@@ -50,9 +50,9 @@ impl Block {
     }    
 }
 
-impl SerializableLittleEndian for Block {
+impl SerializableInternalOrder for Block {
 
-    fn le_serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
+    fn io_serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
         self.header.io_serialize(stream)?;
         CompactSize::new(self.transactions.len() as u64).le_serialize(stream)?;
         for transaction in self.transactions.iter() {
@@ -63,8 +63,9 @@ impl SerializableLittleEndian for Block {
     }
 }
 
-impl DeserializableLittleEndian for Block {
-    fn le_deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
+impl DeserializableInternalOrder for Block {
+    
+    fn io_deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
         let header = BlockHeader::io_deserialize(stream)?;
         let compact_size = CompactSize::le_deserialize(stream)?;
         

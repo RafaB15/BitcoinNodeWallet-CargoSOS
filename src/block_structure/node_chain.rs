@@ -4,8 +4,23 @@ use super::{
     error_block::ErrorBlock,
 };
 
+use crate::serialization::{
+    serializable_little_endian::SerializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
+    deserializable_little_endian::DeserializableLittleEndian,
+    deserializable_internal_order::DeserializableInternalOrder,
+    error_serialization::ErrorSerialization,
+};
+
+use std::io::{
+    Read,
+    Write,
+};
+
+const NONE_INDEX: u64 = u64::MAX;
+
 #[derive(Debug, Clone)]
-pub struct NodeChain {
+pub(super) struct NodeChain {
 
     pub block: Block,
     pub header_hash: HashType,
@@ -73,5 +88,36 @@ impl NodeChain {
 
         Ok(())
     }
+}
 
+impl SerializableInternalOrder for NodeChain {
+
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+        
+        self.block.io_serialize(stream)?;
+        self.header_hash.io_serialize(stream)?;
+        
+        match self.index_previous_node {
+            Some(index) => (index as u64).le_serialize(stream)?,
+            None => NONE_INDEX.le_serialize(stream)?,
+        };
+        
+        Ok(())
+    }
+}
+
+impl DeserializableInternalOrder for NodeChain {
+
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+        
+        Ok(NodeChain {
+            block: Block::io_deserialize(stream)?,
+            header_hash: HashType::io_deserialize(stream)?,
+            index_previous_node: match u64::le_deserialize(stream)? {
+                NONE_INDEX => None,
+                index => Some(index as usize),
+            },
+        })
+
+    }
 }

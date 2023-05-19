@@ -5,6 +5,25 @@ use super::{
     error_block::ErrorBlock,
 };
 
+use crate::serialization::{
+    serializable_little_endian::SerializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
+    deserializable_little_endian::DeserializableLittleEndian,
+    deserializable_internal_order::DeserializableInternalOrder,
+    error_serialization::ErrorSerialization,
+};
+
+use std::io::{
+    Read,
+    Write,
+};
+
+const LAST_BLOCK_COUNT_SIZE: usize =  8;
+const BLOCKS_COUNT_SIZE: usize =  8;
+const BLOCK_CHAIN_SIZE: usize =  8;
+
+const HEADER_SIZE: usize = LAST_BLOCK_COUNT_SIZE + BLOCKS_COUNT_SIZE + BLOCK_CHAIN_SIZE;
+
 #[derive(Debug, Clone)]
 pub struct BlockChain {
     
@@ -133,6 +152,72 @@ impl BlockChain {
             Some(block) => Ok(block.clone()),
             None => Err(ErrorBlock::NodeChainReferenceNotFound),
         }
+    }
+}
+
+impl SerializableInternalOrder for BlockChain {
+    
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+
+        let mut block_chain: Vec<u8> = Vec::new();
+
+        for block in self.blocks.iter() {
+            block.io_serialize(&mut block_chain)?;
+        }
+
+        for index_last_block in self.last_blocks.iter() {
+            (index_last_block.clone() as u64).le_serialize(&mut block_chain)?;
+        }
+        
+        let mut header: Vec<u8> = Vec::new();
+        
+        (self.last_blocks.len() as u64).le_serialize(&mut header)?;
+        (self.blocks.len() as u64).le_serialize(&mut header)?;
+        (block_chain.len() as u64).le_serialize(&mut header)?;
+
+        header.io_serialize(stream)?;
+        block_chain.io_serialize(stream)?;
+
+        Ok(())
+    }
+}
+
+impl DeserializableInternalOrder for BlockChain {
+
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+        let mut header: Vec<u8> = vec![0; HEADER_SIZE];
+        if stream.read_exact(&mut header).is_err() {
+
+            return Err(ErrorSerialization::ErrorWhileReading);
+        }
+        let mut header = &header[..];
+
+        let last_blocks_count = u64::le_deserialize(&mut header)?;
+        let blocks_count = u64::le_deserialize(&mut header)?;
+        let block_chain_size = u64::le_deserialize(&mut header)?;
+
+        let mut block_chain: Vec<u8> = vec![0; block_chain_size as usize];
+        if stream.read_exact(&mut block_chain).is_err() {
+
+            return Err(ErrorSerialization::ErrorWhileReading);
+        }
+
+        let mut block_chain = &block_chain[..];
+
+        let mut blocks: Vec<NodeChain> = Vec::new();
+        for _ in 0..blocks_count {
+            blocks.push(NodeChain::io_deserialize(&mut block_chain)?);
+        }
+
+        let mut last_blocks: Vec<usize> = Vec::new();
+        for _ in 0..last_blocks_count {
+            last_blocks.push(u64::le_deserialize(&mut block_chain)? as usize);
+        }
+
+        Ok(BlockChain { 
+            blocks, 
+            last_blocks,
+        })
     }
 }
 
