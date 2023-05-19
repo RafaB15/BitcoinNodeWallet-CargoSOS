@@ -24,3 +24,5 @@ pub mod error_message;
 pub mod bitfield_services;
 pub mod compact_size;
 pub mod inventory_vector;
+
+pub mod alert_message;
