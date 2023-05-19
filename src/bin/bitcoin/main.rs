@@ -356,32 +356,31 @@ fn get_initial_block_chain(
 ) -> Result<BlockChain, ErrorExecution> 
 {
 
-    match posible_path {
-        Some(path) => {
+    if let Some(path) = posible_path {
 
-            let mut file = match OpenOptions::new().read(true).open(path) {
-                Ok(file) => BufReader::new(file),
-                _ => return Err(ErrorInitialization::BlockchainFileDoesntExist.into()),
-            };
-
+        if let Ok(file) = OpenOptions::new().read(true).open(path) {
+            let mut file = BufReader::new(file);
+        
             let _ = logger_sender.log_connection(
                 "Reading the blockchain from file".to_string()    
             );
         
-            Ok(BlockChain::io_deserialize(&mut file)?)
-        },
-        None => {
+            return Ok(BlockChain::io_deserialize(&mut file)?);
+        }
 
-            let genesis_header: BlockHeader = BlockHeader::generate_genesis_block_header();
-            let genesis_block: Block = Block::new(genesis_header);
-
-            let _ = logger_sender.log_connection(
-                "Initializing blockchain from genesis block".to_string()    
-            );
-
-            Ok(BlockChain::new(genesis_block)?)
-        },
+        let _ = logger_sender.log_connection(
+            "Could not open file".to_string()    
+        );
     }
+
+    let genesis_header: BlockHeader = BlockHeader::generate_genesis_block_header();
+    let genesis_block: Block = Block::new(genesis_header);
+
+    let _ = logger_sender.log_connection(
+        "Initializing blockchain from genesis block".to_string()    
+    );
+
+    Ok(BlockChain::new(genesis_block)?)
 }
 
 fn save_block_chain(
@@ -392,7 +391,13 @@ fn save_block_chain(
 {
     let path = match posible_path {
         Some(path) => path,
-        None => return Ok(()),
+        None => {
+            let _ = logger_sender.log_connection(
+                "No path to save the blockchain".to_string()    
+            );
+
+            return Ok(())
+        },
     };
     
     let mut file = match OpenOptions::new().create(true).write(true).open(path) {
