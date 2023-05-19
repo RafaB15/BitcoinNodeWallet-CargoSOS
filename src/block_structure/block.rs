@@ -1,12 +1,7 @@
 use super::{
     block_header::BlockHeader, 
     transaction::Transaction,
-    transaction_output::TransactionOutput,
     error_block::ErrorBlock,
-    hash::{
-        HashType,
-        hash256d,
-    },
 };
 
 use crate::serialization::{
@@ -64,7 +59,7 @@ impl SerializableInternalOrder for Block {
 }
 
 impl DeserializableInternalOrder for Block {
-    
+
     fn io_deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
         let header = BlockHeader::io_deserialize(stream)?;
         let compact_size = CompactSize::le_deserialize(stream)?;
