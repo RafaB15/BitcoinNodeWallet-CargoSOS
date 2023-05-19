@@ -5,6 +5,14 @@ use super::{
     inventory_vector::InventoryVector,
 };
 
+use crate::connections::{
+    type_identifier::TypeIdentifier,
+};
+
+use crate::block_structure::hash::{
+    HashType,
+};
+
 use std::io::Read;
 
 use crate::serialization::{
@@ -15,28 +23,37 @@ use crate::serialization::{
     error_serialization::ErrorSerialization,
 };
 
-pub struct InventoryMessage {
+pub struct GetDataMessage {
     pub inventory_vectors: Vec<InventoryVector>,
 }
 
-impl InventoryMessage {
+impl GetDataMessage {
 
-    pub fn new(inventory_vectors: Vec<InventoryVector>) -> InventoryMessage {
-        InventoryMessage {
+    pub fn new(hash_vector: Vec<HashType>) -> GetDataMessage {
+
+        let mut inventory_vectors = Vec::new();
+        for hash in hash_vector {
+            inventory_vectors.push(InventoryVector::new(
+                TypeIdentifier::Block, 
+                hash
+            ));
+        }
+
+        GetDataMessage {
             inventory_vectors,
         }
     }
 
 }
 
-impl Message for InventoryMessage {
+impl Message for GetDataMessage {
 
     fn get_command_name() -> CommandName {
-        CommandName::Inventory
+        CommandName::GetData
     }
 }
 
-impl SerializableInternalOrder for InventoryMessage {
+impl SerializableInternalOrder for GetDataMessage {
     
     fn io_serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
         
@@ -49,7 +66,7 @@ impl SerializableInternalOrder for InventoryMessage {
     }
 }
 
-impl DeserializableInternalOrder for InventoryMessage {
+impl DeserializableInternalOrder for GetDataMessage {
     
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
 
@@ -59,7 +76,7 @@ impl DeserializableInternalOrder for InventoryMessage {
             inventory_vectors.push(InventoryVector::io_deserialize(stream)?);
         }
         
-        Ok(InventoryMessage { 
+        Ok(GetDataMessage { 
             inventory_vectors,
         })
     }

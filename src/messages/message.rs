@@ -23,6 +23,7 @@ use super::{
     send_cmpct::SendCmpctMessage,
     addr_message::AddrMessage,
     fee_filter_message::FeeFilterMessage,
+    get_data_message::GetDataMessage,
 
     message_header::{
         MessageHeader,
@@ -179,6 +180,9 @@ pub fn deserialize_until_found<RW : Read + Write>(
             CommandName::FeeFilter => {
                 let _ = FeeFilterMessage::deserialize_message(stream, header)?;
             },
+            CommandName::GetData => {
+                let _ = GetDataMessage::deserialize_message(stream, header)?;
+            }
         }
     }
 }
