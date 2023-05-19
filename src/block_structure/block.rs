@@ -1,7 +1,12 @@
 use super::{
     block_header::BlockHeader, 
     transaction::Transaction,
+    transaction_output::TransactionOutput,
     error_block::ErrorBlock,
+    hash::{
+        HashType,
+        hash256d,
+    },
 };
 
 use crate::serialization::{
@@ -15,6 +20,7 @@ use crate::serialization::{
 use crate::messages::{
     compact_size::CompactSize,
 };
+
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Block {
@@ -43,6 +49,45 @@ impl Block {
 
         Ok(())
     }    
+
+    pub fn remove_spent_transactions_in_list(&self, utxo: &mut Vec<(TransactionOutput, HashType, u32)>) {
+        for transaction in &self.transactions {
+            for input in &transaction.tx_in {
+                for (output, transaction_hash, index) in utxo.iter_mut() {
+                    if input.previous_output.hash.eq(transaction_hash)  && input.previous_output.index == *index{
+                        output.value = -1;
+                    }
+                }
+            }
+        } 
+    }
+
+    pub fn add_utxo_to_list(&self, utxo: &mut Vec<(TransactionOutput, HashType, u32)>) {
+        for transaction in &self.transactions {
+            let mut serialized_transaction = Vec::new();
+            match transaction.le_serialize(&mut serialized_transaction) {
+                Ok(_) => (),
+                Err(_) => continue,
+            }
+            let hashed_transaction = match hash256d(&serialized_transaction) {
+                Ok(hashed_transaction) => hashed_transaction,
+                Err(_) => continue,
+            };
+
+            let mut index_utxo = 0;
+
+            for output in &transaction.tx_out {
+                utxo.push((output.clone(), hashed_transaction, index_utxo));
+                index_utxo += 1;
+            }
+        }
+    }
+
+    pub fn update_utxo_list(&self, utxo: &mut Vec<(TransactionOutput, HashType, u32)>) {
+        self.add_utxo_to_list(utxo);
+        self.remove_spent_transactions_in_list(utxo);
+    }
+    
 }
 
 impl SerializableInternalOrder for Block {
