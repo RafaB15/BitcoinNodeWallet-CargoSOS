@@ -161,8 +161,10 @@ mod tests {
         transaction_output::TransactionOutput,
         transaction::Transaction,
         outpoint::Outpoint,
+        hash::hash256d,
     };
     use crate::messages::compact_size::CompactSize;
+    use crate::serialization::serializable_little_endian::SerializableLittleEndian;
     use super::*;
 
     #[test]
@@ -310,6 +312,82 @@ mod tests {
 
         let last_blocks = blockchain.latest();
         assert_eq!(last_blocks[0].header, header_to_append);
+    }
+
+    #[test]
+    fn test_05_correct_get_utxo() {
+
+        let transaction_output_1 = TransactionOutput{
+            value: 10, 
+            pk_script: String::from("Prueba out")
+        };
+
+        let transaction_output_2 = TransactionOutput{
+            value: 20, 
+            pk_script: String::from("Prueba out")
+        };
+
+        let transaction_output = Transaction {
+            version : 1,
+            tx_in: vec![],
+            tx_out: vec![transaction_output_1.clone(), transaction_output_2.clone()],
+            time: 0,
+        };
+
+        let mut serialized_transaction = Vec::new();
+        transaction_output.le_serialize(&mut serialized_transaction).unwrap();
+        let hashed_transaction = hash256d(&serialized_transaction).unwrap();
+
+
+        let mut block_transaction_output = Block::new(
+            BlockHeader::new(
+                block_version::BlockVersion::V1,
+                [0; 32],
+                [0; 32],
+                0,
+                Compact256::from(10),
+                0,
+                CompactSize::new(0),
+            )
+        );
+
+        block_transaction_output.append_transaction(transaction_output).unwrap();
+
+
+        let transaction_input_1 = TransactionInput::new(
+            Outpoint { hash: hashed_transaction, index: 0 },
+            String::from("Prueba in"),
+            24
+        );
+
+        let transaction_input = Transaction {
+            version : 1,
+            tx_in: vec![transaction_input_1.clone()],
+            tx_out: vec![],
+            time: 0,
+        };
+
+        let hash_block_transaction_output = block_transaction_output.header.get_hash256d().unwrap();
+
+        let mut block_transaction_input = Block::new(
+            BlockHeader::new(
+                block_version::BlockVersion::V1,
+                hash_block_transaction_output,
+                [0; 32],
+                0,
+                Compact256::from(10),
+                0,
+                CompactSize::new(0),
+            )
+        );
+
+        block_transaction_input.append_transaction(transaction_input).unwrap();
+
+        let mut blockchain = BlockChain::new(block_transaction_output).unwrap();
+        blockchain.append_block(block_transaction_input).unwrap();
+
+        let utxo = blockchain.get_utxo();
+        assert_eq!(utxo[0], transaction_output_2);
     }
 
 }
