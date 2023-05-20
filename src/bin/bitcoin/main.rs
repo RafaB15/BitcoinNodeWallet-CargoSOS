@@ -443,7 +443,7 @@ fn main() -> Result<(), ErrorExecution> {
 
     // Ejecutar programa
     {
-        let peer_count_max: usize = 10;
+        let peer_count_max: usize = 5;
         
         let potential_peers = get_potential_peers(
             peer_count_max,
@@ -457,8 +457,8 @@ fn main() -> Result<(), ErrorExecution> {
         println!("Las elements: {:?}", block_chain.latest());
     }
     
-    //let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
-    let posible_path: Option<&Path> = None;
+    let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
+    //let posible_path: Option<&Path> = None;
     save_block_chain(
         &block_chain, 
         posible_path,

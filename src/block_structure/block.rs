@@ -19,6 +19,7 @@ use crate::messages::{
 #[derive(Debug, Clone, PartialEq)]
 pub struct Block {
     pub header: BlockHeader,
+    //pub tx_coinbase: CoinbaseTransaction,
     pub transactions: Vec<Transaction>,
 }
 
@@ -51,7 +52,7 @@ impl SerializableInternalOrder for Block {
         self.header.io_serialize(stream)?;
         CompactSize::new(self.transactions.len() as u64).le_serialize(stream)?;
         for transaction in self.transactions.iter() {
-            transaction.le_serialize(stream)?;
+            transaction.io_serialize(stream)?;
         }
 
         Ok(())
@@ -67,7 +68,7 @@ impl DeserializableInternalOrder for Block {
         let mut block = Block::new(header);
 
         for _ in 0..compact_size.value {
-            let transaction = Transaction::le_deserialize(stream)?;
+            let transaction = Transaction::io_deserialize(stream)?;
             match block.append_transaction(transaction) {
                 Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => continue,
                 _ => return Err(ErrorSerialization::ErrorInDeserialization(
