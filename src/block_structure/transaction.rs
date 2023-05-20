@@ -1,6 +1,6 @@
 use super::{
     error_block::ErrorBlock,
-    hash::{hash256, HashType, hash256d},
+    hash::{hash256, HashType},
     transaction_input::TransactionInput,
     transaction_output::TransactionOutput,
 };

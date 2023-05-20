@@ -1,12 +1,12 @@
 use super::{
     block_header::BlockHeader, 
     transaction::Transaction,
-    transaction_output::TransactionOutput,
+    //transaction_output::TransactionOutput,
     error_block::ErrorBlock,
     hash::{
         HashType,
-        hash256d,
     },
+    merkle_tree::MerkleTree,
 };
 
 use crate::serialization::{
@@ -50,7 +50,7 @@ impl Block {
     }
 
     pub fn get_merkle_path(&self, transaction: &Transaction) -> Result<Vec<HashType>, ErrorBlock> {
-        let path: Vec<HashType> = match Transaction::get_merkle_path(&self.transactions, &transaction){
+        let path: Vec<HashType> = match MerkleTree::get_merkle_path(&self.transactions, transaction.clone()){
             Ok(path) => path,
             Err(_) => return Err(ErrorBlock::CouldNotCalculateMerklePath),
         };
