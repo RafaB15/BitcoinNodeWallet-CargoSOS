@@ -3,6 +3,7 @@ use super::{
     compact256::Compact256,
     hash::{hash256d, HashType},
     transaction::Transaction,
+    error_block::ErrorBlock,
 };
 
 use crate::{serialization::{
@@ -164,8 +165,9 @@ impl BlockHeader {
 
         Ok(buffer)
     }
-}
-
+    
+} 
+        
 impl SerializableInternalOrder for BlockHeader {
     
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
