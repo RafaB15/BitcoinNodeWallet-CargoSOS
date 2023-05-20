@@ -1,6 +1,6 @@
 use super::{
     error_block::ErrorBlock,
-    hash::{hash256, HashType},
+    hash::{hash256, HashType, hash256d},
     transaction_input::TransactionInput,
     transaction_output::TransactionOutput,
 };
@@ -98,4 +98,18 @@ impl Transaction {
 
         Ok(txid)
     }
+
+    pub fn get_vec_txids(transactions: &[Transaction]) -> Result<Vec<HashType>, ErrorBlock> {
+        let mut tx_ids = Vec::new();
+        for tx in transactions {
+            let mut vec_tx = Vec::new();
+            match tx.get_tx_id(&mut vec_tx) {
+                Ok(txid) => tx_ids.push(txid),
+                Err(_) => return Err(ErrorBlock::CouldNotGetTxId),
+            };
+        }
+        Ok(tx_ids)
+    }        
 }
+       
+
