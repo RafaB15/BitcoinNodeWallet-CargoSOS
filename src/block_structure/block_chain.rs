@@ -426,7 +426,7 @@ mod tests {
 
         let mut block_transaction_output = Block::new(
             BlockHeader::new(
-                block_version::BlockVersion::V1,
+                block_version::BlockVersion::from(1),
                 [0; 32],
                 [0; 32],
                 0,
@@ -456,7 +456,7 @@ mod tests {
 
         let mut block_transaction_input = Block::new(
             BlockHeader::new(
-                block_version::BlockVersion::V1,
+                block_version::BlockVersion::from(1),
                 hash_block_transaction_output,
                 [0; 32],
                 0,
