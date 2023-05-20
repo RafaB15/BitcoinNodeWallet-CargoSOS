@@ -5,6 +5,8 @@ use super::{
     error_block::ErrorBlock,
     hash::{
         HashType,
+        hash256,
+        hash256d,
     },
     merkle_tree::MerkleTree,
 };
