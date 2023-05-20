@@ -4,8 +4,9 @@ use crate::messages::compact_size::CompactSize;
 
 use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
+    serializable_internal_order::SerializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian,
-    deserializable_fix_size::DeserializableFixSize,
+    deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization, 
 };
 
@@ -19,14 +20,14 @@ use std::cmp::PartialEq;
 #[derive(Debug, Clone, PartialEq)]
 pub struct TransactionInput {
     pub previous_output: Outpoint,
-    pub signature_script: String,
+    pub signature_script: Vec<u8>,
     pub sequence: u32,
 }
 
 impl TransactionInput {
     pub fn new(
         previous_output: Outpoint,
-        signature_script: String,
+        signature_script: Vec<u8>,
         sequence: u32,
     ) -> TransactionInput {
         TransactionInput {
@@ -37,13 +38,13 @@ impl TransactionInput {
     }
 }
 
-impl SerializableLittleEndian for TransactionInput {
+impl SerializableInternalOrder for TransactionInput {
 
-    fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.previous_output.le_serialize(stream)?;
 
         CompactSize::new(self.signature_script.len() as u64).le_serialize(stream)?;
-        self.signature_script.le_serialize(stream)?;
+        self.signature_script.io_serialize(stream)?;
 
         self.sequence.le_serialize(stream)?;
 
@@ -51,12 +52,22 @@ impl SerializableLittleEndian for TransactionInput {
     }
 }
 
-impl DeserializableLittleEndian for TransactionInput {
+impl DeserializableInternalOrder for TransactionInput {
 
-    fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let previous_output = Outpoint::le_deserialize(stream)?;
         let length_sginature = CompactSize::le_deserialize(stream)?;
-        let signature_script = String::deserialize_fix_size(stream, length_sginature.value as usize)?;
+        let mut signature_script: Vec<u8> = Vec::new();
+        for _ in 0..length_sginature.value {
+            let value = match u8::le_deserialize(stream) {
+                Ok(value) => value,
+                Err(error) => return Err(ErrorSerialization::ErrorInDeserialization(format!(
+                    "En transaction input: No se pudo conseguir height lenght, tira: {:?}",
+                    error,
+                ))),
+            };
+            signature_script.push(value);
+        }
         let sequence = u32::le_deserialize(stream)?;
 
         Ok(TransactionInput { 

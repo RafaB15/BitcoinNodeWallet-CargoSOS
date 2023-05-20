@@ -31,7 +31,9 @@ impl SerializableLittleEndian for i64 {
 
 impl SerializableLittleEndian for u8 {
     fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        match stream.write(&self.to_le_bytes()) {
+        let bytes = [*self];
+        let bytes: &[u8] = bytes.as_slice(); 
+        match stream.write(bytes) {
             Ok(_) => Ok(()),
             _ => Err(ErrorSerialization::ErrorInSerialization(
                 "Serializing u8".to_string(),

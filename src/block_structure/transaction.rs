@@ -40,13 +40,13 @@ impl SerializableInternalOrder for Transaction {
 
         CompactSize::new(self.tx_in.len() as u64).le_serialize(stream)?;
         for tx_in in &self.tx_in {
-            tx_in.le_serialize(stream)?;
+            tx_in.io_serialize(stream)?;
         }
 
         CompactSize::new(self.tx_out.len() as u64).le_serialize(stream)?;
 
         for tx_out in &self.tx_out {
-            tx_out.le_serialize(stream)?;
+            tx_out.io_serialize(stream)?;
         }
 
         self.time.le_serialize(stream)?;
@@ -61,13 +61,13 @@ impl DeserializableInternalOrder for Transaction {
         let length_tx_in = CompactSize::le_deserialize(stream)?;
         let mut tx_in: Vec<TransactionInput> = Vec::new();
         for _ in 0..length_tx_in.value {
-            tx_in.push(TransactionInput::le_deserialize(stream)?);
+            tx_in.push(TransactionInput::io_deserialize(stream)?);
         }
 
         let length_tx_out = CompactSize::le_deserialize(stream)?;
         let mut tx_out: Vec<TransactionOutput> = Vec::new();
         for _ in 0..length_tx_out.value {
-            tx_out.push(TransactionOutput::le_deserialize(stream)?);
+            tx_out.push(TransactionOutput::io_deserialize(stream)?);
         }
 
         let time = u32::le_deserialize(stream)?;

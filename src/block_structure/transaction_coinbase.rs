@@ -34,7 +34,7 @@ const TRANSACTION_INPUT_COUNT: u64 = 1;
 pub struct TransactionCoinbase {
     pub version: i32,
     pub tx_in: TransactionCoinbaseInput,
-    pub tx_out: Vec<TransactionOutput>,
+    //pub tx_out: Vec<TransactionOutput>,
     pub time: u32,
 }
 
@@ -46,11 +46,13 @@ impl SerializableInternalOrder for TransactionCoinbase {
         CompactSize::new(TRANSACTION_INPUT_COUNT).le_serialize(stream)?;
         self.tx_in.io_serialize(stream)?;
         
+        /*
         CompactSize::new(self.tx_out.len() as u64).le_serialize(stream)?;
-
+        
         for tx_out in &self.tx_out {
-            tx_out.le_serialize(stream)?;
+            tx_out.io_serialize(stream)?;
         }
+        */
 
         self.time.le_serialize(stream)?;
         Ok(())
@@ -61,32 +63,28 @@ impl DeserializableInternalOrder for TransactionCoinbase {
 
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let version = i32::le_deserialize(stream)?;
-        let length_tx_in = CompactSize::le_deserialize(stream)?.value;
-
-        if length_tx_in != TRANSACTION_INPUT_COUNT {
-            return Err(ErrorSerialization::ErrorInDeserialization(format!(
-                "We get {} transaction inputs, but we should get {}",
-                length_tx_in,
-                TRANSACTION_INPUT_COUNT,
-            )));
-        }
-
         let tx_in = TransactionCoinbaseInput::io_deserialize(stream)?;
 
+        /*
         let length_tx_out = CompactSize::le_deserialize(stream)?;
         let mut tx_out: Vec<TransactionOutput> = Vec::new();
         for _ in 0..length_tx_out.value {
-            tx_out.push(TransactionOutput::le_deserialize(stream)?);
+            tx_out.push(TransactionOutput::io_deserialize(stream)?);
         }
-
+        
+        */
         let time = u32::le_deserialize(stream)?;
         
-        Ok(TransactionCoinbase { 
+        let transaction = TransactionCoinbase { 
             version,
             tx_in, 
-            tx_out, 
+        //    tx_out, 
             time
-        })
+        };
+
+        println!("Transaction Coinbase: {:?}", transaction);
+
+        Ok(transaction)
     }
 }
 

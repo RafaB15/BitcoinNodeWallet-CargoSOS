@@ -125,8 +125,6 @@ impl BlockChain {
         
         let mut latest: Vec<Block> = Vec::new();
 
-        println!("Last blocks: {:?}", self.last_blocks);
-
         for index_last_block in self.last_blocks.iter() {
 
             let last_block = match self.get_block_at(*index_last_block) {
@@ -272,13 +270,13 @@ mod tests {
 
         let transaction_input = TransactionInput::new(
             Outpoint { hash: [1;32], index: 23 },
-            String::from("Prueba in"),
+            "Prueba in".as_bytes().to_vec(),
             24
         );
 
         let transaction_output = TransactionOutput{
             value: 10, 
-            pk_script: String::from("Prueba out")
+            pk_script: "Prueba out".as_bytes().to_vec()
         };
 
         let transaction = Transaction {

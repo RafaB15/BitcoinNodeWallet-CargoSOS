@@ -21,8 +21,7 @@ use std::io::{
 pub struct TransactionCoinbaseInput {
     pub hash: HashType,       // should be null [32-byte null]
     pub index: u32,           // should be UINT32_MAX [0xffffffff]
-    pub height_length: u8,    // should be 1 [1]
-    pub height: String,          // should be script [Varies (4)]
+    pub height: Vec<u8>,          // should be script [Varies (4)]
     pub coinbase_script: Vec<u8>, // should be None
     pub sequence: u32,        // should be uint32_t [4]
 }
@@ -34,7 +33,7 @@ impl SerializableInternalOrder for TransactionCoinbaseInput {
         self.hash.le_serialize(stream)?;
         self.index.le_serialize(stream)?;
         CompactSize::new(self.coinbase_script.len() as u64).le_serialize(stream)?;
-        self.height_length.le_serialize(stream)?;
+        (self.height.len() as u8).le_serialize(stream)?;
         self.height.le_serialize(stream)?;
         self.coinbase_script.le_serialize(stream)?;
         self.sequence.le_serialize(stream)?;
@@ -50,13 +49,36 @@ impl DeserializableInternalOrder for TransactionCoinbaseInput {
         let index = u32::le_deserialize(stream)?;
         let coinbase_script_length = CompactSize::le_deserialize(stream)?.value;
 
-        let height_length = u8::le_deserialize(stream)?;
-        let height = String::deserialize_fix_size(stream, height_length as usize)?;
+        let height_length = match u8::le_deserialize(stream){
+            Ok(value) => value,
+            Err(error) => return Err(ErrorSerialization::ErrorInDeserialization(format!(
+                "In transaction coinbase: No se pudo conseguir height lenght, tira: {:?}",
+                error,
+            ))),
+        };
+        let mut height: Vec<u8> = Vec::new();
+        for _ in 0..height_length {
+            let value = match u8::le_deserialize(stream) {
+                Ok(value) => value,
+                Err(error) => return Err(ErrorSerialization::ErrorInDeserialization(format!(
+                    "In transaction coinbase: No se pudo conseguir height, tira: {:?}",
+                    error,
+                ))),
+            };
+            height.push(value);
+        }
 
         let mut coinbase_script: Vec<u8> = Vec::new();
 
         for _ in 0..coinbase_script_length {
-            coinbase_script.push(u8::le_deserialize(stream)?);
+            let value = match u8::le_deserialize(stream) {
+                Ok(value) => value,
+                Err(error) => return Err(ErrorSerialization::ErrorInDeserialization(format!(
+                    "In transaction coinbase: No se pudo conseguir coinbase script length, tira: {:?}",
+                    error,
+                ))),
+            };
+            coinbase_script.push(value);
         }
 
         let sequence = u32::le_deserialize(stream)?;
@@ -64,7 +86,6 @@ impl DeserializableInternalOrder for TransactionCoinbaseInput {
         Ok(TransactionCoinbaseInput {
             hash,
             index,
-            height_length,
             height,
             coinbase_script,
             sequence,
