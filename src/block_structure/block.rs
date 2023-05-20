@@ -47,6 +47,14 @@ impl Block {
         }
 
         Ok(())
+    }
+
+    pub fn get_merkle_path(&self, transaction: &Transaction) -> Result<Vec<HashType>, ErrorBlock> {
+        let path: Vec<HashType> = match Transaction::get_merkle_path(&self.transactions, &transaction){
+            Ok(path) => path,
+            Err(_) => return Err(ErrorBlock::CouldNotCalculateMerklePath),
+        };
+        Ok(path)
     }    
 }
 
