@@ -17,6 +17,7 @@ const COMPACT_BLOCK_VALUE: u32 = 0x04;
 const WITNESS_TRANSACTION_VALUE: u32 = 0x40000001;
 const WITNESS_BLOCK_VALUE: u32 = 0x40000002;
 const FILTERED_WITNESS_BLOCK_VALUE: u32 = 0x40000003;
+const PLACE_HOLDER_VALUE: u32 = 0x0201;
 
 #[derive(Debug)]
 pub enum TypeIdentifier {
@@ -28,6 +29,8 @@ pub enum TypeIdentifier {
     WitnessTransaction,
     WitnessBlock,
     FilteredWitnessBlock,
+
+    PlaceHolder,
 }
 
 impl SerializableLittleEndian for TypeIdentifier {
@@ -42,6 +45,8 @@ impl SerializableLittleEndian for TypeIdentifier {
             TypeIdentifier::WitnessTransaction => WITNESS_TRANSACTION_VALUE,
             TypeIdentifier::WitnessBlock => WITNESS_BLOCK_VALUE,
             TypeIdentifier::FilteredWitnessBlock => FILTERED_WITNESS_BLOCK_VALUE,
+
+            TypeIdentifier::PlaceHolder => PLACE_HOLDER_VALUE,
         };
 
         match value.le_serialize(stream) {
@@ -67,6 +72,11 @@ impl DeserializableLittleEndian for TypeIdentifier {
             WITNESS_TRANSACTION_VALUE => Ok(TypeIdentifier::WitnessTransaction),
             WITNESS_BLOCK_VALUE => Ok(TypeIdentifier::WitnessBlock),
             FILTERED_WITNESS_BLOCK_VALUE => Ok(TypeIdentifier::FilteredWitnessBlock),
+
+            PLACE_HOLDER_VALUE => {
+                println!("We get a placeholder");
+                Ok(TypeIdentifier::PlaceHolder)
+            },
             _ => Err(ErrorSerialization::ErrorInDeserialization(format!(
                 "While deserializing the type identifier, we get: {}",
                 value,

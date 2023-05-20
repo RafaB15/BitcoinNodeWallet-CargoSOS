@@ -20,7 +20,7 @@ use std::io::{
     Read,
 };
 
-const GENESIS_BLOCK_VERSION: BlockVersion = BlockVersion::V1;
+const GENESIS_BLOCK_VERSION: BlockVersion = BlockVersion::version(1);
 const GENESIS_PREVIOUS_BLOCK_HEADER_HASH: HashType = [0; 32];
 const GENESIS_MERKLE_ROOT_HASH: HashType = [
     0x3b, 0xa3, 0xed, 0xfd, 0x7a, 0x7b, 0x12, 0xb2, 
