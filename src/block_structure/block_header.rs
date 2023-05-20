@@ -98,7 +98,7 @@ impl BlockHeader {
         };
         let hashes: Vec<HashType> = merkle_tree.hashes;
 
-        if let Some(root) = hashes.last() {
+        if let Some(root) = hashes.first() {
             return *root == self.merkle_root_hash;
         }
         false

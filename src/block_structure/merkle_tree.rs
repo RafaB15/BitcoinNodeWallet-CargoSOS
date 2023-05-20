@@ -56,9 +56,12 @@ impl MerkleTree {
             }
         }
 
-        //ver si deberia dar vuelta el vector
+        //la raiz sera el primer elemento del vector
+        let mut hashes: Vec<HashType> = tx_ids.clone();
+        hashes.reverse();
+        
         Ok(MerkleTree {
-            hashes: tx_ids,
+            hashes: hashes,
             initial_count: initial_count,
         })
     }
@@ -73,6 +76,16 @@ impl MerkleTree {
         Ok(root)
     }
 
+    pub fn get_hash_at(&self, index: usize) -> Result<HashType, ErrorBlock> {
+
+        let hashes: Vec<HashType> = self.hashes.clone();
+        let hash: HashType = match hashes.get(index) {
+            Some(hash) => *hash,
+            None => return Err(ErrorBlock::TransactionNotFound),
+        };
+        Ok(hash)
+    }
+
 
     pub fn get_merkle_path(transactions: &[Transaction], target_transaction: Transaction) -> Result<Vec<HashType>,ErrorBlock> {
         
@@ -84,34 +97,39 @@ impl MerkleTree {
             Some(target_index) => target_index,
             None => return Err(ErrorBlock::TransactionNotFound),
         };
-        merkle_path.push(merkle_tree.hashes[target_index]);
-        let i = 0;
-        if target_index % 2 == 0 {
+        let mut index = 1;
+        if target_index % 2 != 0 { //es impar
             //agrego al hermano
-            merkle_path.push(merkle_tree.hashes[target_index + 1]);
-            while (target_index/2*i) > 1 {
-                let i = i + 1;
-                let sibling_index = target_index/(2*i);
+            let sibling = merkle_tree.get_hash_at(target_index + 1)?;
+            merkle_path.push(sibling);
+
+            while (target_index/2*index) > 1 {
+                let sibling_index = target_index/(2*index);
+                index += 1;
                 if sibling_index % 2 == 0 {
-                    merkle_path.push(merkle_tree.hashes[sibling_index + 1]);
+                    let sibling = merkle_tree.get_hash_at(sibling_index + 1)?;
+                    merkle_path.push(sibling);
                 } else {
-                    merkle_path.push(merkle_tree.hashes[sibling_index - 1]);
+                    let sibling = merkle_tree.get_hash_at(sibling_index - 1)?;
+                    merkle_path.push(sibling);
                 }
             }
         } else {
             let sibling_index = target_index - 1;
-            merkle_path.push(merkle_tree.hashes[sibling_index]);
+            let sibling = merkle_tree.get_hash_at(sibling_index)?;
+            merkle_path.push(sibling);
             while (sibling_index/2) > 1 {
                 let sibling_index = sibling_index/2;
                 if sibling_index % 2 == 0 {
-                    merkle_path.push(merkle_tree.hashes[sibling_index + 1]);
+                    let sibling = merkle_tree.get_hash_at(sibling_index + 1)?;
+                    merkle_path.push(sibling);
                 } else {
-                    merkle_path.push(merkle_tree.hashes[sibling_index - 1]);
+                    let sibling = merkle_tree.get_hash_at(sibling_index - 1)?;
+                    merkle_path.push(sibling);
                 }
             }
         }
         Ok(merkle_path)
-        //todo!()
     }
 }
 
