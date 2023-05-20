@@ -13,11 +13,18 @@ pub struct MerkleTree {
 
 impl MerkleTree {
 
+    /// Calculates if the number is a power of two
     fn is_power_of_two(number: u32) -> bool {
         let log_result = (number as f64).log2();
         log_result.fract() == 0.0
     }
 
+    ///Creates a new Merkle Tree from a list of transactions
+    /// 
+    /// 
+    /// ### Errors
+    ///  * `CouldNotWriteTxId` - If the transaction id could not be written
+    ///  * `CouldNotGetVecTxIds` - If the transaction id vector could not be obtained
     pub fn new(transactions: &[Transaction]) -> Result<MerkleTree, ErrorBlock> {
         //chequeo que sea base de 2, si lo es no hago nada, sino -> aplico log_2(transactions.len) ^ 2 = initial_count
         let initial_count = match Self::is_power_of_two(transactions.len() as u32) {
@@ -66,27 +73,41 @@ impl MerkleTree {
         })
     }
 
+    /// Returns the root of the Merkle Tree
+    /// It will be at the first position of the vector
+    /// 
+    /// ### Errors
+    ///    * `RootHashNotFound` - If the root hash could not be found
     pub fn get_root(&self) -> Result<HashType, ErrorBlock> {
 
         let hashes: Vec<HashType> = self.hashes.clone();
-        let root: HashType = match hashes.last() {
+        let root: HashType = match hashes.first() {
             Some(root) => *root,
-            None => return Err(ErrorBlock::NoTransactions),
+            None => return Err(ErrorBlock::RootHashNotFound),
         };
         Ok(root)
     }
 
+    /// Returns the hash at the given index
+    /// 
+    /// ### Errors
+    ///   * `NoHashFound` - If the hash could not be found
     pub fn get_hash_at(&self, index: usize) -> Result<HashType, ErrorBlock> {
 
         let hashes: Vec<HashType> = self.hashes.clone();
         let hash: HashType = match hashes.get(index) {
             Some(hash) => *hash,
-            None => return Err(ErrorBlock::TransactionNotFound),
+            None => return Err(ErrorBlock::NoHashFound),
         };
         Ok(hash)
     }
 
-
+    /// Returns the merkle path of the given transaction
+    /// 
+    /// ### Errors
+    ///  * `TransactionNotFound` - If the transaction could not be found
+    ///  * `NoHashFound` - If the hash could not be found
+    ///  * `CouldNotWriteTxId` - If the transaction id could not be written (while creating the merkle tree)
     pub fn get_merkle_path(transactions: &[Transaction], target_transaction: Transaction) -> Result<Vec<HashType>,ErrorBlock> {
         
         let mut merkle_path: Vec<HashType> = Vec::new();
