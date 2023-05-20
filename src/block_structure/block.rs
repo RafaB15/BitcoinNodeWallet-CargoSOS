@@ -1,6 +1,8 @@
+use super::transaction_coinbase;
 use super::{
     block_header::BlockHeader, 
     transaction::Transaction,
+    transaction_coinbase::TransactionCoinbase,
     error_block::ErrorBlock,
 };
 
@@ -19,7 +21,7 @@ use crate::messages::{
 #[derive(Debug, Clone, PartialEq)]
 pub struct Block {
     pub header: BlockHeader,
-    //pub tx_coinbase: CoinbaseTransaction,
+    pub tx_coinbase: Option<TransactionCoinbase>,
     pub transactions: Vec<Transaction>,
 }
 
@@ -27,12 +29,26 @@ impl Block {
     pub fn new(header: BlockHeader) -> Self {
         Block {
             header,
+            tx_coinbase: None,
             transactions: vec![],
         }
     }
 
     pub fn proof_of_inclusion(&self) -> bool {
         self.header.proof_of_inclusion(&self.transactions)
+    }
+
+    pub fn append_transaction_coinbase(
+        &mut self, 
+        transaction_coinbase: TransactionCoinbase
+    ) -> Result<(), ErrorBlock> 
+    {
+        match self.tx_coinbase {
+            Some(_) => return Err(ErrorBlock::TransactionAlreadyInBlock),
+            None => self.tx_coinbase = Some(transaction_coinbase),
+        }
+
+        Ok(())
     }
 
     pub fn append_transaction(&mut self, transaction: Transaction) -> Result<(), ErrorBlock> {
@@ -50,10 +66,19 @@ impl SerializableInternalOrder for Block {
 
     fn io_serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
         self.header.io_serialize(stream)?;
-        CompactSize::new(self.transactions.len() as u64).le_serialize(stream)?;
-        for transaction in self.transactions.iter() {
-            transaction.io_serialize(stream)?;
-        }
+
+        match &self.tx_coinbase {
+            Some(tx_coinbase) => {
+                CompactSize::new((self.transactions.len() + 1) as u64).le_serialize(stream)?;
+
+                tx_coinbase.io_serialize(stream)?;
+                for transaction in self.transactions.iter() {
+                    transaction.io_serialize(stream)?;
+                }
+                        
+            },
+            None => {},
+        };
 
         Ok(())
     }
@@ -63,11 +88,23 @@ impl DeserializableInternalOrder for Block {
 
     fn io_deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
         let header = BlockHeader::io_deserialize(stream)?;
-        let compact_size = CompactSize::le_deserialize(stream)?;
+        let length = CompactSize::le_deserialize(stream)?.value;
         
         let mut block = Block::new(header);
 
-        for _ in 0..compact_size.value {
+        if length == 0 {
+            return Ok(block);
+        }
+
+        let transaction_coinbase = TransactionCoinbase::io_deserialize(stream)?;
+        match block.append_transaction_coinbase(transaction_coinbase){
+            Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => {},
+            _ => return Err(ErrorSerialization::ErrorInDeserialization(
+                "Appending transactions coinbase to the block".to_string()
+            )),
+        }
+
+        for _ in 1..length {
             let transaction = Transaction::io_deserialize(stream)?;
             match block.append_transaction(transaction) {
                 Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => continue,
