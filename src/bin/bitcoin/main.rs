@@ -297,7 +297,7 @@ fn get_initial_download_headers_first(
             &logger_sender,
         )?;
 
-        let timestamp: u32 = 1681703228; 
+        let timestamp: u32 = 1681703228; // 1681703228 
         let list_of_blocks = block_chain.get_blocks_after_timestamp(timestamp)?;
         let block_download_peer = block_download.clone();
 

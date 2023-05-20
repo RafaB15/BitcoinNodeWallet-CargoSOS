@@ -41,7 +41,7 @@ impl TransactionInput {
 impl SerializableInternalOrder for TransactionInput {
 
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        self.previous_output.le_serialize(stream)?;
+        self.previous_output.io_serialize(stream)?;
 
         CompactSize::new(self.signature_script.len() as u64).le_serialize(stream)?;
         self.signature_script.io_serialize(stream)?;
@@ -55,15 +55,18 @@ impl SerializableInternalOrder for TransactionInput {
 impl DeserializableInternalOrder for TransactionInput {
 
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let previous_output = Outpoint::le_deserialize(stream)?;
-        let length_sginature = CompactSize::le_deserialize(stream)?;
+        let previous_output = Outpoint::io_deserialize(stream)?;
+        let length_sginature = CompactSize::le_deserialize(stream)?.value;
+
         let mut signature_script: Vec<u8> = Vec::new();
-        for _ in 0..length_sginature.value {
+        for i in 0..length_sginature {
             let value = match u8::le_deserialize(stream) {
                 Ok(value) => value,
                 Err(error) => return Err(ErrorSerialization::ErrorInDeserialization(format!(
-                    "En transaction input: No se pudo conseguir height lenght, tira: {:?}",
+                    "En transaction input: No se pudo conseguir pk script, tira: {:?}, at {} with {}",
                     error,
+                    i,
+                    length_sginature,
                 ))),
             };
             signature_script.push(value);

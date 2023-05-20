@@ -1,4 +1,6 @@
-use super::hash::HashType;
+use super::{
+    outpoint::Outpoint,
+};
 
 use crate::messages::compact_size::CompactSize;
 
@@ -7,9 +9,7 @@ use crate::serialization::{
     serializable_internal_order::SerializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian,
     deserializable_internal_order::DeserializableInternalOrder,
-    deserializable_fix_size::DeserializableFixSize,
     error_serialization::ErrorSerialization, 
-
 };
 
 use std::io::{
@@ -19,8 +19,7 @@ use std::io::{
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TransactionCoinbaseInput {
-    pub hash: HashType,       // should be null [32-byte null]
-    pub index: u32,           // should be UINT32_MAX [0xffffffff]
+    pub previous_output: Outpoint,
     pub height: Vec<u8>,          // should be script [Varies (4)]
     pub coinbase_script: Vec<u8>, // should be None
     pub sequence: u32,        // should be uint32_t [4]
@@ -30,13 +29,13 @@ impl SerializableInternalOrder for TransactionCoinbaseInput {
 
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
 
-        self.hash.le_serialize(stream)?;
-        self.index.le_serialize(stream)?;
+        self.previous_output.io_serialize(stream)?;
         CompactSize::new(self.coinbase_script.len() as u64).le_serialize(stream)?;
         (self.height.len() as u8).le_serialize(stream)?;
         self.height.le_serialize(stream)?;
         self.coinbase_script.le_serialize(stream)?;
         self.sequence.le_serialize(stream)?;
+        
         Ok(())
     }
 }
@@ -45,8 +44,7 @@ impl DeserializableInternalOrder for TransactionCoinbaseInput {
 
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         
-        let hash = HashType::le_deserialize(stream)?;
-        let index = u32::le_deserialize(stream)?;
+        let previous_output = Outpoint::io_deserialize(stream)?;
         let coinbase_script_length = CompactSize::le_deserialize(stream)?.value;
 
         let height_length = match u8::le_deserialize(stream){
@@ -84,8 +82,7 @@ impl DeserializableInternalOrder for TransactionCoinbaseInput {
         let sequence = u32::le_deserialize(stream)?;
         
         Ok(TransactionCoinbaseInput {
-            hash,
-            index,
+            previous_output,
             height,
             coinbase_script,
             sequence,

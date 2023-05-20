@@ -33,8 +33,8 @@ const TRANSACTION_INPUT_COUNT: u64 = 1;
 #[derive(Debug, Clone, PartialEq)]
 pub struct TransactionCoinbase {
     pub version: i32,
-    pub tx_in: TransactionCoinbaseInput,
-    //pub tx_out: Vec<TransactionOutput>,
+    pub tx_in_coinbase: TransactionCoinbaseInput,
+    pub tx_out: Vec<TransactionOutput>,
     pub time: u32,
 }
 
@@ -44,15 +44,12 @@ impl SerializableInternalOrder for TransactionCoinbase {
         self.version.le_serialize(stream)?;
 
         CompactSize::new(TRANSACTION_INPUT_COUNT).le_serialize(stream)?;
-        self.tx_in.io_serialize(stream)?;
+        self.tx_in_coinbase.io_serialize(stream)?;
         
-        /*
         CompactSize::new(self.tx_out.len() as u64).le_serialize(stream)?;
-        
         for tx_out in &self.tx_out {
             tx_out.io_serialize(stream)?;
         }
-        */
 
         self.time.le_serialize(stream)?;
         Ok(())
@@ -63,22 +60,21 @@ impl DeserializableInternalOrder for TransactionCoinbase {
 
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let version = i32::le_deserialize(stream)?;
-        let tx_in = TransactionCoinbaseInput::io_deserialize(stream)?;
+        let tx_in_coinbase = TransactionCoinbaseInput::io_deserialize(stream)?;
 
-        /*
-        let length_tx_out = CompactSize::le_deserialize(stream)?;
+        let length_tx_out = CompactSize::le_deserialize(stream)?.value;
+        
         let mut tx_out: Vec<TransactionOutput> = Vec::new();
-        for _ in 0..length_tx_out.value {
+        for _ in 0..length_tx_out {
             tx_out.push(TransactionOutput::io_deserialize(stream)?);
         }
         
-        */
         let time = u32::le_deserialize(stream)?;
         
         let transaction = TransactionCoinbase { 
             version,
-            tx_in, 
-        //    tx_out, 
+            tx_in_coinbase, 
+            tx_out, 
             time
         };
 

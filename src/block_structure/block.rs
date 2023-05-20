@@ -1,4 +1,3 @@
-use super::transaction_coinbase;
 use super::{
     block_header::BlockHeader, 
     transaction::Transaction,
@@ -71,15 +70,17 @@ impl SerializableInternalOrder for Block {
             Some(tx_coinbase) => {
                 CompactSize::new((self.transactions.len() + 1) as u64).le_serialize(stream)?;
 
+                println!("We have {} transactions", self.transactions.len() + 1);
+
                 tx_coinbase.io_serialize(stream)?;
                 for transaction in self.transactions.iter() {
                     transaction.io_serialize(stream)?;
                 }
-                        
+                
             },
             None => {},
         };
-
+        
         Ok(())
     }
 }
@@ -89,31 +90,25 @@ impl DeserializableInternalOrder for Block {
     fn io_deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
         let header = BlockHeader::io_deserialize(stream)?;
         let length = CompactSize::le_deserialize(stream)?.value;
-        
-        let mut block = Block::new(header);
 
         if length == 0 {
-            return Ok(block);
+            return Ok(Block::new(header));
         }
-
+        
         let transaction_coinbase = TransactionCoinbase::io_deserialize(stream)?;
-        match block.append_transaction_coinbase(transaction_coinbase){
-            Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => {},
-            _ => return Err(ErrorSerialization::ErrorInDeserialization(
-                "Appending transactions coinbase to the block".to_string()
-            )),
-        }
 
+        println!("We have {} transactions from deserialization", length);
+
+        let mut transactions: Vec<Transaction> = Vec::new();
         for _ in 1..length {
             let transaction = Transaction::io_deserialize(stream)?;
-            match block.append_transaction(transaction) {
-                Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => continue,
-                _ => return Err(ErrorSerialization::ErrorInDeserialization(
-                    "Appending transactions to the block".to_string()
-                )),
-            }
+            transactions.push(transaction);
         }
 
-        Ok(block)
+        Ok(Block {
+            header,
+            tx_coinbase: Some(transaction_coinbase),
+            transactions,
+        })
     }
 }

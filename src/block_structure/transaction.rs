@@ -39,12 +39,11 @@ impl SerializableInternalOrder for Transaction {
         self.version.le_serialize(stream)?;
 
         CompactSize::new(self.tx_in.len() as u64).le_serialize(stream)?;
-        for tx_in in &self.tx_in {
+        for tx_in in self.tx_in.iter() {
             tx_in.io_serialize(stream)?;
         }
 
         CompactSize::new(self.tx_out.len() as u64).le_serialize(stream)?;
-
         for tx_out in &self.tx_out {
             tx_out.io_serialize(stream)?;
         }
@@ -58,17 +57,20 @@ impl DeserializableInternalOrder for Transaction {
 
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let version = i32::le_deserialize(stream)?;
-        let length_tx_in = CompactSize::le_deserialize(stream)?;
+        
+        let length_tx_in = CompactSize::le_deserialize(stream)?.value;
         let mut tx_in: Vec<TransactionInput> = Vec::new();
-        for _ in 0..length_tx_in.value {
+        for _ in 0..length_tx_in {
             tx_in.push(TransactionInput::io_deserialize(stream)?);
         }
 
-        let length_tx_out = CompactSize::le_deserialize(stream)?;
+        let length_tx_out = CompactSize::le_deserialize(stream)?.value;
         let mut tx_out: Vec<TransactionOutput> = Vec::new();
-        for _ in 0..length_tx_out.value {
+        for _ in 0..length_tx_out {
             tx_out.push(TransactionOutput::io_deserialize(stream)?);
         }
+
+        println!("We have: {} tx_in y {} tx_out", tx_in.len(), tx_out.len());
 
         let time = u32::le_deserialize(stream)?;
         
