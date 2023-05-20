@@ -3,7 +3,6 @@ use super::{
     compact256::Compact256,
     hash::{hash256d, HashType},
     transaction::Transaction,
-    error_block::ErrorBlock,
     merkle_tree::MerkleTree,
 };
 
