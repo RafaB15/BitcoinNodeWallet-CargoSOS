@@ -96,12 +96,11 @@ impl BlockHeader {
             Ok(merkle_tree) => merkle_tree,
             Err(_) => return false,
         };
-        let hashes: Vec<HashType> = merkle_tree.hashes;
 
-        if let Some(root) = hashes.first() {
-            return *root == self.merkle_root_hash;
+        match merkle_tree.get_root(){
+            Ok(root) => root == self.merkle_root_hash,
+            Err(_) => false,
         }
-        false
     }
 
     pub fn get_hash256d(&self) -> Result<HashType, ErrorSerialization> {

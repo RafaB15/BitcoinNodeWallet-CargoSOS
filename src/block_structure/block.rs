@@ -1,12 +1,12 @@
 use super::{
     block_header::BlockHeader, 
     transaction::Transaction,
-    transaction_output::TransactionOutput,
+    //transaction_output::TransactionOutput,
     error_block::ErrorBlock,
     hash::{
         HashType,
-        hash256,
-        hash256d,
+        //hash256,
+        //hash256d,
     },
     merkle_tree::MerkleTree,
 };
