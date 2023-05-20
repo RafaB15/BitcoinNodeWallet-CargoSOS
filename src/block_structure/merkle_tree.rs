@@ -9,8 +9,8 @@ use super::{
 use std::f64;
 
 pub struct MerkleTree {
-    hashes: Vec<HashType>,
-    initial_count: usize,
+    pub hashes: Vec<HashType>,
+    pub initial_count: usize,
 }
 
 impl MerkleTree {
@@ -58,6 +58,7 @@ impl MerkleTree {
             }
         }
 
+        //ver si deberia dar vuelta el vector
         Ok(MerkleTree {
             hashes: tx_ids,
             initial_count: initial_count,
@@ -80,11 +81,40 @@ impl MerkleTree {
         let merkle_tree = MerkleTree::new(&transactions)?;
 
 
+
+
+
+
+
+
+
         // Find the target transaction index in the block
         let target_index = transactions.iter().position(|tx| *tx == target_transaction);
         if target_index.is_none() {
             return Err(ErrorBlock::TransactionNotFound);
-        } else {};
+        } else {
+            match target_index % 2 == 0 {
+                true => {
+                    // If the target transaction is even, the sibling is the next transaction
+                    let sibling_index = target_index + 1;
+                    let sibling = transactions[sibling_index];
+                    merkle_path.push(sibling);
+                },
+                false => {
+                    // If the target transaction is odd, the sibling is the previous transaction
+                    let sibling_index = target_index - 1;
+                    let sibling = transactions[sibling_index];
+                    merkle_path.push(sibling);
+                },
+            } 
+        };
+        let mut i = 0;
+        while sibling_index < merkle_tree.hashes.len() {
+            let sibling = merkle_tree.hashes[sibling_index];
+            merkle_path.push(sibling);
+            i += 1;
+            sibling_index = (sibling_index / 2) + (merkle_tree.initial_count / 2);
+        }
         todo!()
     }
 }

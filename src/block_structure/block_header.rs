@@ -4,6 +4,7 @@ use super::{
     hash::{hash256d, HashType},
     transaction::Transaction,
     error_block::ErrorBlock,
+    merkle_tree::MerkleTree,
 };
 
 use crate::{serialization::{
@@ -92,44 +93,13 @@ impl BlockHeader {
     }
 
     pub fn proof_of_inclusion(&self, transactions: &[Transaction]) -> bool {
-        //creo el vector de hashes
-        let mut hashes = Vec::with_capacity(transactions.len());
-        //itero por las transacciones
-        for tx in transactions {
-            let mut vec_tx = Vec::new();
-            match tx.get_tx_id(&mut vec_tx) {
-                Ok(txid) => hashes.push(txid),
-                Err(_) => return false,
-            };
-        }
+        let merkle_tree: MerkleTree = match MerkleTree::new(transactions){
+            Ok(merkle_tree) => merkle_tree,
+            Err(_) => return false,
+        };
+        let hashes: Vec<HashType> = merkle_tree.hashes;
 
-        while hashes.len() > 1 {
-            if hashes.len() % 2 == 1 {
-                if let Some(last_hash) = hashes.last() {
-                    hashes.push(*last_hash);
-                }
-            }
-
-            let mut new_hashes = Vec::new();
-            for (i, combined) in hashes.iter().enumerate().step_by(2) {
-                // Concatenar dos hashes
-                let mut combined = combined.to_vec();
-                match hashes.get(i + 1) {
-                    Some(combined_next) => combined.extend_from_slice(combined_next),
-                    None => return false,
-                };
-
-                // Calcular el hash combinado
-                let combined_hash = match hash256d(&combined) {
-                    Ok(combined_hash) => combined_hash,
-                    Err(_) => return false,
-                };
-                new_hashes.push(combined_hash);
-            }
-
-            hashes = new_hashes;
-        }
-        if let Some(root) = hashes.first() {
+        if let Some(root) = hashes.last() {
             return *root == self.merkle_root_hash;
         }
         false
