@@ -20,5 +20,11 @@ pub enum ErrorBlock {
     CouldNotFindBlockFarEnough,
 
     NodeChainReferenceNotFound,
+
+    CouldNotCalculateMerklePath,
+
+    NoTransactions,
+
+    TransactionNotFound,
 }
 
