@@ -5,8 +5,10 @@ use super::{
     error_block::ErrorBlock,
     hash::{
         HashType,
+        hash256,
         hash256d,
     },
+    merkle_tree::MerkleTree,
 };
 
 use crate::serialization::{
@@ -48,6 +50,14 @@ impl Block {
         }
 
         Ok(())
+    }
+
+    pub fn get_merkle_path(&self, transaction: &Transaction) -> Result<Vec<HashType>, ErrorBlock> {
+        let path: Vec<HashType> = match MerkleTree::get_merkle_path(&self.transactions, transaction.clone()){
+            Ok(path) => path,
+            Err(_) => return Err(ErrorBlock::CouldNotCalculateMerklePath),
+        };
+        Ok(path)
     }    
 
     pub fn remove_spent_transactions_in_list(&self, utxo: &mut Vec<(TransactionOutput, HashType, u32)>) {

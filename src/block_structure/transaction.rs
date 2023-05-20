@@ -98,4 +98,18 @@ impl Transaction {
 
         Ok(txid)
     }
+
+    pub fn get_vec_txids(transactions: &[Transaction]) -> Result<Vec<HashType>, ErrorBlock> {
+        let mut tx_ids = Vec::new();
+        for tx in transactions {
+            let mut vec_tx = Vec::new();
+            match tx.get_tx_id(&mut vec_tx) {
+                Ok(txid) => tx_ids.push(txid),
+                Err(_) => return Err(ErrorBlock::CouldNotGetTxId),
+            };
+        }
+        Ok(tx_ids)
+    }        
 }
+       
+
