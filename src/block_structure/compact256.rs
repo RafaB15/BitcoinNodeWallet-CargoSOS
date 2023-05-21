@@ -58,34 +58,29 @@ impl TryFrom<HashType> for Compact256 {
         let mut position: usize = 0;
         for i in 0..HASH_TYPE_SIZE {
 
-            if let Some(value) = value.get(i) {
-
-                if *value == 0 {
-                    exponent -= 1;
-                } else {
+            match value.get(i) {
+                Some(0) => exponent -= 1,
+                Some(_) => {
                     position = i;
                     break;
                 }
-
-            } else {
-                return Err(ErrorSerialization::ErrorInSerialization(format!(
+                None => return Err(ErrorSerialization::ErrorInSerialization(format!(
                     "Error while reading the hash256d in the position {:?}",
                     value,
-                )))?;
+                )))?,
             }
         }
 
         let mut mantissa: [u8; BYTES_OF_SIGNIFICAND as usize] = [0; BYTES_OF_SIGNIFICAND as usize];
 
         for i in 0..BYTES_OF_SIGNIFICAND {
-            if let Some(value) = value.get(position + (i as usize)) {
-                mantissa[i as usize] = *value;
-            } else {
-                break;
+            match value.get(position + (i as usize)) {
+                Some(value) => mantissa[i as usize] = *value,
+                None => break,
             }
         }
 
-        Ok(Compact256 { mantissa, exponent: exponent as u8 })
+        Ok(Compact256 { mantissa, exponent })
     }
 }
 

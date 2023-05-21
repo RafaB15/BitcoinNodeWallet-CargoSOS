@@ -469,8 +469,8 @@ fn main() -> Result<(), ErrorExecution> {
 
         println!("Las elements: {:?}", block_chain.latest());
         
-        let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
-        //let posible_path: Option<&Path> = None;
+        //let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
+        let posible_path: Option<&Path> = None;
         save_block_chain(
             &block_chain, 
             posible_path,
