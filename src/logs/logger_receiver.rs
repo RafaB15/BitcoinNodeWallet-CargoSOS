@@ -1,7 +1,13 @@
-use super::error_log::ErrorLog;
-use super::level::Level;
-use super::logger::MessageLog;
-use std::time::{SystemTime, UNIX_EPOCH};
+use super::{
+    error_log::ErrorLog,
+    level::Level,
+    logger::MessageLog,
+};
+
+use chrono::{
+    offset::Utc
+};
+
 use std::{
     io::Write,
     sync::mpsc::Receiver,
@@ -54,13 +60,10 @@ impl<W: Write> LoggerReceiver<W> {
     /// Includes the time in which the message is received
     fn format_message(level: Level, message: String) -> String {
         //Esto deberia ir en el main
-        let format_timestamp = |time: SystemTime| {
-            let since_epoch = time.duration_since(UNIX_EPOCH).unwrap();
-            format!("{:?}", since_epoch)
-        };
 
-        let time = format_timestamp(SystemTime::now());
+        let datetime = Utc::now();
+        let timestamp = datetime.timestamp();
 
-        format!("Time: [{time}]: [{level}] {message}\n")
+        format!("Time: [{timestamp}s]: [{level}] {message}\n")
     }
 }
