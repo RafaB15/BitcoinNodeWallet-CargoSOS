@@ -17,7 +17,7 @@ use std::io::{
     Write,
 };
 
-const NONE_INDEX: u64 = u64::MAX;
+pub(super) const NONE_INDEX: u64 = u64::MAX;
 
 #[derive(Debug, Clone)]
 pub(super) struct NodeChain {

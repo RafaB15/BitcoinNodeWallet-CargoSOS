@@ -1,7 +1,10 @@
 use super::{
     block::Block, 
     block_header::BlockHeader, 
-    node_chain::NodeChain,
+    node_chain::{
+        NodeChain,
+        NONE_INDEX,
+    },
     error_block::ErrorBlock,
 };
 
@@ -125,6 +128,8 @@ impl BlockChain {
         
         let mut latest: Vec<Block> = Vec::new();
 
+        println!("Last blocks: {:?}", self.last_blocks);
+
         for index_last_block in self.last_blocks.iter() {
 
             let last_block = match self.get_block_at(*index_last_block) {
@@ -158,9 +163,13 @@ impl SerializableInternalOrder for BlockChain {
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
 
         let mut block_chain: Vec<u8> = Vec::new();
+        for nodo_chain in self.blocks.iter() {
+            nodo_chain.block.header.io_serialize(&mut block_chain)?;
 
-        for block in self.blocks.iter() {
-            block.io_serialize(&mut block_chain)?;
+            match nodo_chain.index_previous_node {
+                Some(index_previous_node) => (index_previous_node as u64).le_serialize(&mut block_chain)?,
+                _ => NONE_INDEX.le_serialize(&mut block_chain)?,
+            }
         }
 
         for index_last_block in self.last_blocks.iter() {
@@ -191,7 +200,7 @@ impl DeserializableInternalOrder for BlockChain {
         let mut header = &header[..];
 
         let last_blocks_count = u64::le_deserialize(&mut header)?;
-        let blocks_count = u64::le_deserialize(&mut header)?;
+        let headers_count = u64::le_deserialize(&mut header)?;
         let block_chain_size = u64::le_deserialize(&mut header)?;
 
         let mut block_chain: Vec<u8> = vec![0; block_chain_size as usize];
@@ -202,9 +211,22 @@ impl DeserializableInternalOrder for BlockChain {
 
         let mut block_chain = &block_chain[..];
 
-        let mut blocks: Vec<NodeChain> = Vec::new();
-        for _ in 0..blocks_count {
-            blocks.push(NodeChain::io_deserialize(&mut block_chain)?);
+        let mut node_chains: Vec<NodeChain> = Vec::new();
+        for _ in 0..headers_count {
+            let block = Block::new(BlockHeader::io_deserialize(&mut block_chain)?);
+            let index_previous_node = u64::le_deserialize(&mut block_chain)?;
+
+            let node_chain_result = match index_previous_node {
+                NONE_INDEX => NodeChain::first(block),
+                _ => NodeChain::new(block, index_previous_node as usize),
+            };
+
+            match node_chain_result {
+                Ok(node_chain) => node_chains.push(node_chain),
+                Err(error) => return Err(ErrorSerialization::ErrorInDeserialization(format!(
+                    "Adding nodechain we get: {:?}", error
+                ))),
+            }
         }
 
         let mut last_blocks: Vec<usize> = Vec::new();
@@ -213,7 +235,7 @@ impl DeserializableInternalOrder for BlockChain {
         }
 
         Ok(BlockChain { 
-            blocks, 
+            blocks: node_chains, 
             last_blocks,
         })
     }

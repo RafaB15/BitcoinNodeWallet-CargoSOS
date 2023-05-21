@@ -12,7 +12,6 @@ use crate::messages::{
         Message,
     },
     command_name::CommandName,
-    inventory_vector::InventoryVector, 
     get_data_message::GetDataMessage,
 
     block_message::BlockMessage,
