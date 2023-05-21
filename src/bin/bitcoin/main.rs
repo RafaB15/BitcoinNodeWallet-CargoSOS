@@ -478,7 +478,7 @@ fn show_merkle_path(
 
     let mut path: String = "\n".to_string();
     for hash in merkle_path {
-        path = format!("\t{path}{:?}\n", hash);
+        path = format!("{path}\t{:?}\n", hash);
     }
 
     logger_sender.log_connection(format!(
@@ -546,10 +546,12 @@ fn main() -> Result<(), ErrorExecution> {
             logger_sender.clone(),
         )?;
         
+        /*
         show_utxo_set(
             &block_chain, 
             logger_sender.clone(),
         );
+        */
         
         //let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
         let posible_path: Option<&Path> = None;

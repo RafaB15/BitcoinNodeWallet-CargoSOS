@@ -26,7 +26,7 @@ impl MerkleTree {
         let levels = log_result.ceil() as u32;
         let initial_count = (2 as usize).pow(levels);
         
-        println!("Initial len {}\nInitial count: {}", transactions.len(), initial_count);
+        //println!("Initial len {}\nInitial count: {}", transactions.len(), initial_count);
 
         let mut tx_ids: Vec<HashType> = Transaction::get_vec_txids(transactions)?;
         let last_tx: HashType = match tx_ids.last() {
@@ -65,10 +65,11 @@ impl MerkleTree {
         }
 
         //la raiz sera el primer elemento del vector
+        /*
         for hash in hashes.clone() {
             println!("Hash: {:?}", hash);
         }
-        hashes.reverse();
+        */
         
         Ok(MerkleTree {
             hashes,
@@ -84,7 +85,7 @@ impl MerkleTree {
     pub fn get_root(&self) -> Result<HashType, ErrorBlock> {
 
         let hashes: Vec<HashType> = self.hashes.clone();
-        let root: HashType = match hashes.first() {
+        let root: HashType = match hashes.last() {
             Some(root) => *root,
             None => return Err(ErrorBlock::RootHashNotFound),
         };
@@ -113,46 +114,32 @@ impl MerkleTree {
     ///  * `CouldNotWriteTxId` - If the transaction id could not be written (while creating the merkle tree)
     pub fn get_merkle_path(transactions: &[Transaction], target_transaction: Transaction) -> Result<Vec<HashType>,ErrorBlock> {
         
-        let mut merkle_path: Vec<HashType> = Vec::new();
         let merkle_tree = MerkleTree::new(&transactions)?;
+        let mut size = merkle_tree.initial_count;
 
         // Find the target transaction index in the block
-       let target_index = match transactions.iter().position(|transaction| *transaction == target_transaction) {
+        let mut target_index = match transactions
+            .iter()
+            .position(|transaction| *transaction == target_transaction) 
+        {
             Some(target_index) => target_index,
             None => return Err(ErrorBlock::TransactionNotFound),
         };
-        let mut index = 1;
-        if target_index % 2 != 0 { //es impar
-            //agrego al hermano
-            let sibling = merkle_tree.get_hash_at(target_index + 1)?;
-            merkle_path.push(sibling);
+        
+        let mut merkle_path: Vec<HashType> = Vec::new();
 
-            while (target_index/2*index) > 1 {
-                let sibling_index = target_index/(2*index);
-                index += 1;
-                if sibling_index % 2 == 0 {
-                    let sibling = merkle_tree.get_hash_at(sibling_index + 1)?;
-                    merkle_path.push(sibling);
-                } else {
-                    let sibling = merkle_tree.get_hash_at(sibling_index - 1)?;
-                    merkle_path.push(sibling);
-                }
-            }
-        } else {
-            let sibling_index = target_index - 1;
-            let sibling = merkle_tree.get_hash_at(sibling_index)?;
-            merkle_path.push(sibling);
-            while (sibling_index/2) > 1 {
-                let sibling_index = sibling_index/2;
-                if sibling_index % 2 == 0 {
-                    let sibling = merkle_tree.get_hash_at(sibling_index + 1)?;
-                    merkle_path.push(sibling);
-                } else {
-                    let sibling = merkle_tree.get_hash_at(sibling_index - 1)?;
-                    merkle_path.push(sibling);
-                }
-            }
+        while size > 1 {
+            let sibling_index = match target_index % 2 == 0 {
+                true => target_index + 1,
+                false => target_index - 1,
+            };
+            
+            merkle_path.push(merkle_tree.get_hash_at(sibling_index)?);
+
+            target_index = size + target_index / 2;
+            size /= 2;
         }
+        
         Ok(merkle_path)
     }
 }

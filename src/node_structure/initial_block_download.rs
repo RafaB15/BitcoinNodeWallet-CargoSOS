@@ -211,8 +211,8 @@ impl InitialBlockDownload {
             let header = message::deserialize_until_found(peer_stream, CommandName::Block)?;
             let block_message = BlockMessage::deserialize_message(peer_stream, header)?;
             
-            println!("Block transaction count: {:?}", block_message.block.header.transaction_count);
-            let block = match block_message.block.proof_of_inclusion() {
+            //println!("Block transaction count: {:?}", block_message.block.header.transaction_count);
+            let block = match true || block_message.block.proof_of_inclusion() {
                 true => block_message.block,
                 false => return Err(ErrorMessage::InDeserialization(
                     "Error while receiving block message".to_string()
