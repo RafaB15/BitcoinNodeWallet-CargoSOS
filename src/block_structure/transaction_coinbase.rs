@@ -78,8 +78,6 @@ impl DeserializableInternalOrder for TransactionCoinbase {
             time
         };
 
-        println!("Transaction Coinbase: {:?}", transaction);
-
         Ok(transaction)
     }
 }

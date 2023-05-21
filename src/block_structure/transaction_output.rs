@@ -27,7 +27,7 @@ impl SerializableInternalOrder for TransactionOutput {
         self.value.le_serialize(stream)?;
 
         CompactSize::new(self.pk_script.len() as u64).le_serialize(stream)?;
-        self.pk_script.le_serialize(stream)?;
+        self.pk_script.io_serialize(stream)?;
 
         Ok(())
     }
@@ -40,17 +40,8 @@ impl DeserializableInternalOrder for TransactionOutput {
         let length_pk_script = CompactSize::le_deserialize(stream)?.value;
 
         let mut pk_script: Vec<u8> = Vec::new();
-        for i in 0..length_pk_script {
-            let value = match u8::le_deserialize(stream) {
-                Ok(value) => value,
-                Err(error) => return Err(ErrorSerialization::ErrorInDeserialization(format!(
-                    "In transaction output: No se pudo conseguir pk script, tira: {:?}, at {} with {}",
-                    error,
-                    i,
-                    length_pk_script,
-                ))),
-            };
-            pk_script.push(value);
+        for _ in 0..length_pk_script {
+            pk_script.push(u8::le_deserialize(stream)?);
         }
 
         Ok(TransactionOutput { 

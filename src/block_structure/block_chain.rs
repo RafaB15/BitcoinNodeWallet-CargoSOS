@@ -93,7 +93,7 @@ impl BlockChain {
 
     pub fn update_block(&mut self, block: Block) -> Result<(), ErrorBlock> {
 
-        for current_block in self.blocks.iter_mut() {
+        for current_block in self.blocks.iter_mut().rev() {
 
             if current_block.is_equal(&block) {
 
@@ -122,8 +122,6 @@ impl BlockChain {
     pub fn latest(&self) -> Vec<Block> {
         
         let mut latest: Vec<Block> = Vec::new();
-
-        println!("Last blocks: {:?}", self.last_blocks);
 
         for index_last_block in self.last_blocks.iter() {
 

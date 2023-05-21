@@ -317,10 +317,26 @@ fn get_initial_download_headers_first(
     }
 
     for peer_download_handle in peer_download_handles {
+        logger_sender.log_connection(
+            "Finish downloading, loading to blockchain".to_string()
+        )?;
         match peer_download_handle.join() {
             Ok(blocks) => {
+                logger_sender.log_connection(format!(
+                    "Loading {} blocks to blockchain",
+                    blocks.len(),
+                ))?;
+
+                let mut i = 0;
                 for block in blocks {
                     block_chain.update_block(block)?;
+
+                    if i % 50 == 0 {
+                        logger_sender.log_connection(format!(
+                            "Loading [{i}] blocks to blockchain",
+                        ))?;
+                    }
+                    i += 1;
                 }
             },
             _ => return Err(ErrorExecution::FailThread),
@@ -451,7 +467,7 @@ fn main() -> Result<(), ErrorExecution> {
             logger_sender.clone(),
         );
 
-        let peer_count_max: usize = 1;
+        let peer_count_max: usize = 3;
         
         let potential_peers = get_potential_peers(
             peer_count_max,

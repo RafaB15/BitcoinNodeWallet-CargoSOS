@@ -11,8 +11,9 @@ use crate::serialization::{
     error_serialization::ErrorSerialization,
 };
 
-use crate::messages::{
-    compact_size::CompactSize,
+use std::io::{
+    Read,
+    Write,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -46,10 +47,8 @@ impl Block {
 
 impl SerializableInternalOrder for Block {
 
-    fn io_serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.header.io_serialize(stream)?;
-
-        CompactSize::new(self.transactions.len() as u64).le_serialize(stream)?;
 
         for transaction in self.transactions.iter() {
             transaction.io_serialize(stream)?;
@@ -61,11 +60,9 @@ impl SerializableInternalOrder for Block {
 
 impl DeserializableInternalOrder for Block {
 
-    fn io_deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let header = BlockHeader::io_deserialize(stream)?;
         let length = header.transaction_count.value;
-
-        println!("We get the header: {:?}", header);
 
         let mut transactions: Vec<Transaction> = Vec::new();
         for _ in 0..length {

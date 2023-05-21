@@ -70,8 +70,6 @@ impl DeserializableInternalOrder for Transaction {
             tx_out.push(TransactionOutput::io_deserialize(stream)?);
         }
 
-        println!("We have: {} tx_in y {} tx_out", tx_in.len(), tx_out.len());
-
         let time = u32::le_deserialize(stream)?;
         
         Ok(Transaction { 

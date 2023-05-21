@@ -1,6 +1,7 @@
 use super::{
     message::Message,
     command_name::CommandName,
+    message_header::MessageHeader,
 };
 
 use crate::block_structure::{

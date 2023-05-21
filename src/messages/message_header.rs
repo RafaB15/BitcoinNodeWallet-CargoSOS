@@ -42,8 +42,7 @@ impl MessageHeader {
     {
         let mut buffer: Vec<u8> = vec![0; HEADER_SIZE];
     
-        if let Err(error) = stream.read_exact(&mut buffer) {
-            println!("Error while reading: {:?}", error);
+        if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorSerialization::ErrorWhileReading);
         }
     

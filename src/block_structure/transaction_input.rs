@@ -59,17 +59,8 @@ impl DeserializableInternalOrder for TransactionInput {
         let length_sginature = CompactSize::le_deserialize(stream)?.value;
 
         let mut signature_script: Vec<u8> = Vec::new();
-        for i in 0..length_sginature {
-            let value = match u8::le_deserialize(stream) {
-                Ok(value) => value,
-                Err(error) => return Err(ErrorSerialization::ErrorInDeserialization(format!(
-                    "En transaction input: No se pudo conseguir pk script, tira: {:?}, at {} with {}",
-                    error,
-                    i,
-                    length_sginature,
-                ))),
-            };
-            signature_script.push(value);
+        for _ in 0..length_sginature {
+            signature_script.push(u8::le_deserialize(stream)?);
         }
         let sequence = u32::le_deserialize(stream)?;
 

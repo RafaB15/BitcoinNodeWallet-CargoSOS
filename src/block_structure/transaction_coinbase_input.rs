@@ -47,36 +47,16 @@ impl DeserializableInternalOrder for TransactionCoinbaseInput {
         let previous_output = Outpoint::io_deserialize(stream)?;
         let coinbase_script_length = CompactSize::le_deserialize(stream)?.value;
 
-        let height_length = match u8::le_deserialize(stream){
-            Ok(value) => value,
-            Err(error) => return Err(ErrorSerialization::ErrorInDeserialization(format!(
-                "In transaction coinbase: No se pudo conseguir height lenght, tira: {:?}",
-                error,
-            ))),
-        };
+        let height_length = u8::le_deserialize(stream)?;
         let mut height: Vec<u8> = Vec::new();
         for _ in 0..height_length {
-            let value = match u8::le_deserialize(stream) {
-                Ok(value) => value,
-                Err(error) => return Err(ErrorSerialization::ErrorInDeserialization(format!(
-                    "In transaction coinbase: No se pudo conseguir height, tira: {:?}",
-                    error,
-                ))),
-            };
-            height.push(value);
+            height.push(u8::le_deserialize(stream)?);
         }
 
         let mut coinbase_script: Vec<u8> = Vec::new();
 
         for _ in 0..coinbase_script_length {
-            let value = match u8::le_deserialize(stream) {
-                Ok(value) => value,
-                Err(error) => return Err(ErrorSerialization::ErrorInDeserialization(format!(
-                    "In transaction coinbase: No se pudo conseguir coinbase script length, tira: {:?}",
-                    error,
-                ))),
-            };
-            coinbase_script.push(value);
+            coinbase_script.push(u8::le_deserialize(stream)?);
         }
 
         let sequence = u32::le_deserialize(stream)?;

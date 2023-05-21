@@ -24,7 +24,7 @@ impl SerializableInternalOrder for Outpoint {
     
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         
-        self.hash.le_serialize(stream)?;
+        self.hash.io_serialize(stream)?;
         self.index.le_serialize(stream)?;
         
         Ok(())
@@ -34,7 +34,7 @@ impl SerializableInternalOrder for Outpoint {
 impl DeserializableInternalOrder for Outpoint {
     
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let hash = HashType::le_deserialize(stream)?;
+        let hash = HashType::io_deserialize(stream)?;
         let index = u32::le_deserialize(stream)?;
 
         Ok(Outpoint { 

@@ -197,8 +197,18 @@ impl InitialBlockDownload {
         )?;
 
         let mut blocks: Vec<Block> = Vec::new();
+        let _ = self.sender_log.log_connection(format!(
+            "Downloading {headers_count} blocks",
+        ));
+        
+        for i in 0..headers_count {
 
-        for _ in 0..headers_count {
+            if i % 100 == 0 {
+                let _ = self.sender_log.log_connection(format!(
+                    "Getting blocks [{i}]"
+                ));
+            }
+
             let header = message::deserialize_until_found(peer_stream, CommandName::Block)?;
             let block_message = BlockMessage::deserialize_message(peer_stream, header)?;
             

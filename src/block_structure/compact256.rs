@@ -28,7 +28,7 @@ use std::cmp::{
 };
 
 const BYTES_OF_SIGNIFICAND: u8 = 3;
-const MAX_EXPONENT: u8 = 0x18;
+const MAX_EXPONENT: u8 = 0x1F;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Compact256 {
@@ -72,15 +72,19 @@ impl TryFrom<HashType> for Compact256 {
         }
 
         let mut mantissa: [u8; BYTES_OF_SIGNIFICAND as usize] = [0; BYTES_OF_SIGNIFICAND as usize];
+        let mut significand_bytes: u8 = 0;
 
         for i in 0..BYTES_OF_SIGNIFICAND {
             match value.get(position + (i as usize)) {
-                Some(value) => mantissa[i as usize] = *value,
+                Some(value) => {
+                    mantissa[i as usize] = *value;
+                    significand_bytes += 1;
+                },
                 None => break,
             }
         }
 
-        Ok(Compact256 { mantissa, exponent })
+        Ok(Compact256 { mantissa, exponent: exponent - significand_bytes })
     }
 }
 
