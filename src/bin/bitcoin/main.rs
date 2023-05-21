@@ -295,8 +295,9 @@ fn get_initial_download_headers_first(
             &logger_sender,
         )?;
 
-        let timestamp: u32 = 1681703228; 
+        let timestamp: u32 = 1681705228; // 1681703228 
         let list_of_blocks = block_chain.get_blocks_after_timestamp(timestamp)?;
+
         let block_download_peer = block_download.clone();
 
         let logger_sender_clone = logger_sender.clone();
@@ -314,10 +315,26 @@ fn get_initial_download_headers_first(
     }
 
     for peer_download_handle in peer_download_handles {
+        logger_sender.log_connection(
+            "Finish downloading, loading to blockchain".to_string()
+        )?;
         match peer_download_handle.join() {
             Ok(blocks) => {
+                logger_sender.log_connection(format!(
+                    "Loading {} blocks to blockchain",
+                    blocks.len(),
+                ))?;
+
+                let mut i = 0;
                 for block in blocks {
                     block_chain.update_block(block)?;
+
+                    if i % 50 == 0 {
+                        logger_sender.log_connection(format!(
+                            "Loading [{i}] blocks to blockchain",
+                        ))?;
+                    }
+                    i += 1;
                 }
             },
             _ => return Err(ErrorExecution::FailThread),
@@ -358,36 +375,43 @@ fn get_block_chain(
 }
 
 fn get_initial_block_chain(
-    posible_path: Option<&Path>,
+    posible_path: Option<String>,
     logger_sender: LoggerSender,
-) -> Result<BlockChain, ErrorExecution> 
+) -> JoinHandle<Result<BlockChain, ErrorExecution>>
 {
+    thread::spawn(move || {
+        if let Some(path) = posible_path {
 
-    if let Some(path) = posible_path {
+            if let Ok(file) = OpenOptions::new().read(true).open(path) {
+                let mut file = BufReader::new(file);
+            
+                let _ = logger_sender.log_connection(
+                    "Reading the blockchain from file".to_string()    
+                );
 
-        if let Ok(file) = OpenOptions::new().read(true).open(path) {
-            let mut file = BufReader::new(file);
-        
+                let block_chain = BlockChain::io_deserialize(&mut file)?;
+            
+                let _ = logger_sender.log_connection(
+                    "Blockchain loaded from file".to_string()    
+                );
+
+                return Ok(block_chain);
+            }
+    
             let _ = logger_sender.log_connection(
-                "Reading the blockchain from file".to_string()    
+                "Could not open file".to_string()    
             );
-        
-            return Ok(BlockChain::io_deserialize(&mut file)?);
         }
-
+    
+        let genesis_header: BlockHeader = BlockHeader::generate_genesis_block_header();
+        let genesis_block: Block = Block::new(genesis_header);
+    
         let _ = logger_sender.log_connection(
-            "Could not open file".to_string()    
+            "Initializing blockchain from genesis block".to_string()    
         );
-    }
 
-    let genesis_header: BlockHeader = BlockHeader::generate_genesis_block_header();
-    let genesis_block: Block = Block::new(genesis_header);
-
-    let _ = logger_sender.log_connection(
-        "Initializing blockchain from genesis block".to_string()    
-    );
-
-    Ok(BlockChain::new(genesis_block)?)
+        Ok(BlockChain::new(genesis_block)?)
+    })
 }
 
 fn save_block_chain(
@@ -433,15 +457,15 @@ fn main() -> Result<(), ErrorExecution> {
  
     let (handle, logger_sender) = initialize_logs(log_config)?;
 
-    let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
-    let mut block_chain = get_initial_block_chain(
-        posible_path,
-        logger_sender.clone(),
-    )?;
-
     // Ejecutar programa
     {
-        let peer_count_max: usize = 10;
+        let posible_path: Option<String> = Some("src/bin/bitcoin/blockchain.raw".to_string());
+        let block_chain_handle = get_initial_block_chain(
+            posible_path,
+            logger_sender.clone(),
+        );
+
+        let peer_count_max: usize = 3;
         
         let potential_peers = get_potential_peers(
             peer_count_max,
@@ -450,19 +474,24 @@ fn main() -> Result<(), ErrorExecution> {
         
         let peer_streams = connect_to_testnet_peers(potential_peers, logger_sender.clone())?;
 
+        let mut block_chain = match block_chain_handle.join() {
+            Ok(block_chain) => block_chain?,
+            _ => return Err(ErrorExecution::FailThread),
+        };
+
         get_block_chain(peer_streams, &mut block_chain, logger_sender.clone())?;
 
-        println!("Last elements: {:?}", block_chain.latest());
+        println!("Las elements: {:?}", block_chain.latest());
+        
+        //let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
+        let posible_path: Option<&Path> = None;
+        save_block_chain(
+            &block_chain, 
+            posible_path,
+            logger_sender.clone(),
+        )?;
     }
-    
-    //let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
-    let posible_path: Option<&Path> = None;
-    save_block_chain(
-        &block_chain, 
-        posible_path,
-        logger_sender.clone(),
-    )?;
-    
+        
     logger_sender.log_configuration("Closing program".to_string())?;
     
     std::mem::drop(logger_sender);

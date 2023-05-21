@@ -4,8 +4,11 @@ use crate::serialization::{
 
 use bitcoin_hashes::{sha256, sha256d, Hash};
 
-pub type HashType = [u8; 32];
-pub type HashTypeReduced = [u8; 4];
+pub const HASH_TYPE_SIZE: usize = 32;
+pub const HASH_TYPE_REDUCE_SIZE: usize = 4;
+
+pub type HashType = [u8; HASH_TYPE_SIZE];
+pub type HashTypeReduced = [u8; HASH_TYPE_REDUCE_SIZE];
 
 pub fn hash256(bytes: &[u8]) -> Result<HashType, ErrorSerialization> {
     let hash_bytes = sha256::Hash::hash(bytes);

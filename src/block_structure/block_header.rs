@@ -88,7 +88,12 @@ impl BlockHeader {
             Err(_) => return false,
         };
 
-        self.n_bits > Compact256::from(hash) || true
+        let compact_hash = match Compact256::try_from(hash) {
+            Ok(compact_hash) => compact_hash,
+            Err(_) => return false,
+        };
+
+        self.n_bits > compact_hash || true
     }
 
     pub fn proof_of_inclusion(&self, transactions: &[Transaction]) -> bool {

@@ -5,7 +5,6 @@ use super::{
     error_block::ErrorBlock,
     hash::{
         HashType,
-        hash256,
         hash256d,
     },
     merkle_tree::MerkleTree,
@@ -14,13 +13,13 @@ use super::{
 use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
     serializable_internal_order::SerializableInternalOrder,
-    deserializable_little_endian::DeserializableLittleEndian,
     deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization,
 };
 
-use crate::messages::{
-    compact_size::CompactSize,
+use std::io::{
+    Read,
+    Write,
 };
 
 
@@ -74,8 +73,8 @@ impl Block {
 
     pub fn add_utxo_to_list(&self, utxo: &mut Vec<(TransactionOutput, HashType, u32)>) {
         for transaction in &self.transactions {
-            let mut serialized_transaction = Vec::new();
-            match transaction.le_serialize(&mut serialized_transaction) {
+            let mut serialized_transaction: Vec<u8> = Vec::new();
+            match transaction.io_serialize(&mut serialized_transaction) {
                 Ok(_) => (),
                 Err(_) => continue,
             }
@@ -102,35 +101,32 @@ impl Block {
 
 impl SerializableInternalOrder for Block {
 
-    fn io_serialize(&self, stream: &mut dyn std::io::Write) -> Result<(), ErrorSerialization> {
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.header.io_serialize(stream)?;
-        CompactSize::new(self.transactions.len() as u64).le_serialize(stream)?;
-        for transaction in self.transactions.iter() {
-            transaction.le_serialize(stream)?;
-        }
 
+        for transaction in self.transactions.iter() {
+            transaction.io_serialize(stream)?;
+        }
+        
         Ok(())
     }
 }
 
 impl DeserializableInternalOrder for Block {
 
-    fn io_deserialize(stream: &mut dyn std::io::Read) -> Result<Self, ErrorSerialization> {
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let header = BlockHeader::io_deserialize(stream)?;
-        let compact_size = CompactSize::le_deserialize(stream)?;
-        
-        let mut block = Block::new(header);
+        let length = header.transaction_count.value;
 
-        for _ in 0..compact_size.value {
-            let transaction = Transaction::le_deserialize(stream)?;
-            match block.append_transaction(transaction) {
-                Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => continue,
-                _ => return Err(ErrorSerialization::ErrorInDeserialization(
-                    "Appending transactions to the block".to_string()
-                )),
-            }
+        let mut transactions: Vec<Transaction> = Vec::new();
+        for _ in 0..length {
+            let transaction = Transaction::io_deserialize(stream)?;
+            transactions.push(transaction);
         }
 
-        Ok(block)
+        Ok(Block {
+            header,
+            transactions,
+        })
     }
 }

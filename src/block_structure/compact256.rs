@@ -1,3 +1,10 @@
+use super::{
+    hash::{
+        HashType,
+        HASH_TYPE_SIZE,
+    },
+};
+
 use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
     deserializable_little_endian::DeserializableLittleEndian,
@@ -6,6 +13,7 @@ use crate::serialization::{
 
 use std::convert::{
     From,
+    TryFrom,
     Into,
 };
 
@@ -19,7 +27,8 @@ use std::cmp::{
     Ordering,
 };
 
-const COMPACT256_BASE: u32 = 256;
+const BYTES_OF_SIGNIFICAND: u8 = 3;
+const MAX_EXPONENT: u8 = 0x1F;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Compact256 {
@@ -40,30 +49,42 @@ impl From<u32> for Compact256 {
     }
 }
 
-impl From<[u8; 32]> for Compact256 {
+impl TryFrom<HashType> for Compact256 {
+    type Error = ErrorSerialization;
 
-    fn from(value: [u8; 32]) -> Self {
+    fn try_from(value: HashType) -> Result<Self, Self::Error> {
 
-        // Convertir los primeros 4 bytes del array a un u32 en formato little-endian
-        let mantissa_u32 = u32::from_le_bytes([value[0], value[1], value[2], value[3]]);
+        let mut exponent: u8 = MAX_EXPONENT;
+        let mut position: usize = 0;
+        for i in 0..HASH_TYPE_SIZE {
 
-        // Encontrar el exponente del número
-        let mut exponent = 0;
-        let mut mantissa_u32_copy = mantissa_u32;
-        while mantissa_u32_copy > 0 && exponent < COMPACT256_BASE {
-            mantissa_u32_copy >>= 1;
-            exponent += 1;
+            match value.get(i) {
+                Some(0) => exponent -= 1,
+                Some(_) => {
+                    position = i;
+                    break;
+                }
+                None => return Err(ErrorSerialization::ErrorInSerialization(format!(
+                    "Error while reading the hash256d in the position {:?}",
+                    value,
+                )))?,
+            }
         }
 
-        // Construir el Compact256
-        let mut mantissa = [0u8; 3];
-        let mantissa_u32 = u32::from_le_bytes([value[0], value[1], value[2], value[3]]);
+        let mut mantissa: [u8; BYTES_OF_SIGNIFICAND as usize] = [0; BYTES_OF_SIGNIFICAND as usize];
+        let mut significand_bytes: u8 = 0;
 
-        for (index, mantissa_byte) in mantissa.iter_mut().enumerate() {
-            *mantissa_byte = (mantissa_u32 >> (8 * index)) as u8;
+        for i in 0..BYTES_OF_SIGNIFICAND {
+            match value.get(position + (i as usize)) {
+                Some(value) => {
+                    mantissa[i as usize] = *value;
+                    significand_bytes += 1;
+                },
+                None => break,
+            }
         }
 
-        Compact256 { mantissa, exponent: exponent as u8 }
+        Ok(Compact256 { mantissa, exponent: exponent - significand_bytes })
     }
 }
 

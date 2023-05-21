@@ -1,7 +1,12 @@
 use super::{
     block::Block, 
     block_header::BlockHeader, 
-    node_chain::NodeChain,
+    transaction_output::TransactionOutput,
+    node_chain::{
+        NodeChain,
+        NONE_INDEX,
+    },
+    hash::HashType,
     error_block::ErrorBlock,
 };
 
@@ -18,23 +23,12 @@ use std::io::{
     Write,
 };
 
-const LAST_BLOCK_COUNT_SIZE: usize =  8;
-const BLOCKS_COUNT_SIZE: usize =  8;
-const BLOCK_CHAIN_SIZE: usize =  8;
-
-const HEADER_SIZE: usize = LAST_BLOCK_COUNT_SIZE + BLOCKS_COUNT_SIZE + BLOCK_CHAIN_SIZE;
-
 #[derive(Debug, Clone)]
 pub struct BlockChain {
     
     blocks: Vec<NodeChain>,
     last_blocks: Vec<usize>,
 }
-
-use crate::block_structure::{
-    transaction_output::TransactionOutput,
-    hash::HashType,
-};
 
 impl BlockChain {
 
@@ -100,7 +94,7 @@ impl BlockChain {
 
     pub fn update_block(&mut self, block: Block) -> Result<(), ErrorBlock> {
 
-        for current_block in self.blocks.iter_mut() {
+        for current_block in self.blocks.iter_mut().rev() {
 
             if current_block.is_equal(&block) {
 
@@ -129,8 +123,6 @@ impl BlockChain {
     pub fn latest(&self) -> Vec<Block> {
         
         let mut latest: Vec<Block> = Vec::new();
-
-        println!("Last blocks: {:?}", self.last_blocks);
 
         for index_last_block in self.last_blocks.iter() {
 
@@ -176,9 +168,14 @@ impl SerializableInternalOrder for BlockChain {
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
 
         let mut block_chain: Vec<u8> = Vec::new();
+        for node_chain in self.blocks.iter() {
+            node_chain.block.header.io_serialize(&mut block_chain)?;
+            node_chain.header_hash.io_serialize(&mut block_chain)?;
 
-        for block in self.blocks.iter() {
-            block.io_serialize(&mut block_chain)?;
+            match node_chain.index_previous_node {
+                Some(index_previous_node) => (index_previous_node as u64).le_serialize(&mut block_chain)?,
+                None => NONE_INDEX.le_serialize(&mut block_chain)?,
+            }
         }
 
         for index_last_block in self.last_blocks.iter() {
@@ -189,7 +186,6 @@ impl SerializableInternalOrder for BlockChain {
         
         (self.last_blocks.len() as u64).le_serialize(&mut header)?;
         (self.blocks.len() as u64).le_serialize(&mut header)?;
-        (block_chain.len() as u64).le_serialize(&mut header)?;
 
         header.io_serialize(stream)?;
         block_chain.io_serialize(stream)?;
@@ -201,37 +197,33 @@ impl SerializableInternalOrder for BlockChain {
 impl DeserializableInternalOrder for BlockChain {
 
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        let mut header: Vec<u8> = vec![0; HEADER_SIZE];
-        if stream.read_exact(&mut header).is_err() {
+        let last_blocks_count = u64::le_deserialize(stream)?;
+        let headers_count = u64::le_deserialize(stream)?;
 
-            return Err(ErrorSerialization::ErrorWhileReading);
-        }
-        let mut header = &header[..];
+        let mut node_chains: Vec<NodeChain> = Vec::new();
+        for _ in 0..headers_count {
+            let block = Block::new(BlockHeader::io_deserialize(stream)?);
+            let header_hash = HashType::io_deserialize(stream)?;
 
-        let last_blocks_count = u64::le_deserialize(&mut header)?;
-        let blocks_count = u64::le_deserialize(&mut header)?;
-        let block_chain_size = u64::le_deserialize(&mut header)?;
+            let index_previous_node = match u64::le_deserialize(stream)? {
+                NONE_INDEX => None,
+                index_previous_node => Some(index_previous_node as usize),
+            };
 
-        let mut block_chain: Vec<u8> = vec![0; block_chain_size as usize];
-        if stream.read_exact(&mut block_chain).is_err() {
-
-            return Err(ErrorSerialization::ErrorWhileReading);
-        }
-
-        let mut block_chain = &block_chain[..];
-
-        let mut blocks: Vec<NodeChain> = Vec::new();
-        for _ in 0..blocks_count {
-            blocks.push(NodeChain::io_deserialize(&mut block_chain)?);
+            node_chains.push(NodeChain {
+                block,
+                header_hash,
+                index_previous_node,
+            });
         }
 
         let mut last_blocks: Vec<usize> = Vec::new();
         for _ in 0..last_blocks_count {
-            last_blocks.push(u64::le_deserialize(&mut block_chain)? as usize);
+            last_blocks.push(u64::le_deserialize(stream)? as usize);
         }
 
         Ok(BlockChain { 
-            blocks, 
+            blocks: node_chains, 
             last_blocks,
         })
     }
@@ -290,13 +282,13 @@ mod tests {
 
         let transaction_input = TransactionInput::new(
             Outpoint { hash: [1;32], index: 23 },
-            String::from("Prueba in"),
+            "Prueba in".as_bytes().to_vec(),
             24
         );
 
         let transaction_output = TransactionOutput{
             value: 10, 
-            pk_script: String::from("Prueba out")
+            pk_script: "Prueba out".as_bytes().to_vec()
         };
 
         let transaction = Transaction {
@@ -404,12 +396,12 @@ mod tests {
 
         let transaction_output_1 = TransactionOutput{
             value: 10, 
-            pk_script: String::from("Prueba out")
+            pk_script: "Prueba out".as_bytes().to_vec(),
         };
 
         let transaction_output_2 = TransactionOutput{
             value: 20, 
-            pk_script: String::from("Prueba out")
+            pk_script: "Prueba out".as_bytes().to_vec(),
         };
 
         let transaction_output = Transaction {
@@ -420,7 +412,7 @@ mod tests {
         };
 
         let mut serialized_transaction = Vec::new();
-        transaction_output.le_serialize(&mut serialized_transaction).unwrap();
+        transaction_output.io_serialize(&mut serialized_transaction).unwrap();
         let hashed_transaction = hash256d(&serialized_transaction).unwrap();
 
 
@@ -441,7 +433,7 @@ mod tests {
 
         let transaction_input_1 = TransactionInput::new(
             Outpoint { hash: hashed_transaction, index: 0 },
-            String::from("Prueba in"),
+            "Prueba in".as_bytes().to_vec(),
             24
         );
 
