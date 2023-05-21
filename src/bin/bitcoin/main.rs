@@ -64,8 +64,6 @@ use cargosos_bitcoin::messages::{
     bitfield_services::BitfieldServices,
 };
 
-const MAX_HEADERS: u32 = 2000;
-
 /// Get the configuration name given the arguments 
 /// 
 /// ### Errors
@@ -231,7 +229,7 @@ fn get_peer_header(
             format!("We get: {}", header_count)
         )?;
 
-        if header_count < MAX_HEADERS {
+        if header_count <= 0 {
             break;
         }        
     }

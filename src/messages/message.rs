@@ -24,6 +24,7 @@ use super::{
     addr_message::AddrMessage,
     fee_filter_message::FeeFilterMessage,
     get_data_message::GetDataMessage,
+    alert_message::AlertMessage,
 
     message_header::{
         MessageHeader,
@@ -182,7 +183,10 @@ pub fn deserialize_until_found<RW : Read + Write>(
             },
             CommandName::GetData => {
                 let _ = GetDataMessage::deserialize_message(stream, header)?;
-            }
+            },
+            CommandName::Alert => {
+                let _ = AlertMessage::deserialize_message(stream, header)?;
+            },
         }
     }
 }

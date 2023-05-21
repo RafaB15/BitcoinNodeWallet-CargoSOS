@@ -14,6 +14,7 @@ use crate::messages::{
     command_name::CommandName,
     version_message::VersionMessage,
     verack_message::VerackMessage,
+    send_headers::SendHeadersMessage,
     bitfield_services::BitfieldServices,
     error_message::ErrorMessage,
 };
@@ -93,6 +94,20 @@ impl Handshake {
             peer_stream, 
             TESTNET_MAGIC_NUMBERS, 
             &VerackMessage
+        )?;
+      
+        Ok(())
+    }
+
+    pub fn send_testnet_sendheaders_message<RW : Read + Write>(
+        &self, 
+        peer_stream: &mut RW
+    ) -> Result<(), ErrorMessage>
+    {        
+        SendHeadersMessage::serialize_message(
+            peer_stream, 
+            TESTNET_MAGIC_NUMBERS, 
+            &SendHeadersMessage
         )?;
       
         Ok(())
@@ -181,6 +196,18 @@ impl Handshake {
                 potential_peer, e
             ));
             return Err(ErrorConnection::ErrorCannotReceiveMessage);
+        }
+
+        if let Err(e) = self.send_testnet_sendheaders_message(peer_stream) {
+            let _ = self.sender_log.log_connection(format!(
+                "Error while sending send headers message to peer {}: {:?}",
+                potential_peer, e
+            ));
+            return Err(ErrorConnection::ErrorCannotSendMessage);
+        } else {
+            let _ = self
+                .sender_log
+                .log_connection(format!("Send headers message sent to peer {}", potential_peer));
         }
 
         Ok(())

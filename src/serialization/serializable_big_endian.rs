@@ -40,6 +40,17 @@ impl SerializableBigEndian for [u8] {
     }
 }
 
+impl SerializableBigEndian for Vec<u8> {
+    fn be_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+        match stream.write(self.as_slice()) {
+            Ok(_) => Ok(()),
+            _ => Err(ErrorSerialization::ErrorInSerialization(
+                "Serializing Vec<u8>".to_string(),
+            )),
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

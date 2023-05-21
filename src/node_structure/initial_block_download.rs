@@ -165,8 +165,7 @@ impl InitialBlockDownload {
             )),
         };
 
-        let added_headers = self.add_headers_to_blockchain(block_chain, &received_headers_message)?;
-        Ok(added_headers)
+        Ok(self.add_headers_to_blockchain(block_chain, &received_headers_message)?)
     }
   
     pub fn get_data<RW : Read + Write>(
