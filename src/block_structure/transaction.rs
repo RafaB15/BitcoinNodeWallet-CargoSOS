@@ -1,6 +1,6 @@
 use super::{
     hash::{
-        hash256, 
+        hash256d, 
         HashType,
     },
     transaction_input::TransactionInput,
@@ -89,7 +89,7 @@ impl Transaction {
         }
 
         // Hash the buffer to get the transaction ID
-        let txid = match hash256(&buffer) {
+        let txid = match hash256d(&buffer) {
             Ok(txid) => txid,
             Err(_) => return Err(ErrorBlock::CouldNotGetTxId),
         };
