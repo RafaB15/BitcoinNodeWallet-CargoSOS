@@ -445,6 +445,49 @@ fn save_block_chain(
     Ok(())
 }
 
+fn show_merkle_path(
+    block_chain: &BlockChain,
+    logger_sender: LoggerSender,
+) -> Result<(), ErrorExecution> 
+{
+    let latest = block_chain.latest();
+
+    let last_block = match latest.last() {
+        Some(last_block) => last_block,
+        None => return Err(ErrorExecution::ErrorBlock("Last block not found".to_string())),
+    };
+
+    logger_sender.log_connection(format!(
+        "With the block with header: {:?}",
+        last_block.header,  
+    ))?;
+
+    let transaction = match last_block.transactions.get(6) {
+        Some(transaction) => transaction,
+        None => return Err(ErrorExecution::ErrorBlock("Transaction not found".to_string())),
+    };
+
+    logger_sender.log_connection(format!(
+        "And transaction: {:?}",
+        transaction,  
+    ))?;
+
+    let merkle_path = last_block.get_merkle_path(
+        &transaction,
+    )?;
+
+    let mut path: String = "\n".to_string();
+    for hash in merkle_path {
+        path = format!("\t{path}{:?}\n", hash);
+    }
+
+    logger_sender.log_connection(format!(
+        "We get the merkle path: {path}"
+    ))?;
+
+    Ok(())
+}
+
 fn main() -> Result<(), ErrorExecution> {
     let arguments: Vec<String> = std::env::args().collect();
 
@@ -481,7 +524,12 @@ fn main() -> Result<(), ErrorExecution> {
 
         get_block_chain(peer_streams, &mut block_chain, logger_sender.clone())?;
 
-        println!("Las elements: {:?}", block_chain.latest());
+        show_merkle_path(
+            &block_chain,
+            logger_sender.clone(),
+        )?;
+        
+
         
         //let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
         let posible_path: Option<&Path> = None;

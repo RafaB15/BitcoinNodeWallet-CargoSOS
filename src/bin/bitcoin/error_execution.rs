@@ -25,6 +25,7 @@ pub enum ErrorExecution {
     Node(ErrorNode),
 
     FailThread,
+    ErrorBlock(String),
 }
 
 impl Debug for ErrorExecution {
@@ -39,6 +40,7 @@ impl Debug for ErrorExecution {
             ErrorExecution::Block(error_block) => write!(f, "{:?}", error_block),
             ErrorExecution::Node(error_node) => write!(f, "{:?}", error_node),
             ErrorExecution::FailThread => write!(f, "ErrorFailThread"),
+            ErrorExecution::ErrorBlock(error) => write!(f, "Error with block: {}", error),
         }
     }
 }
