@@ -295,7 +295,7 @@ fn get_initial_download_headers_first(
             &logger_sender,
         )?;
 
-        let timestamp: u32 = 1681705228; // 1681703228 
+        let timestamp: u32 = 1684645440; // 1681703228 
         let list_of_blocks = block_chain.get_blocks_after_timestamp(timestamp)?;
 
         let block_download_peer = block_download.clone();
@@ -458,7 +458,7 @@ fn show_merkle_path(
     };
 
     logger_sender.log_connection(format!(
-        "With the block with header: {:?}",
+        "With the block with header: \n{:?}",
         last_block.header,  
     ))?;
 
@@ -468,7 +468,7 @@ fn show_merkle_path(
     };
 
     logger_sender.log_connection(format!(
-        "And transaction: {:?}",
+        "And transaction: \n{:?}",
         transaction,  
     ))?;
 
@@ -486,6 +486,23 @@ fn show_merkle_path(
     ))?;
 
     Ok(())
+}
+
+fn show_utxo_set(
+    block_chain: &BlockChain,
+    logger_sender: LoggerSender,
+) {
+
+    let utxo_vec = block_chain.get_utxo();
+
+    let mut path: String = "\n".to_string();
+    for utxo in utxo_vec {
+        path = format!("{path}\tTransactionOutput {{ value: {:?} }}\n", utxo.value);
+    }
+
+    let _ = logger_sender.log_connection(format!(
+        "We get the merkle path: {path}"
+    ));
 }
 
 fn main() -> Result<(), ErrorExecution> {
@@ -529,7 +546,10 @@ fn main() -> Result<(), ErrorExecution> {
             logger_sender.clone(),
         )?;
         
-
+        show_utxo_set(
+            &block_chain, 
+            logger_sender.clone(),
+        );
         
         //let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
         let posible_path: Option<&Path> = None;
