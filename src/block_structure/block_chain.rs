@@ -396,12 +396,12 @@ mod tests {
 
         let transaction_output_1 = TransactionOutput{
             value: 10, 
-            pk_script: String::from("Prueba out")
+            pk_script: "Prueba out".as_bytes().to_vec(),
         };
 
         let transaction_output_2 = TransactionOutput{
             value: 20, 
-            pk_script: String::from("Prueba out")
+            pk_script: "Prueba out".as_bytes().to_vec(),
         };
 
         let transaction_output = Transaction {
@@ -412,7 +412,7 @@ mod tests {
         };
 
         let mut serialized_transaction = Vec::new();
-        transaction_output.le_serialize(&mut serialized_transaction).unwrap();
+        transaction_output.io_serialize(&mut serialized_transaction).unwrap();
         let hashed_transaction = hash256d(&serialized_transaction).unwrap();
 
 
@@ -433,7 +433,7 @@ mod tests {
 
         let transaction_input_1 = TransactionInput::new(
             Outpoint { hash: hashed_transaction, index: 0 },
-            String::from("Prueba in"),
+            "Prueba in".as_bytes().to_vec(),
             24
         );
 
