@@ -21,13 +21,13 @@ use std::thread::{
     JoinHandle,
 };
 
-use cargosos_bitcoin::block_structure::hash::HashType;
 use error_execution::ErrorExecution;
 use error_initialization::ErrorInitialization;
 
 use cargosos_bitcoin::configurations::{
     configuration::config, 
     log_config::LogConfig,
+    connection_config::ConnectionConfig,
 };
 
 use cargosos_bitcoin::logs::{
@@ -51,6 +51,7 @@ use cargosos_bitcoin::block_structure::{
     block_chain::BlockChain,
     block::Block,
     block_header::BlockHeader,
+    hash::HashType,
 };
 
 use cargosos_bitcoin::connections::{
@@ -505,6 +506,54 @@ fn show_utxo_set(
     ));
 }
 
+fn program_execution(
+    _connection_config: ConnectionConfig,
+    logger_sender: LoggerSender,
+) -> Result<(), ErrorExecution> 
+{
+    let posible_path: Option<String> = Some("src/bin/bitcoin/blockchain.raw".to_string());
+    let block_chain_handle = get_initial_block_chain(
+        posible_path,
+        logger_sender.clone(),
+    );
+
+    let peer_count_max: usize = 3;
+    
+    let potential_peers = get_potential_peers(
+        peer_count_max,
+        logger_sender.clone(),
+    )?;
+    
+    let peer_streams = connect_to_testnet_peers(potential_peers, logger_sender.clone())?;
+
+    let mut block_chain = match block_chain_handle.join() {
+        Ok(block_chain) => block_chain?,
+        _ => return Err(ErrorExecution::FailThread),
+    };
+
+    get_block_chain(peer_streams, &mut block_chain, logger_sender.clone())?;
+
+    show_merkle_path(
+        &block_chain,
+        logger_sender.clone(),
+    )?;
+    
+    show_utxo_set(
+        &block_chain, 
+        logger_sender.clone(),
+    );
+    
+    //let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
+    let posible_path: Option<&Path> = None;
+    save_block_chain(
+        &block_chain, 
+        posible_path,
+        logger_sender.clone(),
+    )?;
+
+    Ok(())
+}
+
 fn main() -> Result<(), ErrorExecution> {
     let arguments: Vec<String> = std::env::args().collect();
 
@@ -513,52 +562,14 @@ fn main() -> Result<(), ErrorExecution> {
 
     let config_name: String = get_config_name(arguments)?;
     let config_file = open_config_file(config_name)?;
-    let (log_config, _connection_config) = config::new(config_file)?;
+    let (log_config, connection_config) = config::new(config_file)?;
  
     let (handle, logger_sender) = initialize_logs(log_config)?;
 
-    // Ejecutar programa
-    {
-        let posible_path: Option<String> = Some("src/bin/bitcoin/blockchain.raw".to_string());
-        let block_chain_handle = get_initial_block_chain(
-            posible_path,
-            logger_sender.clone(),
-        );
-
-        let peer_count_max: usize = 3;
-        
-        let potential_peers = get_potential_peers(
-            peer_count_max,
-            logger_sender.clone(),
-        )?;
-        
-        let peer_streams = connect_to_testnet_peers(potential_peers, logger_sender.clone())?;
-
-        let mut block_chain = match block_chain_handle.join() {
-            Ok(block_chain) => block_chain?,
-            _ => return Err(ErrorExecution::FailThread),
-        };
-
-        get_block_chain(peer_streams, &mut block_chain, logger_sender.clone())?;
-
-        show_merkle_path(
-            &block_chain,
-            logger_sender.clone(),
-        )?;
-        
-        show_utxo_set(
-            &block_chain, 
-            logger_sender.clone(),
-        );
-        
-        //let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
-        let posible_path: Option<&Path> = None;
-        save_block_chain(
-            &block_chain, 
-            posible_path,
-            logger_sender.clone(),
-        )?;
-    }
+    program_execution(
+        connection_config, 
+        logger_sender.clone()
+    )?;
         
     logger_sender.log_configuration("Closing program".to_string())?;
     
