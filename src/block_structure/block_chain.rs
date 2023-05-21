@@ -240,8 +240,8 @@ mod tests {
         outpoint::Outpoint,
         hash::hash256d,
     };
+    
     use crate::messages::compact_size::CompactSize;
-    use crate::serialization::serializable_little_endian::SerializableLittleEndian;
     use super::*;
 
     #[test]
