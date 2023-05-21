@@ -297,7 +297,7 @@ fn get_initial_download_headers_first(
             &logger_sender,
         )?;
 
-        let timestamp: u32 = 1681703228; // 1681703228 
+        let timestamp: u32 = 1681705228; // 1681703228 
         let list_of_blocks = block_chain.get_blocks_after_timestamp(timestamp)?;
 
         let block_download_peer = block_download.clone();
@@ -374,8 +374,14 @@ fn get_initial_block_chain(
                 let _ = logger_sender.log_connection(
                     "Reading the blockchain from file".to_string()    
                 );
+
+                let block_chain = BlockChain::io_deserialize(&mut file)?;
             
-                return Ok(BlockChain::io_deserialize(&mut file)?);
+                let _ = logger_sender.log_connection(
+                    "Blockchain loaded from file".to_string()    
+                );
+
+                return Ok(block_chain);
             }
     
             let _ = logger_sender.log_connection(
@@ -470,7 +476,6 @@ fn main() -> Result<(), ErrorExecution> {
             posible_path,
             logger_sender.clone(),
         )?;
-
     }
         
     logger_sender.log_configuration("Closing program".to_string())?;
