@@ -167,25 +167,16 @@ impl InitialBlockDownload {
 
         Ok(self.add_headers_to_blockchain(block_chain, &received_headers_message)?)
     }
-  
-    pub fn get_data<RW : Read + Write>(
-        &self,
-        peer_stream: &mut RW,
+
+    fn send_get_data_message<RW : Read + Write>(
+        &self, 
+        peer_stream: &mut RW, 
         hashed_headers: Vec<HashType>,
-    ) -> Result<Vec<Block>, ErrorMessage> 
+    ) -> Result<(), ErrorMessage>
     {
         let _ = self.sender_log.log_connection(
             "Getting data".to_string()    
         );
-
-        let headers_count = hashed_headers.len();
-
-        if headers_count >= MAX_HEADERS_COUNT {
-            let _ = self.sender_log.log_connection(
-                "More headers than possible".to_string()    
-            );
-            return Err(ErrorMessage::RequestedDataTooBig);
-        }
 
         let get_data_message = GetDataMessage::new(hashed_headers);
 
@@ -195,11 +186,16 @@ impl InitialBlockDownload {
             &get_data_message,
         )?;
 
+        Ok(())
+    }
+
+    fn receive_blocks<RW : Read + Write>(
+        &self, 
+        peer_stream: &mut RW,
+        headers_count: usize,
+    ) -> Result<Vec<Block>, ErrorMessage> 
+    {
         let mut blocks: Vec<Block> = Vec::new();
-        let _ = self.sender_log.log_connection(format!(
-            "Downloading {headers_count} blocks",
-        ));
-        
         for i in 0..headers_count {
 
             if i % 100 == 0 {
@@ -222,5 +218,29 @@ impl InitialBlockDownload {
         }
 
         Ok(blocks)
+    }
+  
+    pub fn get_data<RW : Read + Write>(
+        &self,
+        peer_stream: &mut RW,
+        hashed_headers: Vec<HashType>,
+    ) -> Result<Vec<Block>, ErrorMessage> 
+    {
+        let headers_count = hashed_headers.len();
+
+        if headers_count >= MAX_HEADERS_COUNT {
+            let _ = self.sender_log.log_connection(
+                "More headers than possible".to_string()    
+            );
+            return Err(ErrorMessage::RequestedDataTooBig);
+        }
+
+        self.send_get_data_message(peer_stream, hashed_headers)?;
+
+        let _ = self.sender_log.log_connection(format!(
+            "Downloading {headers_count} blocks",
+        ));
+        
+        self.receive_blocks(peer_stream, headers_count)
     }
 }
