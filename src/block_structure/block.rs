@@ -52,11 +52,10 @@ impl Block {
     }
 
     pub fn get_merkle_path(&self, transaction: &Transaction) -> Result<Vec<HashType>, ErrorBlock> {
-        
         let path: Vec<HashType> = match MerkleTree::get_merkle_path(
             &self.transactions, 
             transaction.clone()
-        ) {
+        ){
             Ok(path) => path,
             Err(_) => return Err(ErrorBlock::CouldNotCalculateMerklePath),
         };
