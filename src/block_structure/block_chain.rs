@@ -1,6 +1,7 @@
 use super::{
     block::Block, 
     block_header::BlockHeader, 
+    transaction_output::TransactionOutput,
     node_chain::{
         NodeChain,
         NONE_INDEX,
@@ -28,11 +29,6 @@ pub struct BlockChain {
     blocks: Vec<NodeChain>,
     last_blocks: Vec<usize>,
 }
-
-use crate::block_structure::{
-    transaction_output::TransactionOutput,
-    hash::HashType,
-};
 
 impl BlockChain {
 

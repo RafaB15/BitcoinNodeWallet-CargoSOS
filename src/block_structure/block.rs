@@ -5,7 +5,6 @@ use super::{
     error_block::ErrorBlock,
     hash::{
         HashType,
-        hash256,
         hash256d,
     },
     merkle_tree::MerkleTree,
@@ -74,8 +73,8 @@ impl Block {
 
     pub fn add_utxo_to_list(&self, utxo: &mut Vec<(TransactionOutput, HashType, u32)>) {
         for transaction in &self.transactions {
-            let mut serialized_transaction = Vec::new();
-            match transaction.le_serialize(&mut serialized_transaction) {
+            let mut serialized_transaction: Vec<u8> = Vec::new();
+            match transaction.io_serialize(&mut serialized_transaction) {
                 Ok(_) => (),
                 Err(_) => continue,
             }
