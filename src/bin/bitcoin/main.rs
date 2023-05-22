@@ -525,7 +525,7 @@ fn main() -> Result<(), ErrorExecution> {
             logger_sender.clone(),
         );
 
-        let peer_count_max: usize = 3;
+        let peer_count_max: usize = 2;
         
         let potential_peers = get_potential_peers(
             peer_count_max,
@@ -539,25 +539,25 @@ fn main() -> Result<(), ErrorExecution> {
             _ => return Err(ErrorExecution::FailThread),
         };
 
+        let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
+        //let posible_path: Option<&Path> = None;
+        save_block_chain(
+            &block_chain, 
+            posible_path,
+            logger_sender.clone(),
+        )?;
         get_block_chain(peer_streams, &mut block_chain, logger_sender.clone())?;
 
         show_merkle_path(
             &block_chain,
             logger_sender.clone(),
         )?;
-        
+
         show_utxo_set(
             &block_chain, 
             logger_sender.clone(),
         );
-        
-        //let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
-        let posible_path: Option<&Path> = None;
-        save_block_chain(
-            &block_chain, 
-            posible_path,
-            logger_sender.clone(),
-        )?;
+
     }
         
     logger_sender.log_configuration("Closing program".to_string())?;

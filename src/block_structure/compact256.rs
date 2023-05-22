@@ -72,19 +72,17 @@ impl TryFrom<HashType> for Compact256 {
         }
 
         let mut mantissa: [u8; BYTES_OF_SIGNIFICAND as usize] = [0; BYTES_OF_SIGNIFICAND as usize];
-        let mut significand_bytes: u8 = 0;
 
         for i in 0..BYTES_OF_SIGNIFICAND {
             match value.get(position + (i as usize)) {
                 Some(value) => {
                     mantissa[i as usize] = *value;
-                    significand_bytes += 1;
                 },
                 None => break,
             }
         }
 
-        Ok(Compact256 { mantissa, exponent: exponent - significand_bytes })
+        Ok(Compact256 { mantissa, exponent })
     }
 }
 
@@ -103,11 +101,11 @@ impl Into<u32> for Compact256 {
 impl PartialOrd for Compact256 {
     
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match self.mantissa.partial_cmp(&other.mantissa) {
+        match self.exponent.partial_cmp(&other.exponent) {
             Some(Ordering::Equal) => {}
             ord => return ord,
         }
-        self.exponent.partial_cmp(&other.exponent)
+        self.mantissa.partial_cmp(&other.mantissa)
     }
 }
 

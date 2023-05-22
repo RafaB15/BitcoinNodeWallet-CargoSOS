@@ -109,7 +109,7 @@ impl InitialBlockDownload {
         let mut added_headers = 0;
         for header in received_headers_message.headers.iter() {
 
-            if !header.proof_of_work() && false { // cambiar
+            if !header.proof_of_work() { // cambiar
                 return Err(ErrorNode::WhileValidating("Error while validating proof of work".to_string()));
             }
 
