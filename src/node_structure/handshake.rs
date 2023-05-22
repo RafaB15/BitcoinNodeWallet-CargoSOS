@@ -205,9 +205,9 @@ impl Handshake {
             ));
             return Err(ErrorConnection::ErrorCannotSendMessage);
         } else {
-            let _ = self
-                .sender_log
-                .log_connection(format!("Send headers message sent to peer {}", potential_peer));
+            let _ = self.sender_log.log_connection(format!(
+                "Send headers message sent to peer {}", potential_peer
+            ));
         }
 
         Ok(())

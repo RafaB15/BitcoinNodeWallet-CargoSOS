@@ -79,11 +79,7 @@ impl BlockHeader {
     }
 
     pub fn proof_of_work(&self) -> bool {
-        let mut buffer = vec![];
-        if self.io_serialize(&mut buffer).is_err() {
-            return false;
-        }
-        let hash: HashType = match hash256d(&buffer) {
+        let hash = match self.get_hash256d() {
             Ok(hash) => hash,
             Err(_) => return false,
         };
@@ -93,7 +89,7 @@ impl BlockHeader {
             Err(_) => return false,
         };
 
-        self.n_bits > compact_hash || true
+        self.n_bits > compact_hash
     }
 
     pub fn proof_of_inclusion(&self, transactions: &[Transaction]) -> bool {
