@@ -462,7 +462,9 @@ fn show_merkle_path(
         last_block.header,  
     ))?;
 
-    let transaction = match last_block.transactions.get(6) {
+    let transaction_position = std::cmp::min::<u64>(6, last_block.header.transaction_count.value - 1);
+
+    let transaction = match last_block.transactions.get(transaction_position as usize) {
         Some(transaction) => transaction,
         None => return Err(ErrorExecution::ErrorBlock("Transaction not found".to_string())),
     };
@@ -546,12 +548,10 @@ fn main() -> Result<(), ErrorExecution> {
             logger_sender.clone(),
         )?;
         
-        /*
         show_utxo_set(
             &block_chain, 
             logger_sender.clone(),
         );
-        */
         
         //let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
         let posible_path: Option<&Path> = None;
