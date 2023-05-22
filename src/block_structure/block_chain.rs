@@ -49,6 +49,27 @@ impl BlockChain {
         self.append_block(Block::new(header))
     }
 
+    pub fn append_headers(
+        &mut self, 
+        headers: Vec<BlockHeader>,
+    ) -> Result<u32, ErrorBlock> 
+    {
+        let mut added_headers = 0;
+        for header in headers.iter() {
+
+            if !header.proof_of_work() && false { // cambiar
+                return Err(ErrorBlock::ErrorWithProofOfWork);
+            }
+
+            match self.append_header(*header) {
+                Ok(_) => added_headers += 1,
+                _ => break,
+            }
+        }
+
+        Ok(added_headers)
+    }
+
     pub fn append_block(&mut self, block: Block) -> Result<(), ErrorBlock> {
 
         for (i, index_last_block) in self.last_blocks.clone().iter().enumerate() {

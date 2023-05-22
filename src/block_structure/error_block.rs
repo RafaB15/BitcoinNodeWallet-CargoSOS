@@ -9,6 +9,8 @@ pub enum ErrorBlock {
     ///This will appear when the Transaction is already in the block
     TransactionAlreadyInBlock,
 
+    ErrorWithProofOfWork,
+
     CouldNotSerialize,
 
     CouldNotHash,
