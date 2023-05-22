@@ -158,8 +158,8 @@ fn get_connection_from_peers(
     let mut peers_stream: Vec<TcpStream> = Vec::new();
     for potential_peer in potential_peers {
 
-        let peer_stream = match TcpStream::connect(potential_peer) {
-            Ok(stream) => stream,
+        match TcpStream::connect(potential_peer) {
+            Ok(stream) => peers_stream.push(stream),
             Err(error) => {
                 logger_sender.log_connection(
                     format!("Cannot connect to address: {:?}, it appear {:?}", potential_peer, error)
@@ -167,12 +167,6 @@ fn get_connection_from_peers(
                 continue;
             },
         };
-
-        logger_sender.log_connection(
-            format!("Connecting to peer with: {:?}", peer_stream)
-        )?;
-
-        peers_stream.push(peer_stream);
     }
 
     Ok(peers_stream)
@@ -424,7 +418,8 @@ fn block_broadcasting(
     peer_streams: Vec<TcpStream>,
     block_chain: &mut BlockChain,
     logger_sender: LoggerSender, 
-) -> Result<(), ErrorExecution>  {
+) -> Result<(), ErrorExecution>  
+{
 
     logger_sender.log_connection("Broadcasting...".to_string())?;
 

@@ -123,14 +123,16 @@ pub fn deserialize_until_found<RW : Read + Write>(
 ) -> Result<MessageHeader, ErrorMessage> 
 {
     loop {
+
         let header = match MessageHeader::deserialize_header(stream) {
             Ok(header) => header,
             Err(error) => return Err(error.into()),
         };
-
+        
         if header.command_name == search_name {
             return Ok(header);
         }
+
 
         let magic_bytes = header.magic_numbers;
 
