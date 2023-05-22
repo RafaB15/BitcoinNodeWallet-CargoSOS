@@ -131,7 +131,6 @@ impl BlockHeader {
         self.nonce.le_serialize(&mut buffer)?;
 
         let buffer = {
-
             let mut temp: Vec<u8> = Vec::new();
 
             for byte in hash256d(&buffer)?.iter().rev() {
@@ -143,7 +142,7 @@ impl BlockHeader {
 
         let buffer: HashType = match (*buffer.as_slice()).try_into() {
             Ok(buffer) => buffer,
-            Err(_) => return Err(ErrorSerialization::ErrorInSerialization(
+            _ => return Err(ErrorSerialization::ErrorInSerialization(
                 "Error while getting hash 256 d".to_string(),
             )),
         };

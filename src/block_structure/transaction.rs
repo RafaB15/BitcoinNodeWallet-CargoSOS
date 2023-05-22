@@ -33,6 +33,49 @@ pub struct Transaction {
     pub time: u32,
 }
 
+impl Transaction {
+    pub fn get_tx_id(&self) -> Result<HashType, ErrorBlock> {
+        let mut buffer = vec![];
+        if self.io_serialize(&mut buffer).is_err() {
+            return Err(ErrorBlock::CouldNotGetTxId);
+        }
+
+        let buffer = {
+            let mut temp: Vec<u8> = Vec::new();
+
+            // Hash the buffer to get the transaction ID
+            let txid = match hash256d(&buffer) {
+                Ok(txid) => txid,
+                Err(_) => return Err(ErrorBlock::CouldNotGetTxId),
+            };
+
+            for byte in txid.iter().rev() {
+                temp.push(*byte);
+            }
+
+            temp
+        };
+
+        let buffer: HashType = match (*buffer.as_slice()).try_into() {
+            Ok(buffer) => buffer,
+            _ => return Err(ErrorBlock::CouldNotGetTxId),
+        };
+
+        Ok(buffer)
+    }
+
+    pub fn get_vec_txids(transactions: &[Transaction]) -> Result<Vec<HashType>, ErrorBlock> {
+        let mut tx_ids: Vec<HashType> = Vec::new();
+        for tx in transactions.iter() {
+            match tx.get_tx_id() {
+                Ok(txid) => tx_ids.push(txid),
+                Err(_) => return Err(ErrorBlock::CouldNotGetTxId),
+            };
+        }
+        Ok(tx_ids)
+    }        
+}
+
 impl SerializableInternalOrder for Transaction {
 
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
@@ -80,39 +123,3 @@ impl DeserializableInternalOrder for Transaction {
         })
     }
 }
-
-impl Transaction {
-    pub fn get_tx_id(&self, stream: &mut dyn Write) -> Result<HashType, ErrorBlock> {
-        let mut buffer = vec![];
-        if self.io_serialize(&mut buffer).is_err() {
-            return Err(ErrorBlock::CouldNotGetTxId);
-        }
-
-        // Hash the buffer to get the transaction ID
-        let txid = match hash256d(&buffer) {
-            Ok(txid) => txid,
-            Err(_) => return Err(ErrorBlock::CouldNotGetTxId),
-        };
-
-        // Write the buffer to the stream
-        if stream.write_all(&buffer).is_err() {
-            return Err(ErrorBlock::CouldNotWriteTxId);
-        }
-
-        Ok(txid)
-    }
-
-    pub fn get_vec_txids(transactions: &[Transaction]) -> Result<Vec<HashType>, ErrorBlock> {
-        let mut tx_ids = Vec::new();
-        for tx in transactions {
-            let mut vec_tx = Vec::new();
-            match tx.get_tx_id(&mut vec_tx) {
-                Ok(txid) => tx_ids.push(txid),
-                Err(_) => return Err(ErrorBlock::CouldNotGetTxId),
-            };
-        }
-        Ok(tx_ids)
-    }        
-}
-       
-

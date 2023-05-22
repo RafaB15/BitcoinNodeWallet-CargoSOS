@@ -109,7 +109,7 @@ impl InitialBlockDownload {
         let mut added_headers = 0;
         for header in received_headers_message.headers.iter() {
 
-            if !header.proof_of_work() && false { // cambiar
+            if !header.proof_of_work() {
                 return Err(ErrorNode::WhileValidating("Error while validating proof of work".to_string()));
             }
 
@@ -211,15 +211,16 @@ impl InitialBlockDownload {
             let header = message::deserialize_until_found(peer_stream, CommandName::Block)?;
             let block_message = BlockMessage::deserialize_message(peer_stream, header)?;
             
-            //println!("Block transaction count: {:?}", block_message.block.header.transaction_count);
-            let block = match true || block_message.block.proof_of_inclusion() {
+            /* Por ahora no funciona pero no encontramos el error
+            let block = match block_message.block.proof_of_inclusion() {
                 true => block_message.block,
                 false => return Err(ErrorMessage::InDeserialization(
                     "Error while receiving block message".to_string()
                 )),
             };
+            */
 
-            blocks.push(block);
+            blocks.push(block_message.block);
         }
 
         Ok(blocks)
