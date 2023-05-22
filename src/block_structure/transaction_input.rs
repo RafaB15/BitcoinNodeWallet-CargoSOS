@@ -3,17 +3,14 @@ use super::outpoint::Outpoint;
 use crate::messages::compact_size::CompactSize;
 
 use crate::serialization::{
-    serializable_little_endian::SerializableLittleEndian,
-    serializable_internal_order::SerializableInternalOrder,
-    deserializable_little_endian::DeserializableLittleEndian,
     deserializable_internal_order::DeserializableInternalOrder,
-    error_serialization::ErrorSerialization, 
+    deserializable_little_endian::DeserializableLittleEndian,
+    error_serialization::ErrorSerialization,
+    serializable_internal_order::SerializableInternalOrder,
+    serializable_little_endian::SerializableLittleEndian,
 };
 
-use std::io::{
-    Read,
-    Write,
-};
+use std::io::{Read, Write};
 
 use std::cmp::PartialEq;
 
@@ -39,7 +36,6 @@ impl TransactionInput {
 }
 
 impl SerializableInternalOrder for TransactionInput {
-
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.previous_output.io_serialize(stream)?;
 
@@ -53,7 +49,6 @@ impl SerializableInternalOrder for TransactionInput {
 }
 
 impl DeserializableInternalOrder for TransactionInput {
-
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let previous_output = Outpoint::io_deserialize(stream)?;
         let length_sginature = CompactSize::le_deserialize(stream)?.value;
@@ -64,10 +59,10 @@ impl DeserializableInternalOrder for TransactionInput {
         }
         let sequence = u32::le_deserialize(stream)?;
 
-        Ok(TransactionInput { 
-            previous_output, 
-            signature_script, 
-            sequence
+        Ok(TransactionInput {
+            previous_output,
+            signature_script,
+            sequence,
         })
     }
 }

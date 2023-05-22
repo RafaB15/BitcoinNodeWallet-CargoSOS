@@ -1,8 +1,8 @@
 use super::error_connection::ErrorConnection;
 
 use crate::serialization::{
-    deserializable_little_endian::DeserializableLittleEndian, error_serialization::ErrorSerialization,
-    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
+    error_serialization::ErrorSerialization, serializable_little_endian::SerializableLittleEndian,
 };
 
 const NODE_UNNAME: u64 = 0x00;
@@ -99,7 +99,9 @@ impl DeserializableLittleEndian for SupportedServices {
 #[cfg(test)]
 mod tests {
 
-    use super::{DeserializableLittleEndian, ErrorSerialization, SerializableLittleEndian, SupportedServices};
+    use super::{
+        DeserializableLittleEndian, ErrorSerialization, SerializableLittleEndian, SupportedServices,
+    };
 
     #[test]
     fn test01_serialize_correctly_supported_services() -> Result<(), ErrorSerialization> {

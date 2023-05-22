@@ -1,26 +1,19 @@
 use super::{
-    block_header::BlockHeader, 
+    block_header::BlockHeader,
+    error_block::ErrorBlock,
+    hash::{hash256d, HashType},
+    merkle_tree::MerkleTree,
     transaction::Transaction,
     transaction_output::TransactionOutput,
-    error_block::ErrorBlock,
-    hash::{
-        HashType,
-        hash256d,
-    },
-    merkle_tree::MerkleTree,
 };
 
 use crate::serialization::{
-    serializable_internal_order::SerializableInternalOrder,
     deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization,
+    serializable_internal_order::SerializableInternalOrder,
 };
 
-use std::io::{
-    Read,
-    Write,
-};
-
+use std::io::{Read, Write};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Block {
@@ -41,8 +34,11 @@ impl Block {
     }
 
     pub fn append_transaction(&mut self, transaction: Transaction) -> Result<(), ErrorBlock> {
-
-        match self.transactions.iter().any(|this_transaction| *this_transaction == transaction) {
+        match self
+            .transactions
+            .iter()
+            .any(|this_transaction| *this_transaction == transaction)
+        {
             true => return Err(ErrorBlock::TransactionAlreadyInBlock),
             false => self.transactions.push(transaction),
         }
@@ -51,27 +47,30 @@ impl Block {
     }
 
     pub fn get_merkle_path(&self, transaction: &Transaction) -> Result<Vec<HashType>, ErrorBlock> {
-        let path: Vec<HashType> = match MerkleTree::get_merkle_path(
-            &self.transactions, 
-            transaction.clone()
-        ){
-            Ok(path) => path,
-            Err(_) => return Err(ErrorBlock::CouldNotCalculateMerklePath),
-        };
-        
-        Ok(path)
-    }    
+        let path: Vec<HashType> =
+            match MerkleTree::get_merkle_path(&self.transactions, transaction.clone()) {
+                Ok(path) => path,
+                Err(_) => return Err(ErrorBlock::CouldNotCalculateMerklePath),
+            };
 
-    pub fn remove_spent_transactions_in_list(&self, utxo: &mut [(TransactionOutput, HashType, u32)]) {
+        Ok(path)
+    }
+
+    pub fn remove_spent_transactions_in_list(
+        &self,
+        utxo: &mut [(TransactionOutput, HashType, u32)],
+    ) {
         for transaction in &self.transactions {
             for input in &transaction.tx_in {
                 for (output, transaction_hash, index) in utxo.iter_mut() {
-                    if input.previous_output.hash.eq(transaction_hash)  && input.previous_output.index == *index{
+                    if input.previous_output.hash.eq(transaction_hash)
+                        && input.previous_output.index == *index
+                    {
                         output.value = -1;
                     }
                 }
             }
-        } 
+        }
     }
 
     pub fn add_utxo_to_list(&self, utxo: &mut Vec<(TransactionOutput, HashType, u32)>) {
@@ -96,24 +95,21 @@ impl Block {
         self.add_utxo_to_list(utxo);
         self.remove_spent_transactions_in_list(utxo);
     }
-    
 }
 
 impl SerializableInternalOrder for Block {
-
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.header.io_serialize(stream)?;
 
         for transaction in self.transactions.iter() {
             transaction.io_serialize(stream)?;
         }
-        
+
         Ok(())
     }
 }
 
 impl DeserializableInternalOrder for Block {
-
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let header = BlockHeader::io_deserialize(stream)?;
         let length = header.transaction_count.value;

@@ -2,32 +2,29 @@ use super::{
     block_version::BlockVersion,
     compact256::Compact256,
     hash::{hash256d, HashType},
-    transaction::Transaction,
     merkle_tree::MerkleTree,
+    transaction::Transaction,
 };
 
-use crate::{serialization::{
-    serializable_little_endian::SerializableLittleEndian,
-    serializable_internal_order::SerializableInternalOrder,
-    serializable_big_endian::SerializableBigEndian,
-    deserializable_little_endian::DeserializableLittleEndian,
-    deserializable_internal_order::DeserializableInternalOrder,
-    deserializable_big_endian::DeserializableBigEndian,
-    error_serialization::ErrorSerialization, 
-}, messages::compact_size::CompactSize};
-
-use std::io::{
-    Write,
-    Read,
+use crate::{
+    messages::compact_size::CompactSize,
+    serialization::{
+        deserializable_big_endian::DeserializableBigEndian,
+        deserializable_internal_order::DeserializableInternalOrder,
+        deserializable_little_endian::DeserializableLittleEndian,
+        error_serialization::ErrorSerialization, serializable_big_endian::SerializableBigEndian,
+        serializable_internal_order::SerializableInternalOrder,
+        serializable_little_endian::SerializableLittleEndian,
+    },
 };
+
+use std::io::{Read, Write};
 
 const GENESIS_BLOCK_VERSION: BlockVersion = BlockVersion::version(1);
 const GENESIS_PREVIOUS_BLOCK_HEADER_HASH: HashType = [0; 32];
 const GENESIS_MERKLE_ROOT_HASH: HashType = [
-    0x3b, 0xa3, 0xed, 0xfd, 0x7a, 0x7b, 0x12, 0xb2, 
-    0x7a, 0xc7, 0x2c, 0x3e, 0x67, 0x76, 0x8f, 0x61, 
-    0x7f, 0xc8, 0x1b, 0xc3, 0x88, 0x8a, 0x51, 0x32, 
-    0x3a, 0x9f, 0xb8, 0xaa, 0x4b, 0x1e, 0x5e, 0x4a, 
+    0x3b, 0xa3, 0xed, 0xfd, 0x7a, 0x7b, 0x12, 0xb2, 0x7a, 0xc7, 0x2c, 0x3e, 0x67, 0x76, 0x8f, 0x61,
+    0x7f, 0xc8, 0x1b, 0xc3, 0x88, 0x8a, 0x51, 0x32, 0x3a, 0x9f, 0xb8, 0xaa, 0x4b, 0x1e, 0x5e, 0x4a,
 ];
 const GENESIS_TIME: u32 = 0x4d49e5da;
 const GENESIS_N_BITS: u32 = 0x1d00ffff;
@@ -98,21 +95,21 @@ impl BlockHeader {
             Err(error) => {
                 println!("Error while creating merkle tree: {:?}", error);
                 return false;
-            },
+            }
         };
 
-        match merkle_tree.get_root(){
+        match merkle_tree.get_root() {
             Ok(root) => {
                 let resultado = root == self.merkle_root_hash;
                 if !resultado {
                     println!("Roots are different");
                 }
                 resultado
-            },
+            }
             Err(error) => {
                 println!("Error while getting the root: {:?}", error);
                 false
-            },
+            }
         }
     }
 
@@ -138,20 +135,19 @@ impl BlockHeader {
 
         let buffer: HashType = match (*buffer.as_slice()).try_into() {
             Ok(buffer) => buffer,
-            _ => return Err(ErrorSerialization::ErrorInSerialization(
-                "Error while getting hash 256 d".to_string(),
-            )),
+            _ => {
+                return Err(ErrorSerialization::ErrorInSerialization(
+                    "Error while getting hash 256 d".to_string(),
+                ))
+            }
         };
 
         Ok(buffer)
     }
-    
-} 
-        
+}
+
 impl SerializableInternalOrder for BlockHeader {
-    
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        
         self.version.le_serialize(stream)?;
         self.previous_block_header_hash.le_serialize(stream)?;
         self.merkle_root_hash.be_serialize(stream)?;
@@ -165,10 +161,8 @@ impl SerializableInternalOrder for BlockHeader {
 }
 
 impl DeserializableInternalOrder for BlockHeader {
-
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-
-        Ok(BlockHeader{
+        Ok(BlockHeader {
             version: BlockVersion::le_deserialize(stream)?,
             previous_block_header_hash: HashType::le_deserialize(stream)?,
             merkle_root_hash: HashType::be_deserialize(stream)?,

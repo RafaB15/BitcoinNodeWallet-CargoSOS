@@ -1,41 +1,24 @@
-use super::{
-    bitfield_services::BitfieldServices, 
-    compact_size::CompactSize
-};
+use super::{bitfield_services::BitfieldServices, compact_size::CompactSize};
 
 use crate::serialization::{
-    deserializable_little_endian::DeserializableLittleEndian, 
     deserializable_big_endian::DeserializableBigEndian,
-    deserializable_fix_size::DeserializableFixSize, 
+    deserializable_fix_size::DeserializableFixSize,
     deserializable_internal_order::DeserializableInternalOrder,
-    serializable_little_endian::SerializableLittleEndian, 
-    serializable_big_endian::SerializableBigEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
+    error_serialization::ErrorSerialization, serializable_big_endian::SerializableBigEndian,
     serializable_internal_order::SerializableInternalOrder,
-    error_serialization::ErrorSerialization,
+    serializable_little_endian::SerializableLittleEndian,
 };
 
-use super::{
-    message::Message,
-    command_name::CommandName,
-};
+use super::{command_name::CommandName, message::Message};
 
-use std::net::{
-    Ipv6Addr, 
-};
+use std::net::Ipv6Addr;
 
-use chrono::{
-    DateTime,
-    offset::Utc
-};
+use chrono::{offset::Utc, DateTime};
 
-use std::io::{
-    Read, 
-    Write
-};
+use std::io::{Read, Write};
 
-use crate::connections::{
-    p2p_protocol::ProtocolVersionP2P, 
-};
+use crate::connections::p2p_protocol::ProtocolVersionP2P;
 
 #[derive(Debug, std::cmp::PartialEq)]
 pub struct VersionMessage {
@@ -60,9 +43,7 @@ impl Message for VersionMessage {
 }
 
 impl SerializableInternalOrder for VersionMessage {
-    
-    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization>{
-      
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.version.le_serialize(stream)?;
         self.services.le_serialize(stream)?;
         self.timestamp.le_serialize(stream)?;
@@ -87,9 +68,7 @@ impl SerializableInternalOrder for VersionMessage {
 }
 
 impl DeserializableInternalOrder for VersionMessage {
-
-    fn io_deserialize(stream: &mut dyn Read) ->  Result<Self, ErrorSerialization> {
-
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let version = ProtocolVersionP2P::le_deserialize(stream)?;
         let services = BitfieldServices::le_deserialize(stream)?;
         let timestamp = DateTime::<Utc>::le_deserialize(stream)?;
@@ -128,8 +107,8 @@ impl DeserializableInternalOrder for VersionMessage {
             user_agent,
             start_height,
             relay,
-        })       
-    }    
+        })
+    }
 }
 
 #[cfg(test)]
@@ -143,21 +122,16 @@ mod tests {
     };
 
     use super::{
-        VersionMessage,
-        SerializableLittleEndian,
-        SerializableInternalOrder,
-        SerializableBigEndian,
-
-        DeserializableInternalOrder
+        DeserializableInternalOrder, SerializableBigEndian, SerializableInternalOrder,
+        SerializableLittleEndian, VersionMessage,
     };
 
     use chrono::{offset::Utc, DateTime, NaiveDateTime};
-  
+
     use std::net::Ipv6Addr;
 
     #[test]
-    fn test01_serialize() -> Result<(), ErrorMessage>{
-
+    fn test01_serialize() -> Result<(), ErrorMessage> {
         let version = ProtocolVersionP2P::V31402;
         let services = BitfieldServices::new(vec![SupportedServices::NodeNetworkLimited]);
 
@@ -177,24 +151,24 @@ mod tests {
         let mut stream: Vec<u8> = Vec::new();
 
         let mut expected_stream: Vec<u8> = Vec::new();
-        
+
         version.le_serialize(&mut expected_stream)?;
         services.le_serialize(&mut expected_stream)?;
         timestamp.le_serialize(&mut expected_stream)?;
         recv_services.le_serialize(&mut expected_stream)?;
-        
+
         recv_addr.be_serialize(&mut expected_stream)?;
         recv_port.be_serialize(&mut expected_stream)?;
 
         services.le_serialize(&mut expected_stream)?;
 
         trans_addr.be_serialize(&mut expected_stream)?;
-        trans_port.be_serialize(&mut expected_stream)?; 
-        
+        trans_port.be_serialize(&mut expected_stream)?;
+
         nonce.le_serialize(&mut expected_stream)?;
-        length.le_serialize(&mut expected_stream)?; 
+        length.le_serialize(&mut expected_stream)?;
         user_agent.le_serialize(&mut expected_stream)?;
-        start_height.le_serialize(&mut expected_stream)?; 
+        start_height.le_serialize(&mut expected_stream)?;
         relay.le_serialize(&mut expected_stream)?;
 
         let version_message = VersionMessage {
@@ -244,21 +218,21 @@ mod tests {
         services.le_serialize(&mut stream)?;
         timestamp.le_serialize(&mut stream)?;
         recv_services.le_serialize(&mut stream)?;
-        
+
         recv_addr.be_serialize(&mut stream)?;
         recv_port.be_serialize(&mut stream)?;
 
         services.le_serialize(&mut stream)?;
 
         trans_addr.be_serialize(&mut stream)?;
-        trans_port.be_serialize(&mut stream)?; 
-        
+        trans_port.be_serialize(&mut stream)?;
+
         nonce.le_serialize(&mut stream)?;
-        length.le_serialize(&mut stream)?; 
+        length.le_serialize(&mut stream)?;
         user_agent.le_serialize(&mut stream)?;
-        start_height.le_serialize(&mut stream)?; 
+        start_height.le_serialize(&mut stream)?;
         relay.le_serialize(&mut stream)?;
-        
+
         let mut stream: &[u8] = &stream;
 
         let version_esperado = VersionMessage {

@@ -7,7 +7,7 @@
 #[derive(Debug, PartialEq)]
 pub enum ErrorLog {
     FileNotFound,
-    
+
     ReceiverNotFound,
 
     CouldNotWriteInFile,

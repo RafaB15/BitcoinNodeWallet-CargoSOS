@@ -1,17 +1,14 @@
 use crate::messages::compact_size::CompactSize;
 
 use crate::serialization::{
-    serializable_little_endian::SerializableLittleEndian,
-    serializable_internal_order::SerializableInternalOrder,
-    deserializable_little_endian::DeserializableLittleEndian,
     deserializable_internal_order::DeserializableInternalOrder,
-    error_serialization::ErrorSerialization, 
+    deserializable_little_endian::DeserializableLittleEndian,
+    error_serialization::ErrorSerialization,
+    serializable_internal_order::SerializableInternalOrder,
+    serializable_little_endian::SerializableLittleEndian,
 };
 
-use std::io::{
-    Read,
-    Write,
-};
+use std::io::{Read, Write};
 
 use std::cmp::PartialEq;
 
@@ -22,7 +19,6 @@ pub struct TransactionOutput {
 }
 
 impl SerializableInternalOrder for TransactionOutput {
-
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.value.le_serialize(stream)?;
 
@@ -34,7 +30,6 @@ impl SerializableInternalOrder for TransactionOutput {
 }
 
 impl DeserializableInternalOrder for TransactionOutput {
-    
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let value = i64::le_deserialize(stream)?;
         let length_pk_script = CompactSize::le_deserialize(stream)?.value;
@@ -44,9 +39,6 @@ impl DeserializableInternalOrder for TransactionOutput {
             pk_script.push(u8::le_deserialize(stream)?);
         }
 
-        Ok(TransactionOutput { 
-            value, 
-            pk_script
-        })
+        Ok(TransactionOutput { value, pk_script })
     }
 }

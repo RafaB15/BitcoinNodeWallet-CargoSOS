@@ -31,15 +31,14 @@ impl DeserializableBigEndian for Ipv6Addr {
 }
 
 impl DeserializableBigEndian for [u8; 32] {
-
     fn be_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let mut buffer = [0u8; 32];
         if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorSerialization::ErrorInDeserialization(
-                "Deserializing [u8; 32]".to_string()
+                "Deserializing [u8; 32]".to_string(),
             ));
         }
-        
+
         Ok(buffer)
     }
 }

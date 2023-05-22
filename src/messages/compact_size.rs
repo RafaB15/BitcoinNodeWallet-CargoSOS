@@ -1,6 +1,6 @@
 use crate::serialization::{
-    deserializable_little_endian::DeserializableLittleEndian, error_serialization::ErrorSerialization,
-    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
+    error_serialization::ErrorSerialization, serializable_little_endian::SerializableLittleEndian,
 };
 
 use std::io::Write;
@@ -64,7 +64,9 @@ impl DeserializableLittleEndian for CompactSize {
 #[cfg(test)]
 mod tests {
 
-    use super::{CompactSize, DeserializableLittleEndian, ErrorSerialization, SerializableLittleEndian};
+    use super::{
+        CompactSize, DeserializableLittleEndian, ErrorSerialization, SerializableLittleEndian,
+    };
 
     #[test]
     fn test01_serialize_correctly_u8() -> Result<(), ErrorSerialization> {
