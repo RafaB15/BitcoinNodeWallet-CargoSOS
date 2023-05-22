@@ -15,10 +15,8 @@ use crate::messages::{
 use crate::logs::logger_sender::LoggerSender;
 
 use crate::block_structure::{
-    block::Block,
     block_chain::BlockChain,
     block_header::BlockHeader,
-    hash::HashType,
 };
 
 use std::io::{
@@ -34,11 +32,20 @@ pub struct BlockBroadcasting {
 
 impl BlockBroadcasting {
 
+    pub fn new(
+        sender_log: LoggerSender,
+    ) -> Self 
+    {
+        BlockBroadcasting {
+            sender_log,
+        }
+    }
+
     pub fn get_new_headers<RW : Read + Write>(
         &self, 
         peer_stream: &mut RW,
         block_chain: &mut BlockChain,
-    ) -> Result<u32, ErrorNode> {
+    ) -> Result<(u32, Vec<BlockHeader>), ErrorNode> {
         let header_headers_message = match message::deserialize_until_found(
             peer_stream, 
             CommandName::Headers,
@@ -63,8 +70,10 @@ impl BlockBroadcasting {
             )),
         };
 
+        let headers: Vec<BlockHeader> = received_headers_message.headers.clone();
+
         match block_chain.append_headers(received_headers_message.headers) {
-            Ok(count) => Ok(count),
+            Ok(count) => Ok((count, headers)),
             Err(error) => Err(ErrorNode::WhileValidating(
                 format!("Error while appending headers, we get: {:?}", error)
             )),
