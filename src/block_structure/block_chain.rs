@@ -57,7 +57,7 @@ impl BlockChain {
         let mut added_headers = 0;
         for header in headers.iter() {
 
-            if !header.proof_of_work() && false { // cambiar
+            if !header.proof_of_work() {
                 return Err(ErrorBlock::ErrorWithProofOfWork);
             }
 

@@ -335,7 +335,7 @@ fn get_initial_download_headers_first(
             &logger_sender,
         )?;
 
-        let timestamp: u32 = 1684645440; // 1681703228 
+        let timestamp: u32 = 1684645440; // 1681149600 timestamp de la presentación del trabajo práctico
         let list_of_blocks = block_chain.get_blocks_after_timestamp(timestamp)?;
 
         let block_download_peer = block_download.clone();
@@ -547,7 +547,9 @@ fn show_merkle_path(
         last_block.header,  
     ))?;
 
-    let transaction = match last_block.transactions.get(6) {
+    let transaction_position = std::cmp::min::<u64>(6, last_block.header.transaction_count.value - 1);
+
+    let transaction = match last_block.transactions.get(transaction_position as usize) {
         Some(transaction) => transaction,
         None => return Err(ErrorExecution::ErrorBlock("Transaction not found".to_string())),
     };
@@ -563,7 +565,7 @@ fn show_merkle_path(
 
     let mut path: String = "\n".to_string();
     for hash in merkle_path {
-        path = format!("\t{path}{:?}\n", hash);
+        path = format!("{path}\t{:?}\n", hash);
     }
 
     logger_sender.log_connection(format!(
@@ -578,10 +580,11 @@ fn show_utxo_set(
     logger_sender: LoggerSender,
 ) {
 
+    let max_transaction_count: usize = 20;
     let utxo_vec = block_chain.get_utxo();
 
     let mut path: String = "\n".to_string();
-    for utxo in utxo_vec {
+    for utxo in utxo_vec[0..max_transaction_count].to_vec() {
         path = format!("{path}\tTransactionOutput {{ value: {:?} }}\n", utxo.value);
     }
 

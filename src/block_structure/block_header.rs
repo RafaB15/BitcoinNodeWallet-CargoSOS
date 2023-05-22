@@ -93,14 +93,26 @@ impl BlockHeader {
     }
 
     pub fn proof_of_inclusion(&self, transactions: &[Transaction]) -> bool {
-        let merkle_tree: MerkleTree = match MerkleTree::new(transactions){
+        let merkle_tree: MerkleTree = match MerkleTree::new(transactions) {
             Ok(merkle_tree) => merkle_tree,
-            Err(_) => return false,
+            Err(error) => {
+                println!("Error while creating merkle tree: {:?}", error);
+                return false;
+            },
         };
 
         match merkle_tree.get_root(){
-            Ok(root) => root == self.merkle_root_hash,
-            Err(_) => false,
+            Ok(root) => {
+                let resultado = root == self.merkle_root_hash;
+                if !resultado {
+                    println!("Roots are different");
+                }
+                resultado
+            },
+            Err(error) => {
+                println!("Error while getting the root: {:?}", error);
+                false
+            },
         }
     }
 
@@ -115,7 +127,6 @@ impl BlockHeader {
         self.nonce.le_serialize(&mut buffer)?;
 
         let buffer = {
-
             let mut temp: Vec<u8> = Vec::new();
 
             for byte in hash256d(&buffer)?.iter().rev() {
@@ -127,7 +138,7 @@ impl BlockHeader {
 
         let buffer: HashType = match (*buffer.as_slice()).try_into() {
             Ok(buffer) => buffer,
-            Err(_) => return Err(ErrorSerialization::ErrorInSerialization(
+            _ => return Err(ErrorSerialization::ErrorInSerialization(
                 "Error while getting hash 256 d".to_string(),
             )),
         };

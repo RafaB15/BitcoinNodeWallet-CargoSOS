@@ -59,6 +59,7 @@ impl Block {
             Ok(path) => path,
             Err(_) => return Err(ErrorBlock::CouldNotCalculateMerklePath),
         };
+        
         Ok(path)
     }    
 
