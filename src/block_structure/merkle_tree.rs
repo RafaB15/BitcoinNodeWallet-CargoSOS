@@ -24,7 +24,7 @@ impl MerkleTree {
 
         let log_result = (transactions.len() as f64).log2();
         let levels = log_result.ceil() as u32;
-        let initial_count = (2 as usize).pow(levels);
+        let initial_count = (2_usize).pow(levels);
         
         //println!("Initial len {}\nInitial count: {}", transactions.len(), initial_count);
 
@@ -63,13 +63,6 @@ impl MerkleTree {
             tx_ids = tx_ids_combined;
             hashes.extend_from_slice(&tx_ids);
         }
-
-        //la raiz sera el primer elemento del vector
-        /*
-        for hash in hashes.clone() {
-            println!("Hash: {:?}", hash);
-        }
-        */
         
         Ok(MerkleTree {
             hashes,
@@ -114,7 +107,7 @@ impl MerkleTree {
     ///  * `CouldNotWriteTxId` - If the transaction id could not be written (while creating the merkle tree)
     pub fn get_merkle_path(transactions: &[Transaction], target_transaction: Transaction) -> Result<Vec<HashType>,ErrorBlock> {
         
-        let merkle_tree = MerkleTree::new(&transactions)?;
+        let merkle_tree = MerkleTree::new(transactions)?;
         let mut size = merkle_tree.initial_count;
 
         // Find the target transaction index in the block

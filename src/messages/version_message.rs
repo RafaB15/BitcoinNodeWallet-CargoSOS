@@ -21,7 +21,6 @@ use super::{
 
 use std::net::{
     Ipv6Addr, 
-    SocketAddr
 };
 
 use chrono::{
@@ -36,7 +35,6 @@ use std::io::{
 
 use crate::connections::{
     p2p_protocol::ProtocolVersionP2P, 
-    socket_conversion::socket_to_ipv6_port,
 };
 
 #[derive(Debug, std::cmp::PartialEq)]
@@ -53,39 +51,6 @@ pub struct VersionMessage {
     pub user_agent: String,
     pub start_height: i32,
     pub relay: bool,
-}
-
-impl VersionMessage {
-    pub fn new(
-        version: ProtocolVersionP2P,
-        services: BitfieldServices,
-        recv_services: BitfieldServices,
-        recv_socket_addr: &SocketAddr,
-        trans_socket_addr: &SocketAddr,
-        nonce: u64,
-        user_agent: String,
-        start_height: i32,
-        relay: bool,
-    ) -> Self {
-        let timestamp = Utc::now();
-        let (recv_addr, recv_port) = socket_to_ipv6_port(recv_socket_addr);
-        let (trans_addr, trans_port) = socket_to_ipv6_port(trans_socket_addr);
-
-        Self {
-            version,
-            services,
-            timestamp,
-            recv_services,
-            recv_addr,
-            recv_port,
-            trans_addr,
-            trans_port,
-            nonce,
-            user_agent,
-            start_height,
-            relay,
-        }
-    }
 }
 
 impl Message for VersionMessage {

@@ -232,7 +232,7 @@ fn get_peer_header(
             format!("We get: {}", header_count)
         )?;
 
-        if header_count <= 0 {
+        if header_count == 0 {
             break;
         }        
     }
@@ -290,16 +290,14 @@ fn updating_block_chain(
                     blocks.len(),
                 ))?;
 
-                let mut i = 0;
-                for block in blocks {
-                    block_chain.update_block(block)?;
+                for (i, block) in blocks.iter().enumerate() {
+                    block_chain.update_block(block.clone())?;
 
                     if i % 50 == 0 {
                         logger_sender.log_connection(format!(
                             "Loading [{i}] blocks to blockchain",
                         ))?;
                     }
-                    i += 1;
                 }
             },
             _ => return Err(ErrorExecution::FailThread),
@@ -396,7 +394,7 @@ fn get_block_chain(
     Ok(())
 }
 
-fn block_broadcasting(
+fn _block_broadcasting(
     peer_streams: Vec<TcpStream>,
     block_chain: &mut BlockChain,
     logger_sender: LoggerSender, 
@@ -559,9 +557,7 @@ fn show_merkle_path(
         transaction,  
     ))?;
 
-    let merkle_path = last_block.get_merkle_path(
-        &transaction,
-    )?;
+    let merkle_path = last_block.get_merkle_path(transaction)?;
 
     let mut path: String = "\n".to_string();
     for hash in merkle_path {
@@ -584,7 +580,7 @@ fn show_utxo_set(
     let utxo_vec = block_chain.get_utxo();
 
     let mut path: String = "\n".to_string();
-    for utxo in utxo_vec[0..max_transaction_count].to_vec() {
+    for utxo in utxo_vec[0..max_transaction_count].iter().cloned() {
         path = format!("{path}\tTransactionOutput {{ value: {:?} }}\n", utxo.value);
     }
 
@@ -635,7 +631,7 @@ fn program_execution(
     save_block_chain(
         &block_chain, 
         posible_path,
-        logger_sender.clone(),
+        logger_sender,
     )?;
 
     Ok(())

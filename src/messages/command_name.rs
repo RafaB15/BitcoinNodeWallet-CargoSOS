@@ -50,10 +50,10 @@ pub enum CommandName {
     Alert,
 }
 
-impl Into<CommandNameType> for CommandName {
-
-    fn into(self) -> CommandNameType {
-        match self {
+impl From<CommandName> for CommandNameType {
+    
+    fn from(command_name: CommandName) -> CommandNameType {
+        match command_name {
             CommandName::Version => VERSION_NAME,
             CommandName::Verack => VERACK_NAME,
             CommandName::GetHeaders => GET_HEADERS_NAME,

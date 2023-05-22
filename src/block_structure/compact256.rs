@@ -49,6 +49,17 @@ impl From<u32> for Compact256 {
     }
 }
 
+impl From<Compact256> for u32 {
+    fn from(value: Compact256) -> Self {
+        u32::from_be_bytes([
+            value.exponent, 
+            value.mantissa[0], 
+            value.mantissa[1], 
+            value.mantissa[2],
+        ])
+    }
+}
+
 impl TryFrom<HashType> for Compact256 {
     type Error = ErrorSerialization;
 
@@ -83,18 +94,6 @@ impl TryFrom<HashType> for Compact256 {
         }
 
         Ok(Compact256 { mantissa, exponent })
-    }
-}
-
-impl Into<u32> for Compact256 {
-
-    fn into(self) -> u32 {
-        u32::from_be_bytes([
-            self.exponent, 
-            self.mantissa[0], 
-            self.mantissa[1], 
-            self.mantissa[2],
-        ])
     }
 }
 

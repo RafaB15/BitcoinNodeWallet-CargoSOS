@@ -29,10 +29,10 @@ impl std::convert::From<i32> for BlockVersion {
     }
 }
 
-impl std::convert::Into<i32> for BlockVersion {
-
-    fn into(self) -> i32 {
-        self.value
+impl std::convert::From<BlockVersion> for i32 {
+    
+    fn from(block_version: BlockVersion) -> Self {
+        block_version.value
     }
 }
 

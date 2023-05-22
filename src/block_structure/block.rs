@@ -11,7 +11,6 @@ use super::{
 };
 
 use crate::serialization::{
-    serializable_little_endian::SerializableLittleEndian,
     serializable_internal_order::SerializableInternalOrder,
     deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization,
@@ -63,7 +62,7 @@ impl Block {
         Ok(path)
     }    
 
-    pub fn remove_spent_transactions_in_list(&self, utxo: &mut Vec<(TransactionOutput, HashType, u32)>) {
+    pub fn remove_spent_transactions_in_list(&self, utxo: &mut [(TransactionOutput, HashType, u32)]) {
         for transaction in &self.transactions {
             for input in &transaction.tx_in {
                 for (output, transaction_hash, index) in utxo.iter_mut() {
@@ -87,11 +86,8 @@ impl Block {
                 Err(_) => continue,
             };
 
-            let mut index_utxo = 0;
-
-            for output in &transaction.tx_out {
-                utxo.push((output.clone(), hashed_transaction, index_utxo));
-                index_utxo += 1;
+            for (index_utxo, output) in transaction.tx_out.iter().enumerate() {
+                utxo.push((output.clone(), hashed_transaction, index_utxo as u32));
             }
         }
     }

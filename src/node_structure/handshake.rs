@@ -1,6 +1,7 @@
 use crate::connections::{
     p2p_protocol::ProtocolVersionP2P,
     suppored_services::SupportedServices,
+    socket_conversion::socket_to_ipv6_port,
     error_connection::ErrorConnection, 
 };
 
@@ -21,6 +22,10 @@ use crate::messages::{
 
 use std::net::{
     SocketAddr, 
+};
+
+use chrono::{
+    offset::Utc
 };
 
 use std::io::{
@@ -63,17 +68,26 @@ impl Handshake {
         peer_stream: &mut RW
     ) -> Result<(), ErrorMessage>
     {
-        let version_message = VersionMessage::new(
-            self.protocol_version,
-            self.services.clone(),
-            BitfieldServices::new(vec![SupportedServices::NodeNetworkLimited]),
-            potential_peer,
-            local_socket_addr,
-            IGNORE_NONCE,
-            IGNORE_USER_AGENT.to_string(),
-            self.blockchain_height,
-            NO_NEW_TRANSACTIONS,
-        );
+        let timestamp = Utc::now();
+        let (recv_addr, recv_port) = socket_to_ipv6_port(potential_peer);
+        let (trans_addr, trans_port) = socket_to_ipv6_port(local_socket_addr);
+
+        let recv_services = BitfieldServices::new(vec![SupportedServices::NodeNetworkLimited]);
+
+        let version_message = VersionMessage {
+            version: self.protocol_version,
+            services: self.services.clone(),
+            timestamp,
+            recv_services,
+            recv_addr,
+            recv_port,
+            trans_addr,
+            trans_port,
+            nonce: IGNORE_NONCE,
+            user_agent: IGNORE_USER_AGENT.to_string(),
+            start_height: self.blockchain_height,
+            relay: NO_NEW_TRANSACTIONS,
+        };
 
         VersionMessage::serialize_message(
             peer_stream, 
@@ -120,7 +134,7 @@ impl Handshake {
         potential_peer: &SocketAddr,
     ) -> Result<(), ErrorConnection> {
         if let Err(e) = self.send_testnet_version_message(
-            &local_socket,
+            local_socket,
             potential_peer,
             peer_stream,
         ) {
@@ -263,7 +277,7 @@ impl Handshake {
         if let Err(e) = self.attempt_connection_with_testnet_peer(
             peer_stream, 
             local_socket,
-            &potential_peer
+            potential_peer
         ) {
             let _ = self.sender_log.log_connection(
                 format!("Error while trying to connect to peer {}: {:?}", potential_peer, e)

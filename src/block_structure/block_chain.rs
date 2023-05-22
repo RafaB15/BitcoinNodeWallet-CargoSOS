@@ -200,7 +200,7 @@ impl SerializableInternalOrder for BlockChain {
         }
 
         for index_last_block in self.last_blocks.iter() {
-            (index_last_block.clone() as u64).le_serialize(&mut block_chain)?;
+            (*index_last_block as u64).le_serialize(&mut block_chain)?;
         }
         
         let mut header: Vec<u8> = Vec::new();
