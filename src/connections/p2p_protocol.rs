@@ -1,6 +1,6 @@
 use crate::serialization::{
-    deserializable_little_endian::DeserializableLittleEndian, error_serialization::ErrorSerialization,
-    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
+    error_serialization::ErrorSerialization, serializable_little_endian::SerializableLittleEndian,
 };
 
 use super::error_connection::ErrorConnection;
@@ -137,7 +137,10 @@ impl DeserializableLittleEndian for ProtocolVersionP2P {
 #[cfg(test)]
 mod tests {
 
-    use super::{DeserializableLittleEndian, ErrorSerialization, ProtocolVersionP2P, SerializableLittleEndian};
+    use super::{
+        DeserializableLittleEndian, ErrorSerialization, ProtocolVersionP2P,
+        SerializableLittleEndian,
+    };
 
     #[test]
     fn test01_serialize_correctly_protocol_version_p2p() -> Result<(), ErrorSerialization> {

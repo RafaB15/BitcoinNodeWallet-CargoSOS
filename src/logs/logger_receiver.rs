@@ -1,35 +1,31 @@
-use super::{
-    error_log::ErrorLog,
-    level::Level,
-    logger::MessageLog,
-};
+use super::{error_log::ErrorLog, level::Level, logger::MessageLog};
 
-use chrono::{
-    offset::Utc
-};
+use chrono::offset::Utc;
 
-use std::{
-    io::Write,
-    sync::mpsc::Receiver,
-};
-    /// LoggerReceiver manages the log messages that have to be sent to register the operations
-    /// 
-    /// ### Errores
-    ///  * `Error::CouldNotWriteInFile`: Este error va a aparece cuando no se puede agregar más lineas al archivo dado
+use std::{io::Write, sync::mpsc::Receiver};
+/// LoggerReceiver manages the log messages that have to be sent to register the operations
+///
+/// ### Errores
+///  * `Error::CouldNotWriteInFile`: Este error va a aparece cuando no se puede agregar más lineas al archivo dado
 #[derive(Debug)]
 pub struct LoggerReceiver<W: Write> {
     receiver: Receiver<MessageLog>,
     output: W,
     display_in_terminal: bool,
-
 }
 
 impl<W: Write> LoggerReceiver<W> {
     /// Receiver creation from a file path and a channel receiver
-    pub(crate) fn new(output: W, receiver: Receiver<MessageLog>, display_in_terminal: bool) -> Result<Self, ErrorLog> {
-
-        Ok(LoggerReceiver {receiver, output, display_in_terminal })
-
+    pub(crate) fn new(
+        output: W,
+        receiver: Receiver<MessageLog>,
+        display_in_terminal: bool,
+    ) -> Result<Self, ErrorLog> {
+        Ok(LoggerReceiver {
+            receiver,
+            output,
+            display_in_terminal,
+        })
     }
 
     /// Receive the messages sent by `LoggerSender`
@@ -50,7 +46,6 @@ impl<W: Write> LoggerReceiver<W> {
             if self.display_in_terminal {
                 print!("{}", text);
             }
-
         }
 
         Ok(())

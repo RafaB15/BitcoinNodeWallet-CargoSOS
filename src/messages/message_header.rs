@@ -1,21 +1,16 @@
 use crate::serialization::{
-    serializable_little_endian::SerializableLittleEndian,
-    serializable_internal_order::SerializableInternalOrder,
-    deserializable_little_endian::DeserializableLittleEndian,
     deserializable_internal_order::DeserializableInternalOrder,
+    deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization,
+    serializable_internal_order::SerializableInternalOrder,
+    serializable_little_endian::SerializableLittleEndian,
 };
 
-use crate::block_structure::{
-    hash::HashTypeReduced,
-};
+use crate::block_structure::hash::HashTypeReduced;
 
 use super::command_name::CommandName;
 
-use std::io::{
-    Read,
-    Write,
-};
+use std::io::{Read, Write};
 
 const MAGIC_BYTES_SIZE: usize = 4;
 const MASSAGE_TYPE_SIZE: usize = 12;
@@ -35,27 +30,21 @@ pub struct MessageHeader {
 }
 
 impl MessageHeader {
-
-    pub fn deserialize_header(
-        stream: &mut dyn Read,
-    ) -> Result<MessageHeader, ErrorSerialization> 
-    {
+    pub fn deserialize_header(stream: &mut dyn Read) -> Result<MessageHeader, ErrorSerialization> {
         let mut buffer: Vec<u8> = vec![0; HEADER_SIZE];
-    
+
         if stream.read_exact(&mut buffer).is_err() {
             return Err(ErrorSerialization::ErrorWhileReading);
         }
-    
+
         let mut buffer: &[u8] = &buffer[..];
-    
+
         MessageHeader::io_deserialize(&mut buffer)
     }
 }
 
 impl SerializableInternalOrder for MessageHeader {
-    
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-
         self.magic_numbers.io_serialize(stream)?;
         self.command_name.io_serialize(stream)?;
         self.payload_size.le_serialize(stream)?;
@@ -65,9 +54,7 @@ impl SerializableInternalOrder for MessageHeader {
 }
 
 impl DeserializableInternalOrder for MessageHeader {
-    
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        
         Ok(MessageHeader {
             magic_numbers: MagicType::io_deserialize(stream)?,
             command_name: CommandName::io_deserialize(stream)?,

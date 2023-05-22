@@ -30,7 +30,6 @@ impl SerializableBigEndian for Ipv6Addr {
 
 impl SerializableBigEndian for [u8] {
     fn be_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-
         match stream.write(self) {
             Ok(_) => Ok(()),
             _ => Err(ErrorSerialization::ErrorInSerialization(
@@ -50,7 +49,6 @@ impl SerializableBigEndian for Vec<u8> {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

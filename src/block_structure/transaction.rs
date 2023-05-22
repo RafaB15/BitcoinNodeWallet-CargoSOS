@@ -1,27 +1,21 @@
 use super::{
-    hash::{
-        hash256d, 
-        HashType,
-    },
+    error_block::ErrorBlock,
+    hash::{hash256d, HashType},
     transaction_input::TransactionInput,
     transaction_output::TransactionOutput,
-    error_block::ErrorBlock,
 };
 
 use crate::serialization::{
-    serializable_little_endian::SerializableLittleEndian,
+    deserializable_internal_order::DeserializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian,
-    error_serialization::ErrorSerialization, serializable_internal_order::SerializableInternalOrder, deserializable_internal_order::DeserializableInternalOrder,
+    error_serialization::ErrorSerialization,
+    serializable_internal_order::SerializableInternalOrder,
+    serializable_little_endian::SerializableLittleEndian,
 };
 
-use crate::messages::{
-    compact_size::CompactSize, 
-};
+use crate::messages::compact_size::CompactSize;
 
-use std::io::{
-    Read,
-    Write,
-};
+use std::io::{Read, Write};
 
 use std::cmp::PartialEq;
 
@@ -73,11 +67,10 @@ impl Transaction {
             };
         }
         Ok(tx_ids)
-    }        
+    }
 }
 
 impl SerializableInternalOrder for Transaction {
-
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.version.le_serialize(stream)?;
 
@@ -97,10 +90,9 @@ impl SerializableInternalOrder for Transaction {
 }
 
 impl DeserializableInternalOrder for Transaction {
-
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let version = i32::le_deserialize(stream)?;
-        
+
         let length_tx_in = CompactSize::le_deserialize(stream)?.value;
         let mut tx_in: Vec<TransactionInput> = Vec::new();
         for _ in 0..length_tx_in {
@@ -114,12 +106,12 @@ impl DeserializableInternalOrder for Transaction {
         }
 
         let time = u32::le_deserialize(stream)?;
-        
-        Ok(Transaction { 
+
+        Ok(Transaction {
             version,
-            tx_in, 
-            tx_out, 
-            time
+            tx_in,
+            tx_out,
+            time,
         })
     }
 }

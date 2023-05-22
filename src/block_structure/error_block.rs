@@ -38,4 +38,3 @@ pub enum ErrorBlock {
     ///This will appear when the hash in merkle tree could not be found at given index
     NoHashFound,
 }
-

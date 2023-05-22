@@ -1,31 +1,21 @@
 use super::{
-    message::{
-        Message,
-        CHECKSUM_EMPTY_PAYLOAD,
-    },
     command_name::CommandName,
+    message::{Message, CHECKSUM_EMPTY_PAYLOAD},
 };
 
 use crate::serialization::{
-    deserializable_internal_order::DeserializableInternalOrder, 
-    serializable_internal_order::SerializableInternalOrder,
+    deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization,
+    serializable_internal_order::SerializableInternalOrder,
 };
 
-use std::io::{
-    Read, 
-    Write
-};
+use std::io::{Read, Write};
 
 #[derive(Debug, std::cmp::PartialEq)]
 pub struct SendHeadersMessage;
 
 impl Message for SendHeadersMessage {
-
-    fn calculate_checksum(
-        _: &[u8],
-    ) -> Result<[u8; 4], ErrorSerialization> 
-    {
+    fn calculate_checksum(_: &[u8]) -> Result<[u8; 4], ErrorSerialization> {
         Ok(CHECKSUM_EMPTY_PAYLOAD)
     }
 
@@ -35,14 +25,13 @@ impl Message for SendHeadersMessage {
 }
 
 impl SerializableInternalOrder for SendHeadersMessage {
-
     fn io_serialize(&self, _: &mut dyn Write) -> Result<(), ErrorSerialization> {
         Ok(())
     }
 }
 
 impl DeserializableInternalOrder for SendHeadersMessage {
-    fn io_deserialize(_: &mut dyn Read) -> Result<Self, ErrorSerialization> {        
+    fn io_deserialize(_: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         Ok(SendHeadersMessage)
     }
 }

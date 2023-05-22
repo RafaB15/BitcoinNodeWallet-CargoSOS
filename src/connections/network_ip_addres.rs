@@ -1,23 +1,15 @@
 use crate::serialization::{
-    serializable_little_endian::SerializableLittleEndian,
-    serializable_big_endian::SerializableBigEndian,
-    deserializable_little_endian::DeserializableLittleEndian, 
     deserializable_big_endian::DeserializableBigEndian,
-    error_serialization::ErrorSerialization,
+    deserializable_little_endian::DeserializableLittleEndian,
+    error_serialization::ErrorSerialization, serializable_big_endian::SerializableBigEndian,
+    serializable_little_endian::SerializableLittleEndian,
 };
 
-use crate::messages::{
-    bitfield_services::BitfieldServices,
-};  
+use crate::messages::bitfield_services::BitfieldServices;
 
-use std::net::{
-    Ipv6Addr,
-};
+use std::net::Ipv6Addr;
 
-use std::io::{
-    Read,
-    Write,
-};
+use std::io::{Read, Write};
 
 #[derive(Debug)]
 pub struct NetworkIpAddres {
@@ -28,9 +20,7 @@ pub struct NetworkIpAddres {
 }
 
 impl SerializableLittleEndian for NetworkIpAddres {
-    
     fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        
         self.time.le_serialize(stream)?;
         self.services.le_serialize(stream)?;
         self.ip_address.be_serialize(stream)?;
@@ -41,9 +31,7 @@ impl SerializableLittleEndian for NetworkIpAddres {
 }
 
 impl DeserializableLittleEndian for NetworkIpAddres {
-
     fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-
         Ok(NetworkIpAddres {
             time: u32::le_deserialize(stream)?,
             services: BitfieldServices::le_deserialize(stream)?,

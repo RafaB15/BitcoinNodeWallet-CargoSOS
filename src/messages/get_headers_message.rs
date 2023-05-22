@@ -1,27 +1,18 @@
 use crate::connections::p2p_protocol::ProtocolVersionP2P;
 
-use super::{
-    compact_size::CompactSize,
-    message::Message,
-    command_name::CommandName,
-};
+use super::{command_name::CommandName, compact_size::CompactSize, message::Message};
 
 use crate::serialization::{
-    serializable_little_endian::SerializableLittleEndian,
-    serializable_internal_order::SerializableInternalOrder,
-    deserializable_little_endian::DeserializableLittleEndian,
     deserializable_internal_order::DeserializableInternalOrder,
+    deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization,
+    serializable_internal_order::SerializableInternalOrder,
+    serializable_little_endian::SerializableLittleEndian,
 };
 
-use std::io::{
-    Read,
-    Write,
-};
+use std::io::{Read, Write};
 
-use crate::block_structure::hash::{
-    HashType,
-};
+use crate::block_structure::hash::HashType;
 
 pub struct GetHeadersMessage {
     pub version: ProtocolVersionP2P,
@@ -44,14 +35,12 @@ impl GetHeadersMessage {
 }
 
 impl Message for GetHeadersMessage {
-
     fn get_command_name() -> CommandName {
         CommandName::GetHeaders
     }
 }
 
 impl SerializableInternalOrder for GetHeadersMessage {
-
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.version.le_serialize(stream)?;
         CompactSize::new(self.header_locator_hashes.len() as u64).le_serialize(stream)?;
@@ -66,7 +55,6 @@ impl SerializableInternalOrder for GetHeadersMessage {
 }
 
 impl DeserializableInternalOrder for GetHeadersMessage {
-
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let version = ProtocolVersionP2P::le_deserialize(stream)?;
         let size = CompactSize::le_deserialize(stream)?;
@@ -79,10 +67,10 @@ impl DeserializableInternalOrder for GetHeadersMessage {
 
         let stop_hash = HashType::le_deserialize(stream)?;
 
-        Ok(GetHeadersMessage { 
-            version, 
+        Ok(GetHeadersMessage {
+            version,
             header_locator_hashes,
-            stop_hash
+            stop_hash,
         })
     }
 }
@@ -91,15 +79,8 @@ impl DeserializableInternalOrder for GetHeadersMessage {
 mod tests {
 
     use super::{
-        GetHeadersMessage,
-        ProtocolVersionP2P,
-        CompactSize,
-        
-        SerializableLittleEndian,
-        SerializableInternalOrder,
-        ErrorSerialization, 
-        
-        HashType,
+        CompactSize, ErrorSerialization, GetHeadersMessage, HashType, ProtocolVersionP2P,
+        SerializableInternalOrder, SerializableLittleEndian,
     };
 
     #[test]
@@ -118,11 +99,7 @@ mod tests {
         }
         stop_hash.le_serialize(&mut expected_stream)?;
 
-        let get_headers_message = GetHeadersMessage::new(
-            version,
-            header_locator_hash,
-            stop_hash,
-        );
+        let get_headers_message = GetHeadersMessage::new(version, header_locator_hash, stop_hash);
 
         let mut stream: Vec<u8> = Vec::new();
         get_headers_message.io_serialize(&mut stream)?;

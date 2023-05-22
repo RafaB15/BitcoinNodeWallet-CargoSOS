@@ -1,13 +1,9 @@
 use crate::serialization::{
-    serializable_little_endian::SerializableLittleEndian,
     deserializable_little_endian::DeserializableLittleEndian,
-    error_serialization::ErrorSerialization,
+    error_serialization::ErrorSerialization, serializable_little_endian::SerializableLittleEndian,
 };
 
-use std::io::{
-    Read,
-    Write,
-};
+use std::io::{Read, Write};
 
 const ERROR_VALUE: u32 = 0x00;
 const TRANSACTION_ID_VALUE: u32 = 0x01;
@@ -34,7 +30,6 @@ pub enum TypeIdentifier {
 }
 
 impl SerializableLittleEndian for TypeIdentifier {
-
     fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         let value: u32 = match self {
             TypeIdentifier::Error => ERROR_VALUE,
@@ -50,16 +45,16 @@ impl SerializableLittleEndian for TypeIdentifier {
         };
 
         match value.le_serialize(stream) {
-            Err(_) => Err(ErrorSerialization::ErrorInSerialization(
-                format!("While serializing the type identifier {:?}", self)
-            )),
+            Err(_) => Err(ErrorSerialization::ErrorInSerialization(format!(
+                "While serializing the type identifier {:?}",
+                self
+            ))),
             _ => Ok(()),
         }
     }
 }
 
 impl DeserializableLittleEndian for TypeIdentifier {
-
     fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let value = u32::le_deserialize(stream)?;
 
@@ -76,7 +71,7 @@ impl DeserializableLittleEndian for TypeIdentifier {
             PLACE_HOLDER_VALUE => {
                 println!("We get a placeholder");
                 Ok(TypeIdentifier::PlaceHolder)
-            },
+            }
             _ => Err(ErrorSerialization::ErrorInDeserialization(format!(
                 "While deserializing the type identifier, we get: {}",
                 value,

@@ -29,9 +29,7 @@ pub enum ErrorMessage {
 impl From<ErrorSerialization> for ErrorMessage {
     fn from(value: ErrorSerialization) -> Self {
         match value {
-            ErrorSerialization::ErrorInSerialization(error) => {
-                ErrorMessage::InSerialization(error)
-            }
+            ErrorSerialization::ErrorInSerialization(error) => ErrorMessage::InSerialization(error),
             ErrorSerialization::ErrorInDeserialization(error) => {
                 ErrorMessage::InDeserialization(error)
             }

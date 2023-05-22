@@ -1,6 +1,6 @@
 use crate::serialization::{
-    deserializable_little_endian::DeserializableLittleEndian, error_serialization::ErrorSerialization,
-    serializable_little_endian::SerializableLittleEndian,
+    deserializable_little_endian::DeserializableLittleEndian,
+    error_serialization::ErrorSerialization, serializable_little_endian::SerializableLittleEndian,
 };
 
 use crate::connections::suppored_services::SupportedServices;
@@ -96,7 +96,8 @@ impl DeserializableLittleEndian for BitfieldServices {
 mod tests {
 
     use super::{
-        BitfieldServices, DeserializableLittleEndian, ErrorSerialization, SerializableLittleEndian, SupportedServices,
+        BitfieldServices, DeserializableLittleEndian, ErrorSerialization, SerializableLittleEndian,
+        SupportedServices,
     };
 
     #[test]

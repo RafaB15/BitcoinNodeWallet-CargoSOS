@@ -1,6 +1,6 @@
 use super::{
     error_block::ErrorBlock,
-    hash::{HashType, hash256d},
+    hash::{hash256d, HashType},
     transaction::Transaction,
 };
 
@@ -12,10 +12,9 @@ pub struct MerkleTree {
 }
 
 impl MerkleTree {
-
     ///Creates a new Merkle Tree from a list of transactions
-    /// 
-    /// 
+    ///
+    ///
     /// ### Errors
     ///  * `CouldNotWriteTxId` - If the transaction id could not be written
     ///  * `CouldNotGetVecTxIds` - If the transaction id vector could not be obtained
@@ -24,8 +23,8 @@ impl MerkleTree {
 
         let log_result = (transactions.len() as f64).log2();
         let levels = log_result.ceil() as u32;
-        let initial_count = (2 as usize).pow(levels);
-        
+        let initial_count = (2_usize).pow(levels);
+
         //println!("Initial len {}\nInitial count: {}", transactions.len(), initial_count);
 
         let mut tx_ids: Vec<HashType> = Transaction::get_vec_txids(transactions)?;
@@ -41,7 +40,6 @@ impl MerkleTree {
         let mut hashes: Vec<HashType> = tx_ids.clone();
 
         for _ in 0..levels {
-
             let mut tx_ids_combined: Vec<HashType> = Vec::new();
             for (i, combined) in tx_ids.iter().enumerate().step_by(2) {
                 // Concatenar dos hashes
@@ -64,13 +62,6 @@ impl MerkleTree {
             hashes.extend_from_slice(&tx_ids);
         }
 
-        //la raiz sera el primer elemento del vector
-        /*
-        for hash in hashes.clone() {
-            println!("Hash: {:?}", hash);
-        }
-        */
-        
         Ok(MerkleTree {
             hashes,
             initial_count,
@@ -79,11 +70,10 @@ impl MerkleTree {
 
     /// Returns the root of the Merkle Tree
     /// It will be at the first position of the vector
-    /// 
+    ///
     /// ### Errors
     ///    * `RootHashNotFound` - If the root hash could not be found
     pub fn get_root(&self) -> Result<HashType, ErrorBlock> {
-
         let hashes: Vec<HashType> = self.hashes.clone();
         let root: HashType = match hashes.last() {
             Some(root) => *root,
@@ -93,11 +83,10 @@ impl MerkleTree {
     }
 
     /// Returns the hash at the given index
-    /// 
+    ///
     /// ### Errors
     ///   * `NoHashFound` - If the hash could not be found
     pub fn get_hash_at(&self, index: usize) -> Result<HashType, ErrorBlock> {
-
         let hashes: Vec<HashType> = self.hashes.clone();
         let hash: HashType = match hashes.get(index) {
             Some(hash) => *hash,
@@ -107,25 +96,27 @@ impl MerkleTree {
     }
 
     /// Returns the merkle path of the given transaction
-    /// 
+    ///
     /// ### Errors
     ///  * `TransactionNotFound` - If the transaction could not be found
     ///  * `NoHashFound` - If the hash could not be found
     ///  * `CouldNotWriteTxId` - If the transaction id could not be written (while creating the merkle tree)
-    pub fn get_merkle_path(transactions: &[Transaction], target_transaction: Transaction) -> Result<Vec<HashType>,ErrorBlock> {
-        
-        let merkle_tree = MerkleTree::new(&transactions)?;
+    pub fn get_merkle_path(
+        transactions: &[Transaction],
+        target_transaction: Transaction,
+    ) -> Result<Vec<HashType>, ErrorBlock> {
+        let merkle_tree = MerkleTree::new(transactions)?;
         let mut size = merkle_tree.initial_count;
 
         // Find the target transaction index in the block
         let mut target_index = match transactions
             .iter()
-            .position(|transaction| *transaction == target_transaction) 
+            .position(|transaction| *transaction == target_transaction)
         {
             Some(target_index) => target_index,
             None => return Err(ErrorBlock::TransactionNotFound),
         };
-        
+
         let mut merkle_path: Vec<HashType> = Vec::new();
 
         while size > 1 {
@@ -133,18 +124,13 @@ impl MerkleTree {
                 true => target_index + 1,
                 false => target_index - 1,
             };
-            
+
             merkle_path.push(merkle_tree.get_hash_at(sibling_index)?);
 
             target_index = size + target_index / 2;
             size /= 2;
         }
-        
+
         Ok(merkle_path)
     }
 }
-
-
-
-
-

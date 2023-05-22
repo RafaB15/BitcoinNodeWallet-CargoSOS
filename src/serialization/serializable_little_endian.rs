@@ -32,7 +32,7 @@ impl SerializableLittleEndian for i64 {
 impl SerializableLittleEndian for u8 {
     fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         let bytes = [*self];
-        let bytes: &[u8] = bytes.as_slice(); 
+        let bytes: &[u8] = bytes.as_slice();
         match stream.write(bytes) {
             Ok(_) => Ok(()),
             _ => Err(ErrorSerialization::ErrorInSerialization(
@@ -77,12 +77,11 @@ impl SerializableLittleEndian for u64 {
 
 impl SerializableLittleEndian for Vec<u8> {
     fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        
         let mut little_endian: Vec<u8> = Vec::new();
         for byte in self.iter().rev() {
             little_endian.push(*byte);
         }
-        
+
         match stream.write(little_endian.as_slice()) {
             Ok(_) => Ok(()),
             _ => Err(ErrorSerialization::ErrorInSerialization(
@@ -94,7 +93,6 @@ impl SerializableLittleEndian for Vec<u8> {
 
 impl SerializableLittleEndian for [u8] {
     fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-
         let mut little_endian: Vec<u8> = Vec::new();
         for byte in self.iter().rev() {
             little_endian.push(*byte);
@@ -229,9 +227,7 @@ mod tests {
         let expected_stream: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19];
 
         let mut stream: Vec<u8> = Vec::new();
-        let vector: Vec<u8> = vec![
-            0x19, 0xDE, 0xBD, 0x01, 0xC7, 
-        ];
+        let vector: Vec<u8> = vec![0x19, 0xDE, 0xBD, 0x01, 0xC7];
 
         vector.le_serialize(&mut stream)?;
 
@@ -245,9 +241,7 @@ mod tests {
         let expected_stream: Vec<u8> = vec![0xC7, 0x01, 0xBD, 0xDE, 0x19];
 
         let mut stream: Vec<u8> = Vec::new();
-        let vector: [u8; 5] = [
-            0x19, 0xDE, 0xBD, 0x01, 0xC7, 
-        ];
+        let vector: [u8; 5] = [0x19, 0xDE, 0xBD, 0x01, 0xC7];
 
         vector.le_serialize(&mut stream)?;
 

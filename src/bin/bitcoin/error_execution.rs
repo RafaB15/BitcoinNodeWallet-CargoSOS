@@ -1,13 +1,11 @@
 use super::error_initialization::ErrorInitialization;
 
 use cargosos_bitcoin::{
-    configurations::error_configuration::ErrorConfiguration,
-    connections::error_connection::ErrorConnection,
-    logs::error_log::ErrorLog,
-    messages::error_message::ErrorMessage,
-    serialization::error_serialization::ErrorSerialization,
     block_structure::error_block::ErrorBlock,
-    node_structure::error_node::ErrorNode,
+    configurations::error_configuration::ErrorConfiguration,
+    connections::error_connection::ErrorConnection, logs::error_log::ErrorLog,
+    messages::error_message::ErrorMessage, node_structure::error_node::ErrorNode,
+    serialization::error_serialization::ErrorSerialization,
 };
 
 use std::fmt::{Debug, Error, Formatter};
@@ -31,11 +29,17 @@ pub enum ErrorExecution {
 impl Debug for ErrorExecution {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         match self {
-            ErrorExecution::Initialization(error_initialization) => write!(f, "{:?}", error_initialization),
+            ErrorExecution::Initialization(error_initialization) => {
+                write!(f, "{:?}", error_initialization)
+            }
             ErrorExecution::Log(error_log) => write!(f, "{:?}", error_log),
-            ErrorExecution::Configuration(error_configuration) => write!(f, "{:?}", error_configuration),
+            ErrorExecution::Configuration(error_configuration) => {
+                write!(f, "{:?}", error_configuration)
+            }
             ErrorExecution::Connection(error_connection) => write!(f, "{:?}", error_connection),
-            ErrorExecution::Serialization(error_serialization) => write!(f, "{:?}", error_serialization),
+            ErrorExecution::Serialization(error_serialization) => {
+                write!(f, "{:?}", error_serialization)
+            }
             ErrorExecution::Message(error_message) => write!(f, "{:?}", error_message),
             ErrorExecution::Block(error_block) => write!(f, "{:?}", error_block),
             ErrorExecution::Node(error_node) => write!(f, "{:?}", error_node),
