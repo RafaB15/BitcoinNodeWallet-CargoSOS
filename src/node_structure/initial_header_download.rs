@@ -36,18 +36,18 @@ const TESTNET_MAGIC_NUMBERS: [u8; 4] = [0x0b, 0x11, 0x09, 0x07];
 const NO_STOP_HASH: HashType = [0; 32];
 
 #[derive(Debug, Clone)]
-pub struct InitialBlockDownload {
+pub struct InitialHeaderDownload {
     pub protocol_version: ProtocolVersionP2P,
     sender_log: LoggerSender,
 }
 
-impl InitialBlockDownload {
+impl InitialHeaderDownload {
     pub fn new(
         protocol_version: ProtocolVersionP2P,
         sender_log: LoggerSender,
     ) -> Self 
     {
-        InitialBlockDownload {
+        InitialHeaderDownload {
             protocol_version,
             sender_log,
         }
@@ -89,43 +89,10 @@ impl InitialBlockDownload {
         Ok(())
     }
 
-    fn add_headers_to_blockchain(
-        &self, 
-        block_chain: &mut BlockChain, 
-        received_headers_message: &HeadersMessage
-    ) -> Result<u32,ErrorNode> 
-    {
-        let _ = self.sender_log.log_connection(
-            "Adding headers to the blockchain".to_string()    
-        );
-
-        let mut added_headers = 0;
-        for header in received_headers_message.headers.iter() {
-
-            if !header.proof_of_work() && false { // cambiar
-                return Err(ErrorNode::WhileValidating("Error while validating proof of work".to_string()));
-            }
-
-            match block_chain.append_header(*header) {
-                Ok(_) => added_headers += 1,
-                Err(error) => {
-                    let _ = self.sender_log.log_connection(format!(
-                        "Could not append header, we get {:?}\nWith hash {:?}", 
-                        error,
-                        header.previous_block_header_hash,
-                    ));
-                    break;                    
-                }
-            }
-        }
-
-        Ok(added_headers)
-    }
-
     pub fn get_headers<RW : Read + Write>(
         &self, 
         peer_stream: &mut RW, 
-        block_chain: &mut BlockChain
+        block_chain: &mut BlockChain,
     ) -> Result<u32, ErrorNode>
     {
         let _ = self.sender_log.log_connection(
@@ -158,6 +125,15 @@ impl InitialBlockDownload {
             )),
         };
 
-        Ok(self.add_headers_to_blockchain(block_chain, &received_headers_message)?)
+        let _ = self.sender_log.log_connection(
+            "Adding headers to the blockchain".to_string()    
+        );
+
+        match block_chain.append_headers(received_headers_message.headers) {
+            Ok(count) => Ok(count),
+            Err(error) => Err(ErrorNode::WhileValidating(
+                format!("Error while appending headers, we get: {:?}", error)
+            )),
+        }
     }
 }
