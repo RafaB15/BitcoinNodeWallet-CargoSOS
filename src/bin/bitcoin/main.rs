@@ -295,7 +295,7 @@ fn get_initial_download_headers_first(
             &logger_sender,
         )?;
 
-        let timestamp: u32 = 1684135440; // 1681703228 
+        let timestamp: u32 = 1684645440; // 1681703228 
         let list_of_blocks = block_chain.get_blocks_after_timestamp(timestamp)?;
 
         let block_download_peer = block_download.clone();
@@ -547,6 +547,17 @@ fn main() -> Result<(), ErrorExecution> {
             logger_sender.clone(),
         )?;
         get_block_chain(peer_streams, &mut block_chain, logger_sender.clone())?;
+
+        show_merkle_path(
+            &block_chain,
+            logger_sender.clone(),
+        )?;
+
+        show_utxo_set(
+            &block_chain, 
+            logger_sender.clone(),
+        );
+
     }
         
     logger_sender.log_configuration("Closing program".to_string())?;
