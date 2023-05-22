@@ -601,14 +601,14 @@ fn program_execution(
         logger_sender.clone(),
     );
 
-    let peer_count_max: usize = 3;
-    
-    let potential_peers = get_potential_peers(
-        peer_count_max,
-        logger_sender.clone(),
-    )?;
-    
-    let peer_streams = connect_to_testnet_peers(potential_peers, logger_sender.clone())?;
+        let peer_count_max: usize = 2;
+        
+        let potential_peers = get_potential_peers(
+            peer_count_max,
+            logger_sender.clone(),
+        )?;
+        
+        let peer_streams = connect_to_testnet_peers(potential_peers, logger_sender.clone())?;
 
     let mut block_chain = match block_chain_handle.join() {
         Ok(block_chain) => block_chain?,
