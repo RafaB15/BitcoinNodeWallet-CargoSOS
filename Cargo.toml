@@ -9,6 +9,10 @@ edition = "2021"
 name = "bitcoin"
 src = "bitcoin/main.rs"
 
+[[bin]]
+name = "demo"
+src = "demo/main.rs"
+
 [dependencies]
 chrono = "0.4.24"
 bitcoin_hashes = "0.12.0"
