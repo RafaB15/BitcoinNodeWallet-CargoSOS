@@ -1,0 +1,145 @@
+Time: [1684795750s]: [CONFIGURATION] Logs are already configured
+Time: [1684795750s]: [CONNECTION] Getting potential peers with dns seeder
+Time: [1684795750s]: [CONNECTION] Reading the blockchain from file
+Time: [1684795750s]: [CONNECTION] Potential peer: 13.231.203.177:18333
+Time: [1684795750s]: [CONNECTION] Potential peer: 85.214.146.194:18333
+Time: [1684795750s]: [CONNECTION] Potential peer: 135.181.79.230:18333
+Time: [1684795750s]: [CONNECTION] Potential peer: 79.137.67.110:18333
+Time: [1684795750s]: [CONNECTION] Potential peer: 195.201.126.87:18333
+Time: [1684795750s]: [CONNECTION] Connecting to potential peers
+Time: [1684795751s]: [CONNECTION] Version message sent to peer 13.231.203.177:18333
+Time: [1684795751s]: [CONNECTION] Error while receiving version message from peer 13.231.203.177:18333: ErrorInDeserialization("Checksum [232, 42, 168, 37] in Version  isn't the same as receive: [203, 236, 8, 159]")
+Time: [1684795751s]: [CONNECTION] Error while trying to exchange version messages with peer 13.231.203.177:18333: ErrorCannotReceiveMessage
+Time: [1684795751s]: [CONNECTION] Error while trying to connect to peer 13.231.203.177:18333: ErrorCannotConnectToAddress
+Time: [1684795751s]: [CONNECTION] Error while connecting to addres: 13.231.203.177:18333, it appear ErrorCannotConnectToAddress
+Time: [1684795752s]: [CONNECTION] Version message sent to peer 85.214.146.194:18333
+Time: [1684795752s]: [CONNECTION] Error while receiving version message from peer 85.214.146.194:18333: ErrorInDeserialization("Checksum [67, 118, 17, 188] in Version  isn't the same as receive: [250, 56, 119, 215]")
+Time: [1684795752s]: [CONNECTION] Error while trying to exchange version messages with peer 85.214.146.194:18333: ErrorCannotReceiveMessage
+Time: [1684795752s]: [CONNECTION] Error while trying to connect to peer 85.214.146.194:18333: ErrorCannotConnectToAddress
+Time: [1684795752s]: [CONNECTION] Error while connecting to addres: 85.214.146.194:18333, it appear ErrorCannotConnectToAddress
+Time: [1684795752s]: [CONNECTION] Version message sent to peer 135.181.79.230:18333
+Time: [1684795753s]: [CONNECTION] Version message exchange with peer 135.181.79.230:18333 finished successfully
+Time: [1684795753s]: [CONNECTION] Verack message sent to peer 135.181.79.230:18333
+Time: [1684795753s]: [CONNECTION] Verack message exchange with peer 135.181.79.230:18333 finished successfully
+Time: [1684795753s]: [CONNECTION] Send headers message sent to peer 135.181.79.230:18333
+Time: [1684795753s]: [CONNECTION] Connection with peer 135.181.79.230:18333 established
+Time: [1684795753s]: [CONNECTION] Version message sent to peer 79.137.67.110:18333
+Time: [1684795754s]: [CONNECTION] Version message exchange with peer 79.137.67.110:18333 finished successfully
+Time: [1684795754s]: [CONNECTION] Verack message sent to peer 79.137.67.110:18333
+Time: [1684795754s]: [CONNECTION] Verack message exchange with peer 79.137.67.110:18333 finished successfully
+Time: [1684795754s]: [CONNECTION] Send headers message sent to peer 79.137.67.110:18333
+Time: [1684795754s]: [CONNECTION] Connection with peer 79.137.67.110:18333 established
+Time: [1684795754s]: [CONNECTION] Version message sent to peer 195.201.126.87:18333
+Time: [1684795755s]: [CONNECTION] Version message exchange with peer 195.201.126.87:18333 finished successfully
+Time: [1684795755s]: [CONNECTION] Verack message sent to peer 195.201.126.87:18333
+Time: [1684795755s]: [CONNECTION] Verack message exchange with peer 195.201.126.87:18333 finished successfully
+Time: [1684795755s]: [CONNECTION] Send headers message sent to peer 195.201.126.87:18333
+Time: [1684795755s]: [CONNECTION] Connection with peer 195.201.126.87:18333 established
+Time: [1684795755s]: [CONNECTION] Blockchain loaded from file
+Time: [1684795755s]: [CONNECTION] Getting block chain
+Time: [1684795755s]: [CONNECTION] Getting initial download headers first
+Time: [1684795755s]: [CONNECTION] Connecting to peer: TcpStream { addr: 10.71.101.32:62933, peer: 135.181.79.230:18333, socket: 400 }
+Time: [1684795755s]: [CONNECTION] Sending get headers message
+Time: [1684795755s]: [CONNECTION] Serializing last headers from blockchain
+Time: [1684795755s]: [CONNECTION] Sending the message
+Time: [1684795756s]: [CONNECTION] Receiving headers message
+Time: [1684795756s]: [CONNECTION] We get: 386
+Time: [1684795756s]: [CONNECTION] Sending get headers message
+Time: [1684795756s]: [CONNECTION] Serializing last headers from blockchain
+Time: [1684795756s]: [CONNECTION] Sending the message
+Time: [1684795757s]: [CONNECTION] Receiving headers message
+Time: [1684795757s]: [CONNECTION] We get: 0
+Time: [1684795757s]: [CONNECTION] Connecting to peer: TcpStream { addr: 10.71.101.32:62935, peer: 79.137.67.110:18333, socket: 396 }
+Time: [1684795757s]: [CONNECTION] Sending get headers message
+Time: [1684795757s]: [CONNECTION] Serializing last headers from blockchain
+Time: [1684795757s]: [CONNECTION] Sending the message
+Time: [1684795757s]: [CONNECTION] Getting data
+Time: [1684795757s]: [CONNECTION] Downloading 369 blocks
+Time: [1684795757s]: [CONNECTION] Getting blocks [0]
+Time: [1684795758s]: [CONNECTION] Receiving headers message
+Time: [1684795758s]: [CONNECTION] We get: 0
+Time: [1684795758s]: [CONNECTION] Connecting to peer: TcpStream { addr: 10.71.101.32:62936, peer: 195.201.126.87:18333, socket: 352 }
+Time: [1684795758s]: [CONNECTION] Sending get headers message
+Time: [1684795758s]: [CONNECTION] Serializing last headers from blockchain
+Time: [1684795758s]: [CONNECTION] Sending the message
+Time: [1684795758s]: [CONNECTION] Getting data
+Time: [1684795758s]: [CONNECTION] Downloading 369 blocks
+Time: [1684795758s]: [CONNECTION] Getting blocks [0]
+Time: [1684795758s]: [CONNECTION] Receiving headers message
+Time: [1684795758s]: [CONNECTION] We get: 0
+Time: [1684795758s]: [CONNECTION] Finish downloading, loading to blockchain
+Time: [1684795758s]: [CONNECTION] Getting data
+Time: [1684795758s]: [CONNECTION] Downloading 369 blocks
+Time: [1684795758s]: [CONNECTION] Getting blocks [0]
+Time: [1684795759s]: [CONNECTION] Getting blocks [100]
+Time: [1684795760s]: [CONNECTION] Getting blocks [100]
+Time: [1684795761s]: [CONNECTION] Getting blocks [200]
+Time: [1684795761s]: [CONNECTION] Getting blocks [200]
+Time: [1684795762s]: [CONNECTION] Getting blocks [300]
+Time: [1684795763s]: [CONNECTION] Getting blocks [100]
+Time: [1684795763s]: [CONNECTION] Getting blocks [300]
+Time: [1684795765s]: [CONNECTION] Loading 369 blocks to blockchain
+Time: [1684795765s]: [CONNECTION] Loading [0] blocks to blockchain
+Time: [1684795766s]: [CONNECTION] Getting blocks [200]
+Time: [1684795766s]: [CONNECTION] Loading [50] blocks to blockchain
+Time: [1684795768s]: [CONNECTION] Loading [100] blocks to blockchain
+Time: [1684795768s]: [CONNECTION] Loading [150] blocks to blockchain
+Time: [1684795769s]: [CONNECTION] Getting blocks [300]
+Time: [1684795769s]: [CONNECTION] Loading [200] blocks to blockchain
+Time: [1684795770s]: [CONNECTION] Loading [250] blocks to blockchain
+Time: [1684795770s]: [CONNECTION] Loading [300] blocks to blockchain
+Time: [1684795770s]: [CONNECTION] Loading [350] blocks to blockchain
+Time: [1684795770s]: [CONNECTION] Finish downloading, loading to blockchain
+Time: [1684795770s]: [CONNECTION] Loading 369 blocks to blockchain
+Time: [1684795770s]: [CONNECTION] Loading [0] blocks to blockchain
+Time: [1684795772s]: [CONNECTION] Loading [50] blocks to blockchain
+Time: [1684795773s]: [CONNECTION] Loading [100] blocks to blockchain
+Time: [1684795774s]: [CONNECTION] Loading [150] blocks to blockchain
+Time: [1684795774s]: [CONNECTION] Loading [200] blocks to blockchain
+Time: [1684795775s]: [CONNECTION] Loading [250] blocks to blockchain
+Time: [1684795775s]: [CONNECTION] Loading [300] blocks to blockchain
+Time: [1684795775s]: [CONNECTION] Loading [350] blocks to blockchain
+Time: [1684795775s]: [CONNECTION] Finish downloading, loading to blockchain
+Time: [1684795775s]: [CONNECTION] Loading 369 blocks to blockchain
+Time: [1684795775s]: [CONNECTION] Loading [0] blocks to blockchain
+Time: [1684795777s]: [CONNECTION] Loading [50] blocks to blockchain
+Time: [1684795778s]: [CONNECTION] Loading [100] blocks to blockchain
+Time: [1684795779s]: [CONNECTION] Loading [150] blocks to blockchain
+Time: [1684795779s]: [CONNECTION] Loading [200] blocks to blockchain
+Time: [1684795780s]: [CONNECTION] Loading [250] blocks to blockchain
+Time: [1684795780s]: [CONNECTION] Loading [300] blocks to blockchain
+Time: [1684795780s]: [CONNECTION] Loading [350] blocks to blockchain
+Time: [1684795780s]: [CONNECTION] With the block with header: 
+BlockHeader { version: BlockVersion { value: 536870912 }, previous_block_header_hash: [0, 0, 0, 0, 0, 0, 0, 7, 190, 31, 37, 118, 109, 166, 74, 198, 79, 82, 167, 192, 68, 31, 75, 188, 237, 52, 200, 10, 234, 164, 130, 174], merkle_root_hash: [112, 129, 27, 69, 111, 134, 198, 221, 236, 159, 133, 171, 26, 149, 97, 150, 235, 25, 11, 55, 217, 189, 180, 60, 144, 14, 39, 190, 147, 76, 195, 115], time: 1684794862, n_bits: Compact256 { mantissa: [39, 202, 140], exponent: 25 }, nonce: 1097207285, transaction_count: CompactSize { value: 15 } }
+Time: [1684795780s]: [CONNECTION] And transaction: 
+Transaction { version: 1, tx_in: [TransactionInput { previous_output: Outpoint { hash: [200, 243, 107, 106, 103, 213, 125, 145, 1, 106, 171, 232, 84, 97, 73, 28, 214, 139, 241, 165, 40, 146, 178, 118, 34, 242, 197, 155, 37, 113, 216, 179], index: 3 }, signature_script: [], sequence: 4294967295 }, TransactionInput { previous_output: Outpoint { hash: [164, 19, 252, 198, 49, 0, 8, 152, 171, 133, 246, 43, 168, 176, 185, 208, 195, 153, 240, 113, 225, 100, 194, 94, 134, 231, 124, 140, 87, 138, 65, 133], index: 0 }, signature_script: [], sequence: 4294967295 }], tx_out: [TransactionOutput { value: 371991, pk_script: [0, 20, 80, 236, 229, 26, 158, 163, 228, 183, 122, 215, 239, 1, 33, 6, 121, 69, 9, 125, 79, 130] }, TransactionOutput { value: 371991, pk_script: [0, 20, 26, 178, 33, 138, 241, 254, 116, 208, 66, 165, 165, 165, 219, 249, 25, 142, 177, 245, 106, 49] }, TransactionOutput { value: 1331427, pk_script: [0, 20, 51, 250, 134, 130, 86, 192, 218, 232, 99, 74, 94, 34, 110, 167, 160, 119, 205, 205, 34, 37] }], time: 0 }
+Time: [1684795780s]: [CONNECTION] We get the merkle path: 
+	[14, 57, 229, 43, 204, 143, 0, 206, 250, 9, 236, 209, 5, 144, 7, 160, 198, 50, 63, 5, 227, 34, 197, 131, 255, 76, 165, 172, 201, 61, 24, 5]
+	[37, 162, 126, 49, 87, 17, 97, 115, 126, 255, 234, 141, 22, 38, 104, 228, 110, 12, 58, 32, 113, 218, 243, 96, 208, 75, 239, 192, 55, 212, 2, 56]
+	[243, 29, 216, 219, 142, 99, 163, 12, 9, 150, 185, 93, 102, 227, 42, 244, 77, 68, 143, 57, 118, 3, 48, 117, 12, 250, 14, 161, 102, 106, 45, 104]
+	[49, 208, 176, 97, 231, 234, 156, 157, 118, 7, 118, 237, 94, 34, 166, 30, 122, 80, 241, 154, 36, 51, 252, 236, 168, 9, 212, 26, 74, 222, 9, 247]
+
+Time: [1684795809s]: [CONNECTION] We get the merkle path: 
+	TransactionOutput { value: 0 }
+	TransactionOutput { value: 0 }
+	TransactionOutput { value: 1207357 }
+	TransactionOutput { value: 10000 }
+	TransactionOutput { value: 10000 }
+	TransactionOutput { value: 10000 }
+	TransactionOutput { value: 10000 }
+	TransactionOutput { value: 1000 }
+	TransactionOutput { value: 1000 }
+	TransactionOutput { value: 1000 }
+	TransactionOutput { value: 22088821 }
+	TransactionOutput { value: 9571 }
+	TransactionOutput { value: 0 }
+	TransactionOutput { value: 10000 }
+	TransactionOutput { value: 10000 }
+	TransactionOutput { value: 0 }
+	TransactionOutput { value: 500 }
+	TransactionOutput { value: 500 }
+	TransactionOutput { value: 1 }
+	TransactionOutput { value: 5282 }
+
+Time: [1684795809s]: [CONNECTION] No path to save the blockchain
+Time: [1684795810s]: [CONFIGURATION] Closing program

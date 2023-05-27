@@ -15,4 +15,4 @@ Cargo.lock
 
 .vscode/
 src/bin/bitcoin/logs.txt
-src/bin/bitcoin/blockchain.raw
+*.raw
