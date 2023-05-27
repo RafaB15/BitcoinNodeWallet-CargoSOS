@@ -5,6 +5,8 @@ use super::{
     address::Address,
 };
 
+use crate::block_structure::transaction_output::TransactionOutput;
+
 pub struct Account {
     pub account_name: String,
     pub private_key: PrivateKey,
@@ -25,5 +27,15 @@ impl Account {
             public_key,
             address,
         })
+    }
+
+    /// Returns true if the account owns the given utxo (works for P2PKH) and false otherwise.
+    pub fn verify_transaction_ownership(&self, utxo: TransactionOutput) -> bool {
+        let pk_script = utxo.pk_script.clone();
+        if pk_script.len() != 25 {
+            return false;
+        }
+        let hashed_pk = &pk_script[3..23];
+        hashed_pk == self.address.extract_hashed_pk()
     }
 }
