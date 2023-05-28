@@ -1,5 +1,6 @@
 mod error_execution;
 mod error_initialization;
+mod configuration;
 
 use std::net::{SocketAddr, TcpStream};
 
@@ -11,9 +12,10 @@ use std::thread::{self, JoinHandle};
 
 use error_execution::ErrorExecution;
 use error_initialization::ErrorInitialization;
+use configuration::Configuration;
 
 use cargosos_bitcoin::configurations::{
-    configuration::config, connection_config::ConnectionConfig, log_config::LogConfig,
+    connection_config::ConnectionConfig, log_config::LogConfig,
 };
 
 use cargosos_bitcoin::logs::{error_log::ErrorLog, logger, logger_sender::LoggerSender};
@@ -33,7 +35,7 @@ use cargosos_bitcoin::block_structure::{
 };
 
 use cargosos_bitcoin::connections::{
-    dns_seeder::DNSSeeder, initial_download_method::InitialDownloadMethod,
+    dns_seeder::DNSSeeder, ibd_methods::IBDMethod,
     p2p_protocol::ProtocolVersionP2P, suppored_services::SupportedServices,
 };
 
@@ -309,7 +311,7 @@ fn get_block_chain(
 ) -> Result<(), ErrorExecution> {
     logger_sender.log_connection("Getting block chain".to_string())?;
 
-    let method = InitialDownloadMethod::HeadersFirst;
+    let method = IBDMethod::HeaderFirst;
 
     let header_download =
         InitialHeaderDownload::new(ProtocolVersionP2P::V70015, logger_sender.clone());
@@ -317,7 +319,7 @@ fn get_block_chain(
     let block_download = BlockDownload::new(logger_sender.clone());
 
     match method {
-        InitialDownloadMethod::HeadersFirst => {
+        IBDMethod::HeaderFirst => {
             get_initial_download_headers_first(
                 peer_streams,
                 block_chain,
@@ -326,7 +328,7 @@ fn get_block_chain(
                 logger_sender,
             )?;
         }
-        InitialDownloadMethod::BlocksFirst => todo!(),
+        IBDMethod::BlocksFirst => todo!(),
     }
 
     Ok(())
@@ -535,7 +537,9 @@ fn main() -> Result<(), ErrorExecution> {
 
     let config_name: String = get_config_name(arguments)?;
     let config_file = open_config_file(config_name)?;
-    let (log_config, connection_config) = config::new(config_file)?;
+    
+    let configuration = Configuration::new(config_file)?;
+    let (log_config, connection_config) = configuration.separate();
 
     let (handle, logger_sender) = initialize_logs(log_config)?;
 
