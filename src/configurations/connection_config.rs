@@ -1,16 +1,30 @@
-use super::deserializable::deserialize;
-use super::deserializable_structure::DeserializeStructure;
-use super::error_configuration::ErrorConfiguration;
-use crate::connections::{ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P};
-use std::collections::HashMap;
-use std::net::IpAddr;
+use super::{
+    parsable::{
+        Parsable,
+        KeyValueMap,
+        value_from_map,
+        parse_structure,
+    },
+    error_configuration::ErrorConfiguration,
+};
+
+use crate::connections::{
+    ibd_methods::IBDMethod, 
+    p2p_protocol::ProtocolVersionP2P,
+};
+
+use std::{
+    net::IpAddr,
+    cmp::PartialEq,
+};
 
 const DNS_ADDRESS: &str = "dns_address";
 const P2P_PROTOCOL_VERSION: &str = "p2p_protocol_version";
 const IBD_METHOD: &str = "ibd_method";
 
-#[derive(Debug, std::cmp::PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct ConnectionConfig {
+
     ///Es la dirección IP del DNS de donde obtendremos las IP addresses de otros nodos
     pub dns_address: IpAddr,
     /// Es la versión del protocolo peer to peer que se planea utilizar
@@ -19,17 +33,19 @@ pub struct ConnectionConfig {
     pub ibd_method: IBDMethod,
 }
 
-impl<'d> DeserializeStructure<'d> for ConnectionConfig {
-    type Value = ConnectionConfig;
+impl Parsable for ConnectionConfig {
 
-    fn new(settings_dictionary: HashMap<String, String>) -> Result<Self, ErrorConfiguration> {
+    fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
+        let structure = value_from_map(name.to_string(), map)?;
+        let map = parse_structure(structure)?;
+
         Ok(ConnectionConfig {
-            dns_address: deserialize::<IpAddr>(DNS_ADDRESS, &settings_dictionary)?,
-            p2p_protocol_version: deserialize::<ProtocolVersionP2P>(
+            dns_address: IpAddr::parse(DNS_ADDRESS, &map)?,
+            p2p_protocol_version: ProtocolVersionP2P::parse(
                 P2P_PROTOCOL_VERSION,
-                &settings_dictionary,
+                &map,
             )?,
-            ibd_method: deserialize::<IBDMethod>(IBD_METHOD, &settings_dictionary)?,
+            ibd_method: IBDMethod::parse(IBD_METHOD, &map)?,
         })
     }
 }

@@ -2,9 +2,9 @@ use super::error_configuration::ErrorConfiguration;
 use std::collections::HashMap;
 
 /// It's a way to ensure the correct creation of a configuration structure
-pub(super) trait DeserializeStructure<'d> {
-    type Value;
-
+pub(super) trait DeserializeStructure<'d>
+    where Self : Sized
+{
     /// Returns the parse structure of a given property name
     ///
     /// ### Errors
@@ -12,7 +12,7 @@ pub(super) trait DeserializeStructure<'d> {
     fn deserializar(
         name: &str,
         estructura_dictionary: &'d HashMap<String, Vec<String>>,
-    ) -> Result<Self::Value, ErrorConfiguration> {
+    ) -> Result<Self, ErrorConfiguration> {
         let nombre = format!("[{}]", name);
 
         if let Some(valor) = estructura_dictionary.get(nombre.as_str()) {
@@ -25,7 +25,7 @@ pub(super) trait DeserializeStructure<'d> {
 
     /// Creation of the structure given
     fn new(settings_dictionary: HashMap<String, String>)
-        -> Result<Self::Value, ErrorConfiguration>;
+        -> Result<Self, ErrorConfiguration>;
 }
 
 /// Returns the key-values pair for all the configuration of a given structure

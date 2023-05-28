@@ -1,4 +1,4 @@
-pub mod config {
+/*pub mod config {
 
     use crate::configurations::{
         connection_config::ConnectionConfig, deserializable_structure::DeserializeStructure,
@@ -248,3 +248,4 @@ mod tests {
         );
     }
 }
+*/

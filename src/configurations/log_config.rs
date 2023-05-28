@@ -1,23 +1,34 @@
-use super::deserializable::deserialize;
-use super::deserializable_structure::DeserializeStructure;
-use super::error_configuration::ErrorConfiguration;
-use std::collections::HashMap;
+use super::{
+    parsable::{
+        Parsable,
+        KeyValueMap,
+        value_from_map,
+        parse_structure,
+    },
+    error_configuration::ErrorConfiguration,
+};
+
+use std::{
+    cmp::PartialEq,
+};
 
 const FILEPATH_LOG: &str = "filepath_log";
 
 /// Configuration for the logs process
-#[derive(Debug, std::cmp::PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct LogConfig {
     /// The file path to where to write the logs message
     pub filepath_log: String,
 }
 
-impl<'d> DeserializeStructure<'d> for LogConfig {
-    type Value = LogConfig;
+impl Parsable for LogConfig {
 
-    fn new(settings_dictionary: HashMap<String, String>) -> Result<Self, ErrorConfiguration> {
+    fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
+        let structure = value_from_map(name.to_string(), map)?;
+        let map = parse_structure(structure)?;
+
         Ok(LogConfig {
-            filepath_log: deserialize::<String>(FILEPATH_LOG, &settings_dictionary)?,
+            filepath_log: String::parse(FILEPATH_LOG, &map)?,
         })
     }
 }
