@@ -38,28 +38,13 @@ impl Parsable for ConnectionConfig {
         let structure = value_from_map(name.to_string(), map)?;
         let map = parse_structure(structure)?;
 
-        println!("{:?}", map);
-
-        println!("{DNS_SEEDER}");
-        let dns_seeder = DNSSeeder::parse(DNS_SEEDER, &map)?;
-        println!("{P2P_PROTOCOL_VERSION}");
-        let p2p_protocol_version = ProtocolVersionP2P::parse(P2P_PROTOCOL_VERSION, &map)?;
-        println!("{IBD_METHOD}");
-        let ibd_method =IBDMethod::parse(IBD_METHOD, &map)?;
-        println!("{PEER_COUNT_MAX}");
-        let peer_count_max = usize::parse(PEER_COUNT_MAX, &map)?;
-        println!("{BLOCK_HEIGHT}");
-        let block_height = i32::parse(BLOCK_HEIGHT, &map)?;
-        println!("{SERVICES}");
-        let services = BitfieldServices::parse(SERVICES, &map)?;
-
         Ok(ConnectionConfig {
-            dns_seeder,
-            p2p_protocol_version,
-            ibd_method,
-            peer_count_max,
-            block_height,
-            services,
+            dns_seeder: DNSSeeder::parse(DNS_SEEDER, &map)?,
+            p2p_protocol_version: ProtocolVersionP2P::parse(P2P_PROTOCOL_VERSION, &map)?,
+            ibd_method: IBDMethod::parse(IBD_METHOD, &map)?,
+            peer_count_max: usize::parse(PEER_COUNT_MAX, &map)?,
+            block_height: i32::parse(BLOCK_HEIGHT, &map)?,
+            services: BitfieldServices::parse(SERVICES, &map)?,
         })
     }
 }
