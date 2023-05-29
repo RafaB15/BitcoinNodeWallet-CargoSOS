@@ -1,9 +1,6 @@
 use super::error_configuration::ErrorConfiguration;
 
-use std::{
-    collections::HashMap,
-    str::FromStr,
-};
+use std::{collections::HashMap, str::FromStr};
 
 pub type Key = String;
 pub type Value = String;
@@ -11,7 +8,8 @@ pub type Value = String;
 pub type KeyValueMap = HashMap<Key, Value>;
 
 pub trait Parsable
-    where Self : Sized
+where
+    Self: Sized,
 {
     fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration>;
 }
@@ -21,17 +19,13 @@ pub fn parse_structure(value: Value) -> Result<KeyValueMap, ErrorConfiguration> 
 
     let mut extend: bool = false;
     let text: Vec<String> = value
-        .split(|character| {
-            match extend {
-                true => {
-                    character == '}'
-                },
-                false => {
-                    if character == '{' {
-                        extend = true;
-                    }
-                    character == '=' || character == '\n'
-                },
+        .split(|character| match extend {
+            true => character == '}',
+            false => {
+                if character == '{' {
+                    extend = true;
+                }
+                character == '=' || character == '\n'
             }
         })
         .map(|valor| valor.to_string().replace('{', ""))
@@ -56,11 +50,11 @@ pub fn value_from_map(key: Key, map: &KeyValueMap) -> Result<Value, ErrorConfigu
     }
 }
 
-impl<V> Parsable for V 
-    where V : FromStr
-{    
+impl<V> Parsable for V
+where
+    V: FromStr,
+{
     fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
-
         let value = value_from_map(name.to_string(), map)?;
         match value.parse::<V>() {
             Ok(parse_value) => Ok(parse_value),
@@ -68,4 +62,3 @@ impl<V> Parsable for V
         }
     }
 }
-

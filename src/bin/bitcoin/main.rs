@@ -1,6 +1,6 @@
+mod configuration;
 mod error_execution;
 mod error_initialization;
-mod configuration;
 
 use std::net::{SocketAddr, TcpStream};
 
@@ -10,9 +10,9 @@ use std::fs::{File, OpenOptions};
 
 use std::thread::{self, JoinHandle};
 
+use configuration::Configuration;
 use error_execution::ErrorExecution;
 use error_initialization::ErrorInitialization;
-use configuration::Configuration;
 
 use cargosos_bitcoin::configurations::{
     connection_config::ConnectionConfig, log_config::LogConfig,
@@ -35,8 +35,8 @@ use cargosos_bitcoin::block_structure::{
 };
 
 use cargosos_bitcoin::connections::{
-    dns_seeder::DNSSeeder, ibd_methods::IBDMethod,
-    p2p_protocol::ProtocolVersionP2P, suppored_services::SupportedServices,
+    dns_seeder::DNSSeeder, ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P,
+    suppored_services::SupportedServices,
 };
 
 use cargosos_bitcoin::messages::bitfield_services::BitfieldServices;
@@ -537,7 +537,7 @@ fn main() -> Result<(), ErrorExecution> {
 
     let config_name: String = get_config_name(arguments)?;
     let config_file = open_config_file(config_name)?;
-    
+
     let configuration = Configuration::new(config_file)?;
     let (log_config, connection_config) = configuration.separate();
 

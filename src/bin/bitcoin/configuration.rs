@@ -1,11 +1,8 @@
 use cargosos_bitcoin::configurations::{
-    log_config::LogConfig,
     connection_config::ConnectionConfig,
-    parsable::{
-        Parsable,
-        parse_structure,
-    },
     error_configuration::ErrorConfiguration,
+    log_config::LogConfig,
+    parsable::{parse_structure, Parsable},
 };
 
 use std::io::Read;
@@ -19,9 +16,7 @@ pub struct Configuration {
 }
 
 impl Configuration {
-
-    pub fn new<R : Read>(mut stream: R) -> Result<Self, ErrorConfiguration> {
-        
+    pub fn new<R: Read>(mut stream: R) -> Result<Self, ErrorConfiguration> {
         let mut value = String::new();
         if stream.read_to_string(&mut value).is_err() {
             return Err(ErrorConfiguration::ErrorReadableError);
