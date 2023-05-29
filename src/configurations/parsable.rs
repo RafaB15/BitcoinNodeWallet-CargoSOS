@@ -19,8 +19,32 @@ pub trait Parsable
 pub fn parse_structure(value: Value) -> Result<KeyValueMap, ErrorConfiguration> {
     let mut map: KeyValueMap = HashMap::new();
 
-    let mut lines: Vec<String> = Vec::new();
-    value.split('\n').for_each(|line| lines.push(line.to_string()));
+    let mut extend: bool = false;
+    let text: Vec<String> = value
+        .split(|character| {
+            match extend {
+                true => {
+                    character == '}'
+                },
+                false => {
+                    if character == '{' {
+                        extend = true;
+                    }
+                    character == '=' || character == '\n'
+                },
+            }
+        })
+        .map(|valor| valor.to_string().replace('{', ""))
+        .collect();
+
+    for (i, key) in text.iter().enumerate().step_by(2) {
+        let value = match text.get(i + 1) {
+            Some(value) => value,
+            None => continue,
+        };
+
+        map.insert(key.trim().to_string(), value.trim().to_string());
+    }
 
     Ok(map)
 }

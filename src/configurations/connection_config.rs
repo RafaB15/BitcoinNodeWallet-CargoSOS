@@ -49,3 +49,106 @@ impl Parsable for ConnectionConfig {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::connections::{ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P};
+
+    use std::net::{IpAddr, Ipv4Addr};
+
+    #[test]
+    fn test01_accept_valid_input() {
+        let configuration = "connection = {
+            dns_address = 127.0.0.1
+            p2p_protocol_version = V70015
+            ibd_method = HeaderFirst
+        }";
+
+        let name = "connection";
+        let map = parse_structure(configuration.to_string()).unwrap();
+
+        let connection_result = ConnectionConfig::parse(name, &map);
+
+        let config_connection = ConnectionConfig {
+            dns_address: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
+            p2p_protocol_version: ProtocolVersionP2P::V70015,
+            ibd_method: IBDMethod::HeaderFirst,
+        };
+
+        assert_eq!(Ok(config_connection), connection_result);
+    }
+
+    #[test]
+    fn test02_accepts_input_with_empty_spaces() {
+        let configuration = "connection = {
+            dns_address =                           127.0.0.1
+                      p2p_protocol_version = V70015
+            ibd_method=                                 HeaderFirst
+        }";
+
+        let name = "connection";
+        let map = parse_structure(configuration.to_string()).unwrap();
+
+        let connection_result = ConnectionConfig::parse(name, &map);
+
+        let config_connection = ConnectionConfig {
+            dns_address: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
+            p2p_protocol_version: ProtocolVersionP2P::V70015,
+            ibd_method: IBDMethod::HeaderFirst,
+        };
+
+        assert_eq!(Ok(config_connection), connection_result);
+    }
+
+    #[test]
+    fn test03_does_not_accept_input_with_missing_values() {
+        let configuration = "connection = {
+            dns_address = 127.0.0.1
+            p2p_protocol_version = V70015
+        }";
+
+        let name = "connection";
+        let map = parse_structure(configuration.to_string()).unwrap();
+
+        let connection_result = ConnectionConfig::parse(name, &map);
+
+        assert_eq!(Err(ErrorConfiguration::ErrorReadableError), connection_result);
+    }
+
+    #[test]
+    fn test04_accept_input_with_duplicate_value() {
+        let configuration = "connection = {
+            dns_address = 127.0.0.1
+            p2p_protocol_version = V70015
+            ibd_method = HeaderFirst
+            ibd_method = HeaderFirst
+        }";
+
+        let name = "connection";
+        let map = parse_structure(configuration.to_string()).unwrap();
+
+        let connection_result = ConnectionConfig::parse(name, &map);
+
+        let config_connection = ConnectionConfig {
+            dns_address: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
+            p2p_protocol_version: ProtocolVersionP2P::V70015,
+            ibd_method: IBDMethod::HeaderFirst,
+        };
+
+        assert_eq!(Ok(config_connection), connection_result);
+    }
+
+    #[test]
+    fn test05_does_not_accept_input_with_not_information() {
+        let configuration = "";
+
+        let name = "connection";
+        let map = parse_structure(configuration.to_string()).unwrap();
+
+        let connection_result = ConnectionConfig::parse(name, &map);
+
+        assert_eq!(Err(ErrorConfiguration::ErrorReadableError), connection_result);
+    }    
+}
