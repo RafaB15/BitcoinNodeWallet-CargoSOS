@@ -5,6 +5,13 @@ use crate::serialization::{
     error_serialization::ErrorSerialization, serializable_little_endian::SerializableLittleEndian,
 };
 
+use crate::configurations::{
+    error_configuration::ErrorConfiguration,
+    parsable::{value_from_map, KeyValueMap, Parsable},
+};
+
+use std::{cmp::PartialEq, convert::TryFrom, convert::TryInto, str::FromStr};
+
 const NODE_UNNAME: u64 = 0x00;
 const NODE_NETWORK: u64 = 0x01;
 const NODE_GET_UTXO: u64 = 0x02;
@@ -14,7 +21,7 @@ const NODE_XTHIN: u64 = 0x10;
 const NODE_NETWORK_LIMITED: u64 = 0x0400;
 
 ///
-#[derive(Debug, std::cmp::PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum SupportedServices {
     Unname,
     NodeNetwork,
@@ -26,15 +33,36 @@ pub enum SupportedServices {
 }
 
 ///Implementación del trait que permite hacer parse
-impl std::str::FromStr for SupportedServices {
+impl FromStr for SupportedServices {
     type Err = ErrorConnection;
 
-    fn from_str(_: &str) -> Result<Self, Self::Err> {
-        Err(ErrorConnection::ErrorInvalidInputParse)
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
+            "Unname" => Ok(SupportedServices::Unname),
+            "NodeNetwork" => Ok(SupportedServices::NodeNetwork),
+            "NodeGetUTXO" => Ok(SupportedServices::NodeGetUTXO),
+            "NodeBloom" => Ok(SupportedServices::NodeBloom),
+            "NodeWitness" => Ok(SupportedServices::NodeWitness),
+            "NodeXThin" => Ok(SupportedServices::NodeXThin),
+            "NodeNetworkLimited" => Ok(SupportedServices::NodeNetworkLimited),
+            _ => Err(ErrorConnection::ErrorInvalidInputParse),
+        }
     }
 }
 
-impl std::convert::TryFrom<u64> for SupportedServices {
+impl Parsable for SupportedServices {
+    fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
+        let value = value_from_map(name.to_string(), map)?;
+        match value.parse::<SupportedServices>() {
+            Ok(value) => Ok(value),
+            _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
+                "Supported services of {:?}", value
+            ))),
+        }
+    }
+}
+
+impl TryFrom<u64> for SupportedServices {
     type Error = ErrorConnection;
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
@@ -51,7 +79,7 @@ impl std::convert::TryFrom<u64> for SupportedServices {
     }
 }
 
-impl std::convert::TryInto<u64> for SupportedServices {
+impl TryInto<u64> for SupportedServices {
     type Error = ErrorConnection;
 
     fn try_into(self) -> Result<u64, Self::Error> {

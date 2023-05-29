@@ -1,11 +1,18 @@
+use super::error_connection::ErrorConnection;
+
 use crate::serialization::{
     deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization, serializable_little_endian::SerializableLittleEndian,
 };
 
-use super::error_connection::ErrorConnection;
+use crate::configurations::{
+    error_configuration::ErrorConfiguration,
+    parsable::{value_from_map, KeyValueMap, Parsable},
+};
 
-#[derive(Debug, std::cmp::PartialEq, Copy, Clone)]
+use std::{cmp::PartialEq, str::FromStr};
+
+#[derive(Debug, PartialEq, Copy, Clone)]
 ///Enum que representa la versión del protocolo P2P que se va a utilizar
 pub enum ProtocolVersionP2P {
     V70016,
@@ -26,11 +33,11 @@ pub enum ProtocolVersionP2P {
     V106,
 }
 ///Implementación del trait que permite hacer parse
-impl std::str::FromStr for ProtocolVersionP2P {
+impl FromStr for ProtocolVersionP2P {
     type Err = ErrorConnection;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
             "V70016" => Ok(ProtocolVersionP2P::V70016),
             "V70015" => Ok(ProtocolVersionP2P::V70015),
             "V70014" => Ok(ProtocolVersionP2P::V70014),
@@ -52,6 +59,17 @@ impl std::str::FromStr for ProtocolVersionP2P {
     }
 }
 
+impl Parsable for ProtocolVersionP2P {
+    fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
+        let value = value_from_map(name.to_string(), map)?;
+        match value.parse::<ProtocolVersionP2P>() {
+            Ok(value) => Ok(value),
+            _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
+                "protocol version p2p of {:?}", value
+            ))),
+        }
+    }
+}
 /// Implementación del trait try_from que permite convertir a i32
 impl std::convert::TryFrom<i32> for ProtocolVersionP2P {
     type Error = ErrorConnection;
