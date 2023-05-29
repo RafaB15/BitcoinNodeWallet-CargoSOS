@@ -15,7 +15,8 @@ use error_execution::ErrorExecution;
 use error_initialization::ErrorInitialization;
 
 use cargosos_bitcoin::configurations::{
-    connection_config::ConnectionConfig, log_config::LogConfig,
+    connection_config::ConnectionConfig, download_config::DownloadConfig, log_config::LogConfig,
+    save_config::SaveConfig,
 };
 
 use cargosos_bitcoin::logs::{error_log::ErrorLog, logger, logger_sender::LoggerSender};
@@ -34,12 +35,7 @@ use cargosos_bitcoin::block_structure::{
     block::Block, block_chain::BlockChain, block_header::BlockHeader, hash::HashType,
 };
 
-use cargosos_bitcoin::connections::{
-    dns_seeder::DNSSeeder, ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P,
-    suppored_services::SupportedServices,
-};
-
-use cargosos_bitcoin::messages::bitfield_services::BitfieldServices;
+use cargosos_bitcoin::connections::ibd_methods::IBDMethod;
 
 /// Get the configuration name given the arguments
 ///
@@ -100,7 +96,8 @@ fn initialize_logs(
 
     let filepath_log = Path::new(&log_config.filepath_log);
     let log_file = open_log_file(filepath_log)?;
-    let (logger_sender, logger_receiver) = logger::initialize_logger(log_file, true)?;
+    let (logger_sender, logger_receiver) =
+        logger::initialize_logger(log_file, log_config.show_console)?;
 
     let handle = thread::spawn(move || logger_receiver.receive_log());
 
@@ -110,15 +107,14 @@ fn initialize_logs(
 }
 
 fn get_potential_peers(
-    peer_count_max: usize,
+    connection_config: ConnectionConfig,
     logger_sender: LoggerSender,
 ) -> Result<Vec<SocketAddr>, ErrorExecution> {
     logger_sender.log_connection("Getting potential peers with dns seeder".to_string())?;
 
-    let dns_seeder = DNSSeeder::new("seed.testnet.bitcoin.sprovoost.nl", 18333);
-    let potential_peers = dns_seeder.discover_peers()?;
+    let potential_peers = connection_config.dns_seeder.discover_peers()?;
 
-    let peer_count_max = std::cmp::min(peer_count_max, potential_peers.len());
+    let peer_count_max = std::cmp::min(connection_config.peer_count_max, potential_peers.len());
 
     let potential_peers = potential_peers[0..peer_count_max].to_vec();
 
@@ -131,14 +127,15 @@ fn get_potential_peers(
 
 fn connect_to_testnet_peers(
     potential_peers: Vec<SocketAddr>,
+    connection_config: ConnectionConfig,
     logger_sender: LoggerSender,
 ) -> Result<Vec<TcpStream>, ErrorExecution> {
     logger_sender.log_connection("Connecting to potential peers".to_string())?;
 
     let node = Handshake::new(
-        ProtocolVersionP2P::V70015,
-        BitfieldServices::new(vec![SupportedServices::Unname]),
-        0,
+        connection_config.p2p_protocol_version,
+        connection_config.services,
+        connection_config.block_height,
         logger_sender.clone(),
     );
 
@@ -265,6 +262,7 @@ fn get_initial_download_headers_first(
     block_chain: &mut BlockChain,
     header_download: InitialHeaderDownload,
     block_download: BlockDownload,
+    download_config: DownloadConfig,
     logger_sender: LoggerSender,
 ) -> Result<(), ErrorExecution> {
     logger_sender.log_connection("Getting initial download headers first".to_string())?;
@@ -283,8 +281,7 @@ fn get_initial_download_headers_first(
             &logger_sender,
         )?;
 
-        let timestamp: u32 = 1684645440; // 1681149600 timestamp de la presentación del trabajo práctico
-        let list_of_blocks = block_chain.get_blocks_after_timestamp(timestamp)?;
+        let list_of_blocks = block_chain.get_blocks_after_timestamp(download_config.timestamp)?;
 
         let block_download_peer = block_download.clone();
 
@@ -307,24 +304,27 @@ fn get_initial_download_headers_first(
 fn get_block_chain(
     peer_streams: Vec<TcpStream>,
     block_chain: &mut BlockChain,
+    connection_config: ConnectionConfig,
+    download_config: DownloadConfig,
     logger_sender: LoggerSender,
 ) -> Result<(), ErrorExecution> {
     logger_sender.log_connection("Getting block chain".to_string())?;
 
-    let method = IBDMethod::HeaderFirst;
-
-    let header_download =
-        InitialHeaderDownload::new(ProtocolVersionP2P::V70015, logger_sender.clone());
+    let header_download = InitialHeaderDownload::new(
+        connection_config.p2p_protocol_version,
+        logger_sender.clone(),
+    );
 
     let block_download = BlockDownload::new(logger_sender.clone());
 
-    match method {
+    match connection_config.ibd_method {
         IBDMethod::HeaderFirst => {
             get_initial_download_headers_first(
                 peer_streams,
                 block_chain,
                 header_download,
                 block_download,
+                download_config,
                 logger_sender,
             )?;
         }
@@ -416,7 +416,7 @@ fn get_initial_block_chain(
 
 fn save_block_chain(
     block_chain: &BlockChain,
-    posible_path: Option<&Path>,
+    posible_path: Option<String>,
     logger_sender: LoggerSender,
 ) -> Result<(), ErrorExecution> {
     let path = match posible_path {
@@ -499,32 +499,40 @@ fn show_utxo_set(block_chain: &BlockChain, logger_sender: LoggerSender) {
 }
 
 fn program_execution(
-    _connection_config: ConnectionConfig,
+    connection_config: ConnectionConfig,
+    download_config: DownloadConfig,
+    save_config: SaveConfig,
     logger_sender: LoggerSender,
 ) -> Result<(), ErrorExecution> {
-    let posible_path: Option<String> = Some("src/bin/bitcoin/blockchain.raw".to_string());
-    let block_chain_handle = get_initial_block_chain(posible_path, logger_sender.clone());
+    let block_chain_handle =
+        get_initial_block_chain(save_config.read_block_chain, logger_sender.clone());
 
-    let peer_count_max: usize = 5;
+    let potential_peers = get_potential_peers(connection_config.clone(), logger_sender.clone())?;
 
-    let potential_peers = get_potential_peers(peer_count_max, logger_sender.clone())?;
-
-    let peer_streams = connect_to_testnet_peers(potential_peers, logger_sender.clone())?;
+    let peer_streams = connect_to_testnet_peers(
+        potential_peers,
+        connection_config.clone(),
+        logger_sender.clone(),
+    )?;
 
     let mut block_chain = match block_chain_handle.join() {
         Ok(block_chain) => block_chain?,
         _ => return Err(ErrorExecution::FailThread),
     };
 
-    get_block_chain(peer_streams, &mut block_chain, logger_sender.clone())?;
+    get_block_chain(
+        peer_streams,
+        &mut block_chain,
+        connection_config,
+        download_config,
+        logger_sender.clone(),
+    )?;
 
     show_merkle_path(&block_chain, logger_sender.clone())?;
 
     show_utxo_set(&block_chain, logger_sender.clone());
 
-    //let posible_path: Option<&Path> = Some(Path::new("src/bin/bitcoin/blockchain.raw"));
-    let posible_path: Option<&Path> = None;
-    save_block_chain(&block_chain, posible_path, logger_sender)?;
+    save_block_chain(&block_chain, save_config.write_block_chain, logger_sender)?;
 
     Ok(())
 }
@@ -539,11 +547,16 @@ fn main() -> Result<(), ErrorExecution> {
     let config_file = open_config_file(config_name)?;
 
     let configuration = Configuration::new(config_file)?;
-    let (log_config, connection_config) = configuration.separate();
+    let (log_config, connection_config, download_config, save_config) = configuration.separate();
 
     let (handle, logger_sender) = initialize_logs(log_config)?;
 
-    program_execution(connection_config, logger_sender.clone())?;
+    program_execution(
+        connection_config,
+        download_config,
+        save_config,
+        logger_sender.clone(),
+    )?;
 
     logger_sender.log_configuration("Closing program".to_string())?;
 
