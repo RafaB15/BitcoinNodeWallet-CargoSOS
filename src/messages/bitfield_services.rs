@@ -5,6 +5,11 @@ use crate::serialization::{
 
 use crate::connections::suppored_services::SupportedServices;
 
+use crate::configurations::{
+    error_configuration::ErrorConfiguration,
+    parsable::{value_from_map, KeyValueMap, Parsable},
+};
+
 use std::{cmp::PartialEq, convert::TryInto};
 
 #[derive(Debug, Clone)]
@@ -35,6 +40,37 @@ impl PartialEq for BitfieldServices {
         });
 
         are_equal
+    }
+}
+
+impl Parsable for BitfieldServices {
+    fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
+        let value = value_from_map(name.to_string(), map)?;
+
+        if let (Some(primero), Some(ultimo)) = (value.find('['), value.find(']')) {
+            let value = &value[primero + 1..ultimo];
+            let services: Vec<String> = value
+                .split(",")
+                .map(|service| service.trim().to_string())
+                .collect();
+
+            let mut elements: Vec<SupportedServices> = Vec::new();
+
+            for service in services {
+                match service.parse::<SupportedServices>() {
+                    Ok(value) => elements.push(value),
+                    _ => return Err(ErrorConfiguration::ErrorCantParseValue(format!(
+                        "suppored services of {:?} in bitfield", service
+                    ))),
+                }
+            }
+
+            return Ok(BitfieldServices { elements });
+        }
+
+        Err(ErrorConfiguration::ErrorCantParseValue(format!(
+            "bitfield of {:?}", value
+        )))
     }
 }
 
@@ -95,10 +131,9 @@ impl DeserializableLittleEndian for BitfieldServices {
 #[cfg(test)]
 mod tests {
 
-    use super::{
-        BitfieldServices, DeserializableLittleEndian, ErrorSerialization, SerializableLittleEndian,
-        SupportedServices,
-    };
+    use super::*;
+
+    use crate::configurations::parsable::parse_structure;
 
     #[test]
     fn test01_serialize_correctly_bitfield_services() -> Result<(), ErrorSerialization> {
@@ -134,5 +169,24 @@ mod tests {
         assert_eq!(expected_services, services);
 
         Ok(())
+    }
+
+    #[test]
+    fn test03_accept_valid_input() {
+        let configuration = "services = [Unname, NodeNetwork]";
+
+        let name = "services";
+        let map = parse_structure(configuration.to_string()).unwrap();
+
+        let bitfield_result = BitfieldServices::parse(name, &map);
+
+        let expected_bitfield = BitfieldServices {
+            elements: vec![
+                SupportedServices::Unname,
+                SupportedServices::NodeNetwork,
+            ],
+        };
+
+        assert_eq!(Ok(expected_bitfield), bitfield_result);
     }
 }

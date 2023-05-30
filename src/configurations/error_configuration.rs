@@ -5,7 +5,7 @@ pub enum ErrorConfiguration {
     ErrorIncompleteConfiguration,
 
     /// It will appear when the value to parse isn't in the correct format  
-    ErrorCantParseValue,
+    ErrorCantParseValue(String),
 
     /// It will appear when there isn't a value with a given property name
     ErrorFieldNotFound,
@@ -17,7 +17,7 @@ pub enum ErrorConfiguration {
     ErrorInvalidFormat,
 
     /// It will appear when there given readable gives an error when read
-    ErrorReadableError,
+    ValueNotFound,
 
     /// It will appear when there isn't a structure with a given property name
     ErrorConfigurationNotFound,

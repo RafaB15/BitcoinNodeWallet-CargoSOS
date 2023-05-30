@@ -10,8 +10,6 @@ pub mod error_connection;
 
 pub mod socket_conversion;
 
-pub mod initial_download_method;
-
 pub mod type_identifier;
 
 pub mod network_ip_addres;
