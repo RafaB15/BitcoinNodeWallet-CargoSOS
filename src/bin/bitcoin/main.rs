@@ -461,7 +461,7 @@ fn program_execution(
         potential_peers,
         connection_config.clone(),
         logger_sender.clone(),
-    )?;
+    );
 
     let mut block_chain = match block_chain_handle.join() {
         Ok(block_chain) => block_chain?,
