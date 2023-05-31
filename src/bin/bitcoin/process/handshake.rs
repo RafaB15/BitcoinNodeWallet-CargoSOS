@@ -20,41 +20,46 @@ pub fn connect_to_peers(
         logger_sender.clone(),
     );
 
-    let mut peer_streams: Vec<TcpStream> = Vec::new();
+    potential_peers
+        .iter()
+        .filter_map(|potential_peer| filters_peer(*potential_peer, &node, logger_sender.clone()))
+        .collect()
+}
 
-    for potential_peer in potential_peers {
-        let mut peer_stream = match TcpStream::connect(potential_peer) {
-            Ok(stream) => stream,
-            Err(error) => {
-                let _ = logger_sender.log_connection(format!(
-                    "Cannot connect to address: {:?}, it appear {:?}",
-                    potential_peer, error
-                ));
-                continue;
-            }
-        };
+/// Creates a connection with a specific peer and if stablish then is return it's TCP stream
+fn filters_peer(
+    potential_peer: SocketAddr,
+    node: &Handshake,
+    logger_sender: LoggerSender,
+) -> Option<TcpStream> {
+    let mut peer_stream = match TcpStream::connect(potential_peer) {
+        Ok(stream) => stream,
+        Err(error) => {
+            let _ = logger_sender.log_connection(format!(
+                "Cannot connect to address: {:?}, it appear {:?}",
+                potential_peer, error
+            ));
+            return None;
+        }
+    };
 
-        let local_socket = match peer_stream.local_addr() {
-            Ok(addr) => addr,
-            Err(error) => {
-                let _ = logger_sender
-                    .log_connection(format!("Cannot get local address, it appear {:?}", error));
-                continue;
-            }
-        };
+    let local_socket = match peer_stream.local_addr() {
+        Ok(addr) => addr,
+        Err(error) => {
+            let _ = logger_sender
+                .log_connection(format!("Cannot get local address, it appear {:?}", error));
+            return None;
+        }
+    };
 
-        if let Err(error) =
-            node.connect_to_testnet_peer(&mut peer_stream, &local_socket, &potential_peer)
-        {
+    match node.connect_to_testnet_peer(&mut peer_stream, &local_socket, &potential_peer) {
+        Ok(_) => Some(peer_stream),
+        Err(error) => {
             let _ = logger_sender.log_connection(format!(
                 "Error while connecting to addres: {:?}, it appear {:?}",
                 potential_peer, error
             ));
-            continue;
-        };
-
-        peer_streams.push(peer_stream);
+            None
+        }
     }
-
-    peer_streams
 }
