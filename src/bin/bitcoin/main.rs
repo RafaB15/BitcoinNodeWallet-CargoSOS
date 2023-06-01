@@ -10,7 +10,7 @@ use std::fs::{File, OpenOptions};
 
 use std::thread::{self, JoinHandle};
 
-use process::{configuration::Configuration, handshake, initial_block_download};
+use process::{configuration::Configuration, download, handshake};
 
 use error_execution::ErrorExecution;
 use error_initialization::ErrorInitialization;
@@ -28,8 +28,7 @@ use cargosos_bitcoin::serialization::{
 };
 
 use cargosos_bitcoin::node_structure::{
-    block_broadcasting::BlockBroadcasting, block_download::BlockDownload, error_node::ErrorNode,
-    initial_headers_download::InitialHeaderDownload,
+    block_download::BlockDownload, initial_headers_download::InitialHeaderDownload,
 };
 
 use cargosos_bitcoin::block_structure::{
@@ -144,7 +143,7 @@ fn get_block_chain(
 
     match connection_config.ibd_method {
         IBDMethod::HeaderFirst => {
-            initial_block_download::headers_first(
+            download::headers_first(
                 peer_streams,
                 block_chain,
                 header_download,
@@ -154,59 +153,11 @@ fn get_block_chain(
             )?;
         }
         IBDMethod::BlocksFirst => {
-            initial_block_download::blocks_first();
+            download::blocks_first();
         }
     }
 
     Ok(())
-}
-
-fn _block_broadcasting(
-    peer_streams: Vec<TcpStream>,
-    block_chain: &mut BlockChain,
-    logger_sender: LoggerSender,
-) -> Result<(), ErrorExecution> {
-    logger_sender.log_connection("Broadcasting...".to_string())?;
-
-    let block_broadcasting = BlockBroadcasting::new(logger_sender.clone());
-
-    let blocks_download = BlockDownload::new(logger_sender.clone());
-
-    let mut peer_download_handles: Vec<JoinHandle<Vec<Block>>> = Vec::new();
-
-    for peer_stream in peer_streams {
-        let mut peer_stream = peer_stream;
-
-        let (header_count, headers) = match block_broadcasting
-            .get_new_headers(&mut peer_stream, block_chain)
-        {
-            Err(ErrorNode::NodeNotResponding(message)) => {
-                logger_sender.log_connection(format!("Node not responding, send: {}", message))?;
-                break;
-            }
-            other_response => other_response?,
-        };
-
-        logger_sender.log_connection(format!("We get: {}", header_count))?;
-
-        let blocks = headers.iter().map(|header| Block::new(*header)).collect();
-
-        let logger_sender_clone = logger_sender.clone();
-        let peer_block_download = blocks_download.clone();
-
-        let peer_download_handle = thread::spawn(move || {
-            get_blocks(
-                &mut peer_stream,
-                peer_block_download,
-                blocks,
-                logger_sender_clone,
-            )
-        });
-
-        peer_download_handles.push(peer_download_handle);
-    }
-
-    updating_block_chain(block_chain, peer_download_handles, logger_sender)
 }
 
 fn get_initial_block_chain(
