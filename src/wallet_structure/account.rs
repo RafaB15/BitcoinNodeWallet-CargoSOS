@@ -35,6 +35,9 @@ impl Account {
         if pk_script.len() != 25 {
             return false;
         }
+        if pk_script[0] != 0x76 || pk_script[1] != 0xa9 || pk_script[2] != 0x14 || pk_script[23] != 0x88 || pk_script[24] != 0xac {
+            return false;
+        }
         let hashed_pk = &pk_script[3..23];
         hashed_pk == self.address.extract_hashed_pk()
     }
