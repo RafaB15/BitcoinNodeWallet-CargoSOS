@@ -1,6 +1,6 @@
 use super::error_configuration::ErrorConfiguration;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 pub type Key = String;
 pub type Value = String;
@@ -99,6 +99,45 @@ impl<V: Parsable> Parsable for Option<V> {
     }
 }
 
+impl<const N: usize, V: FromStr> Parsable for [V; N] {
+    fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
+        let value = value_from_map(name.to_string(), map)?;
+
+        if let (Some(primero), Some(ultimo)) = (value.find('['), value.find(']')) {
+            let value: &str = &value[primero + 1..ultimo];
+            let values: Vec<String> = value
+                .split(',')
+                .map(|service| service.trim().to_string())
+                .collect();
+
+            let values: Vec<V> = values
+                .iter()
+                .filter_map(|value| match value.parse::<V>() {
+                    Ok(value) => Some(value),
+                    _ => None,
+                })
+                .collect();
+
+            let values: [V; N] = match values.try_into() {
+                Ok(value) => value,
+                Err(_) => {
+                    return Err(ErrorConfiguration::ErrorCantParseValue(format!(
+                        "array of {:?}, more or less elements that it should",
+                        value
+                    )))
+                }
+            };
+
+            return Ok(values);
+        }
+
+        Err(ErrorConfiguration::ErrorCantParseValue(format!(
+            "array of {:?}",
+            value
+        )))
+    }
+}
+
 impl Parsable for i32 {
     fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
         let value = value_from_map(name.to_string(), map)?;
@@ -132,6 +171,19 @@ impl Parsable for u32 {
             Ok(parse_value) => Ok(parse_value),
             _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
                 "u32 of {:?}",
+                value
+            ))),
+        }
+    }
+}
+
+impl Parsable for u64 {
+    fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
+        let value = value_from_map(name.to_string(), map)?;
+        match value.parse::<u64>() {
+            Ok(parse_value) => Ok(parse_value),
+            _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
+                "u64 of {:?}",
                 value
             ))),
         }

@@ -6,6 +6,7 @@ use crate::messages::{
     get_headers_message::GetHeadersMessage,
     headers_message::HeadersMessage,
     message::{self, Message},
+    message_header::MagicType,
 };
 
 use crate::logs::logger_sender::LoggerSender;
@@ -16,23 +17,29 @@ use super::error_node::ErrorNode;
 
 use crate::connections::p2p_protocol::ProtocolVersionP2P;
 
-const TESTNET_MAGIC_NUMBERS: [u8; 4] = [0x0b, 0x11, 0x09, 0x07];
 const NO_STOP_HASH: HashType = [0; 32];
 
 #[derive(Debug, Clone)]
 pub struct InitialHeaderDownload {
-    pub protocol_version: ProtocolVersionP2P,
+    protocol_version: ProtocolVersionP2P,
+    magic_number: MagicType,
     sender_log: LoggerSender,
 }
 
 impl InitialHeaderDownload {
-    pub fn new(protocol_version: ProtocolVersionP2P, sender_log: LoggerSender) -> Self {
+    pub fn new(
+        protocol_version: ProtocolVersionP2P,
+        magic_number: MagicType,
+        sender_log: LoggerSender,
+    ) -> Self {
         InitialHeaderDownload {
             protocol_version,
+            magic_number,
             sender_log,
         }
     }
 
+    ///  * `ErrorMessage::InSerialization`: It will appear when the serialization of the message fails or the SHA(SHA(header)) fails
     fn send_get_headers_message<RW: Read + Write>(
         &self,
         peer_stream: &mut RW,
@@ -52,11 +59,7 @@ impl InitialHeaderDownload {
         let get_headers_message =
             GetHeadersMessage::new(self.protocol_version, header_locator_hashes, NO_STOP_HASH);
 
-        GetHeadersMessage::serialize_message(
-            peer_stream,
-            TESTNET_MAGIC_NUMBERS,
-            &get_headers_message,
-        )?;
+        GetHeadersMessage::serialize_message(peer_stream, self.magic_number, &get_headers_message)?;
 
         let _ = self
             .sender_log
@@ -65,6 +68,9 @@ impl InitialHeaderDownload {
         Ok(())
     }
 
+    ///  * `ErrorMessage::InSerialization`: It will appear when the serialization of the message fails or the SHA(SHA(header)) fails
+    ///  * `ErrorNode::NodeNotResponding`: It will appear when no message is received from the node
+    ///  * `ErrorNode::WhileValidating`: It will appear when a given header does not pass the proof of work to be added to the blockchain
     pub fn get_headers<RW: Read + Write>(
         &self,
         peer_stream: &mut RW,

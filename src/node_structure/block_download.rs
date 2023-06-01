@@ -6,24 +6,27 @@ use crate::messages::{
     error_message::ErrorMessage,
     get_data_message::GetDataMessage,
     message::{self, Message},
+    message_header::MagicType,
 };
 
 use crate::logs::logger_sender::LoggerSender;
 
 use crate::block_structure::{block::Block, hash::HashType};
 
-const TESTNET_MAGIC_NUMBERS: [u8; 4] = [0x0b, 0x11, 0x09, 0x07];
-
 const MAX_HEADERS_COUNT: usize = 50_000;
 
 #[derive(Debug, Clone)]
 pub struct BlockDownload {
+    magic_numbers: MagicType,
     sender_log: LoggerSender,
 }
 
 impl BlockDownload {
-    pub fn new(sender_log: LoggerSender) -> Self {
-        BlockDownload { sender_log }
+    pub fn new(magic_numbers: MagicType, sender_log: LoggerSender) -> Self {
+        BlockDownload {
+            magic_numbers,
+            sender_log,
+        }
     }
 
     fn send_get_data_message<RW: Read + Write>(
@@ -35,7 +38,7 @@ impl BlockDownload {
 
         let get_data_message = GetDataMessage::new(hashed_headers);
 
-        GetDataMessage::serialize_message(peer_stream, TESTNET_MAGIC_NUMBERS, &get_data_message)?;
+        GetDataMessage::serialize_message(peer_stream, self.magic_numbers, &get_data_message)?;
 
         Ok(())
     }

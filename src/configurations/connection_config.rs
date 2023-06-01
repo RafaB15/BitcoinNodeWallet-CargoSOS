@@ -7,7 +7,7 @@ use crate::connections::{
     dns_seeder::DNSSeeder, ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P,
 };
 
-use crate::messages::bitfield_services::BitfieldServices;
+use crate::messages::{bitfield_services::BitfieldServices, message_header::MagicType};
 
 use std::cmp::PartialEq;
 
@@ -17,6 +17,10 @@ const IBD_METHOD: &str = "ibd_method";
 const PEER_COUNT_MAX: &str = "peer_count_max";
 const BLOCK_HEIGHT: &str = "block_height";
 const SERVICES: &str = "services";
+const MAGIC_NUMBERS: &str = "magic_numbers";
+const NONCE: &str = "nonce";
+const USER_AGENT: &str = "user_agent";
+const RELAY: &str = "relay";
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ConnectionConfig {
@@ -31,6 +35,14 @@ pub struct ConnectionConfig {
     pub block_height: i32,
 
     pub services: BitfieldServices,
+
+    pub magic_numbers: MagicType,
+
+    pub nonce: u64,
+
+    pub user_agent: String,
+
+    pub relay: bool,
 }
 
 impl Parsable for ConnectionConfig {
@@ -45,6 +57,10 @@ impl Parsable for ConnectionConfig {
             peer_count_max: usize::parse(PEER_COUNT_MAX, &map)?,
             block_height: i32::parse(BLOCK_HEIGHT, &map)?,
             services: BitfieldServices::parse(SERVICES, &map)?,
+            magic_numbers: MagicType::parse(MAGIC_NUMBERS, &map)?,
+            nonce: u64::parse(NONCE, &map)?,
+            user_agent: Option::<String>::parse(USER_AGENT, &map)?.unwrap_or_default(),
+            relay: bool::parse(RELAY, &map)?,
         })
     }
 }
@@ -67,11 +83,14 @@ mod tests {
             peer_count_max = 8
             block_height = 0
             services = [Unname]
+            magic_numbers = [1, 2, 3, 4]
+            nonce = 0
+            user_agent = Tanto tiempo
+            relay = true
         }";
 
         let name = "connection";
         let map = parse_structure(configuration.to_string()).unwrap();
-        println!("{:?}", map);
 
         let connection_result = ConnectionConfig::parse(name, &map);
 
@@ -87,6 +106,10 @@ mod tests {
             services: BitfieldServices {
                 elements: vec![SupportedServices::Unname],
             },
+            magic_numbers: [1, 2, 3, 4],
+            nonce: 0,
+            user_agent: "Tanto tiempo".to_string(),
+            relay: true,
         };
 
         assert_eq!(Ok(config_connection), connection_result);
@@ -104,6 +127,10 @@ mod tests {
             peer_count_max = 8
             block_height = 0
             services = [Unname]
+            magic_numbers = [1, 2, 3, 4]
+            nonce = 0
+            user_agent = Tanto tiempo
+            relay = true
         }";
 
         let name = "connection";
@@ -123,6 +150,10 @@ mod tests {
             services: BitfieldServices {
                 elements: vec![SupportedServices::Unname],
             },
+            magic_numbers: [1, 2, 3, 4],
+            nonce: 0,
+            user_agent: "Tanto tiempo".to_string(),
+            relay: true,
         };
 
         assert_eq!(Ok(config_connection), connection_result);
@@ -139,6 +170,10 @@ mod tests {
             peer_count_max = 8
             block_height = 0
             services = [Unname]
+            magic_numbers = [1, 2, 3, 4]
+            nonce = 0
+            user_agent = Tanto tiempo
+            relay = true
         }";
 
         let name = "connection";
@@ -146,10 +181,7 @@ mod tests {
 
         let connection_result = ConnectionConfig::parse(name, &map);
 
-        assert_eq!(
-            Err(ErrorConfiguration::ValueNotFound),
-            connection_result
-        );
+        assert_eq!(Err(ErrorConfiguration::ValueNotFound), connection_result);
     }
 
     #[test]
@@ -165,6 +197,10 @@ mod tests {
             peer_count_max = 8
             block_height = 0
             services = [Unname]
+            magic_numbers = [1, 2, 3, 4]
+            nonce = 0
+            user_agent = Tanto tiempo
+            relay = true
         }";
 
         let name = "connection";
@@ -184,6 +220,10 @@ mod tests {
             services: BitfieldServices {
                 elements: vec![SupportedServices::Unname],
             },
+            magic_numbers: [1, 2, 3, 4],
+            nonce: 0,
+            user_agent: "Tanto tiempo".to_string(),
+            relay: true,
         };
 
         assert_eq!(Ok(config_connection), connection_result);
@@ -198,9 +238,6 @@ mod tests {
 
         let connection_result = ConnectionConfig::parse(name, &map);
 
-        assert_eq!(
-            Err(ErrorConfiguration::ValueNotFound),
-            connection_result
-        );
+        assert_eq!(Err(ErrorConfiguration::ValueNotFound), connection_result);
     }
 }

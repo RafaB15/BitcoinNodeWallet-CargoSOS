@@ -94,6 +94,7 @@ impl BlockChain {
         Err(ErrorBlock::CouldNotAppendBlock)
     }
 
+    ///  * `ErrorBlock::CouldNotUpdate`: It will appear when the block is not in the blockchain.
     pub fn update_block(&mut self, block: Block) -> Result<(), ErrorBlock> {
         for current_block in self.blocks.iter_mut().rev() {
             if current_block.is_equal(&block) {
