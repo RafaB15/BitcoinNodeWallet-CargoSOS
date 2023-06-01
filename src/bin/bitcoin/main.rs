@@ -27,10 +27,6 @@ use cargosos_bitcoin::serialization::{
     serializable_internal_order::SerializableInternalOrder,
 };
 
-use cargosos_bitcoin::node_structure::{
-    block_download::BlockDownload, initial_headers_download::InitialHeaderDownload,
-};
-
 use cargosos_bitcoin::block_structure::{
     block::Block, block_chain::BlockChain, block_header::BlockHeader,
 };
@@ -134,20 +130,12 @@ fn get_block_chain(
 ) -> Result<(), ErrorExecution> {
     logger_sender.log_connection("Getting block chain".to_string())?;
 
-    let header_download = InitialHeaderDownload::new(
-        connection_config.p2p_protocol_version,
-        logger_sender.clone(),
-    );
-
-    let block_download = BlockDownload::new(logger_sender.clone());
-
     match connection_config.ibd_method {
         IBDMethod::HeaderFirst => {
             download::headers_first(
                 peer_streams,
                 block_chain,
-                header_download,
-                block_download,
+                connection_config,
                 download_config,
                 logger_sender,
             )?;
