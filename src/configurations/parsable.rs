@@ -27,7 +27,7 @@ pub fn parse_structure(value: Value) -> Result<KeyValueMap, ErrorConfiguration> 
                 0 => {
                     group_count += 1;
                     true
-                },
+                }
                 _ => {
                     group_count += 1;
                     false
@@ -53,10 +53,10 @@ pub fn parse_structure(value: Value) -> Result<KeyValueMap, ErrorConfiguration> 
                     true => {
                         assignment = false;
                         true
-                    },
+                    }
                     false => false,
                 }
-            },
+            }
             ASSIGNMENT => {
                 if group_count > 0 {
                     return false;
@@ -64,8 +64,8 @@ pub fn parse_structure(value: Value) -> Result<KeyValueMap, ErrorConfiguration> 
 
                 assignment = true;
                 true
-            },
-            _ => false
+            }
+            _ => false,
         })
         .map(|valor| valor.to_string())
         .collect();
@@ -105,7 +105,8 @@ impl Parsable for i32 {
         match value.parse::<i32>() {
             Ok(parse_value) => Ok(parse_value),
             _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
-                "i32 of {:?}", value
+                "i32 of {:?}",
+                value
             ))),
         }
     }
@@ -117,7 +118,8 @@ impl Parsable for u16 {
         match value.parse::<u16>() {
             Ok(parse_value) => Ok(parse_value),
             _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
-                "u16 of {:?}", value
+                "u16 of {:?}",
+                value
             ))),
         }
     }
@@ -129,7 +131,8 @@ impl Parsable for u32 {
         match value.parse::<u32>() {
             Ok(parse_value) => Ok(parse_value),
             _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
-                "u32 of {:?}", value
+                "u32 of {:?}",
+                value
             ))),
         }
     }
@@ -141,7 +144,8 @@ impl Parsable for usize {
         match value.parse::<usize>() {
             Ok(parse_value) => Ok(parse_value),
             _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
-                "usize of {:?}", value
+                "usize of {:?}",
+                value
             ))),
         }
     }
@@ -153,7 +157,8 @@ impl Parsable for bool {
         match value.parse::<bool>() {
             Ok(parse_value) => Ok(parse_value),
             _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
-                "bool of {:?}", value
+                "bool of {:?}",
+                value
             ))),
         }
     }
@@ -161,6 +166,6 @@ impl Parsable for bool {
 
 impl Parsable for String {
     fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
-        Ok(value_from_map(name.to_string(), map)?)
+        value_from_map(name.to_string(), map)
     }
 }
