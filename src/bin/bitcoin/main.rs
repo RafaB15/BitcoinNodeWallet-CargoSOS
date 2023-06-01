@@ -2,18 +2,17 @@ mod error_execution;
 mod error_initialization;
 mod process;
 
-use std::net::{SocketAddr, TcpStream};
-
-use std::{io::BufReader, path::Path};
-
-use std::fs::{File, OpenOptions};
-
-use std::thread::{self, JoinHandle};
-
-use process::{configuration::Configuration, download, handshake};
+use std::{
+    fs::{File, OpenOptions},
+    io::BufReader,
+    net::{SocketAddr, TcpStream},
+    path::Path,
+    thread::{self, JoinHandle},
+};
 
 use error_execution::ErrorExecution;
 use error_initialization::ErrorInitialization;
+use process::{configuration::Configuration, download, handshake};
 
 use cargosos_bitcoin::configurations::{
     connection_config::ConnectionConfig, download_config::DownloadConfig, log_config::LogConfig,
