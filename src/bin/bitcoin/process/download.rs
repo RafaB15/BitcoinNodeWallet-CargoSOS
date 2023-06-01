@@ -24,8 +24,11 @@ pub fn headers_first(
 ) -> Result<(), ErrorExecution> {
     let header_download = InitialHeaderDownload::new(
         connection_config.p2p_protocol_version,
+        connection_config.magic_numbers,
         logger_sender.clone(),
     );
+
+    let block_download = BlockDownload::new(connection_config.magic_numbers, logger_sender.clone());
 
     logger_sender.log_connection("Getting initial download headers first".to_string())?;
 
@@ -45,7 +48,7 @@ pub fn headers_first(
 
         peer_download_handles.push(block_download_handle(
             peer_stream,
-            BlockDownload::new(logger_sender.clone()),
+            block_download.clone(),
             block_chain.get_blocks_after_timestamp(download_config.timestamp)?,
             logger_sender.clone(),
         ));
@@ -156,9 +159,12 @@ pub fn blocks_first() {
 pub fn _block_broadcasting(
     peer_streams: Vec<TcpStream>,
     block_chain: &mut BlockChain,
+    connection_config: ConnectionConfig,
     logger_sender: LoggerSender,
 ) -> Result<(), ErrorExecution> {
     logger_sender.log_connection("Broadcasting...".to_string())?;
+
+    let block_download = BlockDownload::new(connection_config.magic_numbers, logger_sender.clone());
 
     let block_broadcasting = BlockBroadcasting::new(logger_sender.clone());
 
@@ -181,7 +187,7 @@ pub fn _block_broadcasting(
 
         peer_download_handles.push(block_download_handle(
             peer_stream,
-            BlockDownload::new(logger_sender.clone()),
+            block_download.clone(),
             headers.iter().map(|header| Block::new(*header)).collect(),
             logger_sender.clone(),
         ));
