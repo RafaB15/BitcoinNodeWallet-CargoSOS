@@ -198,6 +198,9 @@ mod tests {
             block_height = 0
             services = [Unname]
             magic_numbers = [1, 2, 3, 4]
+            nonce = 0
+            user_agent = Tanto tiempo
+            relay = true
         }";
 
         let name = "connection";
