@@ -15,6 +15,11 @@ use std::{
     thread::{self, JoinHandle},
 };
 
+/// Saves the blockchain to a file
+///
+/// ### Error
+///  * `ErrorInitialization::BlockchainFileDoesntExist`: It will appear when the file could not be created
+///  * `ErrorSerialization::ErrorInSerialization`: It will appear when the serialization of the blockchain fails
 pub fn save_block_chain(
     block_chain: &BlockChain,
     posible_path: Option<String>,
@@ -40,6 +45,11 @@ pub fn save_block_chain(
     Ok(())
 }
 
+/// Loads the blockchain from a file and returns a handle of the thread loading the blockchain
+///
+/// ### Error
+///  * `ErrorBlock::CouldNotHash`: It will appear when the hash of the block is not correct while creating the block chain
+///  * `ErrorSerialization::ErrorInDeserialization`: It will appear when the deserialization of the blockchain fails
 pub fn load_block_chain(
     posible_path: Option<String>,
     logger_sender: LoggerSender,
