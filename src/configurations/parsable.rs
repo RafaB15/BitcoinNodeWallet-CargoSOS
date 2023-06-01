@@ -205,6 +205,6 @@ impl Parsable for bool {
 
 impl Parsable for String {
     fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
-        Ok(value_from_map(name.to_string(), map)?)
+        value_from_map(name.to_string(), map)
     }
 }

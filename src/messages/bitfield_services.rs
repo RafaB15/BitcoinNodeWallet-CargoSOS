@@ -50,7 +50,7 @@ impl Parsable for BitfieldServices {
         if let (Some(primero), Some(ultimo)) = (value.find('['), value.find(']')) {
             let value = &value[primero + 1..ultimo];
             let services: Vec<String> = value
-                .split(",")
+                .split(',')
                 .map(|service| service.trim().to_string())
                 .collect();
 
@@ -59,9 +59,12 @@ impl Parsable for BitfieldServices {
             for service in services {
                 match service.parse::<SupportedServices>() {
                     Ok(value) => elements.push(value),
-                    _ => return Err(ErrorConfiguration::ErrorCantParseValue(format!(
-                        "suppored services of {:?} in bitfield", service
-                    ))),
+                    _ => {
+                        return Err(ErrorConfiguration::ErrorCantParseValue(format!(
+                            "suppored services of {:?} in bitfield",
+                            service
+                        )))
+                    }
                 }
             }
 
@@ -69,7 +72,8 @@ impl Parsable for BitfieldServices {
         }
 
         Err(ErrorConfiguration::ErrorCantParseValue(format!(
-            "bitfield of {:?}", value
+            "bitfield of {:?}",
+            value
         )))
     }
 }
@@ -181,10 +185,7 @@ mod tests {
         let bitfield_result = BitfieldServices::parse(name, &map);
 
         let expected_bitfield = BitfieldServices {
-            elements: vec![
-                SupportedServices::Unname,
-                SupportedServices::NodeNetwork,
-            ],
+            elements: vec![SupportedServices::Unname, SupportedServices::NodeNetwork],
         };
 
         assert_eq!(Ok(expected_bitfield), bitfield_result);
