@@ -18,6 +18,9 @@ const PEER_COUNT_MAX: &str = "peer_count_max";
 const BLOCK_HEIGHT: &str = "block_height";
 const SERVICES: &str = "services";
 const MAGIC_NUMBERS: &str = "magic_numbers";
+const NONCE: &str = "nonce";
+const USER_AGENT: &str = "user_agent";
+const RELAY: &str = "relay";
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ConnectionConfig {
@@ -34,6 +37,12 @@ pub struct ConnectionConfig {
     pub services: BitfieldServices,
 
     pub magic_numbers: MagicType,
+
+    pub nonce: u64,
+
+    pub user_agent: String,
+
+    pub relay: bool,
 }
 
 impl Parsable for ConnectionConfig {
@@ -49,6 +58,9 @@ impl Parsable for ConnectionConfig {
             block_height: i32::parse(BLOCK_HEIGHT, &map)?,
             services: BitfieldServices::parse(SERVICES, &map)?,
             magic_numbers: MagicType::parse(MAGIC_NUMBERS, &map)?,
+            nonce: u64::parse(NONCE, &map)?,
+            user_agent: Option::<String>::parse(USER_AGENT, &map)?.unwrap_or_default(),
+            relay: bool::parse(RELAY, &map)?,
         })
     }
 }
@@ -72,6 +84,9 @@ mod tests {
             block_height = 0
             services = [Unname]
             magic_numbers = [1, 2, 3, 4]
+            nonce = 0
+            user_agent = Tanto tiempo
+            relay = true
         }";
 
         let name = "connection";
@@ -92,6 +107,9 @@ mod tests {
                 elements: vec![SupportedServices::Unname],
             },
             magic_numbers: [1, 2, 3, 4],
+            nonce: 0,
+            user_agent: "Tanto tiempo".to_string(),
+            relay: true,
         };
 
         assert_eq!(Ok(config_connection), connection_result);
@@ -110,6 +128,9 @@ mod tests {
             block_height = 0
             services = [Unname]
             magic_numbers = [1, 2, 3, 4]
+            nonce = 0
+            user_agent = Tanto tiempo
+            relay = true
         }";
 
         let name = "connection";
@@ -130,6 +151,9 @@ mod tests {
                 elements: vec![SupportedServices::Unname],
             },
             magic_numbers: [1, 2, 3, 4],
+            nonce: 0,
+            user_agent: "Tanto tiempo".to_string(),
+            relay: true,
         };
 
         assert_eq!(Ok(config_connection), connection_result);
@@ -147,6 +171,9 @@ mod tests {
             block_height = 0
             services = [Unname]
             magic_numbers = [1, 2, 3, 4]
+            nonce = 0
+            user_agent = Tanto tiempo
+            relay = true
         }";
 
         let name = "connection";
@@ -191,6 +218,9 @@ mod tests {
                 elements: vec![SupportedServices::Unname],
             },
             magic_numbers: [1, 2, 3, 4],
+            nonce: 0,
+            user_agent: "Tanto tiempo".to_string(),
+            relay: true,
         };
 
         assert_eq!(Ok(config_connection), connection_result);

@@ -1,6 +1,7 @@
 use cargosos_bitcoin::{
-    configurations::connection_config::ConnectionConfig, logs::logger_sender::LoggerSender,
-    node_structure::handshake::Handshake,
+    configurations::connection_config::ConnectionConfig,
+    logs::logger_sender::LoggerSender,
+    node_structure::{handshake::Handshake, handshake_data::HandshakeData},
 };
 
 use std::net::{SocketAddr, TcpStream};
@@ -17,6 +18,12 @@ pub fn connect_to_peers(
         connection_config.p2p_protocol_version,
         connection_config.services,
         connection_config.block_height,
+        HandshakeData {
+            nonce: connection_config.nonce,
+            user_agent: connection_config.user_agent,
+            relay: connection_config.relay,
+            magic_number: connection_config.magic_numbers,
+        },
         logger_sender.clone(),
     );
 

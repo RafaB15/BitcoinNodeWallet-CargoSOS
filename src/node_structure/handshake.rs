@@ -1,3 +1,5 @@
+use super::handshake_data::HandshakeData;
+
 use crate::connections::{
     error_connection::ErrorConnection, p2p_protocol::ProtocolVersionP2P,
     socket_conversion::socket_to_ipv6_port, suppored_services::SupportedServices,
@@ -21,15 +23,11 @@ use chrono::offset::Utc;
 
 use std::io::{Read, Write};
 
-const IGNORE_NONCE: u64 = 0;
-const IGNORE_USER_AGENT: &str = "";
-const NO_NEW_TRANSACTIONS: bool = false;
-const TESTNET_MAGIC_NUMBERS: [u8; 4] = [0x0b, 0x11, 0x09, 0x07];
-
 pub struct Handshake {
     protocol_version: ProtocolVersionP2P,
     services: BitfieldServices,
     blockchain_height: i32,
+    data: HandshakeData,
     sender_log: LoggerSender,
 }
 
@@ -38,12 +36,14 @@ impl Handshake {
         protocol_version: ProtocolVersionP2P,
         services: BitfieldServices,
         blockchain_height: i32,
+        data: HandshakeData,
         sender_log: LoggerSender,
     ) -> Self {
         Handshake {
             protocol_version,
             services,
             blockchain_height,
+            data,
             sender_log,
         }
     }
@@ -70,13 +70,13 @@ impl Handshake {
             recv_port,
             trans_addr,
             trans_port,
-            nonce: IGNORE_NONCE,
-            user_agent: IGNORE_USER_AGENT.to_string(),
+            nonce: self.data.nonce,
+            user_agent: self.data.user_agent.clone(),
             start_height: self.blockchain_height,
-            relay: NO_NEW_TRANSACTIONS,
+            relay: self.data.relay,
         };
 
-        VersionMessage::serialize_message(peer_stream, TESTNET_MAGIC_NUMBERS, &version_message)?;
+        VersionMessage::serialize_message(peer_stream, self.data.magic_number, &version_message)?;
 
         Ok(())
     }
@@ -86,7 +86,7 @@ impl Handshake {
         &self,
         peer_stream: &mut RW,
     ) -> Result<(), ErrorMessage> {
-        VerackMessage::serialize_message(peer_stream, TESTNET_MAGIC_NUMBERS, &VerackMessage)?;
+        VerackMessage::serialize_message(peer_stream, self.data.magic_number, &VerackMessage)?;
 
         Ok(())
     }
@@ -97,7 +97,7 @@ impl Handshake {
     ) -> Result<(), ErrorMessage> {
         SendHeadersMessage::serialize_message(
             peer_stream,
-            TESTNET_MAGIC_NUMBERS,
+            self.data.magic_number,
             &SendHeadersMessage,
         )?;
 

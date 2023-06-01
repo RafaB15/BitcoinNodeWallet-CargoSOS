@@ -177,6 +177,19 @@ impl Parsable for u32 {
     }
 }
 
+impl Parsable for u64 {
+    fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
+        let value = value_from_map(name.to_string(), map)?;
+        match value.parse::<u64>() {
+            Ok(parse_value) => Ok(parse_value),
+            _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
+                "u64 of {:?}",
+                value
+            ))),
+        }
+    }
+}
+
 impl Parsable for usize {
     fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
         let value = value_from_map(name.to_string(), map)?;
