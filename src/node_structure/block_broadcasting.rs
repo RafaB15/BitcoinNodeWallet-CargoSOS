@@ -22,6 +22,8 @@ impl BlockBroadcasting {
         BlockBroadcasting { sender_log }
     }
 
+    ///  * `ErrorNode::NodeNotResponding`: It will appear when no message is received from the node
+    ///  * `ErrorNode::WhileValidating`: It will appear when a given header does not pass the proof of work to be added to the blockchain
     pub fn get_new_headers<RW: Read + Write>(
         &self,
         peer_stream: &mut RW,

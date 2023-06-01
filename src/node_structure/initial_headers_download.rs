@@ -39,6 +39,7 @@ impl InitialHeaderDownload {
         }
     }
 
+    ///  * `ErrorMessage::InSerialization`: It will appear when the serialization of the message fails or the SHA(SHA(header)) fails
     fn send_get_headers_message<RW: Read + Write>(
         &self,
         peer_stream: &mut RW,
@@ -67,6 +68,9 @@ impl InitialHeaderDownload {
         Ok(())
     }
 
+    ///  * `ErrorMessage::InSerialization`: It will appear when the serialization of the message fails or the SHA(SHA(header)) fails
+    ///  * `ErrorNode::NodeNotResponding`: It will appear when no message is received from the node
+    ///  * `ErrorNode::WhileValidating`: It will appear when a given header does not pass the proof of work to be added to the blockchain
     pub fn get_headers<RW: Read + Write>(
         &self,
         peer_stream: &mut RW,
