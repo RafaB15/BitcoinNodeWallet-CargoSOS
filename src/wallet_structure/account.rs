@@ -12,6 +12,7 @@ pub struct Account {
     pub private_key: PrivateKey,
     pub public_key: PublicKey,
     pub address: Address,
+    pub avaialble_utxos: Vec<TransactionOutput>,
 }
 
 impl Account {
@@ -20,17 +21,19 @@ impl Account {
         let private_key = PrivateKey::new(private_key_bytes)?;
         let public_key = PublicKey::new(public_key_bytes)?;
         let address = Address::new(addres)?;
+        let avaialble_utxos = Vec::new();
 
         Ok(Account {
             account_name,
             private_key,
             public_key,
             address,
+            avaialble_utxos,
         })
     }
 
     /// Returns true if the account owns the given utxo (works for P2PKH) and false otherwise.
-    pub fn verify_transaction_ownership(&self, utxo: TransactionOutput) -> bool {
+    pub fn verify_transaction_ownership(&self, utxo: &TransactionOutput) -> bool {
         let pk_script = utxo.pk_script.clone();
         if pk_script.len() != 25 {
             return false;
@@ -41,4 +44,16 @@ impl Account {
         let hashed_pk = &pk_script[3..23];
         hashed_pk == self.address.extract_hashed_pk()
     }
+
+    /// Returns the utxos owned by the account from a given utxo set.
+    pub fn get_utxo_from_utxo_set(&self, utxo_set: &Vec<TransactionOutput>) -> Vec<TransactionOutput> {
+        let mut utxos = Vec::new();
+        for utxo in utxo_set {
+            if self.verify_transaction_ownership(utxo) {
+                utxos.push(utxo.clone());
+            }
+        }
+        utxos
+    }
+
 }
