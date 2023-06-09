@@ -212,6 +212,7 @@ fn program_execution(
     );
 
     let mut block_chain = load_system.get_block_chain()?;
+    let wallet = load_system.get_wallet()?;
 
     get_block_chain(
         peer_streams,
@@ -227,6 +228,7 @@ fn program_execution(
 
     Ok(SaveSystem::new(
         block_chain,
+        wallet,
         logger,
     ))
 }
@@ -247,7 +249,7 @@ fn main() -> Result<(), ErrorExecution> {
 
     {
         let mut load_system = LoadSystem::new(
-            save_config.read_block_chain,
+            save_config.clone(),
             logger.clone(),
         );
     
@@ -258,7 +260,7 @@ fn main() -> Result<(), ErrorExecution> {
             logger.clone(),
         )?;
     
-        save_system.save_to_files(save_config.write_block_chain)?;
+        save_system.save_to_files(save_config)?;
     }
 
     logger.log_configuration("Closing program".to_string())?;

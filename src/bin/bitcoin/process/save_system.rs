@@ -4,25 +4,31 @@ use cargosos_bitcoin::{
     block_structure::block_chain::BlockChain,
     logs::logger_sender::LoggerSender,
     serialization::serializable_internal_order::SerializableInternalOrder,
+    wallet_structure::wallet::Wallet,
+    configurations::save_config::SaveConfig,
 };
 
 use std::fs::OpenOptions;
 
 pub struct SaveSystem {
     block_chain: BlockChain,
+    wallet: Wallet,
     logger: LoggerSender,
 }
 
 impl SaveSystem {
-    pub fn new(block_chain: BlockChain, logger: LoggerSender) -> SaveSystem {
-        SaveSystem { block_chain, logger }
+    pub fn new(block_chain: BlockChain, wallet: Wallet, logger: LoggerSender) -> SaveSystem {
+        SaveSystem { block_chain, wallet, logger }
     }
 
     pub fn save_to_files(
         self,
-        posible_path: Option<String>,
+        save_config: SaveConfig,
     ) -> Result<(), ErrorExecution> {
-        Self::save_block_chain(&self.block_chain, posible_path, self.logger)
+        Self::save_block_chain(self.block_chain, save_config.write_block_chain, self.logger.clone())?;
+        Self::save_wallet(self.wallet, save_config.write_wallet, self.logger)?;
+
+        Ok(())
     }
 
     /// Saves the blockchain to a file
@@ -31,7 +37,7 @@ impl SaveSystem {
     ///  * `ErrorInitialization::BlockchainFileDoesntExist`: It will appear when the file could not be created
     ///  * `ErrorSerialization::ErrorInSerialization`: It will appear when the serialization of the blockchain fails
     fn save_block_chain(
-        block_chain: &BlockChain,
+        block_chain: BlockChain,
         path_block_chain: Option<String>,
         logger: LoggerSender,
     ) -> Result<(), ErrorExecution> {
@@ -53,5 +59,13 @@ impl SaveSystem {
         block_chain.io_serialize(&mut file)?;
 
         Ok(())
+    }
+
+    fn save_wallet(
+        wallet: Wallet,
+        path_wallet: Option<String>,
+        logger: LoggerSender,
+    ) -> Result<(), ErrorExecution> {
+        todo!()
     }
 }

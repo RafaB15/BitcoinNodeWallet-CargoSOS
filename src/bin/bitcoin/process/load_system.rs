@@ -3,7 +3,9 @@ use crate::error_execution::ErrorExecution;
 use cargosos_bitcoin::{
     block_structure::{block::Block, block_chain::BlockChain, block_header::BlockHeader},
     logs::logger_sender::LoggerSender,
-    serialization::deserializable_internal_order::DeserializableInternalOrder
+    serialization::deserializable_internal_order::DeserializableInternalOrder,
+    wallet_structure::wallet::Wallet,
+    configurations::save_config::SaveConfig,
 };
 
 use std::{
@@ -13,19 +15,23 @@ use std::{
     mem::replace,
 };
 
+type Handle<T> = Option<JoinHandle<T>>;
+
 pub struct LoadSystem {
-    block_chain: Option<JoinHandle<Result<BlockChain, ErrorExecution>>>,
+    block_chain: Handle<Result<BlockChain, ErrorExecution>>,
+    wallet: Handle<Result<Wallet, ErrorExecution>>,
 }
 
 impl LoadSystem {
     
     pub fn new(
-        posible_path: Option<String>,
+        save_config: SaveConfig,
         logger: LoggerSender,
     ) -> LoadSystem 
     {
         LoadSystem {
-            block_chain: Some(Self::load_block_chain(posible_path, logger)),
+            block_chain: Some(Self::load_block_chain(save_config.read_block_chain, logger.clone())),
+            wallet: Some(Self::load_wallet(save_config.read_wallet, logger)),
         }
     }
 
@@ -35,6 +41,19 @@ impl LoadSystem {
         if let Some(block_chain_handle) = block_chain_handle {
             return match block_chain_handle.join() { 
                 Ok(block_chain) => block_chain,
+                _ => Err(ErrorExecution::FailThread),
+            };
+        }
+
+        Err(ErrorExecution::FailThread)
+    }
+
+    pub fn get_wallet(&mut self) -> Result<Wallet, ErrorExecution> {
+        let wallet_handle = replace(&mut self.wallet, None);
+
+        if let Some(wallet_handle) = wallet_handle {
+            return match wallet_handle.join() { 
+                Ok(wallet) => wallet,
                 _ => Err(ErrorExecution::FailThread),
             };
         }
@@ -77,6 +96,13 @@ impl LoadSystem {
     
             Ok(BlockChain::new(genesis_block)?)
         })
+    }
+
+    fn load_wallet(
+        path_wallet: Option<String>,
+        logger: LoggerSender,
+    ) -> JoinHandle<Result<Wallet, ErrorExecution>> {
+        todo!()
     }
 }
 
