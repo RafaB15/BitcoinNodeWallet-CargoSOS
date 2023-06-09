@@ -15,6 +15,8 @@ use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
 };
 
+use crate::configurations::try_default::TryDefault;
+
 use std::io::{Read, Write};
 
 #[derive(Debug, Clone)]
@@ -153,6 +155,17 @@ impl BlockChain {
         }
         utxo.retain(|(output, _, _)| output.value != -1);
         utxo.iter().map(|(output, _, _)| output.clone()).collect()
+    }
+}
+
+impl TryDefault for BlockChain {
+    type Error = ErrorBlock;
+
+    fn try_default() -> Result<Self, Self::Error> {
+        let genesis_header: BlockHeader = BlockHeader::generate_genesis_block_header();
+        let genesis_block: Block = Block::new(genesis_header);
+
+        BlockChain::new(genesis_block)
     }
 }
 

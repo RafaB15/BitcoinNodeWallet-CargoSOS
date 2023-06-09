@@ -5,7 +5,10 @@ use cargosos_bitcoin::{
     logs::logger_sender::LoggerSender,
     serialization::deserializable_internal_order::DeserializableInternalOrder,
     wallet_structure::wallet::Wallet,
-    configurations::save_config::SaveConfig,
+    configurations::{
+        save_config::SaveConfig,
+        try_default::TryDefault,
+    },
 };
 
 use std::{
@@ -13,9 +16,13 @@ use std::{
     io::BufReader,
     thread::{self, JoinHandle},
     mem::replace,
+    marker::Send,
 };
 
 type Handle<T> = Option<JoinHandle<T>>;
+
+const BLOCKCHAIN_FILE: &str = "blockchain";
+const WALLET_FILE: &str = "wallet";
 
 pub struct LoadSystem {
     block_chain: Handle<Result<BlockChain, ErrorExecution>>,
@@ -30,8 +37,16 @@ impl LoadSystem {
     ) -> LoadSystem 
     {
         LoadSystem {
-            block_chain: Some(Self::load_block_chain(save_config.read_block_chain, logger.clone())),
-            wallet: Some(Self::load_wallet(save_config.read_wallet, logger)),
+            block_chain: Some(Self::load_value(
+                BLOCKCHAIN_FILE,
+                save_config.read_block_chain,
+                logger.clone()
+            )),
+            wallet: Some(Self::load_value(
+                WALLET_FILE,
+                save_config.read_wallet,
+                logger
+            )),
         }
     }
 
@@ -61,6 +76,41 @@ impl LoadSystem {
         Err(ErrorExecution::FailThread)
     }
 
+    fn load_value<V: TryDefault + DeserializableInternalOrder + Send>(
+        name: &str,
+        path: Option<String>,
+        logger: LoggerSender,
+    ) -> JoinHandle<Result<V, ErrorExecution>> {
+        thread::spawn(move || {
+            if let Some(path) = path {
+                if let Ok(file) = OpenOptions::new().read(true).open(path) {
+                    let mut file = BufReader::new(file);
+    
+                    let _ =
+                        logger.log_file(format!("Reading the {name} from file"));
+    
+                    let value = V::io_deserialize(&mut file)?;
+    
+                    let _ = logger.log_file(format!("{name} loaded from file"));
+    
+                    return Ok(value);
+                }
+    
+                let _ = logger.log_file(format!("Could not open {name} file"));
+            }
+    
+            match V::try_default() {
+                Ok(value) => Ok(value),
+                Err(_) => {
+                    let _ = logger.log_file(format!("Could create default for {name}"));
+                    Err(ErrorExecution::FailThread)
+                }
+            }
+        })
+    }
+
+/*
+
     /// Loads the blockchain from a file and returns a handle of the thread loading the blockchain
     ///
     /// ### Error
@@ -85,7 +135,7 @@ impl LoadSystem {
                     return Ok(block_chain);
                 }
     
-                let _ = logger.log_connection("Could not open file".to_string());
+                let _ = logger.log_connection("Could not open block chain file".to_string());
             }
     
             let genesis_header: BlockHeader = BlockHeader::generate_genesis_block_header();
@@ -102,8 +152,31 @@ impl LoadSystem {
         path_wallet: Option<String>,
         logger: LoggerSender,
     ) -> JoinHandle<Result<Wallet, ErrorExecution>> {
-        todo!()
+        thread::spawn(move || {
+            if let Some(path) = path_wallet {
+                if let Ok(file) = OpenOptions::new().read(true).open(path) {
+                    let mut file = BufReader::new(file);
+    
+                    let _ =
+                        logger.log_connection("Reading the wallet from file".to_string());
+    
+                    let wallet = Wallet::io_deserialize(&mut file)?;
+    
+                    let _ = logger.log_connection("Wallet loaded from file".to_string());
+    
+                    return Ok(wallet);
+                }
+    
+                let _ = logger.log_connection("Could not open wallet file".to_string());
+            }
+    
+            let _ =
+                logger.log_connection("Initializing blockchain from genesis block".to_string());
+    
+            Ok(Wallet::new(vec![]))
+        })
     }
+     */
 }
 
 
