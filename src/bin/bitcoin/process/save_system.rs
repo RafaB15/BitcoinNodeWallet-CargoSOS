@@ -13,10 +13,23 @@ use std::fs::OpenOptions;
 const BLOCKCHAIN_FILE: &str = "Blockchain";
 const WALLET_FILE: &str = "Wallet";
 
+<<<<<<< HEAD
 pub struct SaveSystem {
     block_chain: BlockChain,
     wallet: Wallet,
     logger: LoggerSender,
+=======
+    let mut file = match OpenOptions::new().create(true).write(true).open(path) {
+        Ok(file) => file,
+        _ => return Err(ErrorInitialization::BlockchainFileDoesntExist.into()),
+    };
+
+    let _ = logger_sender.log_connection("Writing the blockchain to file".to_string());
+
+    block_chain.io_serialize(&mut file)?;
+
+    Ok(())
+>>>>>>> main
 }
 
 impl SaveSystem {

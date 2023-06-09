@@ -82,4 +82,13 @@ impl LoggerSender {
         self.log(Level::FILE, mensaje)?;
         Ok(())
     }
+
+    /// Sends the desired message with level: `Level::CONNECTION`
+    ///
+    /// ### Errores
+    ///  * `Error::ReceiverNotFound`: Este error puede aparecer cuando no existe un receiver
+    pub fn log_error(&self, mensaje: String) -> Result<(), ErrorLog> {
+        self.log(Level::ERROR, mensaje)?;
+        Ok(())
+    }
 }

@@ -12,17 +12,29 @@ use std::{
 
 use error_execution::ErrorExecution;
 use error_initialization::ErrorInitialization;
+<<<<<<< HEAD
 use process::{configuration::Configuration, download, handshake, save_system::SaveSystem, load_system::LoadSystem};
+=======
+use process::{configuration::Configuration, download, handshake, save_system, account};
+>>>>>>> main
 
 use cargosos_bitcoin::configurations::{
     connection_config::ConnectionConfig, download_config::DownloadConfig, log_config::LogConfig,
 };
 
+<<<<<<< HEAD
 use cargosos_bitcoin::logs::{error_log::ErrorLog, logger, logger_sender::LoggerSender};
 
 use cargosos_bitcoin::block_structure::block_chain::BlockChain;
 
 use cargosos_bitcoin::connections::ibd_methods::IBDMethod;
+=======
+use cargosos_bitcoin::{
+    logs::{error_log::ErrorLog, logger, logger_sender::LoggerSender},
+    block_structure::block_chain::BlockChain,
+    connections::ibd_methods::IBDMethod,
+};
+>>>>>>> main
 
 /// Get the configuration name given the arguments
 ///
@@ -185,7 +197,11 @@ fn _show_merkle_path(
     Ok(())
 }
 
+<<<<<<< HEAD
 fn _show_utxo_set(block_chain: &BlockChain, logger: LoggerSender) {
+=======
+fn _show_utxo_set(block_chain: &BlockChain, logger_sender: LoggerSender) {
+>>>>>>> main
     let max_transaction_count: usize = 20;
     let utxo_vec = block_chain.get_utxo();
 
@@ -222,9 +238,19 @@ fn program_execution(
         logger.clone(),
     )?;
 
+<<<<<<< HEAD
     // show_merkle_path(&block_chain, logger.clone())?;
 
     // show_utxo_set(&block_chain, logger.clone());
+=======
+    // show_merkle_path(&block_chain, logger_sender.clone())?;
+
+    // show_utxo_set(&block_chain, logger_sender.clone());
+
+    let new_account = account::add_account(logger_sender.clone())?;
+
+    println!("{:?}", new_account);
+>>>>>>> main
 
     Ok(SaveSystem::new(
         block_chain,
