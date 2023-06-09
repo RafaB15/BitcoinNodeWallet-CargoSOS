@@ -10,8 +10,8 @@ use cargosos_bitcoin::{
 
 use std::fs::OpenOptions;
 
-const BLOCKCHAIN_FILE: &str = "blockchain";
-const WALLET_FILE: &str = "wallet";
+const BLOCKCHAIN_FILE: &str = "Blockchain";
+const WALLET_FILE: &str = "Wallet";
 
 pub struct SaveSystem {
     block_chain: BlockChain,

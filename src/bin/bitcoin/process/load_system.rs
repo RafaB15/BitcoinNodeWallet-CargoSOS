@@ -1,7 +1,7 @@
 use crate::error_execution::ErrorExecution;
 
 use cargosos_bitcoin::{
-    block_structure::{block::Block, block_chain::BlockChain, block_header::BlockHeader},
+    block_structure::block_chain::BlockChain,
     logs::logger_sender::LoggerSender,
     serialization::deserializable_internal_order::DeserializableInternalOrder,
     wallet_structure::wallet::Wallet,
@@ -21,8 +21,8 @@ use std::{
 
 type Handle<T> = Option<JoinHandle<T>>;
 
-const BLOCKCHAIN_FILE: &str = "blockchain";
-const WALLET_FILE: &str = "wallet";
+const BLOCKCHAIN_FILE: &str = "Blockchain";
+const WALLET_FILE: &str = "Wallet";
 
 pub struct LoadSystem {
     block_chain: Handle<Result<BlockChain, ErrorExecution>>,
@@ -38,12 +38,12 @@ impl LoadSystem {
     {
         LoadSystem {
             block_chain: Some(Self::load_value(
-                BLOCKCHAIN_FILE,
+                BLOCKCHAIN_FILE.to_string(),
                 save_config.read_block_chain,
                 logger.clone()
             )),
             wallet: Some(Self::load_value(
-                WALLET_FILE,
+                WALLET_FILE.to_string(),
                 save_config.read_wallet,
                 logger
             )),
@@ -76,8 +76,8 @@ impl LoadSystem {
         Err(ErrorExecution::FailThread)
     }
 
-    fn load_value<V: TryDefault + DeserializableInternalOrder + Send>(
-        name: &str,
+    fn load_value<V: TryDefault + DeserializableInternalOrder + Send + 'static>(
+        name: String,
         path: Option<String>,
         logger: LoggerSender,
     ) -> JoinHandle<Result<V, ErrorExecution>> {
@@ -86,8 +86,7 @@ impl LoadSystem {
                 if let Ok(file) = OpenOptions::new().read(true).open(path) {
                     let mut file = BufReader::new(file);
     
-                    let _ =
-                        logger.log_file(format!("Reading the {name} from file"));
+                    let _ = logger.log_file(format!("Reading the {name} from file"));
     
                     let value = V::io_deserialize(&mut file)?;
     
