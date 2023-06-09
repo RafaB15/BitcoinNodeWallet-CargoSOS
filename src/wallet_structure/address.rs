@@ -2,8 +2,12 @@ use bs58::decode;
 use super::error_wallet::ErrorWallet;
 use std::convert::TryInto;
 
+pub const ADDRESS_SIZE: usize = 25;
+pub type AddressType = [u8; ADDRESS_SIZE];
+
+#[derive(Debug)]
 pub struct Address {
-    pub address_bytes: [u8; 25],
+    pub address_bytes: AddressType,
     pub address_string: String,
 }
 
@@ -17,7 +21,7 @@ impl Address {
             Ok(decoded_address) => decoded_address,
             Err(e) => return Err(ErrorWallet::CannotDecodeAddress(format!("Cannot decode address {}, error : {:?}", address, e))),
         };
-        let decoded_list: [u8; 25] = match decoded_address.try_into() {
+        let decoded_list: AddressType = match decoded_address.try_into() {
             Ok(decoded_list) => decoded_list,
             Err(e) => return Err(ErrorWallet::CannotDecodeAddress(format!("Cannot convert decoded address to [u8; 25], error : {:?}", e))),
         };

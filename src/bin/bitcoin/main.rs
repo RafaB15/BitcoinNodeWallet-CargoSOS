@@ -12,18 +12,18 @@ use std::{
 
 use error_execution::ErrorExecution;
 use error_initialization::ErrorInitialization;
-use process::{configuration::Configuration, download, handshake, save_system};
+use process::{configuration::Configuration, download, handshake, save_system, account};
 
 use cargosos_bitcoin::configurations::{
     connection_config::ConnectionConfig, download_config::DownloadConfig, log_config::LogConfig,
     save_config::SaveConfig,
 };
 
-use cargosos_bitcoin::logs::{error_log::ErrorLog, logger, logger_sender::LoggerSender};
-
-use cargosos_bitcoin::block_structure::{block::Block, block_chain::BlockChain, hash::HashType};
-
-use cargosos_bitcoin::connections::ibd_methods::IBDMethod;
+use cargosos_bitcoin::{
+    logs::{error_log::ErrorLog, logger, logger_sender::LoggerSender},
+    block_structure::block_chain::BlockChain,
+    connections::ibd_methods::IBDMethod,
+};
 
 /// Get the configuration name given the arguments
 ///
@@ -228,9 +228,13 @@ fn program_execution(
         logger_sender.clone(),
     )?;
 
-    show_merkle_path(&block_chain, logger_sender.clone())?;
+    // show_merkle_path(&block_chain, logger_sender.clone())?;
 
-    show_utxo_set(&block_chain, logger_sender.clone());
+    // show_utxo_set(&block_chain, logger_sender.clone());
+
+    let new_account = account::add_account(logger_sender.clone())?;
+
+    println!("{:?}", new_account);
 
     save_system::save_block_chain(&block_chain, save_config.write_block_chain, logger_sender)?;
 

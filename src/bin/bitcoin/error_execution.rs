@@ -24,6 +24,7 @@ pub enum ErrorExecution {
 
     FailThread,
     ErrorBlock(String),
+    TerminalReadFail,
 }
 
 impl Debug for ErrorExecution {
@@ -45,6 +46,7 @@ impl Debug for ErrorExecution {
             ErrorExecution::Node(error_node) => write!(f, "{:?}", error_node),
             ErrorExecution::FailThread => write!(f, "ErrorFailThread"),
             ErrorExecution::ErrorBlock(error) => write!(f, "Error with block: {}", error),
+            ErrorExecution::TerminalReadFail => write!(f, "ErrorTerminalReadFail"),
         }
     }
 }
