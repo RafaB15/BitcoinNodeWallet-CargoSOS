@@ -139,7 +139,7 @@ fn get_block_chain(
     Ok(())
 }
 
-fn show_merkle_path(
+fn _show_merkle_path(
     block_chain: &BlockChain,
     logger: LoggerSender,
 ) -> Result<(), ErrorExecution> {
@@ -185,7 +185,7 @@ fn show_merkle_path(
     Ok(())
 }
 
-fn show_utxo_set(block_chain: &BlockChain, logger: LoggerSender) {
+fn _show_utxo_set(block_chain: &BlockChain, logger: LoggerSender) {
     let max_transaction_count: usize = 20;
     let utxo_vec = block_chain.get_utxo();
 

@@ -15,7 +15,6 @@ use std::{
 
 pub struct LoadSystem {
     block_chain: Option<JoinHandle<Result<BlockChain, ErrorExecution>>>,
-    logger: LoggerSender,
 }
 
 impl LoadSystem {
@@ -26,8 +25,7 @@ impl LoadSystem {
     ) -> LoadSystem 
     {
         LoadSystem {
-            block_chain: Some(load_block_chain(posible_path, logger.clone())),
-            logger,
+            block_chain: Some(load_block_chain(posible_path, logger)),
         }
     }
 

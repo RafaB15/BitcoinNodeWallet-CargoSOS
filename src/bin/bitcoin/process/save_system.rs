@@ -49,7 +49,7 @@ fn save_block_chain(
         _ => return Err(ErrorInitialization::BlockchainFileDoesntExist.into()),
     };
 
-    let _ = logger.log_connection("Writting the blockchain to file".to_string());
+    let _ = logger.log_connection("Writing the blockchain to file".to_string());
 
     block_chain.io_serialize(&mut file)?;
 
