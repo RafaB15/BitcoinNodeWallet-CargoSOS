@@ -56,9 +56,8 @@ pub fn headers_first(
         )?;
 
         let mut list_of_blocks: Vec<Block> = Vec::new();
-
         for block in block_chain.get_blocks_after_timestamp(download_config.timestamp)? {
-            if block.header.transaction_count.value != block.transactions.len() as u64 {
+            if block.transactions.len() as u64 == 0 {
                 list_of_blocks.push(block);
             }
         }
