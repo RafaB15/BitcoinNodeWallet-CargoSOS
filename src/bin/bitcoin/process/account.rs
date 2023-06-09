@@ -12,6 +12,10 @@ use cargosos_bitcoin::{
 
 use std::io::stdin;
 
+/// Get the private key from the terminal
+/// 
+/// ### Error
+///  * `ErrorExecution::TerminalReadFail`: It will appear when the terminal read fails
 fn get_private_key(logger_sender: LoggerSender) -> Result<PrivateKey, ErrorExecution> {
     let mut private_key: String = String::new();
 
@@ -40,6 +44,10 @@ fn get_private_key(logger_sender: LoggerSender) -> Result<PrivateKey, ErrorExecu
     }
 }
 
+/// Get the public key from the terminal
+/// 
+/// ### Error
+///  * `ErrorExecution::TerminalReadFail`: It will appear when the terminal read fails
 fn get_public_key(logger_sender: LoggerSender) -> Result<PublicKey, ErrorExecution> {
     let mut public_key: String = String::new();
 
@@ -69,6 +77,10 @@ fn get_public_key(logger_sender: LoggerSender) -> Result<PublicKey, ErrorExecuti
     }
 }
 
+/// Get the address from the terminal
+/// 
+/// ### Error
+///  * `ErrorExecution::TerminalReadFail`: It will appear when the terminal read fails
 fn get_address(logger_sender: LoggerSender) -> Result<Address, ErrorExecution> {
     let mut address: String = String::new();
     
@@ -98,6 +110,7 @@ fn get_address(logger_sender: LoggerSender) -> Result<Address, ErrorExecution> {
     }
 }
 
+/// Get the account name from the terminal
 fn get_account_name() -> Result<String, ErrorExecution> {
     let mut name: String = String::new();
 
@@ -108,6 +121,10 @@ fn get_account_name() -> Result<String, ErrorExecution> {
     }
 }
 
+/// Creates a new account with the data entered by the user
+/// 
+/// ### Error
+///  * `ErrorExecution::TerminalReadFail`: It will appear when the terminal read fails
 pub fn add_account(logger_sender: LoggerSender) -> Result<Account, ErrorExecution> {    
 
     let _ = logger_sender.log_wallet("Creating a new account".to_string());
