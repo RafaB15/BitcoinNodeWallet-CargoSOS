@@ -32,20 +32,24 @@ impl TryFrom<String> for PublicKey {
 
         let mut bytes: Vec<u8> = Vec::new();
 
-        value.chars().enumerate().step_by(2).for_each(|(i, char)|{
+        for (i, char) in value.chars().enumerate().step_by(2) {
             let mut byte = String::new();
             byte.push(char);
-            if let Some(next_char) = value.chars().nth(i+1) {
-                byte.push(next_char);
-            } else {
-                byte.push('0');
+            
+            match value.chars().nth(i+1) {
+                Some(next_char) => byte.push(next_char),
+                None => byte.push('0'),
             }
-            bytes.push(u8::from_str_radix(&byte, 16).unwrap());
-        });
+
+            match u8::from_str_radix(&byte, 16) {
+                Ok(byte) => bytes.push(byte),
+                Err(e) => return Err(ErrorWallet::CannotGeneratePublicKey(format!("Error while converting a string ({byte}) into hexa: {:?}", e))),
+            }
+        }
 
         let bytes: PublicKeyType = match bytes.try_into() {
             Ok(bytes) => bytes,
-            Err(e) => return Err(ErrorWallet::CannotGeneratePublicKey(format!("Cannot convert string to bytes, error : {:?}", e))),
+            Err(bytes) => return Err(ErrorWallet::CannotGeneratePublicKey(format!("Cannot convert string to bytes, we get: {:?}", bytes))),
         };
 
         PublicKey::new(&bytes)
