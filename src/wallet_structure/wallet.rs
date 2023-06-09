@@ -16,6 +16,7 @@ use crate::{
 
 use std::io::{Read, Write};
 
+#[derive(Debug)]
 pub struct Wallet {
     accounts: Vec<Account>,
 }

@@ -219,6 +219,8 @@ fn program_execution(
     let mut block_chain = load_system.get_block_chain()?;
     let mut wallet = load_system.get_wallet()?;
 
+    println!("Wallet: {:?}", wallet);
+
     get_block_chain(
         peer_streams,
         &mut block_chain,
@@ -231,7 +233,7 @@ fn program_execution(
 
     // show_utxo_set(&block_chain, logger_sender.clone());
 
-    let new_account = account::add_account(logger_sender.clone())?;
+    let new_account = account::add_account(logger.clone())?;
 
     wallet.add_account(new_account);
 
