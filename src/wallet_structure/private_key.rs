@@ -1,7 +1,10 @@
 use k256::ecdsa::SigningKey;
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 
 use super::error_wallet::ErrorWallet;
+
+pub const PRIVATE_KEY_SIZE: usize = 32;
+pub type PrivateKeyType = [u8; PRIVATE_KEY_SIZE];
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PrivateKey {
@@ -12,7 +15,7 @@ impl PrivateKey {
 
     /// Recibe un string que representa una llave privada en formato WIF (no comprimida)
     /// Devuelve un objeto PrivateKey
-    pub fn new(private_key_bytes: &[u8; 32]) -> Result<PrivateKey, ErrorWallet> {
+    pub fn new(private_key_bytes: &PrivateKeyType) -> Result<PrivateKey, ErrorWallet> {
         let key = match SigningKey::from_slice(private_key_bytes) {
             Ok(key) => key,
             Err(e) => return Err(ErrorWallet::CannotGeneratePrivateKey(format!("Cannot generate SigningKey object from {:?}, error : {:?}", private_key_bytes, e))),
@@ -23,14 +26,43 @@ impl PrivateKey {
         })
     }
 
-    pub fn as_bytes(&self) -> Result<[u8; 32], ErrorWallet> {
-        let bytes: [u8; 32] = match self.key.to_bytes().try_into() {
+    pub fn as_bytes(&self) -> Result<PrivateKeyType, ErrorWallet> {
+        let bytes: PrivateKeyType = match self.key.to_bytes().try_into() {
             Ok(bytes) => bytes,
             Err(e) => return Err(ErrorWallet::CannotGeneratePrivateKey(format!("Cannot convert SigningKey object to bytes, error : {:?}", e))),
         };
         Ok(bytes)
     }
+}
 
+impl TryFrom<String> for PrivateKey {
+    type Error = ErrorWallet;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let mut bytes: Vec<u8> = Vec::new();
+
+        for (i, char) in value.chars().enumerate().step_by(2) {
+            let mut byte = String::new();
+            byte.push(char);
+            
+            match value.chars().nth(i+1) {
+                Some(next_char) => byte.push(next_char),
+                None => byte.push('0'),
+            }
+
+            match u8::from_str_radix(&byte, 16) {
+                Ok(byte) => bytes.push(byte),
+                Err(e) => return Err(ErrorWallet::CannotGeneratePrivateKey(format!("Error while converting a string ({byte}) into hexa: {:?}", e))),
+            }
+        }
+
+        let bytes: PrivateKeyType = match bytes.try_into() {
+            Ok(bytes) => bytes,
+            Err(bytes) => return Err(ErrorWallet::CannotGeneratePublicKey(format!("Cannot convert string to bytes, we get: {:?}", bytes))),
+        };
+
+        PrivateKey::new(&bytes)
+    }
 }
 
 #[cfg(test)]
