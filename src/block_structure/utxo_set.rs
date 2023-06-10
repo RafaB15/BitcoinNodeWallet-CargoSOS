@@ -1,16 +1,12 @@
 use super::{
     block_chain::BlockChain,
-    transaction::Transaction,
     transaction_output::TransactionOutput,
-    transaction_input::TransactionInput,
     hash::{
         HashType,
-        hash256d,
     }
 };
 
 use crate::wallet_structure::{
-    address::Address,
     account::Account,
 };
 pub struct UTXOSet {
@@ -36,5 +32,9 @@ impl UTXOSet {
             utxo,
             account: possible_account, 
         }
+    }
+
+    pub fn get_utxo_list(&self) -> Vec<TransactionOutput> {
+        self.utxo.iter().map(|(output, _, _)| output.clone()).collect()
     }
 }
