@@ -233,9 +233,10 @@ fn program_execution(
 
     // show_utxo_set(&block_chain, logger_sender.clone());
 
-    let new_account = account::add_account(logger.clone())?;
-
-    wallet.add_account(new_account);
+    if account::wants_to_enter_account()? {
+        let new_account = account::add_account(logger.clone())?;
+        wallet.add_account(new_account);
+    }
 
     Ok(SaveSystem::new(
         block_chain,

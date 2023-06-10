@@ -121,6 +121,24 @@ fn get_account_name() -> Result<String, ErrorExecution> {
     }
 }
 
+/// Finds out if the user wants to create a new account
+pub fn wants_to_enter_account() -> Result<bool, ErrorExecution> {
+    let mut decision = String::new();
+
+    println!("Would you like to create a new account? (y/n)");
+
+    let answer = match stdin().read_line(&mut decision) {
+        Ok(_) => decision.trim().to_string(),
+        Err(_) => return Err(ErrorExecution::TerminalReadFail),
+    };
+
+    if answer.to_lowercase() == "y" {
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
 /// Creates a new account with the data entered by the user
 /// 
 /// ### Error

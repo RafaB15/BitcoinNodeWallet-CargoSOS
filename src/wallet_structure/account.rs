@@ -24,7 +24,6 @@ pub struct Account {
     pub private_key: PrivateKey,
     pub public_key: PublicKey,
     pub address: Address,
-    pub avaialble_utxos: Vec<TransactionOutput>,
 }
 
 impl Account {
@@ -38,14 +37,12 @@ impl Account {
         let private_key = PrivateKey::new(private_key_bytes)?;
         let public_key = PublicKey::new(public_key_bytes)?;
         let address = Address::new(addres)?;
-        let avaialble_utxos = Vec::new();
 
         Ok(Account {
             account_name,
             private_key,
             public_key,
             address,
-            avaialble_utxos,
         })
     }
 
