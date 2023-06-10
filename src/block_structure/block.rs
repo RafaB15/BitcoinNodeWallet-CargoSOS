@@ -1,10 +1,9 @@
 use super::{
     block_header::BlockHeader,
     error_block::ErrorBlock,
-    hash::{hash256d, HashType},
+    hash::HashType,
     merkle_tree::MerkleTree,
     transaction::Transaction,
-    transaction_output::TransactionOutput,
 };
 
 use crate::serialization::{
@@ -12,8 +11,6 @@ use crate::serialization::{
     error_serialization::ErrorSerialization,
     serializable_internal_order::SerializableInternalOrder,
 };
-
-use crate::wallet_structure::account::Account;
 
 use std::io::{Read, Write};
 
@@ -56,53 +53,6 @@ impl Block {
             };
 
         Ok(path)
-    }
-
-    pub fn remove_spent_transactions_in_list(
-        &self,
-        utxo: &mut Vec<(TransactionOutput, HashType, u32)>,
-    ) {
-        for transaction in &self.transactions {
-            for input in &transaction.tx_in {
-                for (output, transaction_hash, index) in utxo.iter_mut() {
-                    if input.previous_output.hash.eq(transaction_hash)
-                        && input.previous_output.index == *index
-                    {
-                        output.value = -1;
-                    }
-                }
-            }
-        }
-        utxo.retain(|(output, _, _)| output.value != -1);
-    }
-
-    pub fn add_utxo_to_list(&self, utxo: &mut Vec<(TransactionOutput, HashType, u32)>, possible_account: &Option<Account>) {
-        for transaction in &self.transactions {
-            let mut serialized_transaction: Vec<u8> = Vec::new();
-            match transaction.io_serialize(&mut serialized_transaction) {
-                Ok(_) => (),
-                Err(_) => continue,
-            }
-            let hashed_transaction = match hash256d(&serialized_transaction) {
-                Ok(hashed_transaction) => hashed_transaction,
-                Err(_) => continue,
-            };
-
-            for (index_utxo, output) in transaction.tx_out.iter().enumerate() {
-                if let Some(account) = possible_account {
-                    if account.verify_transaction_ownership(output) {
-                        utxo.push((output.clone(), hashed_transaction, index_utxo as u32));
-                        continue;
-                    }
-                }
-                utxo.push((output.clone(), hashed_transaction, index_utxo as u32));
-            }
-        }
-    }
-
-    pub fn update_utxo_list(&self, utxo: &mut Vec<(TransactionOutput, HashType, u32)>, possible_account: &Option<Account>) {
-        self.add_utxo_to_list(utxo, possible_account);
-        self.remove_spent_transactions_in_list(utxo);
     }
 }
 

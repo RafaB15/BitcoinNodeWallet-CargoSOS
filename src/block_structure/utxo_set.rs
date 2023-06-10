@@ -10,7 +10,7 @@ use super::{
 
 use crate::serialization::{
     serializable_internal_order::SerializableInternalOrder,
-}
+};
 
 use crate::wallet_structure::{
     account::Account,
@@ -33,14 +33,11 @@ impl UTXOSet {
     /// Creates a new UTXOSet from a blockchain. If an account is provided, the UTXOSet 
     /// will only contain transactions that belong to the account.
     pub fn from_blockchain(blockchain: &BlockChain, possible_account: Option<Account>) -> UTXOSet {
-        let mut utxo: Vec<(TransactionOutput, HashType, u32)> = vec![];
+        let mut utxo_set = UTXOSet::new(possible_account);
         for node_chain in blockchain.blocks.iter() {
-            node_chain.block.update_utxo_list(&mut utxo, &possible_account);
+            utxo_set.update_utxo_with_block(&node_chain.block);
         }
-        UTXOSet {
-            utxo,
-            account: possible_account, 
-        }
+        utxo_set
     }
 
     /// Creates a new UTXOSet from an already existing UTXOSet, keeping only the transactions
@@ -88,9 +85,24 @@ impl UTXOSet {
         }
     }
 
+    fn update_utxo_with_transaction_input(&mut self, transactions: &Vec<Transaction>) {
+        for transaction in transactions {
+            for input in &transaction.tx_in {
+                for (output, transaction_hash, index) in self.utxo.iter_mut() {
+                    if input.previous_output.hash.eq(transaction_hash)
+                        && input.previous_output.index == *index
+                    {
+                        output.value = -1;
+                    }
+                }
+            }
+        }
+        self.utxo.retain(|(output, _, _)| output.value != -1);
+    }
+
     /// Updates de UTXOSet with the information of a block
     fn update_utxo_with_block(&mut self, block: &Block) {
-        UTXOSet::update_utxo_with_transaction_output(self, &block.transactions);
-        
+        self.update_utxo_with_transaction_output(&block.transactions);
+        self.update_utxo_with_transaction_input(&block.transactions);
     }
 }
