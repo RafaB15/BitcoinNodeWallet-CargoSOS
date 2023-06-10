@@ -34,6 +34,19 @@ impl UTXOSet {
         }
     }
 
+    pub fn from_utxo_set(utxo_set: &UTXOSet, account: Account) -> UTXOSet {
+        let mut new_utxo_set_list = Vec::new();
+        for (output, transaction_hash, index) in utxo_set.utxo.iter() {
+            if account.verify_transaction_ownership(output) {
+                new_utxo_set_list.push((output.clone(), transaction_hash.clone(), index.clone()));
+            }
+        }
+        UTXOSet {
+            utxo: new_utxo_set_list,
+            account: Some(account),
+        }
+    }
+
     pub fn get_utxo_list(&self) -> Vec<TransactionOutput> {
         self.utxo.iter().map(|(output, _, _)| output.clone()).collect()
     }
