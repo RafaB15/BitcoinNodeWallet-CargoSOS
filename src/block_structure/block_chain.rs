@@ -21,7 +21,7 @@ use std::io::{Read, Write};
 
 #[derive(Debug, Clone)]
 pub struct BlockChain {
-    blocks: Vec<NodeChain>,
+    pub blocks: Vec<NodeChain>,
     last_blocks: Vec<usize>,
 }
 

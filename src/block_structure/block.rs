@@ -13,6 +13,8 @@ use crate::serialization::{
     serializable_internal_order::SerializableInternalOrder,
 };
 
+use crate::wallet_structure::account::Account;
+
 use std::io::{Read, Write};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -58,7 +60,7 @@ impl Block {
 
     pub fn remove_spent_transactions_in_list(
         &self,
-        utxo: &mut [(TransactionOutput, HashType, u32)],
+        utxo: &mut Vec<(TransactionOutput, HashType, u32)>,
     ) {
         for transaction in &self.transactions {
             for input in &transaction.tx_in {
@@ -71,9 +73,10 @@ impl Block {
                 }
             }
         }
+        utxo.retain(|(output, _, _)| output.value != -1);
     }
 
-    pub fn add_utxo_to_list(&self, utxo: &mut Vec<(TransactionOutput, HashType, u32)>) {
+    pub fn add_utxo_to_list(&self, utxo: &mut Vec<(TransactionOutput, HashType, u32)>, possible_account: &Option<Account>) {
         for transaction in &self.transactions {
             let mut serialized_transaction: Vec<u8> = Vec::new();
             match transaction.io_serialize(&mut serialized_transaction) {
@@ -86,13 +89,19 @@ impl Block {
             };
 
             for (index_utxo, output) in transaction.tx_out.iter().enumerate() {
+                if let Some(account) = possible_account {
+                    if account.verify_transaction_ownership(output) {
+                        utxo.push((output.clone(), hashed_transaction, index_utxo as u32));
+                        continue;
+                    }
+                }
                 utxo.push((output.clone(), hashed_transaction, index_utxo as u32));
             }
         }
     }
 
-    pub fn update_utxo_list(&self, utxo: &mut Vec<(TransactionOutput, HashType, u32)>) {
-        self.add_utxo_to_list(utxo);
+    pub fn update_utxo_list(&self, utxo: &mut Vec<(TransactionOutput, HashType, u32)>, possible_account: &Option<Account>) {
+        self.add_utxo_to_list(utxo, possible_account);
         self.remove_spent_transactions_in_list(utxo);
     }
 }
