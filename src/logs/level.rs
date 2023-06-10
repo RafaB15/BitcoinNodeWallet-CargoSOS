@@ -5,6 +5,7 @@ pub enum Level {
     TRANSACTION,
     CONFIGURATION,
     CONNECTION,
+    FILE,
     ERROR,
 }
 
@@ -16,6 +17,7 @@ impl std::fmt::Display for Level {
             Level::TRANSACTION => write!(f, "TRANSACTION"),
             Level::CONFIGURATION => write!(f, "CONFIGURATION"),
             Level::CONNECTION => write!(f, "CONNECTION"),
+            Level::FILE => write!(f, "FILE"),
             Level::ERROR => write!(f, "ERROR"),
         }
     }

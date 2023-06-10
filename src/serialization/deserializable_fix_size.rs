@@ -32,7 +32,6 @@ impl DeserializableFixSize for String {
 
 #[cfg(test)]
 mod tests {
-
     use super::{DeserializableFixSize, ErrorSerialization};
 
     #[test]

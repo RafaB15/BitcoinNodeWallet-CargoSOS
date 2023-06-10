@@ -3,7 +3,7 @@ use super::{
     block_header::BlockHeader,
     error_block::ErrorBlock,
     hash::HashType,
-    node_chain::{NodeChain, NONE_INDEX},
+    node_chain::NodeChain,
     transaction_output::TransactionOutput,
 };
 
@@ -14,6 +14,8 @@ use crate::serialization::{
     serializable_internal_order::SerializableInternalOrder,
     serializable_little_endian::SerializableLittleEndian,
 };
+
+use crate::configurations::try_default::TryDefault;
 
 use std::io::{Read, Write};
 
@@ -156,19 +158,22 @@ impl BlockChain {
     }
 }
 
+impl TryDefault for BlockChain {
+    type Error = ErrorBlock;
+
+    fn try_default() -> Result<Self, Self::Error> {
+        let genesis_header: BlockHeader = BlockHeader::generate_genesis_block_header();
+        let genesis_block: Block = Block::new(genesis_header);
+
+        BlockChain::new(genesis_block)
+    }
+}
+
 impl SerializableInternalOrder for BlockChain {
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         let mut block_chain: Vec<u8> = Vec::new();
         for node_chain in self.blocks.iter() {
-            node_chain.block.header.io_serialize(&mut block_chain)?;
-            node_chain.header_hash.io_serialize(&mut block_chain)?;
-
-            match node_chain.index_previous_node {
-                Some(index_previous_node) => {
-                    (index_previous_node as u64).le_serialize(&mut block_chain)?
-                }
-                None => NONE_INDEX.le_serialize(&mut block_chain)?,
-            }
+            node_chain.io_serialize(&mut block_chain)?;
         }
 
         for index_last_block in self.last_blocks.iter() {
@@ -194,19 +199,7 @@ impl DeserializableInternalOrder for BlockChain {
 
         let mut node_chains: Vec<NodeChain> = Vec::new();
         for _ in 0..headers_count {
-            let block = Block::new(BlockHeader::io_deserialize(stream)?);
-            let header_hash = HashType::io_deserialize(stream)?;
-
-            let index_previous_node = match u64::le_deserialize(stream)? {
-                NONE_INDEX => None,
-                index_previous_node => Some(index_previous_node as usize),
-            };
-
-            node_chains.push(NodeChain {
-                block,
-                header_hash,
-                index_previous_node,
-            });
+            node_chains.push(NodeChain::io_deserialize(stream)?);
         }
 
         let mut last_blocks: Vec<usize> = Vec::new();
