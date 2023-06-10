@@ -1,9 +1,27 @@
-use bs58::decode;
 use super::error_wallet::ErrorWallet;
-use std::convert::TryInto;
 
+use crate::serialization::{
+    serializable_internal_order::SerializableInternalOrder,
+    serializable_little_endian::SerializableLittleEndian,
+    deserializable_internal_order::DeserializableInternalOrder,
+    deserializable_fix_size::DeserializableFixSize,
+    deserializable_little_endian::DeserializableLittleEndian,
+    error_serialization::ErrorSerialization,
+};
+
+use bs58::decode;
+
+use std::{
+    io::{Read, Write},
+    convert::TryInto,
+};
+
+pub const ADDRESS_SIZE: usize = 25;
+pub type AddressType = [u8; ADDRESS_SIZE];
+
+#[derive(Debug)]
 pub struct Address {
-    pub address_bytes: [u8; 25],
+    pub address_bytes: AddressType,
     pub address_string: String,
 }
 
@@ -17,7 +35,7 @@ impl Address {
             Ok(decoded_address) => decoded_address,
             Err(e) => return Err(ErrorWallet::CannotDecodeAddress(format!("Cannot decode address {}, error : {:?}", address, e))),
         };
-        let decoded_list: [u8; 25] = match decoded_address.try_into() {
+        let decoded_list: AddressType = match decoded_address.try_into() {
             Ok(decoded_list) => decoded_list,
             Err(e) => return Err(ErrorWallet::CannotDecodeAddress(format!("Cannot convert decoded address to [u8; 25], error : {:?}", e))),
         };
@@ -31,6 +49,27 @@ impl Address {
     pub fn extract_hashed_pk(&self) -> &[u8]{
         let hashed_pk = &self.address_bytes[1..21];
         hashed_pk
+    }
+}
+
+impl SerializableInternalOrder for Address {
+    fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
+        (self.address_string.len() as u64).le_serialize(stream)?;
+        self.address_string.le_serialize(stream)?;
+        self.address_bytes.io_serialize(stream)?;
+
+        Ok(())
+    }
+}
+
+impl DeserializableInternalOrder for Address {
+    fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
+        let address_string_length = u64::le_deserialize(stream)? as usize;
+
+        Ok(Address {
+            address_string: String::deserialize_fix_size(stream, address_string_length)?,
+            address_bytes: <[u8; 25] as DeserializableInternalOrder>::io_deserialize(stream)?,
+        })
     }
 }
 

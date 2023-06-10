@@ -12,18 +12,22 @@ use std::{
 
 use error_execution::ErrorExecution;
 use error_initialization::ErrorInitialization;
-use process::{configuration::Configuration, download, handshake, save_system};
+use process::{
+    configuration::Configuration, 
+    download, handshake, account,
+    save_system::SaveSystem, 
+    load_system::LoadSystem, 
+};
 
 use cargosos_bitcoin::configurations::{
     connection_config::ConnectionConfig, download_config::DownloadConfig, log_config::LogConfig,
-    save_config::SaveConfig,
 };
 
-use cargosos_bitcoin::logs::{error_log::ErrorLog, logger, logger_sender::LoggerSender};
-
-use cargosos_bitcoin::block_structure::{block::Block, block_chain::BlockChain, hash::HashType};
-
-use cargosos_bitcoin::connections::ibd_methods::IBDMethod;
+use cargosos_bitcoin::{
+    logs::{error_log::ErrorLog, logger, logger_sender::LoggerSender},
+    block_structure::block_chain::BlockChain,
+    connections::ibd_methods::IBDMethod,
+};
 
 /// Get the configuration name given the arguments
 ///
@@ -84,21 +88,21 @@ fn initialize_logs(
 
     let filepath_log = Path::new(&log_config.filepath_log);
     let log_file = open_log_file(filepath_log)?;
-    let (logger_sender, logger_receiver) =
+    let (logger, logger_receiver) =
         logger::initialize_logger(log_file, log_config.show_console)?;
 
     let handle = thread::spawn(move || logger_receiver.receive_log());
 
-    logger_sender.log_configuration("Logs are already configured".to_string())?;
+    logger.log_configuration("Logs are already configured".to_string())?;
 
-    Ok((handle, logger_sender))
+    Ok((handle, logger))
 }
 
 fn get_potential_peers(
     connection_config: ConnectionConfig,
-    logger_sender: LoggerSender,
+    logger: LoggerSender,
 ) -> Result<Vec<SocketAddr>, ErrorExecution> {
-    logger_sender.log_connection("Getting potential peers with dns seeder".to_string())?;
+    logger.log_connection("Getting potential peers with dns seeder".to_string())?;
 
     let potential_peers = connection_config.dns_seeder.discover_peers()?;
 
@@ -107,7 +111,7 @@ fn get_potential_peers(
     let potential_peers = potential_peers[0..peer_count_max].to_vec();
 
     for potential_peer in &potential_peers {
-        logger_sender.log_connection(format!("Potential peer: {:?}", potential_peer))?;
+        logger.log_connection(format!("Potential peer: {:?}", potential_peer))?;
     }
 
     Ok(potential_peers)
@@ -118,9 +122,9 @@ fn get_block_chain(
     block_chain: &mut BlockChain,
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
-    logger_sender: LoggerSender,
+    logger: LoggerSender,
 ) -> Result<(), ErrorExecution> {
-    logger_sender.log_connection("Getting block chain".to_string())?;
+    logger.log_connection("Getting block chain".to_string())?;
 
     match connection_config.ibd_method {
         IBDMethod::HeaderFirst => {
@@ -129,7 +133,7 @@ fn get_block_chain(
                 block_chain,
                 connection_config,
                 download_config,
-                logger_sender,
+                logger,
             )?;
         }
         IBDMethod::BlocksFirst => {
@@ -140,9 +144,9 @@ fn get_block_chain(
     Ok(())
 }
 
-fn show_merkle_path(
+fn _show_merkle_path(
     block_chain: &BlockChain,
-    logger_sender: LoggerSender,
+    logger: LoggerSender,
 ) -> Result<(), ErrorExecution> {
     let latest = block_chain.latest();
 
@@ -155,7 +159,7 @@ fn show_merkle_path(
         }
     };
 
-    logger_sender.log_connection(format!(
+    logger.log_connection(format!(
         "With the block with header: \n{:?}",
         last_block.header,
     ))?;
@@ -172,7 +176,7 @@ fn show_merkle_path(
         }
     };
 
-    logger_sender.log_connection(format!("And transaction: \n{:?}", transaction,))?;
+    logger.log_connection(format!("And transaction: \n{:?}", transaction,))?;
 
     let merkle_path = last_block.get_merkle_path(transaction)?;
 
@@ -181,12 +185,12 @@ fn show_merkle_path(
         path = format!("{path}\t{:?}\n", hash);
     }
 
-    logger_sender.log_connection(format!("We get the merkle path: {path}"))?;
+    logger.log_connection(format!("We get the merkle path: {path}"))?;
 
     Ok(())
 }
 
-fn show_utxo_set(block_chain: &BlockChain, logger_sender: LoggerSender) {
+fn _show_utxo_set(block_chain: &BlockChain, logger: LoggerSender) {
     let max_transaction_count: usize = 20;
     let utxo_vec = block_chain.get_utxo();
 
@@ -195,46 +199,49 @@ fn show_utxo_set(block_chain: &BlockChain, logger_sender: LoggerSender) {
         path = format!("{path}\tTransactionOutput {{ value: {:?} }}\n", utxo.value);
     }
 
-    let _ = logger_sender.log_connection(format!("We get the merkle path: {path}"));
+    let _ = logger.log_connection(format!("We get the merkle path: {path}"));
 }
 
 fn program_execution(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
-    save_config: SaveConfig,
-    logger_sender: LoggerSender,
-) -> Result<(), ErrorExecution> {
-    let block_chain_handle =
-        save_system::load_block_chain(save_config.read_block_chain, logger_sender.clone());
-
-    let potential_peers = get_potential_peers(connection_config.clone(), logger_sender.clone())?;
+    load_system: &mut LoadSystem,
+    logger: LoggerSender,
+) -> Result<SaveSystem, ErrorExecution> {
+    let potential_peers = get_potential_peers(connection_config.clone(), logger.clone())?;
 
     let peer_streams = handshake::connect_to_peers(
         potential_peers,
         connection_config.clone(),
-        logger_sender.clone(),
+        logger.clone(),
     );
 
-    let mut block_chain = match block_chain_handle.join() {
-        Ok(block_chain) => block_chain?,
-        _ => return Err(ErrorExecution::FailThread),
-    };
+    let mut block_chain = load_system.get_block_chain()?;
+    let mut wallet = load_system.get_wallet()?;
+
+    println!("Wallet: {:?}", wallet);
 
     get_block_chain(
         peer_streams,
         &mut block_chain,
         connection_config,
         download_config,
-        logger_sender.clone(),
+        logger.clone(),
     )?;
 
-    show_merkle_path(&block_chain, logger_sender.clone())?;
+    // show_merkle_path(&block_chain, logger_sender.clone())?;
 
-    show_utxo_set(&block_chain, logger_sender.clone());
+    // show_utxo_set(&block_chain, logger_sender.clone());
 
-    save_system::save_block_chain(&block_chain, save_config.write_block_chain, logger_sender)?;
+    let new_account = account::add_account(logger.clone())?;
 
-    Ok(())
+    wallet.add_account(new_account);
+
+    Ok(SaveSystem::new(
+        block_chain,
+        wallet,
+        logger,
+    ))
 }
 
 fn main() -> Result<(), ErrorExecution> {
@@ -249,18 +256,27 @@ fn main() -> Result<(), ErrorExecution> {
     let configuration = Configuration::new(config_file)?;
     let (log_config, connection_config, download_config, save_config) = configuration.separate();
 
-    let (handle, logger_sender) = initialize_logs(log_config)?;
+    let (handle, logger) = initialize_logs(log_config)?;
 
-    program_execution(
-        connection_config,
-        download_config,
-        save_config,
-        logger_sender.clone(),
-    )?;
+    {
+        let mut load_system = LoadSystem::new(
+            save_config.clone(),
+            logger.clone(),
+        );
+    
+        let save_system = program_execution(
+            connection_config,
+            download_config,
+            &mut load_system,
+            logger.clone(),
+        )?;
+    
+        save_system.save_to_files(save_config)?;
+    }
 
-    logger_sender.log_configuration("Closing program".to_string())?;
+    logger.log_configuration("Closing program".to_string())?;
 
-    std::mem::drop(logger_sender);
+    std::mem::drop(logger);
     match handle.join() {
         Ok(result) => result?,
         _ => return Err(ErrorExecution::FailThread),

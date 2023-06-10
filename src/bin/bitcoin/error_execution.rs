@@ -6,6 +6,7 @@ use cargosos_bitcoin::{
     connections::error_connection::ErrorConnection, logs::error_log::ErrorLog,
     messages::error_message::ErrorMessage, node_structure::error_node::ErrorNode,
     serialization::error_serialization::ErrorSerialization,
+    wallet_structure::error_wallet::ErrorWallet,
 };
 
 use std::fmt::{Debug, Error, Formatter};
@@ -21,9 +22,11 @@ pub enum ErrorExecution {
     Message(ErrorMessage),
     Block(ErrorBlock),
     Node(ErrorNode),
+    Wallet(ErrorWallet),
 
     FailThread,
     ErrorBlock(String),
+    TerminalReadFail,
 }
 
 impl Debug for ErrorExecution {
@@ -43,8 +46,10 @@ impl Debug for ErrorExecution {
             ErrorExecution::Message(error_message) => write!(f, "{:?}", error_message),
             ErrorExecution::Block(error_block) => write!(f, "{:?}", error_block),
             ErrorExecution::Node(error_node) => write!(f, "{:?}", error_node),
+            ErrorExecution::Wallet(error_wallet) => write!(f, "{:?}", error_wallet),
             ErrorExecution::FailThread => write!(f, "ErrorFailThread"),
             ErrorExecution::ErrorBlock(error) => write!(f, "Error with block: {}", error),
+            ErrorExecution::TerminalReadFail => write!(f, "ErrorTerminalReadFail"),
         }
     }
 }
@@ -94,5 +99,11 @@ impl From<ErrorNode> for ErrorExecution {
 impl From<ErrorSerialization> for ErrorExecution {
     fn from(value: ErrorSerialization) -> Self {
         ErrorExecution::Serialization(value)
+    }
+}
+
+impl From<ErrorWallet> for ErrorExecution {
+    fn from(value: ErrorWallet) -> Self {
+        ErrorExecution::Wallet(value)
     }
 }

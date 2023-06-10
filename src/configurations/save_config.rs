@@ -8,11 +8,16 @@ use std::cmp::PartialEq;
 const READ_BLOCK_CHAIN: &str = "read_block_chain";
 const WRITE_BLOCK_CHAIN: &str = "write_block_chain";
 
+const READ_WALLET: &str = "read_wallet";
+const WRITE_WALLET: &str = "write_wallet";
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct SaveConfig {
     pub read_block_chain: Option<String>,
+    pub read_wallet: Option<String>,
 
     pub write_block_chain: Option<String>,
+    pub write_wallet: Option<String>,
 }
 
 impl Parsable for SaveConfig {
@@ -23,6 +28,8 @@ impl Parsable for SaveConfig {
         Ok(SaveConfig {
             read_block_chain: Option::<String>::parse(READ_BLOCK_CHAIN, &map)?,
             write_block_chain: Option::<String>::parse(WRITE_BLOCK_CHAIN, &map)?,
+            read_wallet: Option::<String>::parse(READ_WALLET, &map)?,
+            write_wallet: Option::<String>::parse(WRITE_WALLET, &map)?,
         })
     }
 }
@@ -36,6 +43,8 @@ mod tests {
         let configuration = "save {
             read_block_chain = save_test.txt
             write_block_chain = save_test2.txt
+            write_wallet = save_w_test2.txt
+            read_wallet = save_w_test.txt
         }";
         let name = "save";
         let map = parse_structure(configuration.to_string()).unwrap();
@@ -45,6 +54,8 @@ mod tests {
         let config_save = SaveConfig {
             read_block_chain: Some("save_test.txt".to_string()),
             write_block_chain: Some("save_test2.txt".to_string()),
+            read_wallet: Some("save_w_test.txt".to_string()),
+            write_wallet: Some("save_w_test2.txt".to_string()),
         };
 
         assert_eq!(Ok(config_save), log_result);
@@ -55,6 +66,8 @@ mod tests {
         let configuration = "save {
             read_block_chain =                 save_test.txt
             write_block_chain            = save_test2.txt
+            write_wallet = save_w_test2.txt
+            read_wallet = save_w_test.txt
         }";
         let name = "save";
         let map = parse_structure(configuration.to_string()).unwrap();
@@ -64,6 +77,8 @@ mod tests {
         let config_save = SaveConfig {
             read_block_chain: Some("save_test.txt".to_string()),
             write_block_chain: Some("save_test2.txt".to_string()),
+            read_wallet: Some("save_w_test.txt".to_string()),
+            write_wallet: Some("save_w_test2.txt".to_string()),
         };
 
         assert_eq!(Ok(config_save), log_result);
@@ -73,6 +88,8 @@ mod tests {
     fn test03_does_not_accept_input_with_missing_values() {
         let configuration = "save {
             read_block_chain = save_test.txt
+            write_wallet = save_w_test2.txt
+            read_wallet = save_w_test.txt
         }";
         let name = "save";
         let map = parse_structure(configuration.to_string()).unwrap();
@@ -82,6 +99,8 @@ mod tests {
         let config_missing = SaveConfig {
             read_block_chain: Some("save_test.txt".to_string()),
             write_block_chain: None,
+            read_wallet: Some("save_w_test.txt".to_string()),
+            write_wallet: Some("save_w_test2.txt".to_string()),
         };
 
         assert_eq!(Ok(config_missing), log_result);
@@ -93,6 +112,8 @@ mod tests {
             read_block_chain = save_test.txt
             write_block_chain = save_test2.txt
             write_block_chain = save_test2.txt
+            write_wallet = save_w_test2.txt
+            read_wallet = save_w_test.txt
         }";
         let name = "save";
         let map = parse_structure(configuration.to_string()).unwrap();
@@ -102,6 +123,8 @@ mod tests {
         let config_save = SaveConfig {
             read_block_chain: Some("save_test.txt".to_string()),
             write_block_chain: Some("save_test2.txt".to_string()),
+            read_wallet: Some("save_w_test.txt".to_string()),
+            write_wallet: Some("save_w_test2.txt".to_string()),
         };
 
         assert_eq!(Ok(config_save), log_result);
