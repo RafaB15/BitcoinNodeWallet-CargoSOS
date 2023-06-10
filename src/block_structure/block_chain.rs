@@ -147,7 +147,7 @@ impl BlockChain {
             None => Err(ErrorBlock::NodeChainReferenceNotFound),
         }
     }
-
+/* 
     pub fn get_utxo(&self) -> Vec<TransactionOutput> {
         let mut utxo: Vec<(TransactionOutput, HashType, u32)> = vec![];
         for node_chain in self.blocks.iter() {
@@ -156,6 +156,7 @@ impl BlockChain {
         utxo.retain(|(output, _, _)| output.value != -1);
         utxo.iter().map(|(output, _, _)| output.clone()).collect()
     }
+*/
 }
 
 impl TryDefault for BlockChain {
@@ -363,7 +364,7 @@ mod tests {
         let last_blocks = blockchain.latest();
         assert_eq!(last_blocks[0].header, header_to_append);
     }
-
+    /* 
     #[test]
     fn test_05_correct_get_utxo() {
         let transaction_output_1 = TransactionOutput {
@@ -441,4 +442,5 @@ mod tests {
         let utxo = blockchain.get_utxo();
         assert_eq!(utxo[0], transaction_output_2);
     }
+    */
 }

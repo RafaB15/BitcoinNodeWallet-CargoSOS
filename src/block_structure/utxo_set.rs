@@ -15,6 +15,7 @@ use crate::serialization::{
 use crate::wallet_structure::{
     account::Account,
 };
+
 pub struct UTXOSet {
     pub utxo: Vec<(TransactionOutput, HashType, u32)>,
     pub account: Option<Account>,
@@ -61,6 +62,7 @@ impl UTXOSet {
         self.utxo.iter().map(|(output, _, _)| output.clone()).collect()
     }
 
+    /// Updates the UTXOSet with the transaction outputs of a new block.
     fn update_utxo_with_transaction_output(&mut self, transactions: &Vec<Transaction>) {
         for transaction in transactions {
             let mut serialized_transaction: Vec<u8> = Vec::new();
@@ -85,6 +87,7 @@ impl UTXOSet {
         }
     }
 
+    /// Updates the UTXOSet with the transaction inputs of a new block.
     fn update_utxo_with_transaction_input(&mut self, transactions: &Vec<Transaction>) {
         for transaction in transactions {
             for input in &transaction.tx_in {
@@ -104,5 +107,14 @@ impl UTXOSet {
     fn update_utxo_with_block(&mut self, block: &Block) {
         self.update_utxo_with_transaction_output(&block.transactions);
         self.update_utxo_with_transaction_input(&block.transactions);
+    }
+
+    /// Returns the balance of the UTXOSet.
+    fn get_balance(&self) -> i64 {
+        let mut balance: i64 = 0;
+        for (output, _, _) in self.utxo.iter() {
+            balance += output.value;
+        }
+        balance
     }
 }

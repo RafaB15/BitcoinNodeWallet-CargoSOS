@@ -189,7 +189,7 @@ fn _show_merkle_path(
 
     Ok(())
 }
-
+/* 
 fn _show_utxo_set(block_chain: &BlockChain, logger: LoggerSender) {
     let max_transaction_count: usize = 20;
     let utxo_vec = block_chain.get_utxo();
@@ -201,6 +201,7 @@ fn _show_utxo_set(block_chain: &BlockChain, logger: LoggerSender) {
 
     let _ = logger.log_connection(format!("We get the merkle path: {path}"));
 }
+*/
 
 fn program_execution(
     connection_config: ConnectionConfig,
@@ -237,6 +238,7 @@ fn program_execution(
         let new_account = account::add_account(logger.clone())?;
         wallet.add_account(new_account);
     }
+
 
     Ok(SaveSystem::new(
         block_chain,
