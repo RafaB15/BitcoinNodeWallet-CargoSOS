@@ -1,10 +1,16 @@
 use super::{
     block_chain::BlockChain,
     transaction_output::TransactionOutput,
+    block::Block,
     hash::{
         HashType,
-    }
+        hash256d,
+    }, transaction::Transaction
 };
+
+use crate::serialization::{
+    serializable_internal_order::SerializableInternalOrder,
+}
 
 use crate::wallet_structure::{
     account::Account,
@@ -39,6 +45,7 @@ impl UTXOSet {
 
     /// Creates a new UTXOSet from an already existing UTXOSet, keeping only the transactions
     /// belonging to the account provided.
+    /// The utxo set provided must be up to date.
     pub fn from_utxo_set(utxo_set: &UTXOSet, account: Account) -> UTXOSet {
         let mut new_utxo_set_list = Vec::new();
         for (output, transaction_hash, index) in utxo_set.utxo.iter() {
@@ -55,5 +62,35 @@ impl UTXOSet {
     /// Returns a list of the utxo that have not been spent yet.
     pub fn get_utxo_list(&self) -> Vec<TransactionOutput> {
         self.utxo.iter().map(|(output, _, _)| output.clone()).collect()
+    }
+
+    fn update_utxo_with_transaction_output(&mut self, transactions: &Vec<Transaction>) {
+        for transaction in transactions {
+            let mut serialized_transaction: Vec<u8> = Vec::new();
+            match transaction.io_serialize(&mut serialized_transaction) {
+                Ok(_) => (),
+                Err(_) => continue,
+            }
+            let hashed_transaction = match hash256d(&serialized_transaction) {
+                Ok(hashed_transaction) => hashed_transaction,
+                Err(_) => continue,
+            };
+
+            for (index_utxo, output) in transaction.tx_out.iter().enumerate() {
+                if let Some(account) = &self.account {
+                    if account.verify_transaction_ownership(output) {
+                        self.utxo.push((output.clone(), hashed_transaction, index_utxo as u32));
+                        continue;
+                    }
+                }
+                self.utxo.push((output.clone(), hashed_transaction, index_utxo as u32));
+            }
+        }
+    }
+
+    /// Updates de UTXOSet with the information of a block
+    fn update_utxo_with_block(&mut self, block: &Block) {
+        UTXOSet::update_utxo_with_transaction_output(self, &block.transactions);
+        
     }
 }
