@@ -57,9 +57,14 @@ impl Account {
         self.address.verify_transaction_ownership(utxo)
     }
 
-    /// Returns the balance of the account
-    pub fn get_balance(&self) -> i64 {
-        self.utxo_set.get_balance()
+    /// Returns the balance of the account in satoshis
+    pub fn get_balance_in_satoshis(&self) -> i64 {
+        self.utxo_set.get_balance_in_satoshis()
+    }
+
+    /// Returns the balance of the account in tbtc
+    pub fn get_balance_in_tbtc(&self) -> f64 {
+        self.utxo_set.get_balance_in_tbtc()
     }
 
     /// Initializes the utxo set of the account from the blockchain
