@@ -19,7 +19,7 @@ use std::io::{Read, Write};
 
 #[derive(Debug, Clone)]
 pub struct BlockChain {
-    pub blocks: Vec<NodeChain>,
+    blocks: Vec<NodeChain>,
     last_blocks: Vec<usize>,
 }
 
@@ -115,6 +115,10 @@ impl BlockChain {
         }
 
         Ok(blocks_after_timestamp)
+    }
+
+    pub fn get_all_blocks(&self) -> Vec<Block> {
+        self.blocks.iter().map(|node| node.block.clone()).collect()
     }
 
     pub fn latest(&self) -> Vec<Block> {

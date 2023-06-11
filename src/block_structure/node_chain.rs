@@ -13,7 +13,7 @@ use std::io::{Read, Write};
 pub(super) const NONE_INDEX: u64 = u64::MAX;
 
 #[derive(Debug, Clone)]
-pub struct NodeChain {
+pub(super) struct NodeChain {
     pub block: Block,
     pub header_hash: HashType,
 

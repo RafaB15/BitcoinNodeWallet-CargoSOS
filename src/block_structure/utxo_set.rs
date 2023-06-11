@@ -36,8 +36,9 @@ impl UTXOSet {
     /// will only contain transactions that belong to the account.
     pub fn from_blockchain(blockchain: &BlockChain, possible_address: Option<Address>) -> UTXOSet {
         let mut utxo_set = UTXOSet::new(possible_address);
-        for node_chain in blockchain.blocks.iter() {
-            utxo_set.update_utxo_with_block(&node_chain.block);
+        let blocks = blockchain.get_all_blocks();
+        for block in blocks {
+            utxo_set.update_utxo_with_block(&block);
         }
         utxo_set
     }
