@@ -16,7 +16,10 @@ use crate::serialization::{
 
 use std::io::{Read, Write};
 
-use crate::block_structure::transaction_output::TransactionOutput;
+use crate::block_structure::{
+    transaction_output::TransactionOutput,
+    utxo_set::UTXOSet,
+};
 
 #[derive(Debug)]
 pub struct Account {
@@ -24,6 +27,7 @@ pub struct Account {
     pub private_key: PrivateKey,
     pub public_key: PublicKey,
     pub address: Address,
+    pub utxo_set: UTXOSet,
 }
 
 impl Account {
@@ -37,37 +41,25 @@ impl Account {
         let private_key = PrivateKey::new(private_key_bytes)?;
         let public_key = PublicKey::new(public_key_bytes)?;
         let address = Address::new(addres)?;
+        let utxo_set = UTXOSet::new(Some(address.clone()));
 
         Ok(Account {
             account_name,
             private_key,
             public_key,
             address,
+            utxo_set,
         })
     }
 
     /// Returns true if the account owns the given utxo (works for P2PKH) and false otherwise.
     pub fn verify_transaction_ownership(&self, utxo: &TransactionOutput) -> bool {
-        let pk_script = utxo.pk_script.clone();
-        if pk_script.len() != 25 {
-            return false;
-        }
-        if pk_script[0] != 0x76 || pk_script[1] != 0xa9 || pk_script[2] != 0x14 || pk_script[23] != 0x88 || pk_script[24] != 0xac {
-            return false;
-        }
-        let hashed_pk = &pk_script[3..23];
-        hashed_pk == self.address.extract_hashed_pk()
+        self.address.verify_transaction_ownership(utxo)
     }
 
-    /// Returns the utxos owned by the account from a given utxo set.
-    pub fn get_utxo_from_utxo_set(&self, utxo_set: &Vec<TransactionOutput>) -> Vec<TransactionOutput> {
-        let mut utxos = Vec::new();
-        for utxo in utxo_set {
-            if self.verify_transaction_ownership(utxo) {
-                utxos.push(utxo.clone());
-            }
-        }
-        utxos
+    /// Returns the balance of the account
+    pub fn get_balance(&self) -> i64 {
+        self.utxo_set.get_balance()
     }
 
 }
@@ -88,12 +80,19 @@ impl SerializableInternalOrder for Account {
 impl DeserializableInternalOrder for Account {
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let account_name_len = u64::le_deserialize(stream)? as usize;
-        
+
+        let account_name = String::deserialize_fix_size(stream, account_name_len)?;
+        let private_key = PrivateKey::io_deserialize(stream)?;
+        let public_key = PublicKey::io_deserialize(stream)?;
+        let address = Address::io_deserialize(stream)?;
+        let utxo_set = UTXOSet::new(Some(address.clone()));
+
         Ok(Account{
-            account_name: String::deserialize_fix_size(stream, account_name_len)?,
-            private_key: PrivateKey::io_deserialize(stream)?,
-            public_key: PublicKey::io_deserialize(stream)?,
-            address: Address::io_deserialize(stream)?,
+            account_name,
+            private_key,
+            public_key,
+            address,
+            utxo_set,
         })
     }
 }

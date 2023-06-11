@@ -13,28 +13,29 @@ use crate::serialization::{
 };
 
 use crate::wallet_structure::{
-    account::Account,
+    address::Address,
 };
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct UTXOSet {
     pub utxo: Vec<(TransactionOutput, HashType, u32)>,
-    pub account: Option<Account>,
+    pub address: Option<Address>,
 }
 
 impl UTXOSet {
 
     /// Creates a new UTXOSet that can optionally be tied to an account.
-    pub fn new(possible_account: Option<Account>) -> UTXOSet {
+    pub fn new(possible_address: Option<Address>) -> UTXOSet {
         UTXOSet {
             utxo: vec![],
-            account: possible_account,
+            address: possible_address,
         }
     }
 
     /// Creates a new UTXOSet from a blockchain. If an account is provided, the UTXOSet 
     /// will only contain transactions that belong to the account.
-    pub fn from_blockchain(blockchain: &BlockChain, possible_account: Option<Account>) -> UTXOSet {
-        let mut utxo_set = UTXOSet::new(possible_account);
+    pub fn from_blockchain(blockchain: &BlockChain, possible_address: Option<Address>) -> UTXOSet {
+        let mut utxo_set = UTXOSet::new(possible_address);
         for node_chain in blockchain.blocks.iter() {
             utxo_set.update_utxo_with_block(&node_chain.block);
         }
@@ -44,16 +45,16 @@ impl UTXOSet {
     /// Creates a new UTXOSet from an already existing UTXOSet, keeping only the transactions
     /// belonging to the account provided.
     /// The utxo set provided must be up to date.
-    pub fn from_utxo_set(utxo_set: &UTXOSet, account: Account) -> UTXOSet {
+    pub fn from_utxo_set(utxo_set: &UTXOSet, address: &Address) -> UTXOSet {
         let mut new_utxo_set_list = Vec::new();
         for (output, transaction_hash, index) in utxo_set.utxo.iter() {
-            if account.verify_transaction_ownership(output) {
+            if address.verify_transaction_ownership(output) {
                 new_utxo_set_list.push((output.clone(), transaction_hash.clone(), index.clone()));
             }
         }
         UTXOSet {
             utxo: new_utxo_set_list,
-            account: Some(account),
+            address: Some(address.clone()),
         }
     }
 
@@ -76,8 +77,8 @@ impl UTXOSet {
             };
 
             for (index_utxo, output) in transaction.tx_out.iter().enumerate() {
-                if let Some(account) = &self.account {
-                    if account.verify_transaction_ownership(output) {
+                if let Some(address) = &self.address {
+                    if address.verify_transaction_ownership(output) {
                         self.utxo.push((output.clone(), hashed_transaction, index_utxo as u32));
                         continue;
                     }
@@ -110,7 +111,7 @@ impl UTXOSet {
     }
 
     /// Returns the balance of the UTXOSet.
-    fn get_balance(&self) -> i64 {
+    pub fn get_balance(&self) -> i64 {
         let mut balance: i64 = 0;
         for (output, _, _) in self.utxo.iter() {
             balance += output.value;
