@@ -262,7 +262,7 @@ mod tests {
 
         let transaction_output = TransactionOutput {
             value: 10,
-            pk_script: vec![0x76, 0xa9, 0x14, 0x7a, 0xa8, 0x18, 0x46, 0x85, 0xca, 0x1f, 0x06, 0xf5, 0x43, 0xb6, 0x4a, 0x50, 0x2e, 0xb3, 0xb6, 0x13, 0x5d, 0x67, 0x20, 0x88, 0xac]            ,
+            pk_script: vec![0x76, 0xa9, 0x14, 0x7a, 0xa8, 0x18, 0x46, 0x85, 0xca, 0x1f, 0x06, 0xf5, 0x43, 0xb6, 0x4a, 0x50, 0x2e, 0xb3, 0xb6, 0x13, 0x5d, 0x67, 0x20, 0x88, 0xac],
         };
 
         let transaction = Transaction {
@@ -281,5 +281,86 @@ mod tests {
         assert_eq!(utxo_set_account.utxo.len(), 0);
         assert!(utxo_set_account.address.is_some());
         assert!(utxo_set_account.get_balance() == 0);
+    }
+
+    #[test]
+    fn test_06_correct_utxo_set_update_from_block() {
+
+        let mut block_1 = Block::new(BlockHeader::new(
+            block_version::BlockVersion::version(1),
+            [0; 32],
+            [0; 32],
+            0,
+            Compact256::from(10),
+            0,
+            CompactSize::new(0),
+        ));
+
+        let transaction_output_1 = TransactionOutput {
+            value: 10,
+            pk_script: vec![0x76, 0xa9, 0x14, 0x7a, 0xa8, 0x18, 0x46, 0x85, 0xca, 0x1f, 0x06, 0xf5, 0x43, 0xb6, 0x4a, 0x50, 0x2e, 0xb3, 0xb6, 0x13, 0x5d, 0x67, 0x20, 0x88, 0xac],
+        };
+
+        let transaction_output_2 = TransactionOutput {
+            value: 20,
+            pk_script: vec![0x76, 0xa9, 0x14, 0x7a, 0xa8, 0x18, 0x46, 0x85, 0xca, 0x1f, 0x06, 0xf5, 0x43, 0xb6, 0x4a, 0x50, 0x2e, 0xb3, 0xb6, 0x13, 0x5d, 0x67, 0x20, 0x88, 0xac],
+        };
+
+        let transaction_output = Transaction {
+            version: 1,
+            tx_in: vec![],
+            tx_out: vec![transaction_output_1.clone(), transaction_output_2.clone()],
+            time: 0,
+        };
+
+        block_1.append_transaction(transaction_output.clone()).unwrap();
+
+        let blockchain = BlockChain::new(block_1).unwrap();
+
+        let mut utxo_set = UTXOSet::from_blockchain(&blockchain, Some(Address::new(&"mnQLoVaZ3w1NLVmUhfG8hh6WoG3iu7cnNw".to_string()).unwrap()));
+
+        assert_eq!(utxo_set.utxo.len(), 2);
+        assert!(utxo_set.address.is_some());
+        assert!(utxo_set.get_balance() == 30);
+
+        let mut serialized_transaction = Vec::new();
+        transaction_output
+            .io_serialize(&mut serialized_transaction)
+            .unwrap();
+        let hashed_transaction = hash256d(&serialized_transaction).unwrap();
+
+        let transaction_input_1 = TransactionInput::new(
+            Outpoint {
+                hash: hashed_transaction,
+                index: 0,
+            },
+            "Prueba in".as_bytes().to_vec(),
+            24,
+        );
+
+        let transaction_input = Transaction {
+            version: 1,
+            tx_in: vec![transaction_input_1.clone()],
+            tx_out: vec![],
+            time: 0,
+        };
+
+        let mut block_transaction_input = Block::new(BlockHeader::new(
+            block_version::BlockVersion::from(1),
+            [0;32],
+            [0; 32],
+            0,
+            Compact256::from(10),
+            0,
+            CompactSize::new(0),
+        ));
+
+        block_transaction_input.append_transaction(transaction_input).unwrap();
+
+        utxo_set.update_utxo_with_block(&block_transaction_input);
+
+        assert_eq!(utxo_set.utxo.len(), 1);
+        assert!(utxo_set.get_balance() == 20);
+
     }
 }
