@@ -2,9 +2,7 @@ use super::{
     block::Block,
     block_header::BlockHeader,
     error_block::ErrorBlock,
-    hash::HashType,
     node_chain::NodeChain,
-    transaction_output::TransactionOutput,
 };
 
 use crate::serialization::{
@@ -147,16 +145,6 @@ impl BlockChain {
             None => Err(ErrorBlock::NodeChainReferenceNotFound),
         }
     }
-/* 
-    pub fn get_utxo(&self) -> Vec<TransactionOutput> {
-        let mut utxo: Vec<(TransactionOutput, HashType, u32)> = vec![];
-        for node_chain in self.blocks.iter() {
-            node_chain.block.update_utxo_list(&mut utxo);
-        }
-        utxo.retain(|(output, _, _)| output.value != -1);
-        utxo.iter().map(|(output, _, _)| output.clone()).collect()
-    }
-*/
 }
 
 impl TryDefault for BlockChain {
@@ -218,7 +206,7 @@ impl DeserializableInternalOrder for BlockChain {
 #[cfg(test)]
 mod tests {
     use crate::block_structure::{
-        block_version, compact256::Compact256, hash::hash256d, outpoint::Outpoint,
+        block_version, compact256::Compact256, outpoint::Outpoint,
         transaction::Transaction, transaction_input::TransactionInput,
         transaction_output::TransactionOutput,
     };

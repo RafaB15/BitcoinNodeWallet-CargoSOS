@@ -119,3 +119,25 @@ impl UTXOSet {
         balance
     }
 }
+
+#[cfg(test)]
+
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_01_correct_utxo_set_creation_with_no_adress() {
+        let utxo_set = UTXOSet::new(None);
+        assert!(utxo_set.utxo.is_empty());
+        assert!(utxo_set.address.is_none());
+    }
+
+    #[test]
+    fn test_02_correct_utxo_set_creation_with_adress() {
+        let address = "1PMycacnJaSqwwJqjawXBErnLsZ7RkXUAs".to_string();
+        let address = Address::new(&address).unwrap();
+        let utxo_set = UTXOSet::new(Some(address));
+        assert!(utxo_set.utxo.is_empty());
+        assert!(utxo_set.address.is_some());
+    }
+}

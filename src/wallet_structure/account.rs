@@ -17,7 +17,6 @@ use crate::serialization::{
 use std::io::{Read, Write};
 
 use crate::block_structure::{
-    block_chain::BlockChain,
     transaction_output::TransactionOutput,
     utxo_set::UTXOSet,
 };
