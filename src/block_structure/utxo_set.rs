@@ -124,6 +124,17 @@ impl UTXOSet {
 
 mod tests {
     use super::*;
+    use crate::block_structure::{
+        block::Block,
+        block_header::BlockHeader,
+        block_version,
+        compact256::Compact256,
+        transaction::Transaction,
+        transaction_input::TransactionInput,
+        transaction_output::TransactionOutput,
+        outpoint::Outpoint,
+    };
+    use crate::messages::compact_size::CompactSize;
     
     #[test]
     fn test_01_correct_utxo_set_creation_with_no_adress() {
@@ -139,5 +150,48 @@ mod tests {
         let utxo_set = UTXOSet::new(Some(address));
         assert!(utxo_set.utxo.is_empty());
         assert!(utxo_set.address.is_some());
+    }
+
+    #[test]
+    fn test_03_correct_utxo_set_creation_from_blockchain_with_no_adress() {
+        let mut block = Block::new(BlockHeader::new(
+            block_version::BlockVersion::version(1),
+            [0; 32],
+            [0; 32],
+            0,
+            Compact256::from(10),
+            0,
+            CompactSize::new(0),
+        ));
+
+        let transaction_input = TransactionInput::new(
+            Outpoint {
+                hash: [1; 32],
+                index: 23,
+            },
+            "Prueba in".as_bytes().to_vec(),
+            24,
+        );
+
+        let transaction_output = TransactionOutput {
+            value: 10,
+            pk_script: "Prueba out".as_bytes().to_vec(),
+        };
+
+        let transaction = Transaction {
+            version: 1,
+            tx_in: vec![transaction_input.clone()],
+            tx_out: vec![transaction_output.clone()],
+            time: 0,
+        };
+
+        block.append_transaction(transaction).unwrap();
+
+        let blockchain = BlockChain::new(block).unwrap();
+
+        let utxo_set = UTXOSet::from_blockchain(&blockchain, None);
+        assert_eq!(utxo_set.utxo.len(), 1);
+        assert!(utxo_set.address.is_none());
+        assert!(utxo_set.get_balance() == 10);
     }
 }
