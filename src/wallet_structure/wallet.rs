@@ -18,7 +18,7 @@ use std::io::{Read, Write};
 
 #[derive(Debug)]
 pub struct Wallet {
-    accounts: Vec<Account>,
+    pub accounts: Vec<Account>,
 }
 
 impl Wallet {

@@ -17,6 +17,7 @@ use crate::serialization::{
 use std::io::{Read, Write};
 
 use crate::block_structure::{
+    block_chain::BlockChain,
     transaction_output::TransactionOutput,
     utxo_set::UTXOSet,
 };
@@ -60,6 +61,12 @@ impl Account {
     /// Returns the balance of the account
     pub fn get_balance(&self) -> i64 {
         self.utxo_set.get_balance()
+    }
+
+    /// Initializes the utxo set of the account from the blockchain
+    pub fn initialize_utxo_form_blockchain_utxo(&mut self, utxo_set: &UTXOSet) -> Result<(), ErrorWallet> {
+        self.utxo_set = UTXOSet::from_utxo_set(utxo_set, &self.address);
+        Ok(())
     }
 
 }

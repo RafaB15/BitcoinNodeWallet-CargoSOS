@@ -25,7 +25,10 @@ use cargosos_bitcoin::configurations::{
 
 use cargosos_bitcoin::{
     logs::{error_log::ErrorLog, logger, logger_sender::LoggerSender},
-    block_structure::block_chain::BlockChain,
+    block_structure::{
+        block_chain::BlockChain,
+        utxo_set::UTXOSet,
+    },
     connections::ibd_methods::IBDMethod,
 };
 
@@ -239,6 +242,12 @@ fn program_execution(
         wallet.add_account(new_account);
     }
 
+    let block_chain_utxo_set = UTXOSet::from_blockchain(&block_chain, None);
+
+    for account in wallet.accounts.iter_mut() {
+        account.initialize_utxo_form_blockchain_utxo(&block_chain_utxo_set)?;
+        print!("Account's utxo: {:?}\n", account.utxo_set)
+    }
 
     Ok(SaveSystem::new(
         block_chain,
