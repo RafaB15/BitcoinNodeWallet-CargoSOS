@@ -118,7 +118,12 @@ impl BlockChain {
     }
 
     pub fn get_all_blocks(&self) -> Vec<Block> {
-        self.blocks.iter().map(|node| node.block.clone()).collect()
+        self.blocks.iter().filter_map(|node| {
+            match node.block.header.transaction_count.value > 0 {
+                true => Some(node.block.clone()),
+                false => None,
+            }
+        }).collect()
     }
 
     pub fn latest(&self) -> Vec<Block> {
