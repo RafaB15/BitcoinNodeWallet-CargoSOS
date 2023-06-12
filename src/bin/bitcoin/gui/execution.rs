@@ -1,5 +1,8 @@
-use gtk::{prelude::*, glib::Object, Button, Entry, Application, Builder, Window};
+use super::error_gui::ErrorGUI;
 
+use crate::process::save_system::SaveSystem;
+
+use gtk::{prelude::*, glib::Object, Button, Entry, Application, Builder, Window};
 
 pub trait VecOwnExt {
     fn search_by_name(&self, name: &str) -> Object;
@@ -79,7 +82,7 @@ fn build_ui(application: &gtk::Application, glade_src: &str) {
 
 }
 
-fn main() {
+pub fn program_execution() -> Result<SaveSystem, ErrorGUI> {
     /* 
     if gtk::init().is_err() {
         println!("Failed to initialize GTK.");
@@ -103,7 +106,7 @@ fn main() {
 
     if gtk::init().is_err() {
         println!("Failed to initialize GTK.");
-        return;
+        return Err(ErrorGUI::FailedToInitializeGTK);
     }
 
     let glade_src = include_str!("WindowNotebook.glade");
@@ -112,4 +115,6 @@ fn main() {
 
     application.connect_activate(move |app| build_ui(app, glade_src));
     application.run();
+
+    Err(ErrorGUI::TODO)
 }

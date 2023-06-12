@@ -5,14 +5,18 @@ use cargosos_bitcoin::configurations::{
     log_config::LogConfig,
     parsable::{parse_structure, Parsable},
     save_config::SaveConfig,
+    ui_config::UIConfig,
 };
 
 use std::io::Read;
+
+type Configurations = (LogConfig, ConnectionConfig, DownloadConfig, SaveConfig, UIConfig);
 
 const CONNECTION_CONFIG: &str = "Connection";
 const LOGS_CONFIG: &str = "Logs";
 const DOWNLOAD_CONFIG: &str = "Download";
 const SAVE_CONFIG: &str = "Save";
+const UI_CONFIG: &str = "UI";
 
 #[derive(Debug, Clone)]
 pub struct Configuration {
@@ -20,6 +24,7 @@ pub struct Configuration {
     pub connection_config: ConnectionConfig,
     pub download_config: DownloadConfig,
     pub save_config: SaveConfig,
+    pub ui_config: UIConfig,
 }
 
 impl Configuration {
@@ -35,15 +40,17 @@ impl Configuration {
             connection_config: ConnectionConfig::parse(CONNECTION_CONFIG, &map)?,
             download_config: DownloadConfig::parse(DOWNLOAD_CONFIG, &map)?,
             save_config: SaveConfig::parse(SAVE_CONFIG, &map)?,
+            ui_config: UIConfig::parse(UI_CONFIG, &map)?,
         })
     }
 
-    pub fn separate(self) -> (LogConfig, ConnectionConfig, DownloadConfig, SaveConfig) {
+    pub fn separate(self) -> Configurations {
         (
             self.log_config,
             self.connection_config,
             self.download_config,
             self.save_config,
+            self.ui_config,
         )
     }
 }
