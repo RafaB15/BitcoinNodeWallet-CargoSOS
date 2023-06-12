@@ -55,10 +55,17 @@ pub fn headers_first(
             &logger_sender,
         )?;
 
+        let mut list_of_blocks: Vec<Block> = Vec::new();
+        for block in block_chain.get_blocks_after_timestamp(download_config.timestamp)? {
+            if block.transactions.len() as u64 == 0 {
+                list_of_blocks.push(block);
+            }
+        }
+
         peer_download_handles.push(get_blocks(
             peer_stream,
             block_download.clone(),
-            block_chain.get_blocks_after_timestamp(download_config.timestamp)?,
+            list_of_blocks,
             logger_sender.clone(),
         ));
     }

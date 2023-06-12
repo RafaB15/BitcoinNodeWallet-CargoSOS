@@ -10,5 +10,5 @@ pub enum ErrorInitialization {
     LogFileDoesntExist,
 
     /// It will appear when the blockchain file does not exist
-    BlockchainFileDoesntExist,
+    ValueFileDoesntExist,
 }
