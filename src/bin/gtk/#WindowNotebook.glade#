@@ -357,8 +357,8 @@
                 <property name="receives-default">True</property>
               </object>
               <packing>
-                <property name="x">20</property>
-                <property name="y">169</property>
+                <property name="x">23</property>
+                <property name="y">165</property>
               </packing>
             </child>
           </object>
