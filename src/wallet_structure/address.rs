@@ -9,6 +9,8 @@ use crate::serialization::{
     error_serialization::ErrorSerialization,
 };
 
+use crate::block_structure::transaction_output::TransactionOutput;
+
 use bs58::decode;
 
 use std::{
@@ -19,7 +21,7 @@ use std::{
 pub const ADDRESS_SIZE: usize = 25;
 pub type AddressType = [u8; ADDRESS_SIZE];
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Address {
     pub address_bytes: AddressType,
     pub address_string: String,
@@ -50,6 +52,20 @@ impl Address {
         let hashed_pk = &self.address_bytes[1..21];
         hashed_pk
     }
+
+    /// Returns true if the address owns the given utxo (works for P2PKH) and false otherwise.
+    pub fn verify_transaction_ownership(&self, utxo: &TransactionOutput) -> bool {
+        let pk_script = utxo.pk_script.clone();
+        if pk_script.len() != 25 {
+            return false;
+        }
+        if pk_script[0] != 0x76 || pk_script[1] != 0xa9 || pk_script[2] != 0x14 || pk_script[23] != 0x88 || pk_script[24] != 0xac {
+            return false;
+        }
+        let hashed_pk = &pk_script[3..23];
+        hashed_pk == self.extract_hashed_pk()
+    }
+    
 }
 
 impl SerializableInternalOrder for Address {

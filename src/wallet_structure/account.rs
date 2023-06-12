@@ -16,7 +16,10 @@ use crate::serialization::{
 
 use std::io::{Read, Write};
 
-use crate::block_structure::transaction_output::TransactionOutput;
+use crate::block_structure::{
+    transaction_output::TransactionOutput,
+    utxo_set::UTXOSet,
+};
 
 #[derive(Debug)]
 pub struct Account {
@@ -47,16 +50,18 @@ impl Account {
     }
 
     /// Returns true if the account owns the given utxo (works for P2PKH) and false otherwise.
-    pub fn verify_transaction_ownership(&self, utxo: TransactionOutput) -> bool {
-        let pk_script = utxo.pk_script.clone();
-        if pk_script.len() != 25 {
-            return false;
-        }
-        if pk_script[0] != 0x76 || pk_script[1] != 0xa9 || pk_script[2] != 0x14 || pk_script[23] != 0x88 || pk_script[24] != 0xac {
-            return false;
-        }
-        let hashed_pk = &pk_script[3..23];
-        hashed_pk == self.address.extract_hashed_pk()
+    pub fn verify_transaction_ownership(&self, utxo: &TransactionOutput) -> bool {
+        self.address.verify_transaction_ownership(utxo)
+    }
+
+    /// Returns the balance of the account in satoshis
+    pub fn get_balance_in_satoshis(&self, utxo_set: UTXOSet) -> i64 {
+        utxo_set.get_balance_in_satoshis(&self.address)
+    }
+
+    /// Returns the balance of the account in tbtc
+    pub fn get_balance_in_tbtc(&self, utxo_set: UTXOSet) -> f64 {
+        utxo_set.get_balance_in_tbtc(&self.address)
     }
 }
 
@@ -76,7 +81,7 @@ impl SerializableInternalOrder for Account {
 impl DeserializableInternalOrder for Account {
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let account_name_len = u64::le_deserialize(stream)? as usize;
-        
+
         Ok(Account{
             account_name: String::deserialize_fix_size(stream, account_name_len)?,
             private_key: PrivateKey::io_deserialize(stream)?,

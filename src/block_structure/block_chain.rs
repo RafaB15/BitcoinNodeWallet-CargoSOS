@@ -2,9 +2,7 @@ use super::{
     block::Block,
     block_header::BlockHeader,
     error_block::ErrorBlock,
-    hash::HashType,
     node_chain::NodeChain,
-    transaction_output::TransactionOutput,
 };
 
 use crate::serialization::{
@@ -119,6 +117,15 @@ impl BlockChain {
         Ok(blocks_after_timestamp)
     }
 
+    pub fn get_all_blocks(&self) -> Vec<Block> {
+        self.blocks.iter().filter_map(|node| {
+            match node.block.transactions.len() > 0 {
+                true => Some(node.block.clone()),
+                false => None,
+            }
+        }).collect()
+    }
+
     pub fn latest(&self) -> Vec<Block> {
         let mut latest: Vec<Block> = Vec::new();
 
@@ -147,7 +154,7 @@ impl BlockChain {
             None => Err(ErrorBlock::NodeChainReferenceNotFound),
         }
     }
-
+/* 
     pub fn get_utxo(&self) -> Vec<TransactionOutput> {
         let mut utxo: Vec<(TransactionOutput, HashType, u32)> = vec![];
         for node_chain in self.blocks.iter() {
@@ -156,6 +163,7 @@ impl BlockChain {
         utxo.retain(|(output, _, _)| output.value != -1);
         utxo.iter().map(|(output, _, _)| output.clone()).collect()
     }
+*/
 }
 
 impl TryDefault for BlockChain {
@@ -217,7 +225,7 @@ impl DeserializableInternalOrder for BlockChain {
 #[cfg(test)]
 mod tests {
     use crate::block_structure::{
-        block_version, compact256::Compact256, hash::hash256d, outpoint::Outpoint,
+        block_version, compact256::Compact256, outpoint::Outpoint,
         transaction::Transaction, transaction_input::TransactionInput,
         transaction_output::TransactionOutput,
     };
@@ -362,83 +370,5 @@ mod tests {
 
         let last_blocks = blockchain.latest();
         assert_eq!(last_blocks[0].header, header_to_append);
-    }
-
-    #[test]
-    fn test_05_correct_get_utxo() {
-        let transaction_output_1 = TransactionOutput {
-            value: 10,
-            pk_script: "Prueba out".as_bytes().to_vec(),
-        };
-
-        let transaction_output_2 = TransactionOutput {
-            value: 20,
-            pk_script: "Prueba out".as_bytes().to_vec(),
-        };
-
-        let transaction_output = Transaction {
-            version: 1,
-            tx_in: vec![],
-            tx_out: vec![transaction_output_1.clone(), transaction_output_2.clone()],
-            time: 0,
-        };
-
-        let mut serialized_transaction = Vec::new();
-        transaction_output
-            .io_serialize(&mut serialized_transaction)
-            .unwrap();
-        let hashed_transaction = hash256d(&serialized_transaction).unwrap();
-
-        let mut block_transaction_output = Block::new(BlockHeader::new(
-            block_version::BlockVersion::from(1),
-            [0; 32],
-            [0; 32],
-            0,
-            Compact256::from(10),
-            0,
-            CompactSize::new(0),
-        ));
-
-        block_transaction_output
-            .append_transaction(transaction_output)
-            .unwrap();
-
-        let transaction_input_1 = TransactionInput::new(
-            Outpoint {
-                hash: hashed_transaction,
-                index: 0,
-            },
-            "Prueba in".as_bytes().to_vec(),
-            24,
-        );
-
-        let transaction_input = Transaction {
-            version: 1,
-            tx_in: vec![transaction_input_1.clone()],
-            tx_out: vec![],
-            time: 0,
-        };
-
-        let hash_block_transaction_output = block_transaction_output.header.get_hash256d().unwrap();
-
-        let mut block_transaction_input = Block::new(BlockHeader::new(
-            block_version::BlockVersion::from(1),
-            hash_block_transaction_output,
-            [0; 32],
-            0,
-            Compact256::from(10),
-            0,
-            CompactSize::new(0),
-        ));
-
-        block_transaction_input
-            .append_transaction(transaction_input)
-            .unwrap();
-
-        let mut blockchain = BlockChain::new(block_transaction_output).unwrap();
-        blockchain.append_block(block_transaction_input).unwrap();
-
-        let utxo = blockchain.get_utxo();
-        assert_eq!(utxo[0], transaction_output_2);
     }
 }

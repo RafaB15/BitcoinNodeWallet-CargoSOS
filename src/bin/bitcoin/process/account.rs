@@ -7,7 +7,7 @@ use cargosos_bitcoin::{
         private_key::PrivateKey,
         public_key::PublicKey,
         address::Address,
-    },
+    }, 
 };
 
 use std::io::stdin;
@@ -119,6 +119,20 @@ fn get_account_name() -> Result<String, ErrorExecution> {
         Ok(_) => Ok(name.trim().to_string()),
         Err(_) => Err(ErrorExecution::TerminalReadFail),
     }
+}
+
+/// Finds out if the user wants to create a new account
+pub fn wants_to_enter_account() -> Result<bool, ErrorExecution> {
+    let mut decision = String::new();
+
+    println!("Would you like to create a new account? (y/n)");
+
+    let answer = match stdin().read_line(&mut decision) {
+        Ok(_) => decision.trim().to_string(),
+        Err(_) => return Err(ErrorExecution::TerminalReadFail),
+    };
+
+    Ok(answer.to_lowercase() == "y")
 }
 
 /// Creates a new account with the data entered by the user

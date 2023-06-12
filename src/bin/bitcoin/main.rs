@@ -25,7 +25,10 @@ use cargosos_bitcoin::configurations::{
 
 use cargosos_bitcoin::{
     logs::{error_log::ErrorLog, logger, logger_sender::LoggerSender},
-    block_structure::block_chain::BlockChain,
+    block_structure::{
+        block_chain::BlockChain,
+        utxo_set::UTXOSet,
+    },
     connections::ibd_methods::IBDMethod,
 };
 
@@ -190,18 +193,6 @@ fn _show_merkle_path(
     Ok(())
 }
 
-fn _show_utxo_set(block_chain: &BlockChain, logger: LoggerSender) {
-    let max_transaction_count: usize = 20;
-    let utxo_vec = block_chain.get_utxo();
-
-    let mut path: String = "\n".to_string();
-    for utxo in utxo_vec[0..max_transaction_count].iter().cloned() {
-        path = format!("{path}\tTransactionOutput {{ value: {:?} }}\n", utxo.value);
-    }
-
-    let _ = logger.log_connection(format!("We get the merkle path: {path}"));
-}
-
 fn program_execution(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
@@ -229,13 +220,18 @@ fn program_execution(
         logger.clone(),
     )?;
 
-    // show_merkle_path(&block_chain, logger_sender.clone())?;
+    // show_merkle_path(&block_chain, logger_sender.clone())?; 
 
-    // show_utxo_set(&block_chain, logger_sender.clone());
+    while account::wants_to_enter_account()? {
+        let new_account = account::add_account(logger.clone())?;
+        wallet.add_account(new_account);
+    }
 
-    let new_account = account::add_account(logger.clone())?;
+    let utxo_set = UTXOSet::from_blockchain(&block_chain);
 
-    wallet.add_account(new_account);
+    for account in wallet.accounts.iter() {
+        print!("Account's {} utxo: {:?}\n", account.account_name, utxo_set.get_utxo_list(&Some(account.address.clone())));
+    }
 
     Ok(SaveSystem::new(
         block_chain,
