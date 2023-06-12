@@ -29,7 +29,7 @@ pub enum ErrorExecution {
     GUI(ErrorGUI),
 
     FailThread,
-    ErrorBlock(String),
+    _ErrorBlock(String),
     TerminalReadFail,
 }
 
@@ -53,7 +53,7 @@ impl Debug for ErrorExecution {
             ErrorExecution::Wallet(error_wallet) => write!(f, "{:?}", error_wallet),
             ErrorExecution::GUI(error_gui) => write!(f, "{:?}", error_gui),
             ErrorExecution::FailThread => write!(f, "ErrorFailThread"),
-            ErrorExecution::ErrorBlock(error) => write!(f, "Error with block: {}", error),
+            ErrorExecution::_ErrorBlock(error) => write!(f, "Error with block: {}", error),
             ErrorExecution::TerminalReadFail => write!(f, "ErrorTerminalReadFail"),
         }
     }

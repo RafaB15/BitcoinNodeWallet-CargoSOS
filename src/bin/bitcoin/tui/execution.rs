@@ -77,7 +77,7 @@ fn _show_merkle_path(
     let last_block = match latest.last() {
         Some(last_block) => last_block,
         None => {
-            return Err(ErrorExecution::ErrorBlock(
+            return Err(ErrorExecution::_ErrorBlock(
                 "Last block not found".to_string(),
             ))
         }
@@ -94,7 +94,7 @@ fn _show_merkle_path(
     let transaction = match last_block.transactions.get(transaction_position as usize) {
         Some(transaction) => transaction,
         None => {
-            return Err(ErrorExecution::ErrorBlock(
+            return Err(ErrorExecution::_ErrorBlock(
                 "Transaction not found".to_string(),
             ))
         }
