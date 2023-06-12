@@ -24,7 +24,6 @@ use cargosos_bitcoin::{
         log_config::LogConfig,
         interface::Interface,
     },
-    block_structure::block_chain::BlockChain,
 };
 
 /// Get the configuration name given the arguments
@@ -94,56 +93,6 @@ fn initialize_logs(
     logger.log_configuration("Logs are already configured".to_string())?;
 
     Ok((handle, logger))
-}
-
-
-
-
-
-fn _show_merkle_path(
-    block_chain: &BlockChain,
-    logger: LoggerSender,
-) -> Result<(), ErrorExecution> {
-    let latest = block_chain.latest();
-
-    let last_block = match latest.last() {
-        Some(last_block) => last_block,
-        None => {
-            return Err(ErrorExecution::ErrorBlock(
-                "Last block not found".to_string(),
-            ))
-        }
-    };
-
-    logger.log_connection(format!(
-        "With the block with header: \n{:?}",
-        last_block.header,
-    ))?;
-
-    let transaction_position =
-        std::cmp::min::<u64>(6, last_block.header.transaction_count.value - 1);
-
-    let transaction = match last_block.transactions.get(transaction_position as usize) {
-        Some(transaction) => transaction,
-        None => {
-            return Err(ErrorExecution::ErrorBlock(
-                "Transaction not found".to_string(),
-            ))
-        }
-    };
-
-    logger.log_connection(format!("And transaction: \n{:?}", transaction,))?;
-
-    let merkle_path = last_block.get_merkle_path(transaction)?;
-
-    let mut path: String = "\n".to_string();
-    for hash in merkle_path {
-        path = format!("{path}\t{:?}\n", hash);
-    }
-
-    logger.log_connection(format!("We get the merkle path: {path}"))?;
-
-    Ok(())
 }
 
 fn main() -> Result<(), ErrorExecution> {
