@@ -151,7 +151,7 @@ pub fn program_execution(
     let utxo_set = UTXOSet::from_blockchain(&block_chain);
 
     for account in wallet.accounts.iter() {
-        print!("Account's {} utxo: {:?}\n", account.account_name, utxo_set.get_utxo_list(&Some(account.address.clone())));
+        print!("Account's {} utxo: {:?}\n", account.account_name, utxo_set.get_balance_in_tbtc(&account.address));
     }
 
     Ok(SaveSystem::new(
