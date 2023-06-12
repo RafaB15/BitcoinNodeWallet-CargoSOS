@@ -18,7 +18,7 @@ impl FromStr for Interface {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "GUI" => Ok(Interface::Gui),
-            "HeaderFirst" => Ok(Interface::Tui),
+            "TUI" => Ok(Interface::Tui),
             _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
                 "interface of {:?}", s
             ))),
