@@ -132,11 +132,7 @@ pub fn wants_to_enter_account() -> Result<bool, ErrorExecution> {
         Err(_) => return Err(ErrorExecution::TerminalReadFail),
     };
 
-    if answer.to_lowercase() == "y" {
-        Ok(true)
-    } else {
-        Ok(false)
-    }
+    Ok(answer.to_lowercase() == "y")
 }
 
 /// Creates a new account with the data entered by the user
