@@ -27,7 +27,6 @@ pub struct Account {
     pub private_key: PrivateKey,
     pub public_key: PublicKey,
     pub address: Address,
-    pub utxo_set: UTXOSet,
 }
 
 impl Account {
@@ -41,14 +40,12 @@ impl Account {
         let private_key = PrivateKey::new(private_key_bytes)?;
         let public_key = PublicKey::new(public_key_bytes)?;
         let address = Address::new(addres)?;
-        let utxo_set = UTXOSet::new(Some(address.clone()));
 
         Ok(Account {
             account_name,
             private_key,
             public_key,
             address,
-            utxo_set,
         })
     }
 
@@ -58,21 +55,14 @@ impl Account {
     }
 
     /// Returns the balance of the account in satoshis
-    pub fn get_balance_in_satoshis(&self) -> i64 {
-        self.utxo_set.get_balance_in_satoshis()
+    pub fn get_balance_in_satoshis(&self, utxo_set: UTXOSet) -> i64 {
+        utxo_set.get_balance_in_satoshis(&self.address)
     }
 
     /// Returns the balance of the account in tbtc
-    pub fn get_balance_in_tbtc(&self) -> f64 {
-        self.utxo_set.get_balance_in_tbtc()
+    pub fn get_balance_in_tbtc(&self, utxo_set: UTXOSet) -> f64 {
+        utxo_set.get_balance_in_tbtc(&self.address)
     }
-
-    /// Initializes the utxo set of the account from the blockchain
-    pub fn initialize_utxo_form_blockchain_utxo(&mut self, utxo_set: &UTXOSet) -> Result<(), ErrorWallet> {
-        self.utxo_set = UTXOSet::from_utxo_set(utxo_set, &self.address);
-        Ok(())
-    }
-
 }
 
 impl SerializableInternalOrder for Account {
@@ -92,18 +82,11 @@ impl DeserializableInternalOrder for Account {
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let account_name_len = u64::le_deserialize(stream)? as usize;
 
-        let account_name = String::deserialize_fix_size(stream, account_name_len)?;
-        let private_key = PrivateKey::io_deserialize(stream)?;
-        let public_key = PublicKey::io_deserialize(stream)?;
-        let address = Address::io_deserialize(stream)?;
-        let utxo_set = UTXOSet::new(Some(address.clone()));
-
         Ok(Account{
-            account_name,
-            private_key,
-            public_key,
-            address,
-            utxo_set,
+            account_name: String::deserialize_fix_size(stream, account_name_len)?,
+            private_key: PrivateKey::io_deserialize(stream)?,
+            public_key: PublicKey::io_deserialize(stream)?,
+            address: Address::io_deserialize(stream)?,
         })
     }
 }

@@ -96,7 +96,7 @@ impl UTXOSet {
     }
 
     /// Returns the balance of the UTXOSet in Satoshis.
-    pub fn get_balance_in_satoshis(&self, address: Address) -> i64 {
+    pub fn get_balance_in_satoshis(&self, address: &Address) -> i64 {
         let mut balance: i64 = 0;
         self.utxo.iter().for_each(|(output, _, _)| {
             if address.verify_transaction_ownership(output) {
@@ -107,7 +107,7 @@ impl UTXOSet {
     }
 
     /// Returns the balance of the UTXOSet in TBTC.
-    pub fn get_balance_in_tbtc(&self, address: Address) -> f64 {
+    pub fn get_balance_in_tbtc(&self, address: &Address) -> f64 {
         self.get_balance_in_satoshis(address) as f64 / 100_000_000.0
     }
 }
