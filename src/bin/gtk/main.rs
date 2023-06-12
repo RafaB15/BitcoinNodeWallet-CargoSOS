@@ -13,6 +13,7 @@ pub trait VecOwnExt {
 pub trait ObjectOwnExt {
     fn is_named(&self, name: &str) -> bool;
 }
+
 impl ObjectOwnExt for Object {
     fn is_named(&self, name: &str) -> bool {
         self.property_value("name").get::<String>().unwrap() == *name
@@ -26,6 +27,7 @@ impl VecOwnExt for Vec<Object> {
         if let Some(found) = found {
             (*found).clone()
         } else {
+            println!("Todo para el orto che {name}");
             (*found.unwrap()).clone()
         }
     }
@@ -72,7 +74,7 @@ fn build_ui(application: &gtk::Application, glade_src: &str) {
         entry_amount.set_text("");
         entry_label.set_text("");
     });
-    objects.search_button_named("hola");
+
     window.show_all();
 
 }
