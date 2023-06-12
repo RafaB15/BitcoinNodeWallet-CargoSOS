@@ -1,4 +1,7 @@
-use super::error_initialization::ErrorInitialization;
+use super::{
+    error_initialization::ErrorInitialization,
+    gui::error_gui::ErrorGUI,
+};
 
 use cargosos_bitcoin::{
     block_structure::error_block::ErrorBlock,
@@ -23,6 +26,7 @@ pub enum ErrorExecution {
     Block(ErrorBlock),
     Node(ErrorNode),
     Wallet(ErrorWallet),
+    GUI(ErrorGUI),
 
     FailThread,
     ErrorBlock(String),
@@ -47,6 +51,7 @@ impl Debug for ErrorExecution {
             ErrorExecution::Block(error_block) => write!(f, "{:?}", error_block),
             ErrorExecution::Node(error_node) => write!(f, "{:?}", error_node),
             ErrorExecution::Wallet(error_wallet) => write!(f, "{:?}", error_wallet),
+            ErrorExecution::GUI(error_gui) => write!(f, "{:?}", error_gui),
             ErrorExecution::FailThread => write!(f, "ErrorFailThread"),
             ErrorExecution::ErrorBlock(error) => write!(f, "Error with block: {}", error),
             ErrorExecution::TerminalReadFail => write!(f, "ErrorTerminalReadFail"),
@@ -105,5 +110,11 @@ impl From<ErrorSerialization> for ErrorExecution {
 impl From<ErrorWallet> for ErrorExecution {
     fn from(value: ErrorWallet) -> Self {
         ErrorExecution::Wallet(value)
+    }
+}
+
+impl From<ErrorGUI> for ErrorExecution {
+    fn from(value: ErrorGUI) -> Self {
+        ErrorExecution::GUI(value)
     }
 }

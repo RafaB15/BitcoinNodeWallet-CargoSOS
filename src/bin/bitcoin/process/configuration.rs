@@ -10,6 +10,8 @@ use cargosos_bitcoin::configurations::{
 
 use std::io::Read;
 
+type Configurations = (LogConfig, ConnectionConfig, DownloadConfig, SaveConfig, UIConfig);
+
 const CONNECTION_CONFIG: &str = "Connection";
 const LOGS_CONFIG: &str = "Logs";
 const DOWNLOAD_CONFIG: &str = "Download";
@@ -42,12 +44,13 @@ impl Configuration {
         })
     }
 
-    pub fn separate(self) -> (LogConfig, ConnectionConfig, DownloadConfig, SaveConfig) {
+    pub fn separate(self) -> Configurations {
         (
             self.log_config,
             self.connection_config,
             self.download_config,
             self.save_config,
+            self.ui_config,
         )
     }
 }

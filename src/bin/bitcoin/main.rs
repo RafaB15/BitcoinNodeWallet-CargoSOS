@@ -20,7 +20,10 @@ use process::{
 
 use cargosos_bitcoin::{
     logs::{error_log::ErrorLog, logger, logger_sender::LoggerSender},
-    configurations::log_config::LogConfig,
+    configurations::{
+        log_config::LogConfig,
+        interface::Interface,
+    },
     block_structure::block_chain::BlockChain,
 };
 
@@ -153,7 +156,12 @@ fn main() -> Result<(), ErrorExecution> {
     let config_file = open_config_file(config_name)?;
 
     let configuration = Configuration::new(config_file)?;
-    let (log_config, connection_config, download_config, save_config) = configuration.separate();
+    let (log_config, 
+        connection_config, 
+        download_config, 
+        save_config,
+        ui_config,
+    ) = configuration.separate();
 
     let (handle, logger) = initialize_logs(log_config)?;
 
@@ -162,13 +170,20 @@ fn main() -> Result<(), ErrorExecution> {
             save_config.clone(),
             logger.clone(),
         );
-    
-        let save_system = tui::execution::program_execution(
-            connection_config,
-            download_config,
-            &mut load_system,
-            logger.clone(),
-        )?;
+
+        let save_system = match ui_config.interface {
+            Interface::Tui => {
+                tui::execution::program_execution(
+                    connection_config,
+                    download_config,
+                    &mut load_system,
+                    logger.clone(),
+                )?
+            },
+            Interface::Gui => {
+                gui::execution::program_execution()?
+            },
+        };     
     
         save_system.save_to_files(save_config)?;
     }
