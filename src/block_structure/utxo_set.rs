@@ -41,7 +41,7 @@ impl UTXOSet {
     }
 
     /// Returns a list of the utxo that have not been spent yet.
-    pub fn get_utxo_list(&self, possible_address: Option<Address>) -> Vec<TransactionOutput> {
+    pub fn get_utxo_list(&self, possible_address: &Option<Address>) -> Vec<TransactionOutput> {
         self.utxo.iter().filter_map(|(output, _, _)| {
             if let Some(address) = possible_address {
                 match address.verify_transaction_ownership(output) {
@@ -127,25 +127,9 @@ mod tests {
         outpoint::Outpoint,
     };
     use crate::messages::compact_size::CompactSize;
-    
-    #[test]
-    fn test_01_correct_utxo_set_creation_with_no_adress() {
-        let utxo_set = UTXOSet::new(None);
-        assert!(utxo_set.utxo.is_empty());
-        assert!(utxo_set.address.is_none());
-    }
 
     #[test]
-    fn test_02_correct_utxo_set_creation_with_adress() {
-        let address = "1PMycacnJaSqwwJqjawXBErnLsZ7RkXUAs".to_string();
-        let address = Address::new(&address).unwrap();
-        let utxo_set = UTXOSet::new(Some(address));
-        assert!(utxo_set.utxo.is_empty());
-        assert!(utxo_set.address.is_some());
-    }
-
-    #[test]
-    fn test_03_correct_utxo_set_creation_from_blockchain_with_no_adress() {
+    fn test_01_correct_utxo_set_creation_from_utxo_set_with_account_transactions() {
         let mut block = Block::new(BlockHeader::new(
             block_version::BlockVersion::version(1),
             [0; 32],
@@ -153,50 +137,7 @@ mod tests {
             0,
             Compact256::from(10),
             0,
-            CompactSize::new(0),
-        ));
-
-        let transaction_input = TransactionInput::new(
-            Outpoint {
-                hash: [1; 32],
-                index: 23,
-            },
-            "Prueba in".as_bytes().to_vec(),
-            24,
-        );
-
-        let transaction_output = TransactionOutput {
-            value: 10,
-            pk_script: "Prueba out".as_bytes().to_vec(),
-        };
-
-        let transaction = Transaction {
-            version: 1,
-            tx_in: vec![transaction_input.clone()],
-            tx_out: vec![transaction_output.clone()],
-            time: 0,
-        };
-
-        block.append_transaction(transaction).unwrap();
-
-        let blockchain = BlockChain::new(block).unwrap();
-
-        let utxo_set = UTXOSet::from_blockchain(&blockchain, None);
-        assert_eq!(utxo_set.utxo.len(), 1);
-        assert!(utxo_set.address.is_none());
-        assert!(utxo_set.get_balance_in_satoshis() == 10);
-    }
-
-    #[test]
-    fn test_04_correct_utxo_set_creation_from_utxo_set_with_account_transactions() {
-        let mut block = Block::new(BlockHeader::new(
-            block_version::BlockVersion::version(1),
-            [0; 32],
-            [0; 32],
-            0,
-            Compact256::from(10),
-            0,
-            CompactSize::new(0),
+            CompactSize::new(1),
         ));
 
         let transaction_input = TransactionInput::new(
@@ -224,15 +165,14 @@ mod tests {
 
         let blockchain = BlockChain::new(block).unwrap();
 
-        let utxo_set_blockchain = UTXOSet::from_blockchain(&blockchain, None);
-        let utxo_set_account = UTXOSet::from_utxo_set(&utxo_set_blockchain, &Address::new(&"mrhW6tcF2LDetj3kJvaDTvatrVxNK64NXk".to_string()).unwrap());
-        assert_eq!(utxo_set_account.utxo.len(), 1);
-        assert!(utxo_set_account.address.is_some());
-        assert!(utxo_set_account.get_balance_in_satoshis() == 10);
+        let utxo_set_blockchain = UTXOSet::from_blockchain(&blockchain);
+        let address = Address::new(&"mrhW6tcF2LDetj3kJvaDTvatrVxNK64NXk".to_string()).unwrap();
+        assert_eq!(utxo_set_blockchain.utxo.len(), 1);
+        assert!(utxo_set_blockchain.get_balance_in_satoshis(&address) == 10);
     }
 
     #[test]
-    fn test_05_correct_utxo_set_creation_from_utxo_set_without_account_transactions() {
+    fn test_02_correct_utxo_set_creation_from_utxo_set_without_account_transactions() {
         let mut block = Block::new(BlockHeader::new(
             block_version::BlockVersion::version(1),
             [0; 32],
@@ -240,7 +180,7 @@ mod tests {
             0,
             Compact256::from(10),
             0,
-            CompactSize::new(0),
+            CompactSize::new(1),
         ));
 
         let transaction_input = TransactionInput::new(
@@ -268,15 +208,14 @@ mod tests {
 
         let blockchain = BlockChain::new(block).unwrap();
 
-        let utxo_set_blockchain = UTXOSet::from_blockchain(&blockchain, None);
-        let utxo_set_account = UTXOSet::from_utxo_set(&utxo_set_blockchain, &Address::new(&"mnQLoVaZ3w1NLVmUhfG8hh6WoG3iu7cnNw".to_string()).unwrap());
-        assert_eq!(utxo_set_account.utxo.len(), 0);
-        assert!(utxo_set_account.address.is_some());
-        assert!(utxo_set_account.get_balance_in_satoshis() == 0);
+        let utxo_set_blockchain = UTXOSet::from_blockchain(&blockchain);
+        let address = Address::new(&"mnQLoVaZ3w1NLVmUhfG8hh6WoG3iu7cnNw".to_string()).unwrap();
+        assert_eq!(utxo_set_blockchain.utxo.len(), 1);
+        assert!(utxo_set_blockchain.get_balance_in_satoshis(&address) == 0);
     }
 
     #[test]
-    fn test_06_correct_utxo_set_update_from_block() {
+    fn test_03_correct_utxo_set_update_from_block() {
 
         let mut block_1 = Block::new(BlockHeader::new(
             block_version::BlockVersion::version(1),
@@ -285,7 +224,7 @@ mod tests {
             0,
             Compact256::from(10),
             0,
-            CompactSize::new(0),
+            CompactSize::new(1),
         ));
 
         let transaction_output_1 = TransactionOutput {
@@ -309,11 +248,11 @@ mod tests {
 
         let blockchain = BlockChain::new(block_1).unwrap();
 
-        let mut utxo_set = UTXOSet::from_blockchain(&blockchain, Some(Address::new(&"mnQLoVaZ3w1NLVmUhfG8hh6WoG3iu7cnNw".to_string()).unwrap()));
+        let mut utxo_set = UTXOSet::from_blockchain(&blockchain);
+        let address = Address::new(&"mrhW6tcF2LDetj3kJvaDTvatrVxNK64NXk".to_string()).unwrap();
 
         assert_eq!(utxo_set.utxo.len(), 2);
-        assert!(utxo_set.address.is_some());
-        assert!(utxo_set.get_balance_in_satoshis() == 30);
+        assert_eq!(utxo_set.get_balance_in_satoshis(&address), 30);
 
         let mut serialized_transaction = Vec::new();
         transaction_output
@@ -344,7 +283,7 @@ mod tests {
             0,
             Compact256::from(10),
             0,
-            CompactSize::new(0),
+            CompactSize::new(1),
         ));
 
         block_transaction_input.append_transaction(transaction_input).unwrap();
@@ -352,12 +291,12 @@ mod tests {
         utxo_set.update_utxo_with_block(&block_transaction_input);
 
         assert_eq!(utxo_set.utxo.len(), 1);
-        assert!(utxo_set.get_balance_in_satoshis() == 20);
+        assert!(utxo_set.get_balance_in_satoshis(&address) == 20);
 
     }
 
     #[test]
-    fn test_07_correct_balance_calculation_in_tbtc() {
+    fn test_04_correct_balance_calculation_in_tbtc() {
         let mut block = Block::new(BlockHeader::new(
             block_version::BlockVersion::version(1),
             [0; 32],
@@ -393,9 +332,9 @@ mod tests {
 
         let blockchain = BlockChain::new(block).unwrap();
 
-        let utxo_set_blockchain = UTXOSet::from_blockchain(&blockchain, None);
-        let utxo_set_account = UTXOSet::from_utxo_set(&utxo_set_blockchain, &Address::new(&"mrhW6tcF2LDetj3kJvaDTvatrVxNK64NXk".to_string()).unwrap());
-        assert_eq!(utxo_set_account.get_balance_in_tbtc(),(10 as f64/100_000_000 as f64));
+        let utxo_set_blockchain = UTXOSet::from_blockchain(&blockchain);
+        let address = Address::new(&"mrhW6tcF2LDetj3kJvaDTvatrVxNK64NXk".to_string()).unwrap();
+        assert_eq!(utxo_set_blockchain.get_balance_in_tbtc(&address),(10 as f64/100_000_000 as f64));
     }
 
 }

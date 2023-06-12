@@ -220,18 +220,17 @@ fn program_execution(
         logger.clone(),
     )?;
 
-    // show_merkle_path(&block_chain, logger_sender.clone())?;
+    // show_merkle_path(&block_chain, logger_sender.clone())?; 
 
-    if account::wants_to_enter_account()? {
+    while account::wants_to_enter_account()? {
         let new_account = account::add_account(logger.clone())?;
         wallet.add_account(new_account);
     }
 
-    let block_chain_utxo_set = UTXOSet::from_blockchain(&block_chain, None);
+    let utxo_set = UTXOSet::from_blockchain(&block_chain);
 
-    for account in wallet.accounts.iter_mut() {
-        account.initialize_utxo_form_blockchain_utxo(&block_chain_utxo_set)?;
-        print!("Account's utxo: {:?}\n", account.utxo_set)
+    for account in wallet.accounts.iter() {
+        print!("Account's {} utxo: {:?}\n", account.account_name, utxo_set.get_utxo_list(&Some(account.address.clone())));
     }
 
     Ok(SaveSystem::new(

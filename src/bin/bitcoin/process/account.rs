@@ -8,7 +8,6 @@ use cargosos_bitcoin::{
         public_key::PublicKey,
         address::Address,
     }, 
-    block_structure::utxo_set,
 };
 
 use std::io::stdin;
@@ -148,18 +147,11 @@ pub fn add_account(logger_sender: LoggerSender) -> Result<Account, ErrorExecutio
 
     let _ = logger_sender.log_wallet("Creating a new account".to_string());
 
-    let private_key = get_private_key(logger_sender.clone())?;
-    let public_key = get_public_key(logger_sender.clone())?;
-    let address = get_address(logger_sender.clone())?;
-    let account_name = get_account_name()?;
-    let utxo_set = utxo_set::UTXOSet::new(Some(address.clone()));
-
     let account = Account { 
-        private_key,
-        public_key,
-        address,
-        account_name,
-        utxo_set,
+        private_key: get_private_key(logger_sender.clone())?,
+        public_key: get_public_key(logger_sender.clone())?,
+        address: get_address(logger_sender.clone())?,
+        account_name: get_account_name()?,
     };
 
     let _ = logger_sender.log_wallet("Account created successfully!".to_string());

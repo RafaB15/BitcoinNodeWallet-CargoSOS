@@ -119,7 +119,7 @@ impl BlockChain {
 
     pub fn get_all_blocks(&self) -> Vec<Block> {
         self.blocks.iter().filter_map(|node| {
-            match node.block.header.transaction_count.value > 0 {
+            match node.block.transactions.len() > 0 {
                 true => Some(node.block.clone()),
                 false => None,
             }
