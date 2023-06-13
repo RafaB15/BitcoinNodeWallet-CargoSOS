@@ -48,7 +48,7 @@ fn get_block_chain(
     download_config: DownloadConfig,
     logger: LoggerSender,
 ) -> Result<(), ErrorExecution> {
-    logger.log_connection("Getting block chain".to_string())?;
+    let _ = logger.log_connection("Getting block chain".to_string());
 
     match connection_config.ibd_method {
         IBDMethod::HeaderFirst => {
@@ -114,6 +114,18 @@ fn _show_merkle_path(
     Ok(())
 }
 
+fn get_utxo_set(
+    block_chain: &BlockChain,
+    logger: LoggerSender,
+) -> UTXOSet {
+    let _ = logger.log_wallet("Creando el UTXO set".to_string());
+
+    let utxo_set = UTXOSet::from_blockchain(&block_chain);
+
+    let _ = logger.log_wallet("Creado el UTXO set".to_string());
+    utxo_set
+}
+
 pub fn program_execution(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
@@ -131,8 +143,6 @@ pub fn program_execution(
     let mut block_chain = load_system.get_block_chain()?;
     let mut wallet = load_system.get_wallet()?;
 
-    println!("Wallet: {:?}", wallet);
-
     get_block_chain(
         peer_streams,
         &mut block_chain,
@@ -141,17 +151,19 @@ pub fn program_execution(
         logger.clone(),
     )?;
 
-    // show_merkle_path(&block_chain, logger_sender.clone())?; 
+    let utxo_set = get_utxo_set(&block_chain, logger.clone());
 
     while account::wants_to_enter_account()? {
         let new_account = account::add_account(logger.clone())?;
         wallet.add_account(new_account);
     }
 
-    let utxo_set = UTXOSet::from_blockchain(&block_chain);
-
     for account in wallet.accounts.iter() {
-        print!("Account's {} utxo: {:?}\n", account.account_name, utxo_set.get_balance_in_tbtc(&account.address));
+        print!(
+            "Account's '{}' utxo: {:?}\n", 
+            account.account_name, 
+            utxo_set.get_balance_in_tbtc(&account.address)
+        );
     }
 
     Ok(SaveSystem::new(

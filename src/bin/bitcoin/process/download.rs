@@ -29,30 +29,30 @@ pub fn headers_first(
     block_chain: &mut BlockChain,
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
-    logger_sender: LoggerSender,
+    logger: LoggerSender,
 ) -> Result<(), ErrorExecution> {
     let header_download = InitialHeaderDownload::new(
         connection_config.p2p_protocol_version,
         connection_config.magic_numbers,
-        logger_sender.clone(),
+        logger.clone(),
     );
 
-    let block_download = BlockDownload::new(connection_config.magic_numbers, logger_sender.clone());
+    let block_download = BlockDownload::new(connection_config.magic_numbers, logger.clone());
 
-    let _ = logger_sender.log_connection("Getting initial download headers first".to_string());
+    let _ = logger.log_connection("Getting initial download headers first".to_string());
 
     let mut peer_download_handles: Vec<JoinHandle<Vec<Block>>> = Vec::new();
 
     for peer_stream in peer_streams {
         let mut peer_stream = peer_stream;
 
-        let _ = logger_sender.log_connection(format!("Connecting to peer: {:?}", peer_stream));
+        let _ = logger.log_connection(format!("Connecting to peer: {:?}", peer_stream));
 
         get_peer_header(
             &mut peer_stream,
             &header_download,
             block_chain,
-            &logger_sender,
+            &logger,
         )?;
 
         let mut list_of_blocks: Vec<Block> = Vec::new();
@@ -66,12 +66,12 @@ pub fn headers_first(
             peer_stream,
             block_download.clone(),
             list_of_blocks,
-            logger_sender.clone(),
+            logger.clone(),
         ));
     }
 
     for peer_download_handle in peer_download_handles {
-        updating_block_chain(block_chain, peer_download_handle, logger_sender.clone())?;
+        updating_block_chain(block_chain, peer_download_handle, logger.clone())?;
     }
     Ok(())
 }
@@ -86,19 +86,19 @@ fn get_peer_header(
     peer_stream: &mut TcpStream,
     header_download: &InitialHeaderDownload,
     block_chain: &mut BlockChain,
-    logger_sender: &LoggerSender,
+    logger: &LoggerSender,
 ) -> Result<(), ErrorExecution> {
     loop {
         let header_count: u32 = match header_download.get_headers(peer_stream, block_chain) {
             Err(ErrorNode::NodeNotResponding(message)) => {
                 let _ =
-                    logger_sender.log_connection(format!("Node not responding, send: {}", message));
+                    logger.log_connection(format!("Node not responding, send: {}", message));
                 break;
             }
             other_response => other_response?,
         };
 
-        let _ = logger_sender.log_connection(format!("We get: {}", header_count));
+        let _ = logger.log_connection(format!("We get: {}", header_count));
 
         if header_count == 0 {
             break;
@@ -113,7 +113,7 @@ fn get_blocks(
     mut peer_stream: TcpStream,
     block_download: BlockDownload,
     list_of_blocks: Vec<Block>,
-    logger_sender: LoggerSender,
+    logger: LoggerSender,
 ) -> JoinHandle<Vec<Block>> {
     thread::spawn(move || {
         let mut headers: Vec<HashType> = Vec::new();
@@ -131,7 +131,7 @@ fn get_blocks(
             Ok(blocks) => blocks,
             Err(error) => {
                 let _ =
-                    logger_sender.log_connection(format!("Cannot get block, we get {:?}", error));
+                    logger.log_connection(format!("Cannot get block, we get {:?}", error));
                 vec![]
             }
         }
@@ -146,19 +146,19 @@ fn get_blocks(
 fn updating_block_chain(
     block_chain: &mut BlockChain,
     peer_download_handle: JoinHandle<Vec<Block>>,
-    logger_sender: LoggerSender,
+    logger: LoggerSender,
 ) -> Result<(), ErrorExecution> {
-    let _ = logger_sender.log_connection("Finish downloading, loading to blockchain".to_string());
+    let _ = logger.log_connection("Finish downloading, loading to blockchain".to_string());
     match peer_download_handle.join() {
         Ok(blocks) => {
-            let _ = logger_sender
+            let _ = logger
                 .log_connection(format!("Loading {} blocks to blockchain", blocks.len(),));
 
             for (i, block) in blocks.iter().enumerate() {
                 block_chain.update_block(block.clone())?;
 
                 if i % 50 == 0 {
-                    let _ = logger_sender
+                    let _ = logger
                         .log_connection(format!("Loading [{i}] blocks to blockchain",));
                 }
             }
@@ -185,13 +185,13 @@ pub fn _block_broadcasting(
     peer_streams: Vec<TcpStream>,
     block_chain: &mut BlockChain,
     connection_config: ConnectionConfig,
-    logger_sender: LoggerSender,
+    logger: LoggerSender,
 ) -> Result<(), ErrorExecution> {
-    let _ = logger_sender.log_connection("Broadcasting...".to_string());
+    let _ = logger.log_connection("Broadcasting...".to_string());
 
-    let block_download = BlockDownload::new(connection_config.magic_numbers, logger_sender.clone());
+    let block_download = BlockDownload::new(connection_config.magic_numbers, logger.clone());
 
-    let block_broadcasting = BlockBroadcasting::new(logger_sender.clone());
+    let block_broadcasting = BlockBroadcasting::new(logger.clone());
 
     let mut peer_download_handles: Vec<JoinHandle<Vec<Block>>> = Vec::new();
 
@@ -201,25 +201,25 @@ pub fn _block_broadcasting(
         let (header_count, headers) =
             match block_broadcasting.get_new_headers(&mut peer_stream, block_chain) {
                 Err(ErrorNode::NodeNotResponding(message)) => {
-                    let _ = logger_sender
+                    let _ = logger
                         .log_connection(format!("Node not responding, send: {}", message));
                     break;
                 }
                 other_response => other_response?,
             };
 
-        let _ = logger_sender.log_connection(format!("We get: {}", header_count));
+        let _ = logger.log_connection(format!("We get: {}", header_count));
 
         peer_download_handles.push(get_blocks(
             peer_stream,
             block_download.clone(),
             headers.iter().map(|header| Block::new(*header)).collect(),
-            logger_sender.clone(),
+            logger.clone(),
         ));
     }
 
     for peer_download_handle in peer_download_handles {
-        updating_block_chain(block_chain, peer_download_handle, logger_sender.clone())?;
+        updating_block_chain(block_chain, peer_download_handle, logger.clone())?;
     }
     Ok(())
 }

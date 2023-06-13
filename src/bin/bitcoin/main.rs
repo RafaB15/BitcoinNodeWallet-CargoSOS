@@ -16,12 +16,14 @@ use error_initialization::ErrorInitialization;
 use process::{
     configuration::Configuration, 
     load_system::LoadSystem, 
+    save_system::SaveSystem,
 };
 
 use cargosos_bitcoin::{
     logs::{error_log::ErrorLog, logger, logger_sender::LoggerSender},
     configurations::{
         log_config::LogConfig,
+        save_config::SaveConfig,
         interface::Interface,
     },
 };
@@ -95,6 +97,18 @@ fn initialize_logs(
     Ok((handle, logger))
 }
 
+fn end_program(
+    save_system: SaveSystem,
+    save_config: SaveConfig,
+    logger: LoggerSender,
+) -> Result<(), ErrorExecution> {
+    save_system.save_to_files(save_config)?;
+
+    let _ = logger.log_configuration("Closing program".to_string());
+
+    Ok(())
+}
+
 fn main() -> Result<(), ErrorExecution> {
     let arguments: Vec<String> = std::env::args().collect();
 
@@ -114,32 +128,27 @@ fn main() -> Result<(), ErrorExecution> {
 
     let (handle, logger) = initialize_logs(log_config)?;
 
-    {
-        let mut load_system = LoadSystem::new(
-            save_config.clone(),
-            logger.clone(),
-        );
+    let mut load_system = LoadSystem::new(
+        save_config.clone(),
+        logger.clone(),
+    );
 
-        let save_system = match ui_config.interface {
-            Interface::Tui => {
-                tui::execution::program_execution(
-                    connection_config,
-                    download_config,
-                    &mut load_system,
-                    logger.clone(),
-                )?
-            },
-            Interface::Gui => {
-                gui::execution::program_execution()?
-            },
-        };     
-    
-        save_system.save_to_files(save_config)?;
-    }
+    let save_system = match ui_config.interface {
+        Interface::Tui => {
+            tui::execution::program_execution(
+                connection_config,
+                download_config,
+                &mut load_system,
+                logger.clone(),
+            )?
+        },
+        Interface::Gui => {
+            gui::execution::program_execution()?
+        },
+    };  
 
-    logger.log_configuration("Closing program".to_string())?;
+    end_program(save_system, save_config, logger)?;
 
-    std::mem::drop(logger);
     match handle.join() {
         Ok(result) => result?,
         _ => return Err(ErrorExecution::FailThread),

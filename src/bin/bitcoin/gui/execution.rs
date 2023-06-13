@@ -30,7 +30,6 @@ impl VecOwnExt for Vec<Object> {
         if let Some(found) = found {
             (*found).clone()
         } else {
-            println!("Todo para el orto che {name}");
             (*found.unwrap()).clone()
         }
     }
@@ -95,7 +94,8 @@ pub fn program_execution() -> Result<SaveSystem, ErrorGUI> {
         .build();
 
     application.connect_activate(move |app| build_ui(app, glade_src));
-    application.run();
+    let argumentos: Vec<String> = vec![];
+    application.run_with_args(&argumentos);
 
     Err(ErrorGUI::FailedToInitializeGTK)
 }
