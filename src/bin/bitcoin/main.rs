@@ -130,12 +130,7 @@ fn main() -> Result<(), ErrorExecution> {
                 )?
             },
             Interface::Gui => {
-                gui::execution::program_execution(
-                    connection_config,
-                    download_config,
-                    &mut load_system,
-                    logger.clone(),
-                )?
+                gui::execution::program_execution()?
             },
         };     
     
