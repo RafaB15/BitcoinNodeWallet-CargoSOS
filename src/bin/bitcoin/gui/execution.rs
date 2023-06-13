@@ -1,8 +1,26 @@
 use super::error_gui::ErrorGUI;
 
-use crate::process::save_system::SaveSystem;
-
 use gtk::{prelude::*, glib::Object, Button, Entry, Application, Builder, Window};
+
+use crate::{
+    error_execution::ErrorExecution,
+    process::{
+        download, handshake, account,
+        save_system::SaveSystem, 
+        load_system::LoadSystem, 
+    },
+};
+
+use cargosos_bitcoin::{configurations::{
+    connection_config::ConnectionConfig, 
+    download_config::DownloadConfig,
+}, wallet_structure::{private_key, public_key}};
+
+use cargosos_bitcoin::logs::{
+    logger_sender::LoggerSender,
+};
+
+use std::sync::mpsc;
 
 pub trait VecOwnExt {
     fn search_by_name(&self, name: &str) -> Object;
@@ -30,7 +48,6 @@ impl VecOwnExt for Vec<Object> {
         if let Some(found) = found {
             (*found).clone()
         } else {
-            println!("Todo para el orto che {name}");
             (*found.unwrap()).clone()
         }
     }
@@ -60,40 +77,68 @@ fn build_ui(application: &gtk::Application, glade_src: &str) {
     let builder: Builder = Builder::from_string(glade_src);
 
     let objects = builder.objects();
+    
     let window = objects.search_window_named("MainWindow");
+    
     window.set_application(Some(application));
 
-    let send_button = objects.search_button_named("send_button");
-    let obj_cl = objects.clone();
-    send_button.connect_clicked(move |_| {
-        let entry_address = obj_cl.search_entry_named("address_entry");
-        let entry_amount = obj_cl.search_entry_named("amount_entry");
-        let entry_label = obj_cl.search_entry_named("label_entry");
-
-        
-
-        println!("{:?} {:?} {:?}", entry_address.text(), entry_amount.text(), entry_label.text());
-        entry_address.set_text("");
-        entry_amount.set_text("");
-        entry_label.set_text("");
-    });
-
     window.show_all();
+    println!("hola");
+    let account_registration_button = objects.search_button_named("AccountRegistrationButton");
+    println!("adios");
+    let obj_cl = objects.clone();
+    account_registration_button.connect_clicked(move |_| {
+        let account_registration_window = obj_cl.search_window_named("AccountRegistrationWindow");
+        account_registration_window.set_visible(true);
+        
+        let save_wallet_button = objects.search_button_named("SaveWalletButton");
+        let obj_cl_2 = obj_cl.clone();
+
+        save_wallet_button.connect_clicked(move |_| {
+            account_registration_window.set_visible(false);
+            
+            let private_key_entry = obj_cl_2.search_entry_named("PrivateKeyEntry");
+            let public_key_entry = obj_cl_2.search_entry_named("PublicKeyEntry");
+            let address_entry = obj_cl_2.search_entry_named("AddressEntry");
+            let name_entry = obj_cl_2.search_entry_named("NameEntry");
+
+            println!("{:?} {:?} {:?} {:?}", private_key_entry.text(), public_key_entry.text(), address_entry.text(), name_entry.text());
+
+            private_key_entry.set_text("");
+            public_key_entry.set_text("");
+            address_entry.set_text("");
+            name_entry.set_text("");            
+        });
+    });
+}
+/* 
+pub fn backend_execution(
+    connection_config: ConnectionConfig,
+    download_config: DownloadConfig,
+    load_system: &mut LoadSystem,
+    logger: LoggerSender,
+) -> Result<SaveSystem, ErrorExecution> {
 
 }
+*/
 
-pub fn program_execution() -> Result<SaveSystem, ErrorGUI> {
-    if gtk::init().is_err() {
-        println!("Failed to initialize GTK.");
-        return Err(ErrorGUI::FailedToInitializeGTK);
-    }
+pub fn program_execution(
+    connection_config: ConnectionConfig,
+    download_config: DownloadConfig,
+    load_system: &mut LoadSystem,
+    logger: LoggerSender,
+) -> Result<SaveSystem, ErrorGUI> {
+
+    let (tx_to_back, rx_from_front) = mpsc::channel::<String>();
+    let (tx_to_front, rx_from_back) = mpsc::channel::<String>();
 
     let glade_src = include_str!("WindowNotebook.glade");
 
     let application = Application::builder().build();
 
     application.connect_activate(move |app| build_ui(app, glade_src));
-    application.run();
+    let vector: Vec<String> = Vec::new();
+    application.run_with_args(&vector);
 
     Err(ErrorGUI::TODO)
 }
