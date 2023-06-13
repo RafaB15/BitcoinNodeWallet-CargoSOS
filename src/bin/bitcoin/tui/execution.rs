@@ -47,10 +47,10 @@ fn get_block_chain(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
     logger: LoggerSender,
-) -> Result<(), ErrorExecution> {
+) -> Result<Vec<TcpStream>, ErrorExecution> {
     let _ = logger.log_connection("Getting block chain".to_string());
 
-    match connection_config.ibd_method {
+    Ok(match connection_config.ibd_method {
         IBDMethod::HeaderFirst => {
             download::headers_first(
                 peer_streams,
@@ -58,14 +58,29 @@ fn get_block_chain(
                 connection_config,
                 download_config,
                 logger,
-            )?;
+            )?
         }
         IBDMethod::BlocksFirst => {
-            download::blocks_first();
+            download::blocks_first()
         }
-    }
+    })
+}
 
-    Ok(())
+fn broadcasting(
+    peer_streams: Vec<TcpStream>,
+    block_chain: &mut BlockChain,
+    connection_config: ConnectionConfig,
+    logger: LoggerSender,
+) -> Result<Vec<TcpStream>, ErrorExecution> {
+
+    let _ = logger.log_connection("Broadcasting...".to_string());
+
+    download::block_broadcasting(
+        peer_streams, 
+        block_chain, 
+        connection_config, 
+        logger
+    )
 }
 
 fn _show_merkle_path(
@@ -143,10 +158,10 @@ pub fn program_execution(
     let mut block_chain = load_system.get_block_chain()?;
     let mut wallet = load_system.get_wallet()?;
 
-    get_block_chain(
+    let peer_streams = get_block_chain(
         peer_streams,
         &mut block_chain,
-        connection_config,
+        connection_config.clone(),
         download_config,
         logger.clone(),
     )?;
@@ -165,6 +180,13 @@ pub fn program_execution(
             utxo_set.get_balance_in_tbtc(&account.address)
         );
     }
+
+    let _ = broadcasting(
+        peer_streams,
+        &mut block_chain,
+        connection_config,
+        logger.clone(),
+    )?;
 
     Ok(SaveSystem::new(
         block_chain,
