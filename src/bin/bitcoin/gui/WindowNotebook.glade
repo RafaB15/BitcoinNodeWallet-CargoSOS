@@ -730,8 +730,29 @@
             <property name="receives-default">True</property>
           </object>
           <packing>
-            <property name="x">580</property>
+            <property name="x">361</property>
             <property name="y">26</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkComboBoxText" id="WalletsComboBox">
+            <property name="name">WalletsComboBox</property>
+            <property name="width-request">203</property>
+            <property name="height-request">34</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="active">0</property>
+            <property name="has-entry">True</property>
+            <child internal-child="entry">
+              <object class="GtkEntry">
+                <property name="can-focus">False</property>
+                <property name="placeholder-text" translatable="yes">Select a wallet</property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="x">481</property>
+            <property name="y">25</property>
           </packing>
         </child>
       </object>

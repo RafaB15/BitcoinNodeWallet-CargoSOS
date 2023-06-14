@@ -1,11 +1,10 @@
 use super::error_gui::ErrorGUI;
 
-use gtk::{prelude::*, glib::Object, Button, Entry, Application, Builder, Window};
+use gtk::{prelude::*, glib::Object, Button, Entry, Application, Builder, Window, ComboBoxText};
 use gtk::glib;
 use std::thread;
 
 use crate::{
-    error_initialization::ErrorInitialization,
     error_execution::ErrorExecution,
     process::{
         download, handshake, account,
@@ -39,6 +38,7 @@ pub trait VecOwnExt {
     fn search_window_named(&self, name: &str) -> Window;
     fn search_button_named(&self, name: &str) -> Button;
     fn search_entry_named(&self, name: &str) -> Entry;
+    fn search_combo_box_named(&self, name: &str) -> ComboBoxText;
     //fn search_radio_button_named(&self, name: &str) -> RadioButton;
 
 }
@@ -83,6 +83,14 @@ impl VecOwnExt for Vec<Object> {
             .unwrap()
             .clone()
     }
+
+    fn search_combo_box_named(&self, name: &str) -> ComboBoxText {
+        self.search_by_name(name)
+            .downcast_ref::<gtk::ComboBoxText>()
+            .unwrap()
+            .clone()
+    }
+    
 }
 
 fn build_ui(application: &gtk::Application, glade_src: &str) {
@@ -96,6 +104,25 @@ fn build_ui(application: &gtk::Application, glade_src: &str) {
 
     window.show_all();
  
+    //Combo Box
+    let account_registration_window = objects.search_window_named("AccountRegistrationWindow");
+    let combo_box = objects.search_combo_box_named("WalletsComboBox");
+    
+    combo_box.append_text("");
+    combo_box.append_text("Add address");
+
+    combo_box.connect_changed(move |combo_box| {
+        if let Some(active_text) = combo_box.active_text() {
+            if active_text == "Add address" {
+                account_registration_window.set_visible(true);
+                combo_box.set_active(Some(0));
+                println!("Add address it is then!");
+            }
+        }
+    });
+    
+
+    //Add address button
     let account_registration_button = objects.search_button_named("AccountRegistrationButton");
 
     let obj_cl = objects.clone();
@@ -123,6 +150,8 @@ fn build_ui(application: &gtk::Application, glade_src: &str) {
         address_entry.set_text("");
         name_entry.set_text("");            
     });
+
+    
 }
 
 fn get_potential_peers(
@@ -144,14 +173,42 @@ fn get_potential_peers(
     Ok(potential_peers)
 }
 
-pub fn backend_initialization(
+fn get_block_chain(
+    peer_streams: Vec<TcpStream>,
+    block_chain: &mut BlockChain,
+    connection_config: ConnectionConfig,
+    download_config: DownloadConfig,
+    logger: LoggerSender,
+) -> Result<(), ErrorExecution> {
+    logger.log_connection("Getting block chain".to_string())?;
+
+    match connection_config.ibd_method {
+        IBDMethod::HeaderFirst => {
+            download::headers_first(
+                peer_streams,
+                block_chain,
+                connection_config,
+                download_config,
+                logger,
+            )?;
+        }
+        IBDMethod::BlocksFirst => {
+            download::blocks_first();
+        }
+    }
+
+    Ok(())
+}
+
+pub fn backend_execution(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
     load_system: LoadSystem,
     logger: LoggerSender,
-    tx_to_front: mpsc::Sender<String>,
+    tx_to_front: glib::Sender<String>,
     rx_from_front: mpsc::Receiver<String>,
-) -> Result<SaveSystem, ErrorExecution> {
+) -> Result<(), ErrorExecution> {
+    
     let mut load_system = load_system;
 
     let potential_peers = get_potential_peers(connection_config.clone(), logger.clone())?;
@@ -167,9 +224,15 @@ pub fn backend_initialization(
 
     println!("Wallet: {:?}", wallet);
 
-    
+    get_block_chain(
+        peer_streams,
+        &mut block_chain,
+        connection_config,
+        download_config,
+        logger.clone(),
+    )?;
 
-    Err(ErrorExecution::Initialization(ErrorInitialization::ConfigurationFileDoesntExist))
+    Ok(())
 }
 
 
@@ -183,10 +246,10 @@ pub fn program_execution(
     let (tx_to_front, rx_from_back) = glib::MainContext::channel::<String>(glib::PRIORITY_DEFAULT);
 
     let backend_initialization_handler = thread::spawn(move || {
-        let _ = backend_initialization(connection_config, download_config, load_system, logger, tx_to_front, rx_from_front);
+        let _ = backend_execution(connection_config, download_config, load_system, logger, tx_to_front, rx_from_front);
     });
 
-    let result = backend_initialization_handler.join();
+    //let result = backend_initialization_handler.join();
 
     let glade_src = include_str!("WindowNotebook.glade");
 
