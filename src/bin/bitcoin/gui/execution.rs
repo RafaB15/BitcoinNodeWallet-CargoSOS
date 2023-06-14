@@ -1,8 +1,11 @@
 use super::error_gui::ErrorGUI;
 
 use gtk::{prelude::*, glib::Object, Button, Entry, Application, Builder, Window};
+use gtk::glib;
+use std::thread;
 
 use crate::{
+    error_initialization::ErrorInitialization,
     error_execution::ErrorExecution,
     process::{
         download, handshake, account,
@@ -11,14 +14,23 @@ use crate::{
     },
 };
 
-use cargosos_bitcoin::{configurations::{
-    connection_config::ConnectionConfig, 
-    download_config::DownloadConfig,
-}, wallet_structure::{private_key, public_key}};
-
-use cargosos_bitcoin::logs::{
-    logger_sender::LoggerSender,
+use cargosos_bitcoin::configurations::{
+    connection_config::ConnectionConfig, download_config::DownloadConfig
 };
+
+use cargosos_bitcoin::{
+    logs::logger_sender::LoggerSender,
+    block_structure::{
+        block_chain::BlockChain,
+        utxo_set::UTXOSet,
+    },
+    connections::ibd_methods::IBDMethod,
+};
+
+use std::net::{SocketAddr, TcpStream};
+
+use cargosos_bitcoin::wallet_structure::{private_key, public_key};
+
 
 use std::sync::mpsc;
 
@@ -83,54 +95,98 @@ fn build_ui(application: &gtk::Application, glade_src: &str) {
     window.set_application(Some(application));
 
     window.show_all();
-    println!("hola");
+ 
     let account_registration_button = objects.search_button_named("AccountRegistrationButton");
-    println!("adios");
+
     let obj_cl = objects.clone();
+
+    let account_registration_window = obj_cl.search_window_named("AccountRegistrationWindow");
     account_registration_button.connect_clicked(move |_| {
-        let account_registration_window = obj_cl.search_window_named("AccountRegistrationWindow");
         account_registration_window.set_visible(true);
+    });
+
+    let account_registration_window = obj_cl.search_window_named("AccountRegistrationWindow");
+    let obj_cl = objects.clone();
+    let save_wallet_button = objects.search_button_named("SaveWalletButton");
+    save_wallet_button.connect_clicked(move |_| {
+        account_registration_window.set_visible(false);
         
-        let save_wallet_button = objects.search_button_named("SaveWalletButton");
-        let obj_cl_2 = obj_cl.clone();
+        let private_key_entry = obj_cl.search_entry_named("PrivateKeyEntry");
+        let public_key_entry = obj_cl.search_entry_named("PublicKeyEntry");
+        let address_entry = obj_cl.search_entry_named("AddressEntry");
+        let name_entry = obj_cl.search_entry_named("NameEntry");
 
-        save_wallet_button.connect_clicked(move |_| {
-            account_registration_window.set_visible(false);
-            
-            let private_key_entry = obj_cl_2.search_entry_named("PrivateKeyEntry");
-            let public_key_entry = obj_cl_2.search_entry_named("PublicKeyEntry");
-            let address_entry = obj_cl_2.search_entry_named("AddressEntry");
-            let name_entry = obj_cl_2.search_entry_named("NameEntry");
+        println!("{:?} {:?} {:?} {:?}", private_key_entry.text(), public_key_entry.text(), address_entry.text(), name_entry.text());
 
-            println!("{:?} {:?} {:?} {:?}", private_key_entry.text(), public_key_entry.text(), address_entry.text(), name_entry.text());
-
-            private_key_entry.set_text("");
-            public_key_entry.set_text("");
-            address_entry.set_text("");
-            name_entry.set_text("");            
-        });
+        private_key_entry.set_text("");
+        public_key_entry.set_text("");
+        address_entry.set_text("");
+        name_entry.set_text("");            
     });
 }
-/* 
-pub fn backend_execution(
+
+fn get_potential_peers(
+    connection_config: ConnectionConfig,
+    logger: LoggerSender,
+) -> Result<Vec<SocketAddr>, ErrorExecution> {
+    logger.log_connection("Getting potential peers with dns seeder".to_string())?;
+
+    let potential_peers = connection_config.dns_seeder.discover_peers()?;
+
+    let peer_count_max = std::cmp::min(connection_config.peer_count_max, potential_peers.len());
+
+    let potential_peers = potential_peers[0..peer_count_max].to_vec();
+
+    for potential_peer in &potential_peers {
+        logger.log_connection(format!("Potential peer: {:?}", potential_peer))?;
+    }
+
+    Ok(potential_peers)
+}
+
+pub fn backend_initialization(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
-    load_system: &mut LoadSystem,
+    load_system: LoadSystem,
     logger: LoggerSender,
+    tx_to_front: mpsc::Sender<String>,
+    rx_from_front: mpsc::Receiver<String>,
 ) -> Result<SaveSystem, ErrorExecution> {
+    let mut load_system = load_system;
 
+    let potential_peers = get_potential_peers(connection_config.clone(), logger.clone())?;
+
+    let peer_streams = handshake::connect_to_peers(
+        potential_peers,
+        connection_config.clone(),
+        logger.clone(),
+    );
+
+    let mut block_chain = load_system.get_block_chain()?;
+    let mut wallet = load_system.get_wallet()?;
+
+    println!("Wallet: {:?}", wallet);
+
+    
+
+    Err(ErrorExecution::Initialization(ErrorInitialization::ConfigurationFileDoesntExist))
 }
-*/
+
 
 pub fn program_execution(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
-    load_system: &mut LoadSystem,
+    load_system: LoadSystem,
     logger: LoggerSender,
 ) -> Result<SaveSystem, ErrorGUI> {
-
     let (tx_to_back, rx_from_front) = mpsc::channel::<String>();
-    let (tx_to_front, rx_from_back) = mpsc::channel::<String>();
+    let (tx_to_front, rx_from_back) = glib::MainContext::channel::<String>(glib::PRIORITY_DEFAULT);
+
+    let backend_initialization_handler = thread::spawn(move || {
+        let _ = backend_initialization(connection_config, download_config, load_system, logger, tx_to_front, rx_from_front);
+    });
+
+    let result = backend_initialization_handler.join();
 
     let glade_src = include_str!("WindowNotebook.glade");
 

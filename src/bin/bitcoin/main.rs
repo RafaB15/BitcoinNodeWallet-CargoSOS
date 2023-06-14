@@ -133,7 +133,7 @@ fn main() -> Result<(), ErrorExecution> {
                 gui::execution::program_execution(
                     connection_config,
                     download_config,
-                    &mut load_system,
+                    load_system,
                     logger.clone(),
                 )?
             },
