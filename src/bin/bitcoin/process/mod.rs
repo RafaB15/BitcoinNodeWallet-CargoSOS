@@ -1,4 +1,3 @@
-pub mod account;
 pub mod broadcasting;
 pub mod download;
 pub mod handshake;
