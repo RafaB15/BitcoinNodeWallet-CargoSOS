@@ -14,7 +14,10 @@ use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
 };
 
-use std::io::{Read, Write};
+use std::{
+    fmt::Display,
+    io::{Read, Write},
+};
 
 use crate::block_structure::{transaction_output::TransactionOutput, utxo_set::UTXOSet};
 
@@ -85,5 +88,11 @@ impl DeserializableInternalOrder for Account {
             public_key: PublicKey::io_deserialize(stream)?,
             address: Address::io_deserialize(stream)?,
         })
+    }
+}
+
+impl Display for Account {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Account Name: {}", self.account_name)
     }
 }

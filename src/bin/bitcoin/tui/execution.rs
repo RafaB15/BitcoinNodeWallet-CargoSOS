@@ -105,11 +105,11 @@ fn _show_merkle_path(block_chain: &BlockChain, logger: LoggerSender) -> Result<(
 }
 
 fn get_utxo_set(block_chain: &BlockChain, logger: LoggerSender) -> UTXOSet {
-    let _ = logger.log_wallet("Creando el UTXO set".to_string());
+    let _ = logger.log_wallet("Creating the UTXO set".to_string());
 
     let utxo_set = UTXOSet::from_blockchain(&block_chain);
 
-    let _ = logger.log_wallet("Creado el UTXO set".to_string());
+    let _ = logger.log_wallet("UTXO set finished successfully".to_string());
     utxo_set
 }
 
@@ -119,14 +119,19 @@ fn get_broadcasting(
     utxo_set: UTXOSet,
     wallet: &Wallet,
     logger: LoggerSender,
-) -> Broadcasting<TcpStream> {
+) -> Result<Broadcasting<TcpStream>, ErrorExecution> {
     let _ = logger.log_wallet("Selecting account".to_string());
 
-    let account = account::select_account(&wallet, logger.clone());
+    let account = account::select_account(&wallet, logger.clone())?;
 
     let _ = logger.log_node("Broadcasting".to_string());
 
-    Broadcasting::new(account, peer_streams, block_chain, utxo_set)
+    Ok(Broadcasting::new(
+        account,
+        peer_streams,
+        block_chain,
+        utxo_set,
+    ))
 }
 
 fn manage_broadcast(
@@ -139,10 +144,9 @@ fn manage_broadcast(
             MenuOption::CreateAccount => {
                 wallet.add_account(account::create_account(logger.clone())?);
             }
-            MenuOption::ShowAccounts => account::show_accounts(&wallet, logger.clone()),
+            MenuOption::ShowAccounts => account::show_accounts(&wallet),
             MenuOption::ChangeAccount => {
-                account::show_accounts(&wallet, logger.clone());
-                let account = account::select_account(&wallet, logger.clone());
+                let account = account::select_account(&wallet, logger.clone())?;
                 broadcasting.change_account(account);
             }
             MenuOption::SendTransaction => todo!(),
@@ -177,7 +181,8 @@ pub fn program_execution(
 
     let utxo_set = get_utxo_set(&block_chain, logger.clone());
 
-    let broadcasting = get_broadcasting(peer_streams, block_chain, utxo_set, &wallet, logger.clone());
+    let broadcasting =
+        get_broadcasting(peer_streams, block_chain, utxo_set, &wallet, logger.clone())?;
 
     let (_, block_chain, _) = manage_broadcast(broadcasting, &mut wallet, logger.clone())?;
 
