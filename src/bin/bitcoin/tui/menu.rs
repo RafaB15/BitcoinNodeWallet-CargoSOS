@@ -9,7 +9,6 @@ fn print_menu() {
         MenuOption::CreateAccount,
         MenuOption::ChangeAccount,
         MenuOption::SendTransaction,
-        MenuOption::ShowBalance,
         MenuOption::ShowAccounts,
         MenuOption::Exit,
     ];

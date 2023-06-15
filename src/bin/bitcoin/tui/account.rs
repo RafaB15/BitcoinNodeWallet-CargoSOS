@@ -122,7 +122,7 @@ fn get_account_name() -> Result<String, ErrorExecution> {
 ///
 /// ### Error
 ///  * `ErrorExecution::TerminalReadFail`: It will appear when the terminal read fails
-pub fn add_account(logger: LoggerSender) -> Result<Account, ErrorExecution> {
+pub fn create_account(logger: LoggerSender) -> Result<Account, ErrorExecution> {
     let _ = logger.log_wallet("Creating a new account".to_string());
 
     let account = Account {
