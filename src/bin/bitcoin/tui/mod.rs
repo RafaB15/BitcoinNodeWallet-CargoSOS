@@ -1,5 +1,6 @@
 pub mod account;
 pub mod execution;
+pub mod notify;
 
 pub mod menu;
 pub mod menu_options;

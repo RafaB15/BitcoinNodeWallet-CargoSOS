@@ -1,4 +1,4 @@
-use super::message_broadcasting::MessageBroadcasting;
+use super::{message_broadcasting::MessageBroadcasting, message_notify::MessageNotify};
 
 use cargosos_bitcoin::{
     block_structure::{
@@ -11,7 +11,7 @@ use cargosos_bitcoin::{
     wallet_structure::account::Account,
 };
 
-use std::sync::mpsc::Receiver;
+use std::sync::mpsc::{Receiver, Sender};
 
 pub struct MessageManager {
     receiver: Receiver<MessageBroadcasting>,
@@ -24,6 +24,7 @@ pub struct MessageManager {
 impl MessageManager {
     pub fn new(
         receiver: Receiver<MessageBroadcasting>,
+        sender: Sender<MessageNotify>,
         account: Account,
         transactions: Vec<Transaction>,
         block_chain: BlockChain,

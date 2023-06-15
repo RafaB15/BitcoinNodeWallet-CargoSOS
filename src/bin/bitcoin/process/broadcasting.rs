@@ -1,14 +1,10 @@
 use super::{
     message_broadcasting::MessageBroadcasting, message_manager::MessageManager,
-    peer_manager::PeerManager,
+    message_notify::MessageNotify, peer_manager::PeerManager,
 };
 
 use cargosos_bitcoin::{
     block_structure::{block_chain::BlockChain, transaction::Transaction, utxo_set::UTXOSet},
-    messages::{
-        block_message::BlockMessage, command_name::CommandName, get_data_message::GetDataMessage,
-        message, message_header::MessageHeader,
-    },
     wallet_structure::account::Account,
 };
 
@@ -37,11 +33,18 @@ where
         peer_streams: Vec<RW>,
         block_chain: BlockChain,
         utxo_set: UTXOSet,
+        sender_notify: Sender<MessageNotify>,
     ) -> Self {
         let (sender, receiver) = mpsc::channel::<MessageBroadcasting>();
 
-        let message_manager =
-            MessageManager::new(receiver, account, Vec::new(), block_chain, utxo_set);
+        let message_manager = MessageManager::new(
+            receiver,
+            sender_notify,
+            account,
+            Vec::new(),
+            block_chain,
+            utxo_set,
+        );
 
         Broadcasting {
             peers: Self::create_peers(peer_streams, sender.clone()),
@@ -49,7 +52,7 @@ where
         }
     }
 
-    fn create_receiver(mut message_manager: MessageManager) -> JoinHandle<MessageManager> {
+    fn create_receiver(message_manager: MessageManager) -> JoinHandle<MessageManager> {
         thread::spawn(move || message_manager.receive_messages())
     }
 
@@ -85,7 +88,7 @@ where
         }
     }
 
-    pub fn send_transaction(&mut self, transaction: Transaction) {
+    pub fn _send_transaction(&mut self, transaction: Transaction) {
         for (_, sender) in self.peers.iter() {
             if sender
                 .send(MessageBroadcasting::Transaction(transaction.clone()))

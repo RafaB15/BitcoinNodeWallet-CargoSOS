@@ -1,10 +1,10 @@
-use super::{account, menu, menu_options::MenuOption};
+use super::{account, menu, menu_options::MenuOption, notify};
 
 use crate::{
     error_execution::ErrorExecution,
     process::{
         broadcasting::Broadcasting, download, handshake, load_system::LoadSystem,
-        save_system::SaveSystem,
+        message_notify::MessageNotify, save_system::SaveSystem,
     },
 };
 
@@ -19,7 +19,11 @@ use cargosos_bitcoin::{
     wallet_structure::wallet::Wallet,
 };
 
-use std::net::{SocketAddr, TcpStream};
+use std::{
+    net::{SocketAddr, TcpStream},
+    sync::mpsc::{self, Receiver},
+    thread::{self, JoinHandle},
+};
 
 fn get_potential_peers(
     connection_config: ConnectionConfig,
@@ -119,19 +123,19 @@ fn get_broadcasting(
     utxo_set: UTXOSet,
     wallet: &Wallet,
     logger: LoggerSender,
-) -> Result<Broadcasting<TcpStream>, ErrorExecution> {
+) -> Result<(Broadcasting<TcpStream>, Receiver<MessageNotify>), ErrorExecution> {
     let _ = logger.log_wallet("Selecting account".to_string());
 
     let account = account::select_account(&wallet, logger.clone())?;
 
     let _ = logger.log_node("Broadcasting".to_string());
 
-    Ok(Broadcasting::new(
-        account,
-        peer_streams,
-        block_chain,
-        utxo_set,
-    ))
+    let (sender_notify, receiver_notify) = mpsc::channel::<MessageNotify>();
+
+    let boradcasting =
+        Broadcasting::new(account, peer_streams, block_chain, utxo_set, sender_notify);
+
+    Ok((boradcasting, receiver_notify))
 }
 
 fn manage_broadcast(
@@ -155,6 +159,25 @@ fn manage_broadcast(
     }
 
     Ok(broadcasting.destroy())
+}
+
+fn notification(
+    receiver_notify: Receiver<MessageNotify>,
+    logger: LoggerSender,
+) -> JoinHandle<()> {
+
+    thread::spawn(move || {
+        for notification in receiver_notify {
+            match notification {
+                MessageNotify::Balance(balance) => {
+                    let _ = logger.log_node(format!("New balance: {:?}", balance));
+                }
+                MessageNotify::Transaction(transaction) => {
+                    let _ = logger.log_node(format!("New transaction: {:?}", transaction));
+                }
+            }
+        }
+    })
 }
 
 pub fn program_execution(
@@ -181,10 +204,16 @@ pub fn program_execution(
 
     let utxo_set = get_utxo_set(&block_chain, logger.clone());
 
-    let broadcasting =
+    let (broadcasting, receiver) =
         get_broadcasting(peer_streams, block_chain, utxo_set, &wallet, logger.clone())?;
 
+    let handle = notification(receiver, logger.clone());
+
     let (_, block_chain, _) = manage_broadcast(broadcasting, &mut wallet, logger.clone())?;
+
+    if handle.join().is_err() {
+        todo!()
+    }
 
     Ok(SaveSystem::new(block_chain, wallet, logger))
 }
