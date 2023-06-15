@@ -18,8 +18,7 @@ use cargosos_bitcoin::{
 
 use std::{
     io::{Read, Write},
-    mem::replace,
-    sync::mpsc::{self, Receiver, Sender},
+    sync::mpsc::{self, Sender},
     thread::{self, JoinHandle},
 };
 
@@ -37,7 +36,7 @@ impl<RW> Broadcasting<RW>
 where
     RW: Read +  Write + Send + 'static
 {
-    fn new(
+    pub fn new(
         account: Account,
         peers_streams: Vec<RW>,
         block_chain: BlockChain,
@@ -110,7 +109,7 @@ where
         }
     }
 
-    pub fn destroy(mut self) -> (Vec<RW>, BlockChain, UTXOSet) {
+    pub fn destroy(self) -> (Vec<RW>, BlockChain, UTXOSet) {
         for (_, sender) in self.peers.iter() {
             if sender.send(MessageBroadcasting::Exit).is_err() {
                 todo!()
@@ -131,7 +130,7 @@ where
             todo!()
         }
 
-        let mut message_manager = match handle.join() {
+        let message_manager = match handle.join() {
             Ok(message_manager) => message_manager,
             Err(_) => todo!(),
         };

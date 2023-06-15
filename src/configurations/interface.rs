@@ -20,7 +20,8 @@ impl FromStr for Interface {
             "GUI" => Ok(Interface::Gui),
             "TUI" => Ok(Interface::Tui),
             _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
-                "interface of {:?}", s
+                "interface of {:?}",
+                s
             ))),
         }
     }
@@ -32,7 +33,8 @@ impl Parsable for Interface {
         match value.parse::<Interface>() {
             Ok(value) => Ok(value),
             _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
-                "interface of {:?}", value
+                "interface of {:?}",
+                value
             ))),
         }
     }

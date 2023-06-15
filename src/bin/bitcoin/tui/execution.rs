@@ -2,7 +2,7 @@ use super::account;
 
 use crate::{
     error_execution::ErrorExecution,
-    process::{download, handshake, load_system::LoadSystem, save_system::SaveSystem},
+    process::{download, handshake, load_system::LoadSystem, save_system::SaveSystem, broadcasting::Broadcasting},
 };
 
 use cargosos_bitcoin::configurations::{
@@ -120,6 +120,11 @@ fn get_utxo_set(block_chain: &BlockChain, logger: LoggerSender) -> UTXOSet {
     utxo_set
 }
 
+fn manage_broadcast(broadcasting: Broadcasting<TcpStream>) -> (Vec<TcpStream>, BlockChain, UTXOSet) {
+
+    broadcasting.destroy()
+}
+
 pub fn program_execution(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
@@ -157,12 +162,16 @@ pub fn program_execution(
         );
     }
 
-    let _ = broadcasting(
+    let account = account::select_account(&wallet, logger.clone());
+
+    let broadcasting = Broadcasting::new(
+        account,
         peer_streams,
-        &mut block_chain,
-        connection_config,
-        logger.clone(),
-    )?;
+        block_chain,
+        utxo_set,
+    );
+
+    let (_, block_chain, _) = manage_broadcast(broadcasting);
 
     Ok(SaveSystem::new(block_chain, wallet, logger))
 }

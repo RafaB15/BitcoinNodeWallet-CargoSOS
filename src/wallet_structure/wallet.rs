@@ -1,17 +1,14 @@
-use super::{
-    account::Account,
-    error_wallet::ErrorWallet,
-};
+use super::{account::Account, error_wallet::ErrorWallet};
 
 use crate::{
     configurations::try_default::TryDefault,
     serialization::{
-        serializable_internal_order::SerializableInternalOrder,
-        serializable_little_endian::SerializableLittleEndian,
         deserializable_internal_order::DeserializableInternalOrder,
         deserializable_little_endian::DeserializableLittleEndian,
         error_serialization::ErrorSerialization,
-    }
+        serializable_internal_order::SerializableInternalOrder,
+        serializable_little_endian::SerializableLittleEndian,
+    },
 };
 
 use std::io::{Read, Write};
@@ -23,9 +20,7 @@ pub struct Wallet {
 
 impl Wallet {
     pub fn new(accounts: Vec<Account>) -> Wallet {
-        Wallet {
-            accounts,
-        }
+        Wallet { accounts }
     }
 
     pub fn add_account(&mut self, account: Account) {

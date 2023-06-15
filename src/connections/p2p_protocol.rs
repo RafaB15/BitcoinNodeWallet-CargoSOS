@@ -65,7 +65,8 @@ impl Parsable for ProtocolVersionP2P {
         match value.parse::<ProtocolVersionP2P>() {
             Ok(value) => Ok(value),
             _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
-                "protocol version p2p of {:?}", value
+                "protocol version p2p of {:?}",
+                value
             ))),
         }
     }

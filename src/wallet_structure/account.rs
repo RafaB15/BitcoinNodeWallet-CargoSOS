@@ -1,25 +1,22 @@
 use super::{
+    address::Address,
     error_wallet::ErrorWallet,
     private_key::{PrivateKey, PrivateKeyType},
     public_key::{PublicKey, PublicKeyType},
-    address::Address,
 };
 
 use crate::serialization::{
-    serializable_internal_order::SerializableInternalOrder,
-    serializable_little_endian::SerializableLittleEndian,
-    deserializable_internal_order::DeserializableInternalOrder,
     deserializable_fix_size::DeserializableFixSize,
+    deserializable_internal_order::DeserializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization,
+    serializable_internal_order::SerializableInternalOrder,
+    serializable_little_endian::SerializableLittleEndian,
 };
 
 use std::io::{Read, Write};
 
-use crate::block_structure::{
-    transaction_output::TransactionOutput,
-    utxo_set::UTXOSet,
-};
+use crate::block_structure::{transaction_output::TransactionOutput, utxo_set::UTXOSet};
 
 #[derive(Debug, Clone)]
 pub struct Account {
@@ -31,10 +28,10 @@ pub struct Account {
 
 impl Account {
     pub fn new(
-        name: &str, 
-        private_key_bytes: &PrivateKeyType, 
-        public_key_bytes: &PublicKeyType, 
-        addres: &str
+        name: &str,
+        private_key_bytes: &PrivateKeyType,
+        public_key_bytes: &PublicKeyType,
+        addres: &str,
     ) -> Result<Account, ErrorWallet> {
         let account_name = name.to_string();
         let private_key = PrivateKey::new(private_key_bytes)?;
@@ -82,7 +79,7 @@ impl DeserializableInternalOrder for Account {
     fn io_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
         let account_name_len = u64::le_deserialize(stream)? as usize;
 
-        Ok(Account{
+        Ok(Account {
             account_name: String::deserialize_fix_size(stream, account_name_len)?,
             private_key: PrivateKey::io_deserialize(stream)?,
             public_key: PublicKey::io_deserialize(stream)?,

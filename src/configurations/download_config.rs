@@ -65,10 +65,7 @@ mod tests {
 
         let connection_result = DownloadConfig::parse(name, &map);
 
-        assert_eq!(
-            Err(ErrorConfiguration::ValueNotFound),
-            connection_result
-        );
+        assert_eq!(Err(ErrorConfiguration::ValueNotFound), connection_result);
     }
 
     #[test]
@@ -95,9 +92,6 @@ mod tests {
 
         let connection_result = DownloadConfig::parse(name, &map);
 
-        assert_eq!(
-            Err(ErrorConfiguration::ValueNotFound),
-            connection_result
-        );
+        assert_eq!(Err(ErrorConfiguration::ValueNotFound), connection_result);
     }
 }

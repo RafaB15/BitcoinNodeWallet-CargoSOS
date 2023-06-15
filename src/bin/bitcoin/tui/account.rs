@@ -7,6 +7,7 @@ use cargosos_bitcoin::{
         private_key::PrivateKey,
         public_key::PublicKey,
         address::Address,
+        wallet::Wallet,
     }, 
 };
 
@@ -139,18 +140,22 @@ pub fn wants_to_enter_account() -> Result<bool, ErrorExecution> {
 /// 
 /// ### Error
 ///  * `ErrorExecution::TerminalReadFail`: It will appear when the terminal read fails
-pub fn add_account(logger_sender: LoggerSender) -> Result<Account, ErrorExecution> {    
+pub fn add_account(logger: LoggerSender) -> Result<Account, ErrorExecution> {    
 
-    let _ = logger_sender.log_wallet("Creating a new account".to_string());
+    let _ = logger.log_wallet("Creating a new account".to_string());
 
     let account = Account { 
-        private_key: get_private_key(logger_sender.clone())?,
-        public_key: get_public_key(logger_sender.clone())?,
-        address: get_address(logger_sender.clone())?,
+        private_key: get_private_key(logger.clone())?,
+        public_key: get_public_key(logger.clone())?,
+        address: get_address(logger.clone())?,
         account_name: get_account_name()?,
     };
 
-    let _ = logger_sender.log_wallet("Account created successfully!".to_string());
+    let _ = logger.log_wallet("Account created successfully!".to_string());
 
     Ok(account)
+}
+
+pub fn select_account(wallet: &Wallet, logger: LoggerSender) -> Account{
+    todo!()
 }

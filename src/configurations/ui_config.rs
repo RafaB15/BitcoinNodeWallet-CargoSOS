@@ -1,7 +1,7 @@
 use super::{
     error_configuration::ErrorConfiguration,
-    parsable::{parse_structure, value_from_map, KeyValueMap, Parsable},
     interface::Interface,
+    parsable::{parse_structure, value_from_map, KeyValueMap, Parsable},
 };
 
 use std::cmp::PartialEq;
