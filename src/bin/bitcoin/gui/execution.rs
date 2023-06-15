@@ -97,6 +97,85 @@ impl VecOwnExt for Vec<Object> {
     
 }
 
+fn login_main_window(application: &gtk::Application, objects: &Vec<Object>) {
+
+    let window = objects.search_window_named("MainWindow");
+    window.set_application(Some(application));
+
+    let combo_box = objects.search_combo_box_named("WalletsComboBox");
+    /*
+    combo_box.connect_changed(move |combo_box| {
+    });*/
+
+    let account_registration_button = objects.search_button_named("AccountRegistrationButton");
+    let cloned_objects = objects.clone();
+    
+    account_registration_button.connect_clicked(move |_| {
+        let account_registration_window = cloned_objects.search_window_named("AccountRegistrationWindow");
+        account_registration_window.set_visible(true);
+    });
+
+    window.show_all();
+}
+
+fn login_registration_window(objects: &Vec<Object>) {
+    let account_registration_window = objects.search_window_named("AccountRegistrationWindow");
+    let cloned_objects = objects.clone();
+    let save_wallet_button = objects.search_button_named("SaveWalletButton");
+    save_wallet_button.connect_clicked(move |_| {
+        account_registration_window.set_visible(false);
+        
+        let private_key_entry = cloned_objects.search_entry_named("PrivateKeyEntry");
+        let public_key_entry = cloned_objects.search_entry_named("PublicKeyEntry");
+        let address_entry = cloned_objects.search_entry_named("AddressEntry");
+        let name_entry = cloned_objects.search_entry_named("NameEntry");
+
+        let combo_box = cloned_objects.search_combo_box_named("WalletsComboBox");
+        combo_box.append_text(name_entry.text().as_str());
+
+        println!("{:?} {:?} {:?} {:?}", private_key_entry.text(), public_key_entry.text(), address_entry.text(), name_entry.text());
+
+        private_key_entry.set_text("");
+        public_key_entry.set_text("");
+        address_entry.set_text("");
+        name_entry.set_text("");            
+    });
+}
+
+
+
+fn spawn_backend_handler(
+    connection_config: ConnectionConfig,
+    download_config: DownloadConfig,
+    save_config: SaveConfig,
+    logger: LoggerSender,
+    tx_to_front: glib::Sender<SignalToFront>,
+    rx_from_front: mpsc::Receiver<String>,
+) -> thread::JoinHandle<()> {
+    thread::spawn(move || {
+        let load_system = LoadSystem::new(
+            save_config.clone(),
+            logger.clone(),
+        );
+        let _ = backend_initialization(connection_config, download_config, load_system, logger, tx_to_front, rx_from_front);
+    })
+}
+
+fn spawn_local_handler(objects: &Vec<Object>, rx_from_back: glib::Receiver<SignalToFront>) {
+    let cloned_objects = objects.clone();
+    rx_from_back.attach(None, move |signal| {
+        match signal {
+            SignalToFront::RegisterWallet(wallet_name) => {
+                let combo_box = cloned_objects.search_combo_box_named("WalletsComboBox");
+                combo_box.append_text(&wallet_name);
+                println!("Registering wallet: {:?}", wallet_name);
+            }
+        }
+        glib::Continue(true)
+    });
+} 
+
+
 fn build_ui(
     application: &gtk::Application, 
     glade_src: &str,
@@ -112,86 +191,13 @@ fn build_ui(
     let (tx_to_back, rx_from_front) = mpsc::channel::<String>();
     let (tx_to_front, rx_from_back) = glib::MainContext::channel::<SignalToFront>(glib::PRIORITY_DEFAULT);
 
+    spawn_backend_handler(connection_config, download_config, save_config, logger, tx_to_front, rx_from_front);
 
-    thread::spawn(move || {
-        let load_system = LoadSystem::new(
-            save_config.clone(),
-            logger.clone(),
-        );
-        let _ = backend_initialization(connection_config, download_config, load_system, logger, tx_to_front, rx_from_front);
-    });
+    spawn_local_handler(&objects, rx_from_back);
 
-    let clone_objects = objects.clone();
-    rx_from_back.attach(None, move |signal| {
-        match signal {
-            SignalToFront::RegisterWallet(wallet_name) => {
-                let combo_box = clone_objects.search_combo_box_named("WalletsComboBox");
-                combo_box.append_text(&wallet_name);
-                println!("Registering wallet: {:?}", wallet_name);
-            }
-        }
-        glib::Continue(true)
-    });
-    
-    let window = objects.search_window_named("MainWindow");
-    
-    window.set_application(Some(application));
+    login_main_window(application, &objects);
 
-    window.show_all();
- 
-    //Combo Box
-    let account_registration_window = objects.search_window_named("AccountRegistrationWindow");
-    let combo_box = objects.search_combo_box_named("WalletsComboBox");
-
-    /* 
-    combo_box.append_text("Add address");
-    combo_box.append_text("Tu vieja");
-    */
-    combo_box.connect_changed(move |combo_box| {
-        if let Some(active_text) = combo_box.active_text() {
-            if active_text == "Add address" {
-                account_registration_window.set_visible(true);
-                println!("Add address it is then!");
-            } else if active_text == "Tu vieja" {
-                println!("Tu vieja it is then");
-            }
-        }
-    });
-    
-
-    //Add address button
-    let account_registration_button = objects.search_button_named("AccountRegistrationButton");
-
-    let obj_cl = objects.clone();
-
-    let account_registration_window = obj_cl.search_window_named("AccountRegistrationWindow");
-    account_registration_button.connect_clicked(move |_| {
-        account_registration_window.set_visible(true);
-    });
-
-    let account_registration_window = obj_cl.search_window_named("AccountRegistrationWindow");
-    let obj_cl = objects.clone();
-    let save_wallet_button = objects.search_button_named("SaveWalletButton");
-    save_wallet_button.connect_clicked(move |_| {
-        account_registration_window.set_visible(false);
-        
-        let private_key_entry = obj_cl.search_entry_named("PrivateKeyEntry");
-        let public_key_entry = obj_cl.search_entry_named("PublicKeyEntry");
-        let address_entry = obj_cl.search_entry_named("AddressEntry");
-        let name_entry = obj_cl.search_entry_named("NameEntry");
-
-        let combo_box = objects.search_combo_box_named("WalletsComboBox");
-        combo_box.append_text(name_entry.text().as_str());
-
-        println!("{:?} {:?} {:?} {:?}", private_key_entry.text(), public_key_entry.text(), address_entry.text(), name_entry.text());
-
-        private_key_entry.set_text("");
-        public_key_entry.set_text("");
-        address_entry.set_text("");
-        name_entry.set_text("");            
-    });
-
-    
+    login_registration_window(&objects);
 }
 
 fn get_potential_peers(
