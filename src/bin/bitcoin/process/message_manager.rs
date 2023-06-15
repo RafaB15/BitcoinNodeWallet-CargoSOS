@@ -11,17 +11,10 @@ use cargosos_bitcoin::{
     wallet_structure::account::Account,
 };
 
-use std::{
-    io::{Read, Write},
-    mem::replace,
-    sync::mpsc::{self, Receiver, Sender},
-    thread::{self, JoinHandle},
-};
-
-type ReadWrite = Read + Write + Send + 'static;
+use std::sync::mpsc::Receiver;
 
 pub struct MessageManager {
-    receiver: Receiver<Message>,
+    receiver: Receiver<MessageBroadcasting>,
     account: Account,
     transactions: Vec<Transaction>,
     pub block_chain: BlockChain,
@@ -29,6 +22,23 @@ pub struct MessageManager {
 }
 
 impl MessageManager {
+
+    pub fn new(
+        receiver: Receiver<MessageBroadcasting>,
+        account: Account,
+        transactions: Vec<Transaction>,
+        block_chain: BlockChain,
+        utxo_set: UTXOSet,
+    ) -> Self {
+        MessageManager {
+            receiver,
+            account,
+            transactions,
+            block_chain,
+            utxo_set,
+        }
+    }
+
     pub fn receive_messages(mut self) -> Self {
         while let Ok(message) = self.receiver.recv() {
             match message {

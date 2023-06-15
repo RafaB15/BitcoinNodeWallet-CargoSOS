@@ -18,17 +18,29 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-type ReadWrite = Read + Write + Send + 'static;
-
-pub struct PeerManager<RW: ReadWrite> {
+pub struct PeerManager<RW>
+where
+    RW: Read +  Write + Send + 'static
+{
     peer: RW,
     sender: Sender<MessageBroadcasting>,
     receiver: Receiver<MessageBroadcasting>,
 }
 
-impl<RW: ReadWrite> PeerManager<RW> {
-    pub fn listen_peers(self) -> Self {
-        while let Ok(header) = MessageHeader::deserialize_header(stream) {
+impl<RW> PeerManager<RW>
+where
+    RW: Read +  Write + Send + 'static
+{
+    pub fn new(peer: RW, sender: Sender<MessageBroadcasting>, receiver: Receiver<MessageBroadcasting>) -> Self {
+        PeerManager {
+            peer,
+            sender,
+            receiver,
+        }
+    }
+
+    pub fn listen_peers(mut self) -> RW {
+        while let Ok(header) = MessageHeader::deserialize_header(&mut self.peer) {
             self.manage_message(header);
 
             if let Ok(message) = self.receiver.try_recv() {

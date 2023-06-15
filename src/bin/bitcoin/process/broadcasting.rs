@@ -5,7 +5,9 @@ use super::{
 
 use cargosos_bitcoin::{
     block_structure::{
-        block::Block, block_chain::BlockChain, transaction::Transaction, utxo_set::UTXOSet,
+        transaction::Transaction,
+        block_chain::BlockChain,
+        utxo_set::UTXOSet,
     },
     messages::{
         block_message::BlockMessage, command_name::CommandName, get_data_message::GetDataMessage,
@@ -21,15 +23,20 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-type ReadWrite = Read + Write + Send + 'static;
+type HandleSender<T> = (JoinHandle<T>, Sender<MessageBroadcasting>);
 
-pub struct Broadcasting<RW: ReadWrite> {
-    peers: Vec<(JoinHandle<RW>, Sender<MessageBroadcasting>)>,
-    receiver: JoinHandle<MessageManager>,
-    sender: Sender<MessageBroadcasting>,
+pub struct Broadcasting<RW>
+where
+    RW: Read +  Write + Send + 'static
+{
+    peers: Vec<HandleSender<RW>>,
+    receiver: HandleSender<MessageManager>,
 }
 
-impl<RW: ReadWrite> Broadcasting<RW> {
+impl<RW> Broadcasting<RW>
+where
+    RW: Read +  Write + Send + 'static
+{
     fn new(
         account: Account,
         peers_streams: Vec<RW>,
@@ -38,18 +45,17 @@ impl<RW: ReadWrite> Broadcasting<RW> {
     ) -> Self {
         let (sender, receiver) = mpsc::channel::<MessageBroadcasting>();
 
-        let mut message_manager = MessageManager {
+        let message_manager = MessageManager::new(
             receiver,
             account,
-            transactions: Vec::new(),
+            Vec::new(),
             block_chain,
             utxo_set,
-        };
+        );
 
         Broadcasting {
-            receiver: Self::create_receiver(message_manager),
             peers: Self::create_peers(peers_streams, sender.clone()),
-            sender,
+            receiver: (Self::create_receiver(message_manager), sender),
         }
     }
 
@@ -60,30 +66,32 @@ impl<RW: ReadWrite> Broadcasting<RW> {
     fn create_peers(
         peers_streams: Vec<RW>,
         sender: Sender<MessageBroadcasting>,
-    ) -> Vec<(JoinHandle<RW>, Sender<Message>)> {
-        peers_streams
-            .map(|peer_stream| {
-                let sender_clone = sender.clone();
-                let (sender_message, receiver_message) = mpsc::channel::<MessageBroadcasting>();
+    ) -> Vec<(JoinHandle<RW>, Sender<MessageBroadcasting>)> {
+        let mut peers: Vec<HandleSender<RW>> = Vec::new();
 
-                let handle = thread::spawn(move || {
-                    let peer_manager = PeerManager {
-                        peer: peer_stream,
-                        sender: sender_clone,
-                        receiver: receiver_message,
-                    };
+        for peer_stream in peers_streams {
+            let sender_clone = sender.clone();
+            let (sender_message, receiver_message) = mpsc::channel::<MessageBroadcasting>();
 
-                    peer_manager.listen_peers()
-                });
+            let handle = thread::spawn(move || {
+                let peer_manager = PeerManager::new(
+                    peer_stream,
+                    sender_clone,
+                    receiver_message,
+                );
 
-                (handle, sender_message)
-            })
-            .collect()
+                peer_manager.listen_peers()
+            });
+
+            peers.push((handle, sender_message));
+        }
+
+        peers
     }
 
     pub fn change_account(&mut self, account: Account) {
-        if self
-            .sender
+        let (_, sender) = &self.receiver;
+        if sender
             .send(MessageBroadcasting::ChangeAccount(account))
             .is_err()
         {
@@ -110,18 +118,20 @@ impl<RW: ReadWrite> Broadcasting<RW> {
         }
 
         let mut peers_streams = Vec::new();
-        for (handle, _) in self.peers.iter() {
+        for (handle, _) in self.peers {
             match handle.join() {
                 Ok(peer_stream) => peers_streams.push(peer_stream),
                 Err(_) => todo!(),
             }
         }
 
-        if self.sender.send(Message::Exit).is_err() {
+        let (handle, sender) = self.receiver;
+
+        if sender.send(MessageBroadcasting::Exit).is_err() {
             todo!()
         }
 
-        let mut message_manager = match self.receiver.join() {
+        let mut message_manager = match handle.join() {
             Ok(message_manager) => message_manager,
             Err(_) => todo!(),
         };

@@ -21,7 +21,7 @@ use crate::block_structure::{
     utxo_set::UTXOSet,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Account {
     pub account_name: String,
     pub private_key: PrivateKey,
