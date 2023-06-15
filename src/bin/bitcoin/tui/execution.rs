@@ -1,8 +1,11 @@
-use super::account;
+use super::{account, menu, menu_options::MenuOption};
 
 use crate::{
     error_execution::ErrorExecution,
-    process::{download, handshake, load_system::LoadSystem, save_system::SaveSystem, broadcasting::Broadcasting},
+    process::{
+        broadcasting::Broadcasting, download, handshake, load_system::LoadSystem,
+        save_system::SaveSystem,
+    },
 };
 
 use cargosos_bitcoin::configurations::{
@@ -13,6 +16,7 @@ use cargosos_bitcoin::{
     block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
     connections::ibd_methods::IBDMethod,
     logs::logger_sender::LoggerSender,
+    wallet_structure::wallet::Wallet,
 };
 
 use std::net::{SocketAddr, TcpStream};
@@ -55,17 +59,6 @@ fn get_block_chain(
         )?,
         IBDMethod::BlocksFirst => download::blocks_first(),
     })
-}
-
-fn broadcasting(
-    peer_streams: Vec<TcpStream>,
-    block_chain: &mut BlockChain,
-    connection_config: ConnectionConfig,
-    logger: LoggerSender,
-) -> Result<Vec<TcpStream>, ErrorExecution> {
-    let _ = logger.log_connection("Broadcasting...".to_string());
-
-    download::block_broadcasting(peer_streams, block_chain, connection_config, logger)
 }
 
 fn _show_merkle_path(block_chain: &BlockChain, logger: LoggerSender) -> Result<(), ErrorExecution> {
@@ -120,9 +113,28 @@ fn get_utxo_set(block_chain: &BlockChain, logger: LoggerSender) -> UTXOSet {
     utxo_set
 }
 
-fn manage_broadcast(broadcasting: Broadcasting<TcpStream>) -> (Vec<TcpStream>, BlockChain, UTXOSet) {
+fn manage_broadcast(
+    mut broadcasting: Broadcasting<TcpStream>,
+    wallet: &mut Wallet,
+    logger: LoggerSender,
+) -> Result<(Vec<TcpStream>, BlockChain, UTXOSet), ErrorExecution> {
+    loop {
+        match menu::select_option(logger.clone())? {
+            MenuOption::CreateAccount => {
+                wallet.add_account(account::add_account(logger.clone())?);
+            }
+            MenuOption::ShowAccounts => account::show_accounts(&wallet, logger.clone()),
+            MenuOption::ChangeAccount => {
+                account::show_accounts(&wallet, logger.clone());
+                let account = account::select_account(&wallet, logger.clone());
+                broadcasting.change_account(account);
+            }
+            MenuOption::Exit => break,
+            _ => {}
+        }
+    }
 
-    broadcasting.destroy()
+    Ok(broadcasting.destroy())
 }
 
 pub fn program_execution(
@@ -149,11 +161,6 @@ pub fn program_execution(
 
     let utxo_set = get_utxo_set(&block_chain, logger.clone());
 
-    while account::wants_to_enter_account()? {
-        let new_account = account::add_account(logger.clone())?;
-        wallet.add_account(new_account);
-    }
-
     for account in wallet.accounts.iter() {
         print!(
             "Account's '{}' utxo: {:?}\n",
@@ -162,16 +169,13 @@ pub fn program_execution(
         );
     }
 
+    let _ = logger.log_wallet("Selecting account".to_string());
+
     let account = account::select_account(&wallet, logger.clone());
 
-    let broadcasting = Broadcasting::new(
-        account,
-        peer_streams,
-        block_chain,
-        utxo_set,
-    );
+    let broadcasting = Broadcasting::new(account, peer_streams, block_chain, utxo_set);
 
-    let (_, block_chain, _) = manage_broadcast(broadcasting);
+    let (_, block_chain, _) = manage_broadcast(broadcasting, &mut wallet, logger.clone())?;
 
     Ok(SaveSystem::new(block_chain, wallet, logger))
 }

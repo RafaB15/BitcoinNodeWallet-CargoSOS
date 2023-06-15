@@ -3,18 +3,15 @@ use crate::error_execution::ErrorExecution;
 use cargosos_bitcoin::{
     logs::logger_sender::LoggerSender,
     wallet_structure::{
-        account::Account,
-        private_key::PrivateKey,
-        public_key::PublicKey,
-        address::Address,
+        account::Account, address::Address, private_key::PrivateKey, public_key::PublicKey,
         wallet::Wallet,
-    }, 
+    },
 };
 
 use std::io::stdin;
 
 /// Get the private key from the terminal
-/// 
+///
 /// ### Error
 ///  * `ErrorExecution::TerminalReadFail`: It will appear when the terminal read fails
 fn get_private_key(logger_sender: LoggerSender) -> Result<PrivateKey, ErrorExecution> {
@@ -46,7 +43,7 @@ fn get_private_key(logger_sender: LoggerSender) -> Result<PrivateKey, ErrorExecu
 }
 
 /// Get the public key from the terminal
-/// 
+///
 /// ### Error
 ///  * `ErrorExecution::TerminalReadFail`: It will appear when the terminal read fails
 fn get_public_key(logger_sender: LoggerSender) -> Result<PublicKey, ErrorExecution> {
@@ -71,7 +68,7 @@ fn get_public_key(logger_sender: LoggerSender) -> Result<PublicKey, ErrorExecuti
                 if stdin().read_line(&mut public_key).is_err() {
                     return Err(ErrorExecution::TerminalReadFail);
                 }
-                
+
                 continue;
             }
         };
@@ -79,20 +76,19 @@ fn get_public_key(logger_sender: LoggerSender) -> Result<PublicKey, ErrorExecuti
 }
 
 /// Get the address from the terminal
-/// 
+///
 /// ### Error
 ///  * `ErrorExecution::TerminalReadFail`: It will appear when the terminal read fails
 fn get_address(logger_sender: LoggerSender) -> Result<Address, ErrorExecution> {
     let mut address: String = String::new();
-    
+
     println!("Enter the address: ");
-    let mut address_result = match stdin().read_line(&mut address) {
-        Ok(_) => address.trim(),
-        Err(_) => return Err(ErrorExecution::TerminalReadFail),
-    };
+    if stdin().read_line(&mut address).is_err() {
+        return Err(ErrorExecution::TerminalReadFail);
+    }
 
     loop {
-        match Address::new(address_result) {
+        match Address::new(address.trim()) {
             Ok(result) => return Ok(result),
             Err(error) => {
                 logger_sender.log_wallet(format!(
@@ -100,11 +96,11 @@ fn get_address(logger_sender: LoggerSender) -> Result<Address, ErrorExecution> {
                     error
                 ))?;
 
+                address.clear();
                 println!("Error, please enter a valid address:");
-                address_result = match stdin().read_line(&mut address) {
-                    Ok(_) => address.trim(),
-                    Err(_) => return Err(ErrorExecution::TerminalReadFail),
-                };
+                if stdin().read_line(&mut address).is_err() {
+                    return Err(ErrorExecution::TerminalReadFail);
+                }
                 continue;
             }
         };
@@ -122,29 +118,14 @@ fn get_account_name() -> Result<String, ErrorExecution> {
     }
 }
 
-/// Finds out if the user wants to create a new account
-pub fn wants_to_enter_account() -> Result<bool, ErrorExecution> {
-    let mut decision = String::new();
-
-    println!("Would you like to create a new account? (y/n)");
-
-    let answer = match stdin().read_line(&mut decision) {
-        Ok(_) => decision.trim().to_string(),
-        Err(_) => return Err(ErrorExecution::TerminalReadFail),
-    };
-
-    Ok(answer.to_lowercase() == "y")
-}
-
 /// Creates a new account with the data entered by the user
-/// 
+///
 /// ### Error
 ///  * `ErrorExecution::TerminalReadFail`: It will appear when the terminal read fails
-pub fn add_account(logger: LoggerSender) -> Result<Account, ErrorExecution> {    
-
+pub fn add_account(logger: LoggerSender) -> Result<Account, ErrorExecution> {
     let _ = logger.log_wallet("Creating a new account".to_string());
 
-    let account = Account { 
+    let account = Account {
         private_key: get_private_key(logger.clone())?,
         public_key: get_public_key(logger.clone())?,
         address: get_address(logger.clone())?,
@@ -156,6 +137,12 @@ pub fn add_account(logger: LoggerSender) -> Result<Account, ErrorExecution> {
     Ok(account)
 }
 
-pub fn select_account(wallet: &Wallet, logger: LoggerSender) -> Account{
+/// Select an account from the wallet
+pub fn select_account(wallet: &Wallet, logger: LoggerSender) -> Account {
     todo!()
+}
+
+/// Show all accounts from the wallet
+pub fn show_accounts(wallet: &Wallet, logger: LoggerSender) {
+
 }

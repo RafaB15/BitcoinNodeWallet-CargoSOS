@@ -20,7 +20,7 @@ use std::{
 
 pub struct PeerManager<RW>
 where
-    RW: Read +  Write + Send + 'static
+    RW: Read + Write + Send + 'static,
 {
     peer: RW,
     sender: Sender<MessageBroadcasting>,
@@ -29,9 +29,13 @@ where
 
 impl<RW> PeerManager<RW>
 where
-    RW: Read +  Write + Send + 'static
+    RW: Read + Write + Send + 'static,
 {
-    pub fn new(peer: RW, sender: Sender<MessageBroadcasting>, receiver: Receiver<MessageBroadcasting>) -> Self {
+    pub fn new(
+        peer: RW,
+        sender: Sender<MessageBroadcasting>,
+        receiver: Receiver<MessageBroadcasting>,
+    ) -> Self {
         PeerManager {
             peer,
             sender,

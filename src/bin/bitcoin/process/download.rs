@@ -12,8 +12,8 @@ use cargosos_bitcoin::{
 
 use std::{
     fmt::Debug,
-    thread::{self, JoinHandle},
     io::{Read, Write},
+    thread::{self, JoinHandle},
 };
 
 /// Given the peers connection, updates the blockchain with the new blocks of the respected peers.
@@ -25,7 +25,7 @@ use std::{
 ///  * `ErrorNode::WhileValidating`: It will appear when
 ///  * `ErrorBlock::CouldNotUpdate`: It will appear when the block is not in the blockchain.
 ///  * `ErrorExecution::FailThread`: It will appear when the thread fails
-pub fn headers_first<RW : Read + Write + Send + Debug + 'static>(
+pub fn headers_first<RW: Read + Write + Send + Debug + 'static>(
     peer_streams: Vec<RW>,
     block_chain: &mut BlockChain,
     connection_config: ConnectionConfig,
@@ -49,12 +49,7 @@ pub fn headers_first<RW : Read + Write + Send + Debug + 'static>(
 
         let _ = logger.log_connection(format!("Connecting to peer: {:?}", peer_stream));
 
-        get_peer_header(
-            &mut peer_stream,
-            &header_download,
-            block_chain,
-            &logger,
-        )?;
+        get_peer_header(&mut peer_stream, &header_download, block_chain, &logger)?;
 
         let mut list_of_blocks: Vec<Block> = Vec::new();
         for block in block_chain.get_blocks_after_timestamp(download_config.timestamp)? {
@@ -74,9 +69,9 @@ pub fn headers_first<RW : Read + Write + Send + Debug + 'static>(
     let mut peer_stream: Vec<RW> = Vec::new();
     for peer_download_handle in peer_download_handles {
         peer_stream.push(updating_block_chain(
-            block_chain, 
-            peer_download_handle, 
-            logger.clone()
+            block_chain,
+            peer_download_handle,
+            logger.clone(),
         )?);
     }
     Ok(peer_stream)
@@ -88,7 +83,7 @@ pub fn headers_first<RW : Read + Write + Send + Debug + 'static>(
 ///  * `ErrorMessage::InSerialization`: It will appear when the serialization of the message fails or the SHA(SHA(header)) fails
 ///  * `ErrorNode::NodeNotResponding`: It will appear when no message is received from the node
 ///  * `ErrorNode::WhileValidating`: It will appear when a given header does not pass the proof of work to be added to the blockchain
-fn get_peer_header<RW : Read + Write>(
+fn get_peer_header<RW: Read + Write>(
     peer_stream: &mut RW,
     header_download: &InitialHeaderDownload,
     block_chain: &mut BlockChain,
@@ -97,8 +92,7 @@ fn get_peer_header<RW : Read + Write>(
     loop {
         let header_count: u32 = match header_download.get_headers(peer_stream, block_chain) {
             Err(ErrorNode::NodeNotResponding(message)) => {
-                let _ =
-                    logger.log_connection(format!("Node not responding, send: {}", message));
+                let _ = logger.log_connection(format!("Node not responding, send: {}", message));
                 break;
             }
             other_response => other_response?,
@@ -115,7 +109,7 @@ fn get_peer_header<RW : Read + Write>(
 }
 
 /// It gets the blocks from a specific peer in a thread
-fn get_blocks<RW : Read + Write + Send + 'static>(
+fn get_blocks<RW: Read + Write + Send + 'static>(
     mut peer_stream: RW,
     block_download: BlockDownload,
     list_of_blocks: Vec<Block>,
@@ -136,8 +130,7 @@ fn get_blocks<RW : Read + Write + Send + 'static>(
         match block_download.get_data(&mut peer_stream, headers) {
             Ok(blocks) => (blocks, peer_stream),
             Err(error) => {
-                let _ =
-                    logger.log_connection(format!("Cannot get block, we get {:?}", error));
+                let _ = logger.log_connection(format!("Cannot get block, we get {:?}", error));
                 (vec![], peer_stream)
             }
         }
@@ -149,7 +142,7 @@ fn get_blocks<RW : Read + Write + Send + 'static>(
 /// ### Error
 ///  * `ErrorBlock::CouldNotUpdate`: It will appear when the block is not in the blockchain.
 ///  * `ErrorExecution::FailThread`: It will appear when the thread fails
-fn updating_block_chain<RW : Read + Write + Send>(
+fn updating_block_chain<RW: Read + Write + Send>(
     block_chain: &mut BlockChain,
     peer_download_handle: JoinHandle<(Vec<Block>, RW)>,
     logger: LoggerSender,
@@ -157,22 +150,19 @@ fn updating_block_chain<RW : Read + Write + Send>(
     let _ = logger.log_connection("Finish downloading, loading to blockchain".to_string());
     match peer_download_handle.join() {
         Ok((blocks, peer_stream)) => {
-            let _ = logger
-                .log_connection(format!("Loading {} blocks to blockchain", blocks.len(),));
+            let _ =
+                logger.log_connection(format!("Loading {} blocks to blockchain", blocks.len(),));
 
             for (i, block) in blocks.iter().enumerate() {
                 block_chain.update_block(block.clone())?;
 
                 if i % 50 == 0 {
-                    let _ = logger
-                        .log_connection(format!("Loading [{i}] blocks to blockchain",));
+                    let _ = logger.log_connection(format!("Loading [{i}] blocks to blockchain",));
                 }
             }
 
-            let _ = logger.log_connection(format!(
-                "Loading [{}] blocks to blockchain",
-                blocks.len()
-            ));
+            let _ =
+                logger.log_connection(format!("Loading [{}] blocks to blockchain", blocks.len()));
 
             Ok(peer_stream)
         }
@@ -182,10 +172,9 @@ fn updating_block_chain<RW : Read + Write + Send>(
 
 /// Given the peers connection, updates the blockchain with the new blocks of the respected peers.
 /// The approch is to get the entire block.
-pub fn blocks_first<RW : Read + Write + Send>() -> Vec<RW> {
+pub fn blocks_first<RW: Read + Write + Send>() -> Vec<RW> {
     todo!()
 }
-
 
 /// It updates the blockchain listening to the new headers of the peers
 ///
@@ -194,7 +183,7 @@ pub fn blocks_first<RW : Read + Write + Send>() -> Vec<RW> {
 ///  * `ErrorNode::WhileValidating`: It will appear when a given header does not pass the proof of work to be added to the blockchain
 ///  * `ErrorBlock::CouldNotUpdate`: It will appear when the block is not in the blockchain.
 ///  * `ErrorExecution::FailThread`: It will appear when the thread fails
-pub fn block_broadcasting<RW : Read + Write + Send + 'static>(
+pub fn block_broadcasting<RW: Read + Write + Send + 'static>(
     peer_streams: Vec<RW>,
     block_chain: &mut BlockChain,
     connection_config: ConnectionConfig,
@@ -209,15 +198,15 @@ pub fn block_broadcasting<RW : Read + Write + Send + 'static>(
     for peer_stream in peer_streams {
         let mut peer_stream = peer_stream;
 
-        let (header_count, headers) =
-            match block_broadcasting.get_new_headers(&mut peer_stream, block_chain) {
-                Err(ErrorNode::NodeNotResponding(message)) => {
-                    let _ = logger
-                        .log_connection(format!("Node not responding, send: {}", message));
-                    break;
-                }
-                other_response => other_response?,
-            };
+        let (header_count, headers) = match block_broadcasting
+            .get_new_headers(&mut peer_stream, block_chain)
+        {
+            Err(ErrorNode::NodeNotResponding(message)) => {
+                let _ = logger.log_connection(format!("Node not responding, send: {}", message));
+                break;
+            }
+            other_response => other_response?,
+        };
 
         let _ = logger.log_connection(format!("We get: {}", header_count));
 
@@ -232,9 +221,9 @@ pub fn block_broadcasting<RW : Read + Write + Send + 'static>(
     let mut peer_streams: Vec<RW> = Vec::new();
     for peer_download_handle in peer_download_handles {
         peer_streams.push(updating_block_chain(
-            block_chain, 
-            peer_download_handle, 
-            logger.clone()
+            block_chain,
+            peer_download_handle,
+            logger.clone(),
         )?);
     }
 

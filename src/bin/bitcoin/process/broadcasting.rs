@@ -4,11 +4,7 @@ use super::{
 };
 
 use cargosos_bitcoin::{
-    block_structure::{
-        transaction::Transaction,
-        block_chain::BlockChain,
-        utxo_set::UTXOSet,
-    },
+    block_structure::{block_chain::BlockChain, transaction::Transaction, utxo_set::UTXOSet},
     messages::{
         block_message::BlockMessage, command_name::CommandName, get_data_message::GetDataMessage,
         message, message_header::MessageHeader,
@@ -26,7 +22,7 @@ type HandleSender<T> = (JoinHandle<T>, Sender<MessageBroadcasting>);
 
 pub struct Broadcasting<RW>
 where
-    RW: Read +  Write + Send + 'static
+    RW: Read + Write + Send + 'static,
 {
     peers: Vec<HandleSender<RW>>,
     receiver: HandleSender<MessageManager>,
@@ -34,26 +30,21 @@ where
 
 impl<RW> Broadcasting<RW>
 where
-    RW: Read +  Write + Send + 'static
+    RW: Read + Write + Send + 'static,
 {
     pub fn new(
         account: Account,
-        peers_streams: Vec<RW>,
+        peer_streams: Vec<RW>,
         block_chain: BlockChain,
         utxo_set: UTXOSet,
     ) -> Self {
         let (sender, receiver) = mpsc::channel::<MessageBroadcasting>();
 
-        let message_manager = MessageManager::new(
-            receiver,
-            account,
-            Vec::new(),
-            block_chain,
-            utxo_set,
-        );
+        let message_manager =
+            MessageManager::new(receiver, account, Vec::new(), block_chain, utxo_set);
 
         Broadcasting {
-            peers: Self::create_peers(peers_streams, sender.clone()),
+            peers: Self::create_peers(peer_streams, sender.clone()),
             receiver: (Self::create_receiver(message_manager), sender),
         }
     }
@@ -73,11 +64,7 @@ where
             let (sender_message, receiver_message) = mpsc::channel::<MessageBroadcasting>();
 
             let handle = thread::spawn(move || {
-                let peer_manager = PeerManager::new(
-                    peer_stream,
-                    sender_clone,
-                    receiver_message,
-                );
+                let peer_manager = PeerManager::new(peer_stream, sender_clone, receiver_message);
 
                 peer_manager.listen_peers()
             });

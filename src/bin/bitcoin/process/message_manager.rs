@@ -22,7 +22,6 @@ pub struct MessageManager {
 }
 
 impl MessageManager {
-
     pub fn new(
         receiver: Receiver<MessageBroadcasting>,
         account: Account,

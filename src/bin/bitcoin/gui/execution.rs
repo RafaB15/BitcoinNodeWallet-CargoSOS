@@ -2,7 +2,9 @@ use super::error_gui::ErrorGUI;
 
 use crate::process::save_system::SaveSystem;
 
-use gtk::{prelude::*, glib::Object, Button, Entry, Application, Builder, Window, gio::ApplicationFlags};
+use gtk::{
+    gio::ApplicationFlags, glib::Object, prelude::*, Application, Builder, Button, Entry, Window,
+};
 
 pub trait VecOwnExt {
     fn search_by_name(&self, name: &str) -> Object;
@@ -10,7 +12,6 @@ pub trait VecOwnExt {
     fn search_button_named(&self, name: &str) -> Button;
     fn search_entry_named(&self, name: &str) -> Entry;
     //fn search_radio_button_named(&self, name: &str) -> RadioButton;
-
 }
 
 pub trait ObjectOwnExt {
@@ -24,7 +25,6 @@ impl ObjectOwnExt for Object {
 }
 
 impl VecOwnExt for Vec<Object> {
-
     fn search_by_name(&self, name: &str) -> Object {
         let found = self.iter().find(|&object| object.is_named(name));
         if let Some(found) = found {
@@ -69,16 +69,18 @@ fn build_ui(application: &gtk::Application, glade_src: &str) {
         let entry_amount = obj_cl.search_entry_named("amount_entry");
         let entry_label = obj_cl.search_entry_named("label_entry");
 
-        
-
-        println!("{:?} {:?} {:?}", entry_address.text(), entry_amount.text(), entry_label.text());
+        println!(
+            "{:?} {:?} {:?}",
+            entry_address.text(),
+            entry_amount.text(),
+            entry_label.text()
+        );
         entry_address.set_text("");
         entry_amount.set_text("");
         entry_label.set_text("");
     });
 
     window.show_all();
-
 }
 
 pub fn program_execution() -> Result<SaveSystem, ErrorGUI> {

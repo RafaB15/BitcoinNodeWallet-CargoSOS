@@ -2,21 +2,18 @@ use crate::error_execution::ErrorExecution;
 
 use cargosos_bitcoin::{
     block_structure::block_chain::BlockChain,
+    configurations::{save_config::SaveConfig, try_default::TryDefault},
     logs::logger_sender::LoggerSender,
     serialization::deserializable_internal_order::DeserializableInternalOrder,
     wallet_structure::wallet::Wallet,
-    configurations::{
-        save_config::SaveConfig,
-        try_default::TryDefault,
-    },
 };
 
 use std::{
     fs::OpenOptions,
     io::BufReader,
-    thread::{self, JoinHandle},
-    mem::replace,
     marker::Send,
+    mem::replace,
+    thread::{self, JoinHandle},
 };
 
 type Handle<T> = Option<JoinHandle<T>>;
@@ -30,22 +27,17 @@ pub struct LoadSystem {
 }
 
 impl LoadSystem {
-    
-    pub fn new(
-        save_config: SaveConfig,
-        logger: LoggerSender,
-    ) -> LoadSystem 
-    {
+    pub fn new(save_config: SaveConfig, logger: LoggerSender) -> LoadSystem {
         LoadSystem {
             block_chain: Some(Self::load_value(
                 BLOCKCHAIN_FILE.to_string(),
                 save_config.read_block_chain,
-                logger.clone()
+                logger.clone(),
             )),
             wallet: Some(Self::load_value(
                 WALLET_FILE.to_string(),
                 save_config.read_wallet,
-                logger
+                logger,
             )),
         }
     }
@@ -54,7 +46,7 @@ impl LoadSystem {
         let block_chain_handle = replace(&mut self.block_chain, None);
 
         if let Some(block_chain_handle) = block_chain_handle {
-            return match block_chain_handle.join() { 
+            return match block_chain_handle.join() {
                 Ok(block_chain) => block_chain,
                 _ => Err(ErrorExecution::FailThread),
             };
@@ -67,7 +59,7 @@ impl LoadSystem {
         let wallet_handle = replace(&mut self.wallet, None);
 
         if let Some(wallet_handle) = wallet_handle {
-            return match wallet_handle.join() { 
+            return match wallet_handle.join() {
                 Ok(wallet) => wallet,
                 _ => Err(ErrorExecution::FailThread),
             };
@@ -85,19 +77,19 @@ impl LoadSystem {
             if let Some(path) = path {
                 if let Ok(file) = OpenOptions::new().read(true).open(path) {
                     let mut file = BufReader::new(file);
-    
+
                     let _ = logger.log_file(format!("Reading the {name} from file"));
-    
+
                     let value = V::io_deserialize(&mut file)?;
-    
+
                     let _ = logger.log_file(format!("{name} loaded from file"));
-    
+
                     return Ok(value);
                 }
-    
+
                 let _ = logger.log_file(format!("Could not open {name} file"));
             }
-    
+
             match V::try_default() {
                 Ok(value) => Ok(value),
                 Err(_) => {
@@ -108,7 +100,7 @@ impl LoadSystem {
         })
     }
 
-/*
+    /*
 
     /// Loads the blockchain from a file and returns a handle of the thread loading the blockchain
     ///
@@ -123,26 +115,26 @@ impl LoadSystem {
             if let Some(path) = path_block_chain {
                 if let Ok(file) = OpenOptions::new().read(true).open(path) {
                     let mut file = BufReader::new(file);
-    
+
                     let _ =
                         logger.log_connection("Reading the blockchain from file".to_string());
-    
+
                     let block_chain = BlockChain::io_deserialize(&mut file)?;
-    
+
                     let _ = logger.log_connection("Blockchain loaded from file".to_string());
-    
+
                     return Ok(block_chain);
                 }
-    
+
                 let _ = logger.log_connection("Could not open block chain file".to_string());
             }
-    
+
             let genesis_header: BlockHeader = BlockHeader::generate_genesis_block_header();
             let genesis_block: Block = Block::new(genesis_header);
-    
+
             let _ =
                 logger.log_connection("Initializing blockchain from genesis block".to_string());
-    
+
             Ok(BlockChain::new(genesis_block)?)
         })
     }
@@ -155,28 +147,25 @@ impl LoadSystem {
             if let Some(path) = path_wallet {
                 if let Ok(file) = OpenOptions::new().read(true).open(path) {
                     let mut file = BufReader::new(file);
-    
+
                     let _ =
                         logger.log_connection("Reading the wallet from file".to_string());
-    
+
                     let wallet = Wallet::io_deserialize(&mut file)?;
-    
+
                     let _ = logger.log_connection("Wallet loaded from file".to_string());
-    
+
                     return Ok(wallet);
                 }
-    
+
                 let _ = logger.log_connection("Could not open wallet file".to_string());
             }
-    
+
             let _ =
                 logger.log_connection("Initializing blockchain from genesis block".to_string());
-    
+
             Ok(Wallet::new(vec![]))
         })
     }
      */
 }
-
-
-
