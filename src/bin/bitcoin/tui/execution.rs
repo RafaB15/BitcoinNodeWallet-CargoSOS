@@ -22,7 +22,6 @@ use cargosos_bitcoin::{
 use std::{
     net::{SocketAddr, TcpStream},
     sync::mpsc::{self, Receiver},
-    thread::{self, JoinHandle},
 };
 
 fn get_potential_peers(
@@ -161,25 +160,6 @@ fn manage_broadcast(
     Ok(broadcasting.destroy())
 }
 
-fn notification(
-    receiver_notify: Receiver<MessageNotify>,
-    logger: LoggerSender,
-) -> JoinHandle<()> {
-
-    thread::spawn(move || {
-        for notification in receiver_notify {
-            match notification {
-                MessageNotify::Balance(balance) => {
-                    let _ = logger.log_node(format!("New balance: {:?}", balance));
-                }
-                MessageNotify::Transaction(transaction) => {
-                    let _ = logger.log_node(format!("New transaction: {:?}", transaction));
-                }
-            }
-        }
-    })
-}
-
 pub fn program_execution(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
@@ -207,7 +187,7 @@ pub fn program_execution(
     let (broadcasting, receiver) =
         get_broadcasting(peer_streams, block_chain, utxo_set, &wallet, logger.clone())?;
 
-    let handle = notification(receiver, logger.clone());
+    let handle = notify::notification(receiver, logger.clone());
 
     let (_, block_chain, _) = manage_broadcast(broadcasting, &mut wallet, logger.clone())?;
 
