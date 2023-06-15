@@ -1,23 +1,18 @@
+use super::account;
+
 use crate::{
     error_execution::ErrorExecution,
-    process::{
-        download, handshake, account,
-        save_system::SaveSystem, 
-        load_system::LoadSystem, 
-    },
+    process::{download, handshake, load_system::LoadSystem, save_system::SaveSystem},
 };
 
 use cargosos_bitcoin::configurations::{
-    connection_config::ConnectionConfig, download_config::DownloadConfig
+    connection_config::ConnectionConfig, download_config::DownloadConfig,
 };
 
 use cargosos_bitcoin::{
-    logs::logger_sender::LoggerSender,
-    block_structure::{
-        block_chain::BlockChain,
-        utxo_set::UTXOSet,
-    },
+    block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
     connections::ibd_methods::IBDMethod,
+    logs::logger_sender::LoggerSender,
 };
 
 use std::net::{SocketAddr, TcpStream};
@@ -51,18 +46,14 @@ fn get_block_chain(
     let _ = logger.log_connection("Getting block chain".to_string());
 
     Ok(match connection_config.ibd_method {
-        IBDMethod::HeaderFirst => {
-            download::headers_first(
-                peer_streams,
-                block_chain,
-                connection_config,
-                download_config,
-                logger,
-            )?
-        }
-        IBDMethod::BlocksFirst => {
-            download::blocks_first()
-        }
+        IBDMethod::HeaderFirst => download::headers_first(
+            peer_streams,
+            block_chain,
+            connection_config,
+            download_config,
+            logger,
+        )?,
+        IBDMethod::BlocksFirst => download::blocks_first(),
     })
 }
 
@@ -72,21 +63,12 @@ fn broadcasting(
     connection_config: ConnectionConfig,
     logger: LoggerSender,
 ) -> Result<Vec<TcpStream>, ErrorExecution> {
-
     let _ = logger.log_connection("Broadcasting...".to_string());
 
-    download::block_broadcasting(
-        peer_streams, 
-        block_chain, 
-        connection_config, 
-        logger
-    )
+    download::block_broadcasting(peer_streams, block_chain, connection_config, logger)
 }
 
-fn _show_merkle_path(
-    block_chain: &BlockChain,
-    logger: LoggerSender,
-) -> Result<(), ErrorExecution> {
+fn _show_merkle_path(block_chain: &BlockChain, logger: LoggerSender) -> Result<(), ErrorExecution> {
     let latest = block_chain.latest();
 
     let last_block = match latest.last() {
@@ -129,10 +111,7 @@ fn _show_merkle_path(
     Ok(())
 }
 
-fn get_utxo_set(
-    block_chain: &BlockChain,
-    logger: LoggerSender,
-) -> UTXOSet {
+fn get_utxo_set(block_chain: &BlockChain, logger: LoggerSender) -> UTXOSet {
     let _ = logger.log_wallet("Creando el UTXO set".to_string());
 
     let utxo_set = UTXOSet::from_blockchain(&block_chain);
@@ -149,11 +128,8 @@ pub fn program_execution(
 ) -> Result<SaveSystem, ErrorExecution> {
     let potential_peers = get_potential_peers(connection_config.clone(), logger.clone())?;
 
-    let peer_streams = handshake::connect_to_peers(
-        potential_peers,
-        connection_config.clone(),
-        logger.clone(),
-    );
+    let peer_streams =
+        handshake::connect_to_peers(potential_peers, connection_config.clone(), logger.clone());
 
     let mut block_chain = load_system.get_block_chain()?;
     let mut wallet = load_system.get_wallet()?;
@@ -175,8 +151,8 @@ pub fn program_execution(
 
     for account in wallet.accounts.iter() {
         print!(
-            "Account's '{}' utxo: {:?}\n", 
-            account.account_name, 
+            "Account's '{}' utxo: {:?}\n",
+            account.account_name,
             utxo_set.get_balance_in_tbtc(&account.address)
         );
     }
@@ -188,9 +164,5 @@ pub fn program_execution(
         logger.clone(),
     )?;
 
-    Ok(SaveSystem::new(
-        block_chain,
-        wallet,
-        logger,
-    ))
+    Ok(SaveSystem::new(block_chain, wallet, logger))
 }
