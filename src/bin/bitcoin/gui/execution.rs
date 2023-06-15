@@ -107,16 +107,17 @@ fn build_ui(application: &gtk::Application, glade_src: &str) {
     //Combo Box
     let account_registration_window = objects.search_window_named("AccountRegistrationWindow");
     let combo_box = objects.search_combo_box_named("WalletsComboBox");
-    
-    combo_box.append_text("");
+    /* 
     combo_box.append_text("Add address");
-
+    combo_box.append_text("Tu vieja");
+    */
     combo_box.connect_changed(move |combo_box| {
         if let Some(active_text) = combo_box.active_text() {
             if active_text == "Add address" {
                 account_registration_window.set_visible(true);
-                combo_box.set_active(Some(0));
                 println!("Add address it is then!");
+            } else if active_text == "Tu vieja" {
+                println!("Tu vieja it is then");
             }
         }
     });
@@ -142,6 +143,9 @@ fn build_ui(application: &gtk::Application, glade_src: &str) {
         let public_key_entry = obj_cl.search_entry_named("PublicKeyEntry");
         let address_entry = obj_cl.search_entry_named("AddressEntry");
         let name_entry = obj_cl.search_entry_named("NameEntry");
+
+        let combo_box = objects.search_combo_box_named("WalletsComboBox");
+        combo_box.append_text(name_entry.text().as_str());
 
         println!("{:?} {:?} {:?} {:?}", private_key_entry.text(), public_key_entry.text(), address_entry.text(), name_entry.text());
 
