@@ -1,5 +1,9 @@
-use super::error_gui::ErrorGUI;
+use super::{
+    error_gui::ErrorGUI,
+    signal_to_front::SignalToFront,
+};
 
+use gtk::glib::subclass::Signal;
 use gtk::{prelude::*, glib::Object, Button, Entry, Application, Builder, Window, ComboBoxText};
 use gtk::glib;
 use std::thread;
@@ -10,11 +14,12 @@ use crate::{
         download, handshake, account,
         save_system::SaveSystem, 
         load_system::LoadSystem, 
-    },
+    }
 };
 
 use cargosos_bitcoin::configurations::{
-    connection_config::ConnectionConfig, download_config::DownloadConfig
+    connection_config::ConnectionConfig, download_config::DownloadConfig,
+    save_config::SaveConfig,
 };
 
 use cargosos_bitcoin::{
@@ -29,7 +34,6 @@ use cargosos_bitcoin::{
 use std::net::{SocketAddr, TcpStream};
 
 use cargosos_bitcoin::wallet_structure::{private_key, public_key};
-
 
 use std::sync::mpsc;
 
@@ -93,10 +97,41 @@ impl VecOwnExt for Vec<Object> {
     
 }
 
-fn build_ui(application: &gtk::Application, glade_src: &str) {
+fn build_ui(
+    application: &gtk::Application, 
+    glade_src: &str,
+    connection_config: ConnectionConfig,
+    download_config: DownloadConfig,
+    save_config: SaveConfig,
+    logger: LoggerSender,
+) {
     let builder: Builder = Builder::from_string(glade_src);
 
     let objects = builder.objects();
+
+    let (tx_to_back, rx_from_front) = mpsc::channel::<String>();
+    let (tx_to_front, rx_from_back) = glib::MainContext::channel::<SignalToFront>(glib::PRIORITY_DEFAULT);
+
+
+    thread::spawn(move || {
+        let load_system = LoadSystem::new(
+            save_config.clone(),
+            logger.clone(),
+        );
+        let _ = backend_initialization(connection_config, download_config, load_system, logger, tx_to_front, rx_from_front);
+    });
+
+    let clone_objects = objects.clone();
+    rx_from_back.attach(None, move |signal| {
+        match signal {
+            SignalToFront::RegisterWallet(wallet_name) => {
+                let combo_box = clone_objects.search_combo_box_named("WalletsComboBox");
+                combo_box.append_text(&wallet_name);
+                println!("Registering wallet: {:?}", wallet_name);
+            }
+        }
+        glib::Continue(true)
+    });
     
     let window = objects.search_window_named("MainWindow");
     
@@ -108,7 +143,7 @@ fn build_ui(application: &gtk::Application, glade_src: &str) {
     let account_registration_window = objects.search_window_named("AccountRegistrationWindow");
     let combo_box = objects.search_combo_box_named("WalletsComboBox");
     
-    combo_box.append_text("");
+    //combo_box.append_text("");
     combo_box.append_text("Add address");
 
     combo_box.connect_changed(move |combo_box| {
@@ -200,15 +235,16 @@ fn get_block_chain(
     Ok(())
 }
 
-pub fn backend_execution(
+pub fn backend_initialization(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
     load_system: LoadSystem,
     logger: LoggerSender,
-    tx_to_front: glib::Sender<String>,
+    tx_to_front: glib::Sender<SignalToFront>,
     rx_from_front: mpsc::Receiver<String>,
 ) -> Result<(), ErrorExecution> {
-    
+
+
     let mut load_system = load_system;
 
     let potential_peers = get_potential_peers(connection_config.clone(), logger.clone())?;
@@ -221,6 +257,10 @@ pub fn backend_execution(
 
     let mut block_chain = load_system.get_block_chain()?;
     let mut wallet = load_system.get_wallet()?;
+
+    for account in wallet.accounts.iter() {
+        tx_to_front.send(SignalToFront::RegisterWallet(account.account_name.clone())).unwrap();
+    }
 
     println!("Wallet: {:?}", wallet);
 
@@ -239,15 +279,10 @@ pub fn backend_execution(
 pub fn program_execution(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
-    load_system: LoadSystem,
+    save_config: SaveConfig,
     logger: LoggerSender,
 ) -> Result<SaveSystem, ErrorGUI> {
-    let (tx_to_back, rx_from_front) = mpsc::channel::<String>();
-    let (tx_to_front, rx_from_back) = glib::MainContext::channel::<String>(glib::PRIORITY_DEFAULT);
-
-    let backend_initialization_handler = thread::spawn(move || {
-        let _ = backend_execution(connection_config, download_config, load_system, logger, tx_to_front, rx_from_front);
-    });
+    
 
     //let result = backend_initialization_handler.join();
 
@@ -255,7 +290,7 @@ pub fn program_execution(
 
     let application = Application::builder().build();
 
-    application.connect_activate(move |app| build_ui(app, glade_src));
+    application.connect_activate(move |app| build_ui(app, glade_src, connection_config.clone(), download_config.clone(), save_config.clone(), logger.clone()));
     let vector: Vec<String> = Vec::new();
     application.run_with_args(&vector);
 
