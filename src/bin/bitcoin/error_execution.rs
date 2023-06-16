@@ -1,5 +1,6 @@
 use super::{
     error_initialization::ErrorInitialization, gui::error_gui::ErrorGUI, tui::error_tui::ErrorTUI,
+    process::error_process::ErrorProcess,
 };
 
 use cargosos_bitcoin::{
@@ -25,12 +26,12 @@ pub enum ErrorExecution {
     Block(ErrorBlock),
     Node(ErrorNode),
     Wallet(ErrorWallet),
+    Process(ErrorProcess),
     GUI(ErrorGUI),
     TUI(ErrorTUI),
 
     FailThread,
     _ErrorBlock(String),
-    TerminalReadFail,
 }
 
 impl Debug for ErrorExecution {
@@ -51,11 +52,11 @@ impl Debug for ErrorExecution {
             ErrorExecution::Block(error_block) => write!(f, "{:?}", error_block),
             ErrorExecution::Node(error_node) => write!(f, "{:?}", error_node),
             ErrorExecution::Wallet(error_wallet) => write!(f, "{:?}", error_wallet),
+            ErrorExecution::Process(error_process) => write!(f, "{:?}", error_process),
             ErrorExecution::GUI(error_gui) => write!(f, "{:?}", error_gui),
             ErrorExecution::TUI(error_tui) => write!(f, "{:?}", error_tui),
             ErrorExecution::FailThread => write!(f, "ErrorFailThread"),
             ErrorExecution::_ErrorBlock(error) => write!(f, "Error with block: {}", error),
-            ErrorExecution::TerminalReadFail => write!(f, "ErrorTerminalReadFail"),
         }
     }
 }
@@ -123,5 +124,11 @@ impl From<ErrorGUI> for ErrorExecution {
 impl From<ErrorTUI> for ErrorExecution {
     fn from(value: ErrorTUI) -> Self {
         ErrorExecution::TUI(value)
+    }
+}
+
+impl From<ErrorProcess> for ErrorExecution {
+    fn from(value: ErrorProcess) -> Self {
+        ErrorExecution::Process(value)
     }
 }
