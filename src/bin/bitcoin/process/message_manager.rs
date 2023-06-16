@@ -15,6 +15,7 @@ use std::sync::mpsc::{Receiver, Sender};
 
 pub struct MessageManager {
     receiver: Receiver<MessageBroadcasting>,
+    sender: Sender<MessageNotify>,
     account: Account,
     transactions: Vec<Transaction>,
     pub block_chain: BlockChain,
@@ -32,6 +33,7 @@ impl MessageManager {
     ) -> Self {
         MessageManager {
             receiver,
+            sender,
             account,
             transactions,
             block_chain,
@@ -56,10 +58,19 @@ impl MessageManager {
 
     fn change_account(&mut self, account: Account) {
         self.account = account;
+
+        let balance = self.utxo_set.get_balance_in_tbtc(&self.account.address);
+        if self.sender.send(MessageNotify::Balance(balance)).is_err() {
+            todo!()
+        }
+
+        self.transactions.clear();
     }
 
     fn receive_transaction(&mut self, transaction: Transaction) {
-        todo!()
+        if transaction.tx_out.iter().any(|utxo| self.account.verify_transaction_ownership(utxo)) {
+            self.transactions.push(transaction);
+        }
     }
 
     fn receive_block(&mut self, block: Block) {

@@ -157,7 +157,7 @@ fn manage_broadcast(
         }
     }
 
-    Ok(broadcasting.destroy())
+    Ok(broadcasting.destroy()?)
 }
 
 pub fn program_execution(

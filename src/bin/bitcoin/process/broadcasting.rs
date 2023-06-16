@@ -1,6 +1,6 @@
 use super::{
     message_broadcasting::MessageBroadcasting, message_manager::MessageManager,
-    message_notify::MessageNotify, peer_manager::PeerManager,
+    message_notify::MessageNotify, peer_manager::PeerManager, error_process::ErrorProcess,
 };
 
 use cargosos_bitcoin::{
@@ -20,7 +20,7 @@ pub struct Broadcasting<RW>
 where
     RW: Read + Write + Send + 'static,
 {
-    peers: Vec<HandleSender<RW>>,
+    peers: Vec<HandleSender<Result<RW, ErrorProcess>>>,
     receiver: HandleSender<MessageManager>,
 }
 
@@ -59,8 +59,8 @@ where
     fn create_peers(
         peers_streams: Vec<RW>,
         sender: Sender<MessageBroadcasting>,
-    ) -> Vec<(JoinHandle<RW>, Sender<MessageBroadcasting>)> {
-        let mut peers: Vec<HandleSender<RW>> = Vec::new();
+    ) -> Vec<HandleSender<Result<RW, ErrorProcess>>> {
+        let mut peers: Vec<HandleSender<Result<RW, ErrorProcess>>> = Vec::new();
 
         for peer_stream in peers_streams {
             let sender_clone = sender.clone();
@@ -99,7 +99,7 @@ where
         }
     }
 
-    pub fn destroy(self) -> (Vec<RW>, BlockChain, UTXOSet) {
+    pub fn destroy(self) -> Result<(Vec<RW>, BlockChain, UTXOSet), ErrorProcess> {
         for (_, sender) in self.peers.iter() {
             if sender.send(MessageBroadcasting::Exit).is_err() {
                 todo!()
@@ -109,7 +109,7 @@ where
         let mut peers_streams = Vec::new();
         for (handle, _) in self.peers {
             match handle.join() {
-                Ok(peer_stream) => peers_streams.push(peer_stream),
+                Ok(peer_stream) => peers_streams.push(peer_stream?),
                 Err(_) => todo!(),
             }
         }
@@ -128,6 +128,6 @@ where
         let block_chain = message_manager.block_chain;
         let utxo_set = message_manager.utxo_set;
 
-        (peers_streams, block_chain, utxo_set)
+        Ok((peers_streams, block_chain, utxo_set))
     }
 }
