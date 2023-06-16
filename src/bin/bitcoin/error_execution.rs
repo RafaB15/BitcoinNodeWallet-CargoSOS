@@ -1,6 +1,6 @@
 use super::{
-    error_initialization::ErrorInitialization, gui::error_gui::ErrorGUI, tui::error_tui::ErrorTUI,
-    process::error_process::ErrorProcess,
+    error_initialization::ErrorInitialization, gui::error_gui::ErrorGUI,
+    process::error_process::ErrorProcess, tui::error_tui::ErrorTUI,
 };
 
 use cargosos_bitcoin::{

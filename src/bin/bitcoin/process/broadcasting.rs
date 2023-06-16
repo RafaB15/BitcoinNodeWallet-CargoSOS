@@ -1,6 +1,6 @@
 use super::{
-    message_broadcasting::MessageBroadcasting, message_manager::MessageManager,
-    message_notify::MessageNotify, peer_manager::PeerManager, error_process::ErrorProcess,
+    error_process::ErrorProcess, message_broadcasting::MessageBroadcasting,
+    message_manager::MessageManager, message_notify::MessageNotify, peer_manager::PeerManager,
 };
 
 use cargosos_bitcoin::{

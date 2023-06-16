@@ -89,7 +89,7 @@ impl UTXOSet {
     }
 
     /// Updates de UTXOSet with the information of a block
-    fn update_utxo_with_block(&mut self, block: &Block) {
+    pub fn update_utxo_with_block(&mut self, block: &Block) {
         self.update_utxo_with_transaction_output(&block.transactions);
         self.update_utxo_with_transaction_input(&block.transactions);
     }

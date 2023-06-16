@@ -4,10 +4,6 @@ use cargosos_bitcoin::{
     block_structure::{
         block::Block, block_chain::BlockChain, transaction::Transaction, utxo_set::UTXOSet,
     },
-    messages::{
-        block_message::BlockMessage, command_name::CommandName, get_data_message::GetDataMessage,
-        message, message_header::MessageHeader,
-    },
     wallet_structure::account::Account,
 };
 
@@ -15,7 +11,7 @@ use std::sync::mpsc::{Receiver, Sender};
 
 pub struct MessageManager {
     receiver: Receiver<MessageBroadcasting>,
-    sender: Sender<MessageNotify>,
+    sender_notify: Sender<MessageNotify>,
     account: Account,
     transactions: Vec<Transaction>,
     pub block_chain: BlockChain,
@@ -25,7 +21,7 @@ pub struct MessageManager {
 impl MessageManager {
     pub fn new(
         receiver: Receiver<MessageBroadcasting>,
-        sender: Sender<MessageNotify>,
+        sender_notify: Sender<MessageNotify>,
         account: Account,
         transactions: Vec<Transaction>,
         block_chain: BlockChain,
@@ -33,7 +29,7 @@ impl MessageManager {
     ) -> Self {
         MessageManager {
             receiver,
-            sender,
+            sender_notify,
             account,
             transactions,
             block_chain,
@@ -60,7 +56,11 @@ impl MessageManager {
         self.account = account;
 
         let balance = self.utxo_set.get_balance_in_tbtc(&self.account.address);
-        if self.sender.send(MessageNotify::Balance(balance)).is_err() {
+        if self
+            .sender_notify
+            .send(MessageNotify::Balance(balance))
+            .is_err()
+        {
             todo!()
         }
 
@@ -68,12 +68,43 @@ impl MessageManager {
     }
 
     fn receive_transaction(&mut self, transaction: Transaction) {
-        if transaction.tx_out.iter().any(|utxo| self.account.verify_transaction_ownership(utxo)) {
-            self.transactions.push(transaction);
+        if transaction
+            .tx_out
+            .iter()
+            .any(|utxo| self.account.verify_transaction_ownership(utxo))
+        {
+            self.transactions.push(transaction.clone());
+            if self
+                .sender_notify
+                .send(MessageNotify::Transaction(transaction))
+                .is_err()
+            {
+                todo!()
+            }
         }
     }
 
     fn receive_block(&mut self, block: Block) {
-        todo!()
+        let mut transactions: Vec<Transaction> = Vec::new();
+        for transaction in self.transactions.iter() {
+            if !block.transactions.contains(&transaction) {
+                transactions.push(transaction.clone());
+                continue;
+            }
+
+            if self
+                .sender_notify
+                .send(MessageNotify::TransactionInBlock((
+                    transaction.clone(),
+                    block.clone(),
+                )))
+                .is_err()
+            {
+                todo!()
+            }
+        }
+        self.transactions = transactions;
+        self.utxo_set.update_utxo_with_block(&block);
+        self.block_chain.append_block(block);
     }
 }
