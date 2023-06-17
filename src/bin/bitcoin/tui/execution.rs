@@ -8,9 +8,9 @@ use crate::{
     },
 };
 
-use cargosos_bitcoin::configurations::{
+use cargosos_bitcoin::{configurations::{
     connection_config::ConnectionConfig, download_config::DownloadConfig,
-};
+}, block_structure::block};
 
 use cargosos_bitcoin::{
     block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
@@ -129,9 +129,11 @@ fn get_broadcasting(
     Ok((boradcasting, receiver_broadcasting))
 }
 
-fn manage_broadcast(
+fn manage_menu(
     broadcasting: Broadcasting<TcpStream>,
     wallet: &mut Wallet,
+    utxo_set: &UTXOSet,
+    block_chain: &BlockChain,
     logger: LoggerSender,
 ) -> Result<Vec<TcpStream>, ErrorExecution> {
     loop {
@@ -179,9 +181,11 @@ pub fn program_execution(
 
     let handle = notify::notification(receiver, logger.clone());
 
-    let _ = manage_broadcast(
+    let _ = manage_menu(
         broadcasting, 
         &mut wallet, 
+        &utxo_set,
+        &block_chain,
         logger.clone()
     )?;
 
