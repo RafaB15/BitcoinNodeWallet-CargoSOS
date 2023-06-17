@@ -20,6 +20,12 @@ pub fn notification(
                 MessageNotify::Transaction(transaction) => {
                     let _ = logger.log_node(format!("New transaction: {:?}", transaction));
                 }
+                MessageNotify::TransactionInBlock((transaction, block)) => {
+                    let _ = logger.log_node(format!(
+                        "The transaction: {:?} is in the block with header: {:?}",
+                        transaction, block.header
+                    ));
+                },
             }
         }
     })

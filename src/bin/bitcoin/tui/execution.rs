@@ -131,8 +131,7 @@ fn get_broadcasting(
 
     let (sender_notify, receiver_notify) = mpsc::channel::<MessageNotify>();
 
-    let boradcasting =
-        Broadcasting::new(account, peer_streams, block_chain, utxo_set, sender_notify);
+    let boradcasting = Broadcasting::new(account, peer_streams, sender_notify);
 
     Ok((boradcasting, receiver_notify))
 }
