@@ -3,9 +3,10 @@ use super::{
     transaction_output::TransactionOutput,
     block::Block,
     hash::{
-        HashType,
         hash256d,
-    }, transaction::Transaction
+    }, 
+    transaction::Transaction,
+    outpoint::Outpoint,
 };
 
 use crate::serialization::{
@@ -16,33 +17,32 @@ use crate::wallet_structure::{
     address::Address,
 };
 
-type Utxo = (TransactionOutput, HashType, u32);
+use std::collections::HashMap;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct UTXOSet {
-    pub utxo: Vec<Utxo>,
+    pub utxo: HashMap<Outpoint, TransactionOutput>
 }
 
 impl UTXOSet {
 
-    /// Creates a new UTXOSet that can optionally be tied to an account.
+    /// Creates a new UTXOSet from a vector of blocks.
     pub fn new(blocks: Vec<Block>) -> UTXOSet {
-        let mut utxo_set = UTXOSet { utxo: Vec::new() };
+        let mut utxo_set = UTXOSet { utxo: HashMap::new() };
 
         blocks.iter().for_each(|block| utxo_set.update_utxo_with_block(block));
 
         utxo_set
     }
 
-    /// Creates a new UTXOSet from a blockchain. If an account is provided, the UTXOSet 
-    /// will only contain transactions that belong to the account.
+    /// Creates a new UTXOSet from a blockchain.
     pub fn from_blockchain(blockchain: &BlockChain) -> UTXOSet {
         Self::new(blockchain.get_all_blocks())
     }
 
     /// Returns a list of the utxo that have not been spent yet.
     pub fn get_utxo_list(&self, possible_address: &Option<Address>) -> Vec<TransactionOutput> {
-        self.utxo.iter().filter_map(|(output, _, _)| {
+        self.utxo.values().filter_map(|output| {
             if let Some(address) = possible_address {
                 match address.verify_transaction_ownership(output) {
                     true => Some(output.clone()),
@@ -50,7 +50,7 @@ impl UTXOSet {
                 }
             } else {
                 Some(output.clone())
-            }            
+            }
         }).collect()
     }
 
@@ -68,7 +68,11 @@ impl UTXOSet {
             };
 
             for (index_utxo, output) in transaction.tx_out.iter().enumerate() {
-                self.utxo.push((output.clone(), hashed_transaction, index_utxo as u32));
+                let outpoint = Outpoint {
+                    hash: hashed_transaction.clone(),
+                    index: index_utxo as u32,
+                };
+                self.utxo.insert(outpoint, output.clone());
             }
         }
     }
@@ -77,16 +81,9 @@ impl UTXOSet {
     fn update_utxo_with_transaction_input(&mut self, transactions: &Vec<Transaction>) {
         for transaction in transactions {
             for input in &transaction.tx_in {
-                for (output, transaction_hash, index) in self.utxo.iter_mut() {
-                    if input.previous_output.hash.eq(transaction_hash)
-                        && input.previous_output.index == *index
-                    {
-                        output.value = -1;
-                    }
-                }
+                self.utxo.remove(&input.previous_output);
             }
         }
-        self.utxo.retain(|(output, _, _)| output.value != -1);
     }
 
     /// Updates de UTXOSet with the information of a block
@@ -98,7 +95,7 @@ impl UTXOSet {
     /// Returns the balance of the UTXOSet in Satoshis.
     pub fn get_balance_in_satoshis(&self, address: &Address) -> i64 {
         let mut balance: i64 = 0;
-        self.utxo.iter().for_each(|(output, _, _)| {
+        self.utxo.values().for_each(|output| {
             if address.verify_transaction_ownership(output) {
                 balance += output.value;
             }
