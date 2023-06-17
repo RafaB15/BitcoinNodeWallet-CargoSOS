@@ -14,7 +14,7 @@ use std::{
 
 use std::cmp::PartialEq;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Outpoint {
     pub hash: HashType,
     pub index: u32,
