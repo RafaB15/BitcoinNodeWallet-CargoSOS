@@ -4,7 +4,7 @@ use crate::{
     error_execution::ErrorExecution,
     process::{
         broadcasting::Broadcasting, download, handshake, load_system::LoadSystem,
-        message_notify::MessageNotify, save_system::SaveSystem,
+        message_broadcasting::MessageBroadcasting, save_system::SaveSystem,
     },
 };
 
@@ -118,29 +118,22 @@ fn get_utxo_set(block_chain: &BlockChain, logger: LoggerSender) -> UTXOSet {
 
 fn get_broadcasting(
     peer_streams: Vec<TcpStream>,
-    block_chain: BlockChain,
-    utxo_set: UTXOSet,
-    wallet: &Wallet,
     logger: LoggerSender,
-) -> Result<(Broadcasting<TcpStream>, Receiver<MessageNotify>), ErrorExecution> {
-    let _ = logger.log_wallet("Selecting account".to_string());
-
-    let account = account::select_account(&wallet, logger.clone())?;
-
+) -> Result<(Broadcasting<TcpStream>, Receiver<MessageBroadcasting>), ErrorExecution> {
     let _ = logger.log_node("Broadcasting".to_string());
 
-    let (sender_notify, receiver_notify) = mpsc::channel::<MessageNotify>();
+    let (sender_broadcasting, receiver_broadcasting) = mpsc::channel::<MessageBroadcasting>();
 
-    let boradcasting = Broadcasting::new(account, peer_streams, sender_notify);
+    let boradcasting = Broadcasting::new(peer_streams, sender_broadcasting);
 
-    Ok((boradcasting, receiver_notify))
+    Ok((boradcasting, receiver_broadcasting))
 }
 
 fn manage_broadcast(
-    mut broadcasting: Broadcasting<TcpStream>,
+    broadcasting: Broadcasting<TcpStream>,
     wallet: &mut Wallet,
     logger: LoggerSender,
-) -> Result<(Vec<TcpStream>, BlockChain, UTXOSet), ErrorExecution> {
+) -> Result<Vec<TcpStream>, ErrorExecution> {
     loop {
         match menu::select_option(logger.clone())? {
             MenuOption::CreateAccount => {
@@ -149,7 +142,6 @@ fn manage_broadcast(
             MenuOption::ShowAccounts => account::show_accounts(&wallet),
             MenuOption::ChangeAccount => {
                 let account = account::select_account(&wallet, logger.clone())?;
-                broadcasting.change_account(account);
             }
             MenuOption::SendTransaction => todo!(),
             MenuOption::Exit => break,
@@ -183,12 +175,15 @@ pub fn program_execution(
 
     let utxo_set = get_utxo_set(&block_chain, logger.clone());
 
-    let (broadcasting, receiver) =
-        get_broadcasting(peer_streams, block_chain, utxo_set, &wallet, logger.clone())?;
+    let (broadcasting, receiver) = get_broadcasting(peer_streams, logger.clone())?;
 
     let handle = notify::notification(receiver, logger.clone());
 
-    let (_, block_chain, _) = manage_broadcast(broadcasting, &mut wallet, logger.clone())?;
+    let _ = manage_broadcast(
+        broadcasting, 
+        &mut wallet, 
+        logger.clone()
+    )?;
 
     if handle.join().is_err() {
         todo!()

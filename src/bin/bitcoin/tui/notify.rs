@@ -1,4 +1,4 @@
-use crate::process::message_notify::MessageNotify;
+use crate::process::message_broadcasting::MessageBroadcasting;
 
 use cargosos_bitcoin::logs::logger_sender::LoggerSender;
 
@@ -7,25 +7,17 @@ use std::{
     thread::{self, JoinHandle},
 };
 
+// hacer que se pueda la informacion del usuario
+// la idea es que de esta funcion se muestre el resultado al usuario 
+// y que del main thread simplemente el usuario ingresa los valores
 pub fn notification(
-    receiver_notify: Receiver<MessageNotify>,
+    receiver_broadcasting: Receiver<MessageBroadcasting>,
     logger: LoggerSender,
 ) -> JoinHandle<()> {
     thread::spawn(move || {
-        for notification in receiver_notify {
+        for notification in receiver_broadcasting {
             match notification {
-                MessageNotify::Balance(balance) => {
-                    let _ = logger.log_node(format!("New balance: {:?}", balance));
-                }
-                MessageNotify::Transaction(transaction) => {
-                    let _ = logger.log_node(format!("New transaction: {:?}", transaction));
-                }
-                MessageNotify::TransactionInBlock((transaction, block)) => {
-                    let _ = logger.log_node(format!(
-                        "The transaction: {:?} is in the block with header: {:?}",
-                        transaction, block.header
-                    ));
-                },
+                _ => todo!(),
             }
         }
     })

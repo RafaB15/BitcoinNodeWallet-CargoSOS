@@ -24,10 +24,7 @@ impl<RW> Broadcasting<RW>
 where
     RW: Read + Write + Send + 'static,
 {
-    pub fn new(
-        peer_streams: Vec<RW>,
-        sender_broadcasting: Sender<MessageBroadcasting>,
-    ) -> Self {
+    pub fn new(peer_streams: Vec<RW>, sender_broadcasting: Sender<MessageBroadcasting>) -> Self {
         Broadcasting {
             peers: Self::create_peers(peer_streams, sender_broadcasting),
         }
