@@ -1,4 +1,4 @@
-use super::{error_process::ErrorProcess, message_broadcasting::MessageBroadcasting};
+use super::{error_process::ErrorProcess, message_response::MessageResponse};
 
 use cargosos_bitcoin::{
     block_structure::transaction::Transaction,
@@ -33,8 +33,8 @@ where
     RW: Read + Write + Send + 'static,
 {
     peer: RW,
-    sender: Sender<MessageBroadcasting>,
-    receiver: Receiver<MessageBroadcasting>,
+    sender: Sender<MessageResponse>,
+    receiver: Receiver<MessageResponse>,
 }
 
 impl<RW> PeerManager<RW>
@@ -43,8 +43,8 @@ where
 {
     pub fn new(
         peer: RW,
-        sender: Sender<MessageBroadcasting>,
-        receiver: Receiver<MessageBroadcasting>,
+        sender: Sender<MessageResponse>,
+        receiver: Receiver<MessageResponse>,
     ) -> Self {
         PeerManager {
             peer,
@@ -59,10 +59,8 @@ where
 
             if let Ok(message) = self.receiver.try_recv() {
                 match message {
-                    MessageBroadcasting::Transaction(transaction) => {
-                        self.send_transaction(transaction)
-                    }
-                    MessageBroadcasting::Exit => break,
+                    MessageResponse::Transaction(transaction) => self.send_transaction(transaction),
+                    MessageResponse::Exit => break,
                     _ => (),
                 }
             }

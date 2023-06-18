@@ -1,6 +1,5 @@
 use super::{
-    error_process::ErrorProcess, message_broadcasting::MessageBroadcasting,
-    peer_manager::PeerManager,
+    error_process::ErrorProcess, message_response::MessageResponse, peer_manager::PeerManager,
 };
 
 use cargosos_bitcoin::block_structure::transaction::Transaction;
@@ -11,7 +10,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-type HandleSender<T> = (JoinHandle<T>, Sender<MessageBroadcasting>);
+type HandleSender<T> = (JoinHandle<T>, Sender<MessageResponse>);
 
 pub struct Broadcasting<RW>
 where
@@ -24,7 +23,7 @@ impl<RW> Broadcasting<RW>
 where
     RW: Read + Write + Send + 'static,
 {
-    pub fn new(peer_streams: Vec<RW>, sender_broadcasting: Sender<MessageBroadcasting>) -> Self {
+    pub fn new(peer_streams: Vec<RW>, sender_broadcasting: Sender<MessageResponse>) -> Self {
         Broadcasting {
             peers: Self::create_peers(peer_streams, sender_broadcasting),
         }
@@ -32,13 +31,13 @@ where
 
     fn create_peers(
         peers_streams: Vec<RW>,
-        sender: Sender<MessageBroadcasting>,
+        sender: Sender<MessageResponse>,
     ) -> Vec<HandleSender<Result<RW, ErrorProcess>>> {
         let mut peers: Vec<HandleSender<Result<RW, ErrorProcess>>> = Vec::new();
 
         for peer_stream in peers_streams {
             let sender_clone = sender.clone();
-            let (sender_message, receiver_message) = mpsc::channel::<MessageBroadcasting>();
+            let (sender_message, receiver_message) = mpsc::channel::<MessageResponse>();
 
             let handle = thread::spawn(move || {
                 let peer_manager = PeerManager::new(peer_stream, sender_clone, receiver_message);
@@ -55,7 +54,7 @@ where
     pub fn send_transaction(&mut self, transaction: Transaction) {
         for (_, sender) in self.peers.iter() {
             if sender
-                .send(MessageBroadcasting::Transaction(transaction.clone()))
+                .send(MessageResponse::Transaction(transaction.clone()))
                 .is_err()
             {
                 todo!()
@@ -65,7 +64,7 @@ where
 
     pub fn destroy(self) -> Result<Vec<RW>, ErrorProcess> {
         for (_, sender) in self.peers.iter() {
-            if sender.send(MessageBroadcasting::Exit).is_err() {
+            if sender.send(MessageResponse::Exit).is_err() {
                 todo!()
             }
         }

@@ -1,27 +1,26 @@
-use super::user_response::{user_input, response_handle};
+use super::user_response::{response_handle, user_input};
 
 use crate::{
     error_execution::ErrorExecution,
     process::{
         broadcasting::Broadcasting, download, handshake, load_system::LoadSystem,
-        message_broadcasting::MessageBroadcasting, save_system::SaveSystem,
+        message_response::MessageResponse, save_system::SaveSystem,
     },
 };
 
-use cargosos_bitcoin::{configurations::{
+use cargosos_bitcoin::configurations::{
     connection_config::ConnectionConfig, download_config::DownloadConfig,
-}, block_structure::block};
+};
 
 use cargosos_bitcoin::{
     block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
     connections::ibd_methods::IBDMethod,
     logs::logger_sender::LoggerSender,
-    wallet_structure::wallet::Wallet,
 };
 
 use std::{
     net::{SocketAddr, TcpStream},
-    sync::mpsc::{self, Receiver},
+    sync::mpsc::{self, Sender},
 };
 
 fn get_potential_peers(
@@ -118,15 +117,14 @@ fn get_utxo_set(block_chain: &BlockChain, logger: LoggerSender) -> UTXOSet {
 
 fn get_broadcasting(
     peer_streams: Vec<TcpStream>,
+    sender_broadcasting: Sender<MessageResponse>,
     logger: LoggerSender,
-) -> Result<(Broadcasting<TcpStream>, Receiver<MessageBroadcasting>), ErrorExecution> {
+) -> Result<Broadcasting<TcpStream>, ErrorExecution> {
     let _ = logger.log_node("Broadcasting".to_string());
-
-    let (sender_broadcasting, receiver_broadcasting) = mpsc::channel::<MessageBroadcasting>();
 
     let boradcasting = Broadcasting::new(peer_streams, sender_broadcasting);
 
-    Ok((boradcasting, receiver_broadcasting))
+    Ok(boradcasting)
 }
 
 pub fn program_execution(
@@ -141,7 +139,7 @@ pub fn program_execution(
         handshake::connect_to_peers(potential_peers, connection_config.clone(), logger.clone());
 
     let mut block_chain = load_system.get_block_chain()?;
-    let mut wallet = load_system.get_wallet()?;
+    let wallet = load_system.get_wallet()?;
 
     let peer_streams = get_block_chain(
         peer_streams,
@@ -153,22 +151,24 @@ pub fn program_execution(
 
     let utxo_set = get_utxo_set(&block_chain, logger.clone());
 
-    let (broadcasting, receiver) = get_broadcasting(peer_streams, logger.clone())?;
+    let (sender_broadcasting, receiver_broadcasting) = mpsc::channel::<MessageResponse>();
+
+    let broadcasting = get_broadcasting(peer_streams, sender_broadcasting.clone(), logger.clone())?;
 
     let handle = response_handle(
-        receiver, 
-        wallet, 
+        receiver_broadcasting,
+        wallet,
         utxo_set,
         block_chain,
-        logger.clone()
+        logger.clone(),
     );
 
-    user_input(logger.clone())?;
+    user_input(sender_broadcasting, logger.clone())?;
 
     broadcasting.destroy()?;
 
     match handle.join() {
         Ok((block_chain, wallet)) => Ok(SaveSystem::new(block_chain, wallet, logger)),
-        Err(_) => todo!()
+        Err(_) => todo!(),
     }
 }
