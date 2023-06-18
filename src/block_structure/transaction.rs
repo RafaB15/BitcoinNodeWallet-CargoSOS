@@ -3,14 +3,20 @@ use super::{
     hash::{hash256d, HashType},
     transaction_input::TransactionInput,
     transaction_output::TransactionOutput,
+    outpoint::Outpoint,
 };
 
-use crate::serialization::{
+use crate::{serialization::{
     deserializable_internal_order::DeserializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization,
     serializable_internal_order::SerializableInternalOrder,
     serializable_little_endian::SerializableLittleEndian,
+}};
+
+use crate::wallet_structure::{
+    address::Address,
+    account::Account,
 };
 
 use crate::messages::compact_size::CompactSize;
@@ -68,6 +74,17 @@ impl Transaction {
         }
         Ok(tx_ids)
     }
+
+    pub fn from_account_to_address(
+        account_from: &Account, 
+        outputs_to_spend: &Vec<(Outpoint, TransactionOutput)>,
+        account_to: &Address, 
+        amount: i64,
+        fee: i64,
+    ) -> Result<Transaction, ErrorBlock> {
+        todo!()
+    }
+
 }
 
 impl SerializableInternalOrder for Transaction {

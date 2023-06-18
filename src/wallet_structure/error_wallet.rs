@@ -5,4 +5,5 @@ pub enum ErrorWallet {
     CannotCreateAccount(String),
     CannotDecodeAddress(String),
     InvalidAddress(String),
+    CannotCreateNewTransaction(String),
 }
