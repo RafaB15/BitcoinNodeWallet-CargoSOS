@@ -15,11 +15,12 @@ use crate::serialization::{
 };
 
 use std::{
+    cmp::PartialEq,
     fmt::Display,
     io::{Read, Write},
 };
 
-use crate::block_structure::{transaction_output::TransactionOutput, utxo_set::UTXOSet};
+use crate::block_structure::{transaction_output::TransactionOutput, transaction::Transaction, utxo_set::UTXOSet};
 
 #[derive(Debug, Clone)]
 pub struct Account {
@@ -50,8 +51,12 @@ impl Account {
     }
 
     /// Returns true if the account owns the given utxo (works for P2PKH) and false otherwise.
-    pub fn verify_transaction_ownership(&self, utxo: &TransactionOutput) -> bool {
+    pub fn verify_transaction_output_ownership(&self, utxo: &TransactionOutput) -> bool {
         self.address.verify_transaction_ownership(utxo)
+    }
+
+    pub fn verify_transaction_ownership(&self, tx: &Transaction) -> bool {
+        tx.verify_transaction_ownership(&self.address)
     }
 
     /// Returns the balance of the account in satoshis
@@ -62,6 +67,12 @@ impl Account {
     /// Returns the balance of the account in tbtc
     pub fn get_balance_in_tbtc(&self, utxo_set: UTXOSet) -> f64 {
         utxo_set.get_balance_in_tbtc(&self.address)
+    }
+}
+
+impl PartialEq for Account {
+    fn eq(&self, other: &Self) -> bool {
+        self.account_name == other.account_name
     }
 }
 

@@ -1,4 +1,4 @@
-use super::{error_tui::ErrorTUI, menu, menu_option::MenuOption};
+use super::{account, error_tui::ErrorTUI, menu, menu_option::MenuOption};
 
 use crate::process::message_response::MessageResponse;
 
@@ -17,12 +17,16 @@ pub fn user_input(sender: Sender<MessageResponse>, logger: LoggerSender) -> Resu
     loop {
         let sender_clone = sender.clone();
         let logger_clone = logger.clone();
+
         match menu::select_option(logger.clone())? {
             MenuOption::CreateAccount => {
                 send_menu_option(sender_clone, MessageResponse::CreateAccount, logger_clone)?
             }
             MenuOption::ChangeAccount => {
                 send_menu_option(sender_clone, MessageResponse::ChangeAccount, logger_clone)?
+            }
+            MenuOption::RemoveAccount => {
+                send_menu_option(sender_clone, MessageResponse::RemoveAccount, logger_clone)?
             }
             MenuOption::SendTransaction => {
                 send_menu_option(sender_clone, MessageResponse::SendTransaction, logger_clone)?
@@ -59,16 +63,28 @@ fn send_menu_option(
     }
 }
 
-pub fn response_handle(
+pub fn handle_response(
     receiver_broadcasting: Receiver<MessageResponse>,
-    wallet: Wallet,
+    mut wallet: Wallet,
     utxo_set: UTXOSet,
     block_chain: BlockChain,
     logger: LoggerSender,
 ) -> JoinHandle<(BlockChain, Wallet)> {
     thread::spawn(move || {
+        //let account = menu::
+
         for message in receiver_broadcasting {
-            response(message, &wallet, &utxo_set, &block_chain, logger.clone());
+            if message == MessageResponse::Exit {
+                break;
+            }
+
+            response(
+                message,
+                &mut wallet,
+                &utxo_set,
+                &block_chain,
+                logger.clone(),
+            );
         }
 
         (block_chain, wallet)
@@ -77,20 +93,62 @@ pub fn response_handle(
 
 fn response(
     message: MessageResponse,
-    wallet: &Wallet,
+    wallet: &mut Wallet,
     utxo_set: &UTXOSet,
     block_chain: &BlockChain,
     logger: LoggerSender,
-) {
+) -> Result<(), ErrorTUI> {
     match message {
         MessageResponse::Block(block) => todo!(),
-        MessageResponse::Transaction(transaction) => todo!(),
-        MessageResponse::CreateAccount => todo!(),
-        MessageResponse::ChangeAccount => todo!(),
+        MessageResponse::Transaction(transaction) => {
+            let _ = logger.log_wallet(format!("Receive transaction: {:?}", transaction));
+
+            if let Some(account) = wallet.get_selected_account() {
+                if account.verify_transaction_ownership(&transaction) {
+                    let message_output = format!(
+                        "Transaction: {:?} is valid and has not been added to the blockchain yet",
+                        transaction
+                    );
+
+                    println!("{message_output}");
+                    let _ = logger.log_wallet(message_output);
+                }
+            }
+        },
+        MessageResponse::CreateAccount => {
+            let account = account::create_account(logger)?;
+            wallet.add_account(account);
+        }
+        MessageResponse::ChangeAccount => {
+            let account = account::select_account(wallet, logger)?;
+            wallet.change_account(account);
+        }
+        MessageResponse::RemoveAccount => {
+            let account = account::select_account(wallet, logger)?;
+            wallet.remove_account(account);
+        }
         MessageResponse::SendTransaction => todo!(),
-        MessageResponse::ShowAccounts => todo!(),
-        MessageResponse::ShowBalance => todo!(),
-        MessageResponse::LastTransactions => todo!(),
+        MessageResponse::ShowAccounts => account::show_accounts(wallet, logger),
+        MessageResponse::ShowBalance => {
+            let account = wallet.get_selected_account();
+            match account {
+                Some(account) => {
+                    let balance = utxo_set.get_balance_in_satoshis(&account.address);
+                    let message_output = format!("Account: {:?} has balance of {balance}", account);
+                    
+                    println!("{message_output}");
+                    let _ = logger.log_wallet(message_output);
+                }
+                None => {
+                    let _ = logger.log_wallet("No account selected".to_string());
+                }
+            }
+        }
+        MessageResponse::LastTransactions => {
+
+        },
         MessageResponse::Exit => {}
     }
+
+    Ok(())
 }

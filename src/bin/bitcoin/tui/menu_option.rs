@@ -9,6 +9,7 @@ use std::{
 pub enum MenuOption {
     CreateAccount,
     ChangeAccount,
+    RemoveAccount,
     SendTransaction,
     ShowAccounts,
     ShowBalance,
@@ -18,17 +19,19 @@ pub enum MenuOption {
 
 const CREATE_ACCOUNT: char = '1';
 const CHANGE_ACCOUNT: char = '2';
-const SEND_TRANSACTION: char = '3';
-const SHOW_ACCOUNTS: char = '4';
-const SHOW_BALANCE: char = '5';
-const LAST_TRANSACTIONS: char = '6';
-const EXIT: char = '7';
+const REMOVE_ACCOUNT: char = '3';
+const SEND_TRANSACTION: char = '4';
+const SHOW_ACCOUNTS: char = '5';
+const SHOW_BALANCE: char = '6';
+const LAST_TRANSACTIONS: char = '7';
+const EXIT: char = '8';
 
 impl Display for MenuOption {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             MenuOption::CreateAccount => write!(f, "Create account"),
             MenuOption::ChangeAccount => write!(f, "Change account"),
+            MenuOption::RemoveAccount => write!(f, "Remove account"),
             MenuOption::SendTransaction => write!(f, "Send transaction"),
             MenuOption::ShowAccounts => write!(f, "Show accounts"),
             MenuOption::ShowBalance => write!(f, "Show balance"),
@@ -43,6 +46,7 @@ impl From<MenuOption> for char {
         match value {
             MenuOption::CreateAccount => CREATE_ACCOUNT,
             MenuOption::ChangeAccount => CHANGE_ACCOUNT,
+            MenuOption::RemoveAccount => REMOVE_ACCOUNT,
             MenuOption::SendTransaction => SEND_TRANSACTION,
             MenuOption::ShowAccounts => SHOW_ACCOUNTS,
             MenuOption::ShowBalance => SHOW_BALANCE,

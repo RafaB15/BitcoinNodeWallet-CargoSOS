@@ -1,4 +1,4 @@
-use super::user_response::{response_handle, user_input};
+use super::user_response::{handle_response, user_input};
 
 use crate::{
     error_execution::ErrorExecution,
@@ -155,7 +155,7 @@ pub fn program_execution(
 
     let broadcasting = get_broadcasting(peer_streams, sender_broadcasting.clone(), logger.clone())?;
 
-    let handle = response_handle(
+    let handle = handle_response(
         receiver_broadcasting,
         wallet,
         utxo_set,
@@ -165,7 +165,7 @@ pub fn program_execution(
 
     user_input(sender_broadcasting, logger.clone())?;
 
-    broadcasting.destroy()?;
+    let _ = broadcasting.destroy()?;
 
     match handle.join() {
         Ok((block_chain, wallet)) => Ok(SaveSystem::new(block_chain, wallet, logger)),
