@@ -11,6 +11,8 @@ pub enum MenuOption {
     ChangeAccount,
     SendTransaction,
     ShowAccounts,
+    ShowBalance,
+    LastTransactions,
     Exit,
 }
 
@@ -18,7 +20,9 @@ const CREATE_ACCOUNT: char = '1';
 const CHANGE_ACCOUNT: char = '2';
 const SEND_TRANSACTION: char = '3';
 const SHOW_ACCOUNTS: char = '4';
-const EXIT: char = '5';
+const SHOW_BALANCE: char = '5';
+const LAST_TRANSACTIONS: char = '6';
+const EXIT: char = '7';
 
 impl Display for MenuOption {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -27,6 +31,8 @@ impl Display for MenuOption {
             MenuOption::ChangeAccount => write!(f, "Change account"),
             MenuOption::SendTransaction => write!(f, "Send transaction"),
             MenuOption::ShowAccounts => write!(f, "Show accounts"),
+            MenuOption::ShowBalance => write!(f, "Show balance"),
+            MenuOption::LastTransactions => write!(f, "Last transactions"),
             MenuOption::Exit => write!(f, "Exit"),
         }
     }
@@ -39,6 +45,8 @@ impl From<MenuOption> for char {
             MenuOption::ChangeAccount => CHANGE_ACCOUNT,
             MenuOption::SendTransaction => SEND_TRANSACTION,
             MenuOption::ShowAccounts => SHOW_ACCOUNTS,
+            MenuOption::ShowBalance => SHOW_BALANCE,
+            MenuOption::LastTransactions => LAST_TRANSACTIONS,
             MenuOption::Exit => EXIT,
         }
     }
@@ -58,6 +66,8 @@ impl TryFrom<&str> for MenuOption {
             CHANGE_ACCOUNT => Ok(MenuOption::ChangeAccount),
             SEND_TRANSACTION => Ok(MenuOption::SendTransaction),
             SHOW_ACCOUNTS => Ok(MenuOption::ShowAccounts),
+            SHOW_BALANCE => Ok(MenuOption::ShowBalance),
+            LAST_TRANSACTIONS => Ok(MenuOption::LastTransactions),
             EXIT => Ok(MenuOption::Exit),
             _ => Err(ErrorTUI::InvalidMenuOption),
         }

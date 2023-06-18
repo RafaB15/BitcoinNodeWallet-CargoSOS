@@ -7,6 +7,5 @@ use cargosos_bitcoin::{
 pub enum MessageBroadcasting {
     Block(Block),
     Transaction(Transaction),
-    ChangeAccount(Account),
     Exit,
 }

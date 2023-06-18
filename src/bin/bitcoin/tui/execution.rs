@@ -1,4 +1,4 @@
-use super::{account, menu, menu_options::MenuOption, notify};
+use super::user_response::{user_input, response_handle};
 
 use crate::{
     error_execution::ErrorExecution,
@@ -129,30 +129,6 @@ fn get_broadcasting(
     Ok((boradcasting, receiver_broadcasting))
 }
 
-fn manage_menu(
-    broadcasting: Broadcasting<TcpStream>,
-    wallet: &mut Wallet,
-    utxo_set: &UTXOSet,
-    block_chain: &BlockChain,
-    logger: LoggerSender,
-) -> Result<Vec<TcpStream>, ErrorExecution> {
-    loop {
-        match menu::select_option(logger.clone())? {
-            MenuOption::CreateAccount => {
-                wallet.add_account(account::create_account(logger.clone())?);
-            }
-            MenuOption::ShowAccounts => account::show_accounts(&wallet),
-            MenuOption::ChangeAccount => {
-                let account = account::select_account(&wallet, logger.clone())?;
-            }
-            MenuOption::SendTransaction => todo!(),
-            MenuOption::Exit => break,
-        }
-    }
-
-    Ok(broadcasting.destroy()?)
-}
-
 pub fn program_execution(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
@@ -179,19 +155,20 @@ pub fn program_execution(
 
     let (broadcasting, receiver) = get_broadcasting(peer_streams, logger.clone())?;
 
-    let handle = notify::notification(receiver, logger.clone());
-
-    let _ = manage_menu(
-        broadcasting, 
-        &mut wallet, 
-        &utxo_set,
-        &block_chain,
+    let handle = response_handle(
+        receiver, 
+        wallet, 
+        utxo_set,
+        block_chain,
         logger.clone()
-    )?;
+    );
 
-    if handle.join().is_err() {
-        todo!()
+    user_input(logger.clone())?;
+
+    broadcasting.destroy()?;
+
+    match handle.join() {
+        Ok((block_chain, wallet)) => Ok(SaveSystem::new(block_chain, wallet, logger)),
+        Err(_) => todo!()
     }
-
-    Ok(SaveSystem::new(block_chain, wallet, logger))
 }

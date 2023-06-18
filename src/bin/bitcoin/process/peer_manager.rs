@@ -102,7 +102,7 @@ where
         Ok(())
     }
 
-    fn send_transaction(&self, transaction: Transaction) {
+    fn send_transaction(&self, _transaction: Transaction) {
         todo!()
     }
 }

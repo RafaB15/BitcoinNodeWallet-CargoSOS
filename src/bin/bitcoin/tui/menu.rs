@@ -1,4 +1,4 @@
-use super::{error_tui::ErrorTUI, menu_options::MenuOption};
+use super::{error_tui::ErrorTUI, menu_option::MenuOption};
 
 use cargosos_bitcoin::logs::logger_sender::LoggerSender;
 
