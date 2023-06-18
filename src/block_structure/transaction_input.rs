@@ -13,7 +13,10 @@ use crate::serialization::{
     serializable_internal_order::SerializableInternalOrder,
     serializable_little_endian::SerializableLittleEndian,
 };
-use crate::wallet_structure::account::Account;
+use crate::wallet_structure::{
+    account::Account,
+    error_wallet::ErrorWallet,
+};
 
 use std::io::{Read, Write};
 
@@ -45,7 +48,7 @@ impl TransactionInput {
     pub fn create_signature_script(
         output_information: &(Outpoint, TransactionOutput),
         account: &Account,
-    ) -> Result<Vec<u8>, ErrorSerialization> {
+    ) -> Result<Vec<u8>, ErrorWallet> {
         let mut signature_script: Vec<u8> = Vec::new();
 
         let outpoint = output_information.0.clone();
@@ -59,26 +62,25 @@ impl TransactionInput {
         );
 
         let mut message: Vec<u8> = Vec::new();
-        if let Err(e) = transaction_to_sign.io_serialize(&mut transaction_to_sign_serialized) {
-            return Err(e);
+        if let Err(e) = transaction_to_sign.io_serialize(&mut message) {
+            return Err(ErrorWallet::CannotCreateNewTransaction(format!("Error serializing the transaction to sign: {:?}", e)));
         };
 
-        let mut singed_message = account.sign(&message)?;
+        let mut signed_message = account.sign(&message)?;
 
-        transaction_to_sign_serialized.push(SIGHASH_ALL);
-        
-
-
-            
+        signed_message.push(SIGHASH_ALL);
+        signed_message.extend(account.public_key.as_bytes());
+        Ok(signed_message)
     }
     
-    pub fn from_output(
+    pub fn from_output_of_account(
         output_information: &(Outpoint, TransactionOutput),
-    ) {
-        let 
+        account: &Account,
+    ) -> Result<TransactionInput, ErrorWallet> {
         let outpoint = output_information.0.clone();
-
-
+        let signature_script = TransactionInput::create_signature_script(output_information, account)?;
+        let sequence = DEFAULT_SEQUENCE;
+        Ok(TransactionInput::new(outpoint, signature_script, sequence))
     }
     
 }
