@@ -49,13 +49,11 @@ impl TransactionInput {
         output_information: &(Outpoint, TransactionOutput),
         account: &Account,
     ) -> Result<Vec<u8>, ErrorWallet> {
-        let mut signature_script: Vec<u8> = Vec::new();
-
         let outpoint = output_information.0.clone();
         let output_to_spend = output_information.1.clone();
         let previous_pubkey_script = output_to_spend.pk_script.clone();
 
-        let mut transaction_to_sign = TransactionInput::new(
+        let transaction_to_sign = TransactionInput::new(
             outpoint,
             previous_pubkey_script,
             DEFAULT_SEQUENCE,

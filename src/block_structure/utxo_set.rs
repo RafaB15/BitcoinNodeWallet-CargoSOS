@@ -54,7 +54,7 @@ impl UTXOSet {
         }).collect()
     }
 
-    pub fn get_utxo_list_with_outpoints(&self, possible_address: &Option<Address>) -> Vec<(Outpoint, TransactionOutput)> {
+    pub fn get_utxo_list_with_outpoints(&self, possible_address: Option<&Address>) -> Vec<(Outpoint, TransactionOutput)> {
         self.utxo.iter().filter_map(|(outpoint, output)| {
             if let Some(address) = possible_address {
                 match address.verify_transaction_ownership(output) {

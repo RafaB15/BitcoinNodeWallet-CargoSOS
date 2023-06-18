@@ -19,7 +19,6 @@ use std::io::{Read, Write};
 use crate::block_structure::{
     transaction::Transaction,
     transaction_output::TransactionOutput,
-    transaction_input::TransactionInput,
     outpoint::Outpoint,
     utxo_set::UTXOSet,
 };
@@ -68,7 +67,7 @@ impl Account {
     }
     
     pub fn create_transaction(&self, to: Address, amount: i64, fee: i64, utxo_set: UTXOSet) -> Result<Transaction, ErrorWallet> {
-        let available_outputs = utxo_set.get_utxo_list_with_outpoints(&Some(self.address));
+        let available_outputs = utxo_set.get_utxo_list_with_outpoints(Some(&self.address));
 
         let mut input_amount = 0;
         let outputs_to_spend: Vec<(Outpoint, TransactionOutput)> = available_outputs.iter()
@@ -79,6 +78,9 @@ impl Account {
             .map(|(outpoint, output)| (outpoint.clone(), output.clone()))
             .collect();
 
+        if input_amount >= (amount + fee) {
+            return Err(ErrorWallet::NotEnoughFunds(format!("Not enough funds to create the transaction. Input amount: {}. Output amount: {}. Fee: {}", input_amount, amount, fee)));
+        }
         match Transaction::from_account_to_address(
             &self,
             &outputs_to_spend,

@@ -7,4 +7,5 @@ pub enum ErrorWallet {
     InvalidAddress(String),
     CannotCreateNewTransaction(String),
     CannotSignMessage(String),
+    NotEnoughFunds(String),
 }
