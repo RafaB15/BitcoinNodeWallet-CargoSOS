@@ -6,12 +6,5 @@ use std::cmp::PartialEq;
 pub enum MessageResponse {
     Block(Block),
     Transaction(Transaction),
-    CreateAccount,
-    ChangeAccount,
-    RemoveAccount,
-    SendTransaction,
-    ShowAccounts,
-    ShowBalance,
-    LastTransactions,
     Exit,
 }

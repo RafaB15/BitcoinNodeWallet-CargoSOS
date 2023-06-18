@@ -21,6 +21,7 @@ use cargosos_bitcoin::{
 use std::{
     net::{SocketAddr, TcpStream},
     sync::mpsc::{self, Sender},
+    sync::{Arc, Mutex},
 };
 
 fn get_potential_peers(
@@ -127,6 +128,16 @@ fn get_broadcasting(
     Ok(boradcasting)
 }
 
+fn get_inner<T>(reference: Arc<Mutex<T>>) -> Result<T, ErrorExecution> {
+    match Arc::try_unwrap(reference) {
+        Ok(reference_unwrap) => match reference_unwrap.into_inner() {
+            Ok(reference) => Ok(reference),
+            Err(_) => todo!(),
+        },
+        Err(_) => todo!(),
+    }
+}
+
 pub fn program_execution(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
@@ -139,7 +150,6 @@ pub fn program_execution(
         handshake::connect_to_peers(potential_peers, connection_config.clone(), logger.clone());
 
     let mut block_chain = load_system.get_block_chain()?;
-    let wallet = load_system.get_wallet()?;
 
     let peer_streams = get_block_chain(
         peer_streams,
@@ -149,29 +159,42 @@ pub fn program_execution(
         logger.clone(),
     )?;
 
-    let utxo_set = get_utxo_set(&block_chain, logger.clone());
-
     let (sender_broadcasting, receiver_broadcasting) = mpsc::channel::<MessageResponse>();
 
-    
+    let wallet = Arc::new(Mutex::new(load_system.get_wallet()?));
+    let utxo_set = Arc::new(Mutex::new(get_utxo_set(&block_chain, logger.clone())));
+    let block_chain = Arc::new(Mutex::new(block_chain));
+
     let handle = handle_response(
         receiver_broadcasting,
-        wallet,
-        utxo_set,
-        block_chain,
+        wallet.clone(),
+        utxo_set.clone(),
+        block_chain.clone(),
         logger.clone(),
     );
-    
-    {
-        let broadcasting = get_broadcasting(peer_streams, sender_broadcasting.clone(), logger.clone())?;
 
-        user_input(sender_broadcasting, logger.clone())?;
+    {
+        let broadcasting =
+            get_broadcasting(peer_streams, sender_broadcasting.clone(), logger.clone())?;
+
+        user_input(
+            sender_broadcasting,
+            wallet.clone(),
+            utxo_set,
+            block_chain.clone(),
+            logger.clone(),
+        )?;
 
         let _ = broadcasting.destroy()?;
     }
-    
-    match handle.join() {
-        Ok((block_chain, wallet)) => Ok(SaveSystem::new(block_chain, wallet, logger)),
-        Err(_) => todo!(),
+
+    if handle.join().is_err() {
+        todo!()
     }
+
+    Ok(SaveSystem::new(
+        get_inner(block_chain)?,
+        get_inner(wallet)?,
+        logger,
+    ))
 }

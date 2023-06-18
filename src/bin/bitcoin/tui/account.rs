@@ -8,7 +8,7 @@ use cargosos_bitcoin::{
     },
 };
 
-use std::io::stdin;
+use std::{io::stdin, sync::MutexGuard};
 
 /// Get the private key from the terminal
 ///
@@ -138,7 +138,10 @@ pub fn create_account(logger: LoggerSender) -> Result<Account, ErrorTUI> {
 }
 
 /// get an account from the wallet with the corresponding name
-fn get_account_from_name(account_name: &str, wallet: &Wallet) -> Option<Account> {
+fn get_account_from_name<'t>(
+    account_name: &str,
+    wallet: &MutexGuard<'t, Wallet>,
+) -> Option<Account> {
     for account in wallet.accounts.iter() {
         if account.account_name == account_name {
             return Some(account.clone());
@@ -149,7 +152,10 @@ fn get_account_from_name(account_name: &str, wallet: &Wallet) -> Option<Account>
 }
 
 /// Select an account from the wallet
-pub fn select_account(wallet: &Wallet, logger: LoggerSender) -> Result<Account, ErrorTUI> {
+pub fn select_account<'t>(
+    wallet: &MutexGuard<'t, Wallet>,
+    logger: LoggerSender,
+) -> Result<Account, ErrorTUI> {
     let _ = logger.log_wallet("Selecting an account".to_string());
 
     println!("Possible accounts: ");
@@ -180,7 +186,7 @@ pub fn select_account(wallet: &Wallet, logger: LoggerSender) -> Result<Account, 
 }
 
 /// Show all accounts from the wallet
-pub fn show_accounts(wallet: &Wallet, logger: LoggerSender) {
+pub fn show_accounts<'t>(wallet: &MutexGuard<'t, Wallet>, logger: LoggerSender) {
     let _ = logger.log_wallet("Showing accounts".to_string());
 
     wallet

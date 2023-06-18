@@ -20,7 +20,9 @@ use std::{
     io::{Read, Write},
 };
 
-use crate::block_structure::{transaction_output::TransactionOutput, transaction::Transaction, utxo_set::UTXOSet};
+use crate::block_structure::{
+    transaction::Transaction, transaction_output::TransactionOutput, utxo_set::UTXOSet,
+};
 
 #[derive(Debug, Clone)]
 pub struct Account {

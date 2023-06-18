@@ -5,13 +5,16 @@ use super::{
     transaction_output::TransactionOutput,
 };
 
-use crate::{serialization::{
-    deserializable_internal_order::DeserializableInternalOrder,
-    deserializable_little_endian::DeserializableLittleEndian,
-    error_serialization::ErrorSerialization,
-    serializable_internal_order::SerializableInternalOrder,
-    serializable_little_endian::SerializableLittleEndian,
-}, wallet_structure::address::Address};
+use crate::{
+    serialization::{
+        deserializable_internal_order::DeserializableInternalOrder,
+        deserializable_little_endian::DeserializableLittleEndian,
+        error_serialization::ErrorSerialization,
+        serializable_internal_order::SerializableInternalOrder,
+        serializable_little_endian::SerializableLittleEndian,
+    },
+    wallet_structure::address::Address,
+};
 
 use crate::messages::compact_size::CompactSize;
 
@@ -70,7 +73,9 @@ impl Transaction {
     }
 
     pub fn verify_transaction_ownership(&self, address: &Address) -> bool {
-        self.tx_out.iter().any(|tx_out| address.verify_transaction_ownership(tx_out))
+        self.tx_out
+            .iter()
+            .any(|tx_out| address.verify_transaction_ownership(tx_out))
     }
 }
 

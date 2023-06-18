@@ -10,40 +10,68 @@ use cargosos_bitcoin::{
 
 use std::{
     sync::mpsc::{Receiver, Sender},
+    sync::{Arc, Mutex, MutexGuard},
     thread::{self, JoinHandle},
+    time::Duration,
 };
 
-pub fn user_input(sender: Sender<MessageResponse>, logger: LoggerSender) -> Result<(), ErrorTUI> {
+type MutArc<T> = Arc<Mutex<T>>;
+
+fn get_reference<'t, T>(reference: &'t MutArc<T>) -> Result<MutexGuard<'t, T>, ErrorTUI> {
+    match reference.lock() {
+        Ok(reference) => Ok(reference),
+        Err(_) => todo!(),
+    }
+}
+
+pub fn user_input(
+    sender: Sender<MessageResponse>,
+    wallet_ref: MutArc<Wallet>,
+    utxo_set_ref: MutArc<UTXOSet>,
+    block_chain_ref: MutArc<BlockChain>,
+    logger: LoggerSender,
+) -> Result<(), ErrorTUI> {
     loop {
-        let sender_clone = sender.clone();
-        let logger_clone = logger.clone();
+        let mut wallet = get_reference(&wallet_ref)?;
+        let utxo_set = get_reference(&utxo_set_ref)?;
+        let block_chain = get_reference(&block_chain_ref)?;
 
         match menu::select_option(logger.clone())? {
             MenuOption::CreateAccount => {
-                send_menu_option(sender_clone, MessageResponse::CreateAccount, logger_clone)?
+                let account = account::create_account(logger.clone())?;
+                wallet.add_account(account);
             }
             MenuOption::ChangeAccount => {
-                send_menu_option(sender_clone, MessageResponse::ChangeAccount, logger_clone)?
+                let account = account::select_account(&wallet, logger.clone())?;
+                wallet.change_account(account);
             }
             MenuOption::RemoveAccount => {
-                send_menu_option(sender_clone, MessageResponse::RemoveAccount, logger_clone)?
+                let account = account::select_account(&wallet, logger.clone())?;
+                wallet.remove_account(account);
             }
-            MenuOption::SendTransaction => {
-                send_menu_option(sender_clone, MessageResponse::SendTransaction, logger_clone)?
-            }
-            MenuOption::ShowAccounts => {
-                send_menu_option(sender_clone, MessageResponse::ShowAccounts, logger_clone)?
-            }
+            MenuOption::SendTransaction => todo!(),
+            MenuOption::ShowAccounts => account::show_accounts(&wallet, logger.clone()),
             MenuOption::ShowBalance => {
-                send_menu_option(sender_clone, MessageResponse::ShowBalance, logger_clone)?
+                let account = wallet.get_selected_account();
+                match account {
+                    Some(account) => {
+                        let balance = utxo_set.get_balance_in_satoshis(&account.address);
+                        let message_output =
+                            format!("Account: {:?} has balance of {balance}", account);
+
+                        println!("{message_output}");
+                        let _ = logger.log_wallet(message_output);
+                    }
+                    None => {
+                        let _ = logger.log_wallet("No account selected".to_string());
+                    }
+                }
             }
-            MenuOption::LastTransactions => send_menu_option(
-                sender_clone,
-                MessageResponse::LastTransactions,
-                logger_clone,
-            )?,
+            MenuOption::LastTransactions => {}
             MenuOption::Exit => break,
         }
+
+        thread::sleep(Duration::from_millis(200));
     }
 
     Ok(())
@@ -65,37 +93,27 @@ fn send_menu_option(
 
 pub fn handle_response(
     receiver_broadcasting: Receiver<MessageResponse>,
-    mut wallet: Wallet,
-    utxo_set: UTXOSet,
-    block_chain: BlockChain,
+    wallet: MutArc<Wallet>,
+    utxo_set: MutArc<UTXOSet>,
+    block_chain: MutArc<BlockChain>,
     logger: LoggerSender,
-) -> JoinHandle<(BlockChain, Wallet)> {
+) -> JoinHandle<()> {
     thread::spawn(move || {
-        //let account = menu::
-
         for message in receiver_broadcasting {
             if message == MessageResponse::Exit {
                 break;
             }
 
-            response(
-                message,
-                &mut wallet,
-                &utxo_set,
-                &block_chain,
-                logger.clone(),
-            );
+            response(message, &wallet, &utxo_set, &block_chain, logger.clone());
         }
-
-        (block_chain, wallet)
     })
 }
 
 fn response(
     message: MessageResponse,
-    wallet: &mut Wallet,
-    utxo_set: &UTXOSet,
-    block_chain: &BlockChain,
+    wallet: &MutArc<Wallet>,
+    utxo_set: &MutArc<UTXOSet>,
+    block_chain: &MutArc<BlockChain>,
     logger: LoggerSender,
 ) -> Result<(), ErrorTUI> {
     match message {
@@ -103,7 +121,7 @@ fn response(
         MessageResponse::Transaction(transaction) => {
             let _ = logger.log_wallet(format!("Receive transaction: {:?}", transaction));
 
-            if let Some(account) = wallet.get_selected_account() {
+            if let Some(account) = get_reference(&wallet)?.get_selected_account() {
                 if account.verify_transaction_ownership(&transaction) {
                     let message_output = format!(
                         "Transaction: {:?} is valid and has not been added to the blockchain yet",
@@ -114,39 +132,7 @@ fn response(
                     let _ = logger.log_wallet(message_output);
                 }
             }
-        },
-        MessageResponse::CreateAccount => {
-            let account = account::create_account(logger)?;
-            wallet.add_account(account);
         }
-        MessageResponse::ChangeAccount => {
-            let account = account::select_account(wallet, logger)?;
-            wallet.change_account(account);
-        }
-        MessageResponse::RemoveAccount => {
-            let account = account::select_account(wallet, logger)?;
-            wallet.remove_account(account);
-        }
-        MessageResponse::SendTransaction => todo!(),
-        MessageResponse::ShowAccounts => account::show_accounts(wallet, logger),
-        MessageResponse::ShowBalance => {
-            let account = wallet.get_selected_account();
-            match account {
-                Some(account) => {
-                    let balance = utxo_set.get_balance_in_satoshis(&account.address);
-                    let message_output = format!("Account: {:?} has balance of {balance}", account);
-                    
-                    println!("{message_output}");
-                    let _ = logger.log_wallet(message_output);
-                }
-                None => {
-                    let _ = logger.log_wallet("No account selected".to_string());
-                }
-            }
-        }
-        MessageResponse::LastTransactions => {
-
-        },
         MessageResponse::Exit => {}
     }
 

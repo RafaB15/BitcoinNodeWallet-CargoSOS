@@ -8,8 +8,11 @@ fn print_menu() {
     let options: &[MenuOption] = &[
         MenuOption::CreateAccount,
         MenuOption::ChangeAccount,
+        MenuOption::RemoveAccount,
         MenuOption::SendTransaction,
         MenuOption::ShowAccounts,
+        MenuOption::ShowBalance,
+        MenuOption::LastTransactions,
         MenuOption::Exit,
     ];
 
