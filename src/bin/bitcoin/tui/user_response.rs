@@ -1,18 +1,20 @@
-use super::{account, error_tui::ErrorTUI, menu, menu_option::MenuOption};
+use super::{account, error_tui::ErrorTUI, menu, menu_option::MenuOption, transaction};
 
-use crate::process::message_response::MessageResponse;
+use crate::process::{broadcasting::Broadcasting, message_response::MessageResponse};
 
 use cargosos_bitcoin::{
-    block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
+    block_structure::{
+        block::Block, block_chain::BlockChain, transaction::Transaction, utxo_set::UTXOSet,
+    },
     logs::logger_sender::LoggerSender,
     wallet_structure::wallet::Wallet,
 };
 
 use std::{
-    sync::mpsc::{Receiver, Sender},
+    net::TcpStream,
+    sync::mpsc::Receiver,
     sync::{Arc, Mutex, MutexGuard},
     thread::{self, JoinHandle},
-    time::Duration,
 };
 
 type MutArc<T> = Arc<Mutex<T>>;
@@ -25,7 +27,7 @@ fn get_reference<'t, T>(reference: &'t MutArc<T>) -> Result<MutexGuard<'t, T>, E
 }
 
 pub fn user_input(
-    sender: Sender<MessageResponse>,
+    broadcasting: &mut Broadcasting<TcpStream>,
     wallet_ref: MutArc<Wallet>,
     utxo_set_ref: MutArc<UTXOSet>,
     block_chain_ref: MutArc<BlockChain>,
@@ -49,7 +51,11 @@ pub fn user_input(
                 let account = account::select_account(&wallet, logger.clone())?;
                 wallet.remove_account(account);
             }
-            MenuOption::SendTransaction => todo!(),
+            MenuOption::SendTransaction => {
+                let transaction = transaction::create_transaction();
+                let _ = logger.log_transaction("Sending transaction".to_string());
+                broadcasting.send_transaction(transaction);
+            }
             MenuOption::ShowAccounts => account::show_accounts(&wallet, logger.clone()),
             MenuOption::ShowBalance => {
                 let account = wallet.get_selected_account();
@@ -67,73 +73,105 @@ pub fn user_input(
                     }
                 }
             }
-            MenuOption::LastTransactions => {}
+            MenuOption::LastTransactions => {
+                let selected_timestamp = transaction::select_option(logger.clone())?;
+                let timestamp = selected_timestamp.get_timestamps_from_now();
+
+                let _ = logger.log_transaction(format!(
+                    "Selected timestamp: {selected_timestamp}, and it's corresponding timestamp: {timestamp}"
+                ));
+
+                let blocks = match block_chain.get_blocks_after_timestamp(timestamp as u32) {
+                    Ok(blocks) => blocks,
+                    Err(_error) => todo!(),
+                };
+
+                for block in blocks {
+                    for transaction in block.transactions {
+                        println!("{transaction}");
+                    }
+                }
+            }
             MenuOption::Exit => break,
         }
-
-        thread::sleep(Duration::from_millis(200));
     }
 
     Ok(())
 }
 
-fn send_menu_option(
-    sender: Sender<MessageResponse>,
-    message: MessageResponse,
-    logger: LoggerSender,
-) -> Result<(), ErrorTUI> {
-    match sender.send(message.clone()) {
-        Ok(_) => {
-            let _ = logger.log_interface(format!("sending message: {:?}", message));
-            Ok(())
-        }
-        Err(_) => todo!(),
-    }
-}
-
-pub fn handle_response(
+pub fn handle_peers(
     receiver_broadcasting: Receiver<MessageResponse>,
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
     block_chain: MutArc<BlockChain>,
     logger: LoggerSender,
-) -> JoinHandle<()> {
+) -> JoinHandle<Result<(), ErrorTUI>> {
     thread::spawn(move || {
+        let mut transactions: Vec<Transaction> = Vec::new();
+
         for message in receiver_broadcasting {
-            if message == MessageResponse::Exit {
-                break;
-            }
-
-            response(message, &wallet, &utxo_set, &block_chain, logger.clone());
-        }
-    })
-}
-
-fn response(
-    message: MessageResponse,
-    wallet: &MutArc<Wallet>,
-    utxo_set: &MutArc<UTXOSet>,
-    block_chain: &MutArc<BlockChain>,
-    logger: LoggerSender,
-) -> Result<(), ErrorTUI> {
-    match message {
-        MessageResponse::Block(block) => todo!(),
-        MessageResponse::Transaction(transaction) => {
-            let _ = logger.log_wallet(format!("Receive transaction: {:?}", transaction));
-
-            if let Some(account) = get_reference(&wallet)?.get_selected_account() {
-                if account.verify_transaction_ownership(&transaction) {
-                    let message_output = format!(
-                        "Transaction: {:?} is valid and has not been added to the blockchain yet",
-                        transaction
-                    );
-
-                    println!("{message_output}");
-                    let _ = logger.log_wallet(message_output);
+            match message {
+                MessageResponse::Block(block) => {
+                    receive_block(&utxo_set, &block_chain, block, &mut transactions, logger.clone())?;
+                }
+                MessageResponse::Transaction(transaction) => {
+                    receive_transaction(&wallet, transaction, &mut transactions, logger.clone())?;
                 }
             }
         }
-        MessageResponse::Exit => {}
+
+        Ok(())
+    })
+}
+
+fn receive_transaction(
+    wallet: &MutArc<Wallet>,
+    transaction: Transaction,
+    transactions: &mut Vec<Transaction>,
+    logger: LoggerSender,
+) -> Result<(), ErrorTUI> {
+    let _ = logger.log_wallet(format!("Receive transaction: {:?}", transaction));
+
+    if let Some(account) = get_reference(&wallet)?.get_selected_account() {
+        if account.verify_transaction_ownership(&transaction) {
+            println!("{transaction} is valid and has not been added to the blockchain yet");
+            let _ = logger.log_wallet(format!(
+                "Adding transaction {transaction} to list of transaction seen so far"
+            ));
+            transactions.push(transaction);
+        }
+    }
+
+    Ok(())
+}
+
+fn receive_block(
+    utxo_set: &MutArc<UTXOSet>,
+    block_chain: &MutArc<BlockChain>,
+    block: Block,
+    transactions: &mut Vec<Transaction>,
+    logger: LoggerSender,
+) -> Result<(), ErrorTUI> {
+    let _ = logger.log_wallet(format!("Receive block: {:?}", block));
+
+    transactions.retain(|transaction| {
+        if block.transactions.contains(transaction) {
+            println!("{transaction} has been added to the blockchain");
+            let _ = logger.log_wallet(format!(
+                "Removing transaction {transaction} from list of transaction seen so far"
+            ));
+            false
+        } else {
+            true
+        }
+    });
+
+    let mut utxo_set = get_reference(&utxo_set)?;
+    let mut block_chain = get_reference(&block_chain)?;
+
+    utxo_set.update_utxo_with_block(&block);
+    if block_chain.append_block(block).is_err() {
+        todo!()
     }
 
     Ok(())

@@ -1,4 +1,4 @@
-use super::user_response::{handle_response, user_input};
+use super::user_response::{handle_peers, user_input};
 
 use crate::{
     error_execution::ErrorExecution,
@@ -165,7 +165,7 @@ pub fn program_execution(
     let utxo_set = Arc::new(Mutex::new(get_utxo_set(&block_chain, logger.clone())));
     let block_chain = Arc::new(Mutex::new(block_chain));
 
-    let handle = handle_response(
+    let handle = handle_peers(
         receiver_broadcasting,
         wallet.clone(),
         utxo_set.clone(),
@@ -174,11 +174,11 @@ pub fn program_execution(
     );
 
     {
-        let broadcasting =
+        let mut broadcasting =
             get_broadcasting(peer_streams, sender_broadcasting.clone(), logger.clone())?;
 
         user_input(
-            sender_broadcasting,
+            &mut broadcasting,
             wallet.clone(),
             utxo_set,
             block_chain.clone(),

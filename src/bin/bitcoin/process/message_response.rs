@@ -6,5 +6,4 @@ use std::cmp::PartialEq;
 pub enum MessageResponse {
     Block(Block),
     Transaction(Transaction),
-    Exit,
 }

@@ -5,6 +5,15 @@ use std::{
     fmt::Display,
 };
 
+const CREATE_ACCOUNT: char = '1';
+const CHANGE_ACCOUNT: char = '2';
+const REMOVE_ACCOUNT: char = '3';
+const SEND_TRANSACTION: char = '4';
+const SHOW_ACCOUNTS: char = '5';
+const SHOW_BALANCE: char = '6';
+const LAST_TRANSACTIONS: char = '7';
+const EXIT: char = '8';
+
 #[derive(Debug, Clone, Copy)]
 pub enum MenuOption {
     CreateAccount,
@@ -16,15 +25,6 @@ pub enum MenuOption {
     LastTransactions,
     Exit,
 }
-
-const CREATE_ACCOUNT: char = '1';
-const CHANGE_ACCOUNT: char = '2';
-const REMOVE_ACCOUNT: char = '3';
-const SEND_TRANSACTION: char = '4';
-const SHOW_ACCOUNTS: char = '5';
-const SHOW_BALANCE: char = '6';
-const LAST_TRANSACTIONS: char = '7';
-const EXIT: char = '8';
 
 impl Display for MenuOption {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

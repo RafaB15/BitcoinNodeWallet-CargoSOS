@@ -1,3 +1,5 @@
+use crate::tui::transaction;
+
 use super::{error_process::ErrorProcess, message_response::MessageResponse};
 
 use cargosos_bitcoin::{
@@ -26,6 +28,7 @@ use cargosos_bitcoin::{
 use std::{
     io::{Read, Write},
     sync::mpsc::{Receiver, Sender},
+    sync::{Arc, Mutex},
 };
 
 pub struct PeerManager<RW>
@@ -34,7 +37,8 @@ where
 {
     peer: RW,
     sender: Sender<MessageResponse>,
-    receiver: Receiver<MessageResponse>,
+    receiver: Receiver<Transaction>,
+    stop: Arc<Mutex<bool>>,
 }
 
 impl<RW> PeerManager<RW>
@@ -44,12 +48,14 @@ where
     pub fn new(
         peer: RW,
         sender: Sender<MessageResponse>,
-        receiver: Receiver<MessageResponse>,
+        receiver: Receiver<Transaction>,
+        stop: Arc<Mutex<bool>>,
     ) -> Self {
         PeerManager {
             peer,
             sender,
             receiver,
+            stop,
         }
     }
 
@@ -57,12 +63,17 @@ where
         while let Ok(header) = MessageHeader::deserialize_header(&mut self.peer) {
             self.manage_message(header)?;
 
-            if let Ok(message) = self.receiver.try_recv() {
-                match message {
-                    MessageResponse::Transaction(transaction) => self.send_transaction(transaction),
-                    MessageResponse::Exit => break,
-                    _ => (),
+            if let Ok(transaction) = self.receiver.try_recv() {
+                self.send_transaction(transaction);
+            }
+
+            match self.stop.lock() {
+                Ok(stop) => {
+                    if *stop {
+                        break;
+                    }
                 }
+                Err(_) => todo!(),
             }
         }
 

@@ -18,9 +18,11 @@ use crate::{
 
 use crate::messages::compact_size::CompactSize;
 
-use std::io::{Read, Write};
-
-use std::cmp::PartialEq;
+use std::{
+    cmp::PartialEq,
+    fmt::Display,
+    io::{Read, Write},
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Transaction {
@@ -76,6 +78,12 @@ impl Transaction {
         self.tx_out
             .iter()
             .any(|tx_out| address.verify_transaction_ownership(tx_out))
+    }
+}
+
+impl Display for Transaction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Transaction: to do")
     }
 }
 
