@@ -17,6 +17,7 @@ use crate::{serialization::{
 use crate::wallet_structure::{
     address::Address,
     account::Account,
+    error_wallet::ErrorWallet,
 };
 
 use crate::messages::compact_size::CompactSize;
@@ -81,11 +82,15 @@ impl Transaction {
         account_to: &Address, 
         amount: i64,
         fee: i64,
-    ) -> Result<Transaction, ErrorBlock> {
+    ) -> Result<Transaction, ErrorWallet> {
         // Primero creamos un vector de txin que gastan los outputs seleccionados
         let mut tx_in: Vec<TransactionInput> = Vec::new();
         for output_to_spend in outputs_to_spend.iter() {
-            tx_in.push(TransactionInput::from_output(&output_to_spend));
+            let new_transaction_input = match TransactionInput::from_output_of_account(output_to_spend, account_from) {
+                Ok(new_transaction_input) => new_transaction_input,
+                Err(_) => return Err(ErrorWallet::CannotCreateNewTransaction(format!("Cannot create new transaction input from output of account {}", account_from.account_name))),
+            };
+            tx_in.push(new_transaction_input);
         };
     }
     

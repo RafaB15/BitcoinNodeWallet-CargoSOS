@@ -97,7 +97,7 @@ impl Account {
     }
 
     pub fn sign(&self, message: &[u8]) -> Result<Vec<u8>, ErrorWallet> {
-        todo!()
+        self.private_key.sign(message)
     }
     
 }
