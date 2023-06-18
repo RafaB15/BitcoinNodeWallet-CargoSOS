@@ -11,7 +11,10 @@ use std::{
     str::FromStr,
 };
 
-use secp256k1::SecretKey;
+use secp256k1::{
+    SecretKey,
+    Secp256k1,
+};
 
 pub const PRIVATE_KEY_SIZE: usize = 32;
 pub type PrivateKeyType = [u8; PRIVATE_KEY_SIZE];
@@ -55,6 +58,22 @@ impl PrivateKey {
     pub fn as_bytes(&self) -> PrivateKeyType {
         self.key.secret_bytes()
     }
+
+    pub fn sign(&self, message: &[u8]) -> Result<Vec<u8>, ErrorWallet> {
+        let message = match secp256k1::Message::from_slice(message) {
+            Ok(message) => message,
+            Err(e) => {
+                return Err(ErrorWallet::CannotSignMessage(format!(
+                    "Cannot sign message {:?}, error : {:?}",
+                    message, e
+                )))
+            }
+        };
+        let secp = Secp256k1::new();
+        Ok(secp.sign_ecdsa(&message, &self.key).serialize_der().to_vec())
+    }
+
+
 }
 
 impl SerializableInternalOrder for PrivateKey {
