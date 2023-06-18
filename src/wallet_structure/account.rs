@@ -38,7 +38,7 @@ impl Account {
     ) -> Result<Account, ErrorWallet> {
         let account_name = name.to_string();
         let private_key = PrivateKey::new(private_key_bytes)?;
-        let public_key = PublicKey::new(public_key_bytes)?;
+        let public_key = PublicKey::new(public_key_bytes);
         let address = Address::new(addres)?;
 
         Ok(Account {
