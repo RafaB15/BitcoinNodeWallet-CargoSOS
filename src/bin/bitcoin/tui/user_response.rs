@@ -63,7 +63,7 @@ pub fn user_input(
                     Some(account) => {
                         let balance = utxo_set.get_balance_in_satoshis(&account.address);
                         let message_output =
-                            format!("Account: {:?} has balance of {balance}", account);
+                            format!("Account: {:?} has balance of {balance}", account.account_name);
 
                         println!("{message_output}");
                         let _ = logger.log_wallet(message_output);
@@ -112,7 +112,13 @@ pub fn handle_peers(
         for message in receiver_broadcasting {
             match message {
                 MessageResponse::Block(block) => {
-                    receive_block(&utxo_set, &block_chain, block, &mut transactions, logger.clone())?;
+                    receive_block(
+                        &utxo_set,
+                        &block_chain,
+                        block,
+                        &mut transactions,
+                        logger.clone(),
+                    )?;
                 }
                 MessageResponse::Transaction(transaction) => {
                     receive_transaction(&wallet, transaction, &mut transactions, logger.clone())?;

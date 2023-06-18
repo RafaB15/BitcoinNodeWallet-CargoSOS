@@ -31,10 +31,13 @@ pub fn select_option(logger: LoggerSender) -> Result<Timestamp, ErrorTUI> {
 
     loop {
         let _: Timestamp = match Timestamp::try_from(option.trim()) {
-            Ok(result) => return Ok(result),
+            Ok(result) => {
+                let _ = logger.log_wallet(format!("Valid option entered"));
+                return Ok(result);
+            },
             Err(error) => {
                 let _ =
-                    logger.log_wallet(format!("Put an invalid option, with error: {:?}", error));
+                    logger.log_wallet(format!("Invalid option entered, with error: {:?}", error));
 
                 option.clear();
                 println!("Error, please enter a valid option:");

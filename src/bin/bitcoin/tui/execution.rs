@@ -123,7 +123,11 @@ fn get_broadcasting(
 ) -> Result<Broadcasting<TcpStream>, ErrorExecution> {
     let _ = logger.log_node("Broadcasting".to_string());
 
-    let boradcasting = Broadcasting::new(peer_streams, sender_broadcasting);
+    let boradcasting = Broadcasting::new(
+        peer_streams, 
+        sender_broadcasting,
+        logger,
+    );
 
     Ok(boradcasting)
 }
@@ -159,14 +163,14 @@ pub fn program_execution(
         logger.clone(),
     )?;
 
-    let (sender_broadcasting, receiver_broadcasting) = mpsc::channel::<MessageResponse>();
+    let (sender_response, receiver_response) = mpsc::channel::<MessageResponse>();
 
     let wallet = Arc::new(Mutex::new(load_system.get_wallet()?));
     let utxo_set = Arc::new(Mutex::new(get_utxo_set(&block_chain, logger.clone())));
     let block_chain = Arc::new(Mutex::new(block_chain));
 
     let handle = handle_peers(
-        receiver_broadcasting,
+        receiver_response,
         wallet.clone(),
         utxo_set.clone(),
         block_chain.clone(),
@@ -175,7 +179,7 @@ pub fn program_execution(
 
     {
         let mut broadcasting =
-            get_broadcasting(peer_streams, sender_broadcasting.clone(), logger.clone())?;
+            get_broadcasting(peer_streams, sender_response, logger.clone())?;
 
         user_input(
             &mut broadcasting,

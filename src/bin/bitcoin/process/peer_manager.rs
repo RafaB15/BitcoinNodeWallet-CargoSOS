@@ -1,9 +1,8 @@
-use crate::tui::transaction;
-
 use super::{error_process::ErrorProcess, message_response::MessageResponse};
 
 use cargosos_bitcoin::{
     block_structure::transaction::Transaction,
+    logs::logger_sender::LoggerSender,
     messages::{
         addr_message::AddrMessage,
         alert_message::AlertMessage,
@@ -59,7 +58,8 @@ where
         }
     }
 
-    pub fn listen_peers(mut self) -> Result<RW, ErrorProcess> {
+    pub fn listen_peers(mut self, logger: LoggerSender) -> Result<RW, ErrorProcess> {
+
         while let Ok(header) = MessageHeader::deserialize_header(&mut self.peer) {
             self.manage_message(header)?;
 
@@ -69,6 +69,7 @@ where
 
             match self.stop.lock() {
                 Ok(stop) => {
+                    let _ = logger.log_configuration("Closing this peer".to_string());
                     if *stop {
                         break;
                     }
