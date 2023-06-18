@@ -66,7 +66,7 @@ impl Account {
     pub fn get_balance_in_tbtc(&self, utxo_set: UTXOSet) -> f64 {
         utxo_set.get_balance_in_tbtc(&self.address)
     }
-
+    
     pub fn create_transaction(&self, to: Address, amount: i64, fee: i64, utxo_set: UTXOSet) -> Result<Transaction, ErrorWallet> {
         let available_outputs = utxo_set.get_utxo_list_with_outpoints(&Some(self.address));
 
@@ -96,6 +96,10 @@ impl Account {
 
     }
 
+    pub fn sign(&self, message: &[u8]) -> Result<Vec<u8>, ErrorWallet> {
+        todo!()
+    }
+    
 }
 
 impl SerializableInternalOrder for Account {

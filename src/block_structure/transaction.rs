@@ -74,7 +74,7 @@ impl Transaction {
         }
         Ok(tx_ids)
     }
-
+    
     pub fn from_account_to_address(
         account_from: &Account, 
         outputs_to_spend: &Vec<(Outpoint, TransactionOutput)>,
@@ -82,8 +82,13 @@ impl Transaction {
         amount: i64,
         fee: i64,
     ) -> Result<Transaction, ErrorBlock> {
-        todo!()
+        // Primero creamos un vector de txin que gastan los outputs seleccionados
+        let mut tx_in: Vec<TransactionInput> = Vec::new();
+        for output_to_spend in outputs_to_spend.iter() {
+            tx_in.push(TransactionInput::from_output(&output_to_spend));
+        };
     }
+    
 
 }
 
