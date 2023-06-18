@@ -153,8 +153,7 @@ pub fn program_execution(
 
     let (sender_broadcasting, receiver_broadcasting) = mpsc::channel::<MessageResponse>();
 
-    let broadcasting = get_broadcasting(peer_streams, sender_broadcasting.clone(), logger.clone())?;
-
+    
     let handle = handle_response(
         receiver_broadcasting,
         wallet,
@@ -162,11 +161,15 @@ pub fn program_execution(
         block_chain,
         logger.clone(),
     );
+    
+    {
+        let broadcasting = get_broadcasting(peer_streams, sender_broadcasting.clone(), logger.clone())?;
 
-    user_input(sender_broadcasting, logger.clone())?;
+        user_input(sender_broadcasting, logger.clone())?;
 
-    let _ = broadcasting.destroy()?;
-
+        let _ = broadcasting.destroy()?;
+    }
+    
     match handle.join() {
         Ok((block_chain, wallet)) => Ok(SaveSystem::new(block_chain, wallet, logger)),
         Err(_) => todo!(),
