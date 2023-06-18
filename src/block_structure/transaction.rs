@@ -20,6 +20,8 @@ use crate::wallet_structure::{
     error_wallet::ErrorWallet,
 };
 
+use chrono::offset::Utc;
+
 use crate::messages::compact_size::CompactSize;
 
 use std::io::{Read, Write};
@@ -83,7 +85,7 @@ impl Transaction {
         amount: i64,
         fee: i64,
     ) -> Result<Transaction, ErrorWallet> {
-        // Primero creamos un vector de txin que gastan los outputs seleccionados
+
         let mut tx_in: Vec<TransactionInput> = Vec::new();
         for output_to_spend in outputs_to_spend.iter() {
             let new_transaction_input = match TransactionInput::from_output_of_account(output_to_spend, account_from) {
@@ -92,6 +94,28 @@ impl Transaction {
             };
             tx_in.push(new_transaction_input);
         };
+
+        let mut total_amount = 0;
+        outputs_to_spend.iter().for_each(|(_, output)| total_amount += output.value);
+
+        let change = total_amount - amount - fee;
+
+        let mut tx_out: Vec<TransactionOutput> = Vec::new();
+        let transaction_output_to_address = TransactionOutput::new(amount, account_to.generate_script_pubkey_p2pkh());
+        let transaction_output_change = TransactionOutput::new(change, account_from.address.generate_script_pubkey_p2pkh());
+
+        tx_out.push(transaction_output_to_address);
+        tx_out.push(transaction_output_change);
+
+        let time: u32 = Utc::now().timestamp() as u32;
+
+        Ok(Transaction {
+            version: 1,
+            tx_in,
+            tx_out,
+            time,
+        })
+
     }
     
 
