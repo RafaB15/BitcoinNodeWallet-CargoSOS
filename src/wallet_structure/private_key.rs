@@ -64,7 +64,7 @@ impl PrivateKey {
             Ok(message) => message,
             Err(e) => {
                 return Err(ErrorWallet::CannotSignMessage(format!(
-                    "Cannot sign message {:?}, error : {:?}",
+                    "Cannot generate message to sign {:?}, error : {:?}",
                     message, e
                 )))
             }

@@ -25,6 +25,10 @@ impl PublicKey {
             key: public_key_bytes.clone(),
         }
     }
+
+    pub fn as_bytes(&self) -> PublicKeyType {
+        self.key.clone()
+    }
 }
 
 impl SerializableInternalOrder for PublicKey {
