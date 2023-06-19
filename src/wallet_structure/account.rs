@@ -67,20 +67,23 @@ impl Account {
     }
     
     pub fn create_transaction(&self, to: Address, amount: i64, fee: i64, utxo_set: UTXOSet) -> Result<Transaction, ErrorWallet> {
-        let available_outputs = utxo_set.get_utxo_list_with_outpoints(Some(&self.address));
+        let mut available_outputs = utxo_set.get_utxo_list_with_outpoints(Some(&self.address));
+        available_outputs.sort_by(|(_, a), (_, b)| b.value.cmp(&a.value));
 
         let mut input_amount = 0;
-        let outputs_to_spend: Vec<(Outpoint, TransactionOutput)> = available_outputs.iter()
-            .filter(|(_, output)| {
-                input_amount += output.value;
-                input_amount < (amount + fee)
-            })
-            .map(|(outpoint, output)| (outpoint.clone(), output.clone()))
-            .collect();
-
-        if input_amount >= (amount + fee) {
+        let mut outputs_to_spend: Vec<(Outpoint, TransactionOutput)> = vec![];
+        for (available_outpoint, available_transaction) in available_outputs.iter() {
+            input_amount += available_transaction.value;
+            outputs_to_spend.push((available_outpoint.clone(), available_transaction.clone()));
+            if input_amount >= (amount + fee) {
+                break;
+            }
+        } 
+        
+        if input_amount < (amount + fee) {
             return Err(ErrorWallet::NotEnoughFunds(format!("Not enough funds to create the transaction. Input amount: {}. Output amount: {}. Fee: {}", input_amount, amount, fee)));
         }
+        
         match Transaction::from_account_to_address(
             &self,
             &outputs_to_spend,
@@ -129,3 +132,22 @@ impl DeserializableInternalOrder for Account {
         })
     }
 }
+/* 
+#[cfg(test)]
+
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_1_we_can_create_a_transaction() {
+        let account_1 = Account::new(
+            "Account 1",
+            [0x0B, 0x1F, 0xDE, 0x5B, 0xA8, 0xAA, 0xD5, 0xB4, 0x4E, 0x66, 0x0B, 0xD2, 0xB3, 0x29, 0x3D, 0xFC, 0x8C, 0x76, 0xC4, 0xB1, 0xCE, 0xCE, 0x89, 0x95, 0x5A, 0xB0, 0x7E, 0xFE, 0xEF, 0x39, 0xB4, 0x5B],
+            [0x03, 0xBC, 0x6D, 0x45, 0xD2, 0x10, 0x1E, 0x91, 0x28, 0xDE, 0x14, 0xB5, 0xB6, 0x68, 0x83, 0xD6, 0x9C, 0xF1, 0xC3, 0x1A, 0x50, 0xB9, 0x6F, 0xEA, 0x2D, 0xAD, 0x4E, 0xD2, 0x35, 0x14, 0x92, 0x4A, 0x22],
+            "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+        ).unwrap();
+
+        
+    }
+}
+*/

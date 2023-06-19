@@ -1,7 +1,7 @@
-use super::outpoint;
 use super::{
     outpoint::Outpoint,
     transaction_output::TransactionOutput,
+    hash::{HashType, hash256},
 };
 
 use crate::messages::compact_size::CompactSize;
@@ -64,7 +64,12 @@ impl TransactionInput {
             return Err(ErrorWallet::CannotCreateNewTransaction(format!("Error serializing the transaction to sign: {:?}", e)));
         };
 
-        let mut signed_message = account.sign(&message)?;
+        let hashed_message = match hash256(&message) {
+            Ok(hashed_message) => hashed_message,
+            Err(e) => return Err(ErrorWallet::CannotCreateNewTransaction(format!("Error hashing the transaction to sign: {:?}", e))),
+        };
+
+        let mut signed_message = account.sign(&hashed_message)?;
 
         signed_message.push(SIGHASH_ALL);
         signed_message.extend(account.public_key.as_bytes());

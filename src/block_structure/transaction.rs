@@ -88,10 +88,7 @@ impl Transaction {
 
         let mut tx_in: Vec<TransactionInput> = Vec::new();
         for output_to_spend in outputs_to_spend.iter() {
-            let new_transaction_input = match TransactionInput::from_output_of_account(output_to_spend, account_from) {
-                Ok(new_transaction_input) => new_transaction_input,
-                Err(_) => return Err(ErrorWallet::CannotCreateNewTransaction(format!("Cannot create new transaction input from output of account {}", account_from.account_name))),
-            };
+            let new_transaction_input = TransactionInput::from_output_of_account(output_to_spend, account_from)?;
             tx_in.push(new_transaction_input);
         };
 
