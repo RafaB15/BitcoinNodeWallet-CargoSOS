@@ -20,10 +20,11 @@ use super::{
     message_header::{MagicType, MessageHeader},
     ping_message::PingMessage,
     pong_message::PongMessage,
-    send_cmpct::SendCmpctMessage,
-    send_headers::SendHeadersMessage,
+    send_cmpct_message::SendCmpctMessage,
+    send_headers_message::SendHeadersMessage,
     verack_message::VerackMessage,
     version_message::VersionMessage,
+    tx_message::TxMessage,
 };
 
 use std::io::{Read, Write};
@@ -134,6 +135,7 @@ pub fn deserialize_until_found<RW: Read + Write>(
             CommandName::FeeFilter => ignore_message::<FeeFilterMessage>(stream, header)?,
             CommandName::GetData => ignore_message::<GetDataMessage>(stream, header)?,
             CommandName::Alert => ignore_message::<AlertMessage>(stream, header)?,
+            CommandName::Tx => ignore_message::<TxMessage>(stream, header)?,
         }
     }
 }
