@@ -6,13 +6,13 @@ use super::{
     outpoint::Outpoint,
 };
 
-use crate::{serialization::{
+use crate::serialization::{
     deserializable_internal_order::DeserializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization,
     serializable_internal_order::SerializableInternalOrder,
     serializable_little_endian::SerializableLittleEndian,
-}};
+};
 
 use crate::wallet_structure::{
     address::Address,
@@ -24,9 +24,11 @@ use chrono::offset::Utc;
 
 use crate::messages::compact_size::CompactSize;
 
-use std::io::{Read, Write};
-
-use std::cmp::PartialEq;
+use std::{
+    io::{Read, Write},
+    cmp::PartialEq,
+    collections::HashMap,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Transaction {
@@ -80,15 +82,15 @@ impl Transaction {
     
     pub fn from_account_to_address(
         account_from: &Account, 
-        outputs_to_spend: &Vec<(Outpoint, TransactionOutput)>,
+        outputs_to_spend: &HashMap<Outpoint, TransactionOutput>,
         account_to: &Address, 
         amount: i64,
         fee: i64,
     ) -> Result<Transaction, ErrorWallet> {
 
         let mut tx_in: Vec<TransactionInput> = Vec::new();
-        for output_to_spend in outputs_to_spend.iter() {
-            let new_transaction_input = TransactionInput::from_output_of_account(output_to_spend, account_from)?;
+        for outpoint in outputs_to_spend.keys() {
+            let new_transaction_input = TransactionInput::from_outpoint_unsigned(outpoint);
             tx_in.push(new_transaction_input);
         };
 
@@ -106,13 +108,28 @@ impl Transaction {
 
         let time: u32 = Utc::now().timestamp() as u32;
 
-        Ok(Transaction {
+        let mut unsigned_transaction = Transaction {
             version: 1,
             tx_in,
             tx_out,
             time,
-        })
+        };
 
+        if let Err(error) = unsigned_transaction.get_signed_by_account(account_from) {
+            return Err(error);
+        }
+        Ok(unsigned_transaction)
+    }
+
+
+    pub fn get_signed_by_account(&mut self, account: &Account) -> Result<(), ErrorWallet> {
+        let unsigned_transaction = self.clone();
+
+        for (index, tx_in) in self.tx_in.iter_mut().enumerate() {
+            let script_sig = TransactionInput::create_signature_script(account, unsigned_transaction.clone(), index)?;
+            tx_in.signature_script = script_sig;
+        };
+        Ok(())
     }
     
 

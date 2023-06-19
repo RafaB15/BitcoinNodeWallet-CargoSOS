@@ -14,7 +14,10 @@ use crate::serialization::{
     error_serialization::ErrorSerialization,
 };
 
-use std::io::{Read, Write};
+use std::{
+    io::{Read, Write}, 
+    collections::HashMap,
+};
 
 use crate::block_structure::{
     transaction::Transaction,
@@ -83,6 +86,8 @@ impl Account {
         if input_amount < (amount + fee) {
             return Err(ErrorWallet::NotEnoughFunds(format!("Not enough funds to create the transaction. Input amount: {}. Output amount: {}. Fee: {}", input_amount, amount, fee)));
         }
+
+        let outputs_to_spend: HashMap<Outpoint, TransactionOutput> = outputs_to_spend.into_iter().collect(); 
         
         match Transaction::from_account_to_address(
             &self,
@@ -91,9 +96,7 @@ impl Account {
             amount,
             fee,
         ) {
-            Ok(transaction) => {
-                Ok(transaction)
-            },
+            Ok(transaction) => Ok(transaction),
             Err(error) => {
                 Err(ErrorWallet::CannotCreateNewTransaction(format!("Error while trying to create a new transaction. Error: {:?}", error)))
             }

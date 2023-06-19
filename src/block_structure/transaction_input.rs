@@ -1,7 +1,7 @@
 use super::{
     outpoint::Outpoint,
-    transaction_output::TransactionOutput,
-    hash::{HashType, hash256},
+    transaction::Transaction,
+    hash::hash256,
 };
 
 use crate::messages::compact_size::CompactSize;
@@ -18,12 +18,14 @@ use crate::wallet_structure::{
     error_wallet::ErrorWallet,
 };
 
-use std::io::{Read, Write};
-
-use std::cmp::PartialEq;
+use std::{
+    io::{Read, Write},
+    cmp::PartialEq,
+};
 
 const DEFAULT_SEQUENCE: u32 = 0xFFFFFFFF;
-const SIGHASH_ALL: u8 = 1;
+const SIGHASH_ALL_MESSAGE: [u8; 4] = [0x01, 0x00, 0x00, 0x00];
+const SIGHASH_ALL_SIG_SCRIPT: u8 = 1;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TransactionInput {
@@ -46,23 +48,20 @@ impl TransactionInput {
     }
     
     pub fn create_signature_script(
-        output_information: &(Outpoint, TransactionOutput),
         account: &Account,
+        unsigned_transaction: Transaction,
+        input_index: usize,
     ) -> Result<Vec<u8>, ErrorWallet> {
-        let outpoint = output_information.0.clone();
-        let output_to_spend = output_information.1.clone();
-        let previous_pubkey_script = output_to_spend.pk_script.clone();
 
-        let transaction_to_sign = TransactionInput::new(
-            outpoint,
-            previous_pubkey_script,
-            DEFAULT_SEQUENCE,
-        );
+        let mut unsigned_transaction = unsigned_transaction;
+        unsigned_transaction.tx_in[input_index].signature_script = account.address.generate_script_pubkey_p2pkh();
 
         let mut message: Vec<u8> = Vec::new();
-        if let Err(e) = transaction_to_sign.io_serialize(&mut message) {
+        if let Err(e) = unsigned_transaction.io_serialize(&mut message) {
             return Err(ErrorWallet::CannotCreateNewTransaction(format!("Error serializing the transaction to sign: {:?}", e)));
         };
+
+        message.extend(SIGHASH_ALL_MESSAGE.clone());
 
         let hashed_message = match hash256(&message) {
             Ok(hashed_message) => hashed_message,
@@ -71,19 +70,17 @@ impl TransactionInput {
 
         let mut signed_message = account.sign(&hashed_message)?;
 
-        signed_message.push(SIGHASH_ALL);
+        signed_message.push(SIGHASH_ALL_SIG_SCRIPT);
         signed_message.extend(account.public_key.as_bytes());
         Ok(signed_message)
     }
     
-    pub fn from_output_of_account(
-        output_information: &(Outpoint, TransactionOutput),
-        account: &Account,
-    ) -> Result<TransactionInput, ErrorWallet> {
-        let outpoint = output_information.0.clone();
-        let signature_script = TransactionInput::create_signature_script(output_information, account)?;
+    pub fn from_outpoint_unsigned(
+        outpoint: &Outpoint,
+    ) -> TransactionInput {
+        let signature_script = vec![];
         let sequence = DEFAULT_SEQUENCE;
-        Ok(TransactionInput::new(outpoint, signature_script, sequence))
+        TransactionInput::new(outpoint.clone(), signature_script, sequence)
     }
     
 }
