@@ -1,7 +1,7 @@
 use super::{
     outpoint::Outpoint,
     transaction::Transaction,
-    hash::hash256,
+    hash::hash256d,
 };
 
 use crate::messages::compact_size::CompactSize;
@@ -63,16 +63,23 @@ impl TransactionInput {
 
         message.extend(SIGHASH_ALL_MESSAGE.clone());
 
-        let hashed_message = match hash256(&message) {
+        let hashed_message = match hash256d(&message) {
             Ok(hashed_message) => hashed_message,
             Err(e) => return Err(ErrorWallet::CannotCreateNewTransaction(format!("Error hashing the transaction to sign: {:?}", e))),
         };
-
+        
         let mut signed_message = account.sign(&hashed_message)?;
 
         signed_message.push(SIGHASH_ALL_SIG_SCRIPT);
-        signed_message.extend(account.public_key.as_bytes());
-        Ok(signed_message)
+
+        let mut final_script_signature = vec![];
+        final_script_signature.push(signed_message.len() as u8);
+        final_script_signature.extend(signed_message);
+
+        final_script_signature.push(account.public_key.as_bytes().len() as u8);
+        final_script_signature.extend(account.public_key.as_bytes());
+        
+        Ok(final_script_signature)
     }
     
     pub fn from_outpoint_unsigned(
