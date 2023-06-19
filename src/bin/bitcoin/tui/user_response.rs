@@ -182,8 +182,6 @@ fn receive_transaction(
     transactions: &mut Vec<Transaction>,
     logger: LoggerSender,
 ) -> Result<(), ErrorTUI> {
-    let _ = logger.log_wallet(format!("Receive transaction: {:?}", transaction));
-
     if let Some(account) = get_reference(&wallet)?.get_selected_account() {
         if account.verify_transaction_ownership(&transaction) {
             println!("{transaction} is valid and has not been added to the blockchain yet");
@@ -204,8 +202,6 @@ fn receive_block(
     transactions: &mut Vec<Transaction>,
     logger: LoggerSender,
 ) -> Result<(), ErrorTUI> {
-    let _ = logger.log_wallet(format!("Receive block: {:?}", block));
-
     transactions.retain(|transaction| {
         if block.transactions.contains(transaction) {
             println!("{transaction} has been added to the blockchain");

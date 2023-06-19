@@ -152,7 +152,7 @@ pub fn program_execution(
     download_config: DownloadConfig,
     load_system: &mut LoadSystem,
     logger: LoggerSender,
-) -> Result<SaveSystem, ErrorTUI> {
+) -> Result<SaveSystem, ErrorExecution> {
     let potential_peers = get_potential_peers(connection_config.clone(), logger.clone())?;
 
     let peer_streams =
@@ -198,17 +198,13 @@ pub fn program_execution(
             logger.clone(),
         )?;
 
-        if broadcasting.destroy().is_err() {
-            return Err(ErrorTUI::ErrorFromPeer(
-                "Fail to destroy broadcasting".to_string(),
-            ));
-        }
+        broadcasting.destroy()?;
     }
 
     if handle.join().is_err() {
         return Err(ErrorTUI::ErrorFromPeer(
             "Fail to remove notifications".to_string(),
-        ));
+        ).into());
     }
 
     Ok(SaveSystem::new(
