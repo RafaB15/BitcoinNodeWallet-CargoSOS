@@ -1,13 +1,12 @@
 use super::{account, error_tui::ErrorTUI, menu, menu_option::MenuOption, transaction};
 
-use crate::process::{broadcasting::Broadcasting, message_response::MessageResponse};
-
 use cargosos_bitcoin::{
     block_structure::{
         block::Block, block_chain::BlockChain, transaction::Transaction, utxo_set::UTXOSet,
     },
     logs::logger_sender::LoggerSender,
     wallet_structure::wallet::Wallet,
+    node_structure::{broadcasting::Broadcasting, message_response::MessageResponse}
 };
 
 use std::{

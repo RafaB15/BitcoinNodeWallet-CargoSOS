@@ -5,7 +5,7 @@ use cargosos_bitcoin::{
     configurations::{connection_config::ConnectionConfig, download_config::DownloadConfig},
     logs::logger_sender::LoggerSender,
     node_structure::{
-        block_broadcasting::BlockBroadcasting, block_download::BlockDownload,
+        block_download::BlockDownload,
         error_node::ErrorNode, initial_headers_download::InitialHeaderDownload,
     },
 };
@@ -174,58 +174,4 @@ fn updating_block_chain<RW: Read + Write + Send>(
 /// The approch is to get the entire block.
 pub fn blocks_first<RW: Read + Write + Send>() -> Vec<RW> {
     todo!()
-}
-
-/// It updates the blockchain listening to the new headers of the peers
-///
-/// ### Error
-///  * `ErrorNode::NodeNotResponding`: It will appear when no message is received from the node
-///  * `ErrorNode::WhileValidating`: It will appear when a given header does not pass the proof of work to be added to the blockchain
-///  * `ErrorBlock::CouldNotUpdate`: It will appear when the block is not in the blockchain.
-///  * `ErrorExecution::FailThread`: It will appear when the thread fails
-pub fn block_broadcasting<RW: Read + Write + Send + 'static>(
-    peer_streams: Vec<RW>,
-    block_chain: &mut BlockChain,
-    connection_config: ConnectionConfig,
-    logger: LoggerSender,
-) -> Result<Vec<RW>, ErrorExecution> {
-    let block_download = BlockDownload::new(connection_config.magic_numbers, logger.clone());
-
-    let block_broadcasting = BlockBroadcasting::new(logger.clone());
-
-    let mut peer_download_handles: Vec<JoinHandle<(Vec<Block>, RW)>> = Vec::new();
-
-    for peer_stream in peer_streams {
-        let mut peer_stream = peer_stream;
-
-        let (header_count, headers) = match block_broadcasting
-            .get_new_headers(&mut peer_stream, block_chain)
-        {
-            Err(ErrorNode::NodeNotResponding(message)) => {
-                let _ = logger.log_connection(format!("Node not responding, send: {}", message));
-                break;
-            }
-            other_response => other_response?,
-        };
-
-        let _ = logger.log_connection(format!("We get: {}", header_count));
-
-        peer_download_handles.push(get_blocks(
-            peer_stream,
-            block_download.clone(),
-            headers.iter().map(|header| Block::new(*header)).collect(),
-            logger.clone(),
-        ));
-    }
-
-    let mut peer_streams: Vec<RW> = Vec::new();
-    for peer_download_handle in peer_download_handles {
-        peer_streams.push(updating_block_chain(
-            block_chain,
-            peer_download_handle,
-            logger.clone(),
-        )?);
-    }
-
-    Ok(peer_streams)
 }

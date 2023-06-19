@@ -12,7 +12,7 @@ use crate::messages::{
     command_name::CommandName,
     error_message::ErrorMessage,
     message::{self, Message},
-    send_headers::SendHeadersMessage,
+    send_headers_message::SendHeadersMessage,
     verack_message::VerackMessage,
     version_message::VersionMessage,
 };

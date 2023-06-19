@@ -1,4 +1,4 @@
-use cargosos_bitcoin::block_structure::{block::Block, transaction::Transaction};
+use crate::block_structure::{block::Block, transaction::Transaction};
 
 use std::cmp::PartialEq;
 

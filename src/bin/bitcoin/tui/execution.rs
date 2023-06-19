@@ -3,8 +3,7 @@ use super::user_response::{handle_peers, user_input};
 use crate::{
     error_execution::ErrorExecution,
     process::{
-        broadcasting::Broadcasting, download, handshake, load_system::LoadSystem,
-        message_response::MessageResponse, save_system::SaveSystem,
+        download, handshake, load_system::LoadSystem, save_system::SaveSystem,
     },
 };
 
@@ -16,6 +15,7 @@ use cargosos_bitcoin::{
     block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
     connections::ibd_methods::IBDMethod,
     logs::logger_sender::LoggerSender,
+    node_structure::{broadcasting::Broadcasting, message_response::MessageResponse},
 };
 
 use std::{
@@ -118,14 +118,16 @@ fn get_utxo_set(block_chain: &BlockChain, logger: LoggerSender) -> UTXOSet {
 
 fn get_broadcasting(
     peer_streams: Vec<TcpStream>,
-    sender_broadcasting: Sender<MessageResponse>,
+    sender_response: Sender<MessageResponse>,
+    connection_config: ConnectionConfig,
     logger: LoggerSender,
 ) -> Result<Broadcasting<TcpStream>, ErrorExecution> {
     let _ = logger.log_node("Broadcasting".to_string());
 
     let boradcasting = Broadcasting::new(
         peer_streams, 
-        sender_broadcasting,
+        sender_response,
+        connection_config,
         logger,
     );
 
@@ -178,8 +180,12 @@ pub fn program_execution(
     );
 
     {
-        let mut broadcasting =
-            get_broadcasting(peer_streams, sender_response, logger.clone())?;
+        let mut broadcasting = get_broadcasting(
+            peer_streams, 
+            sender_response, 
+            connection_config,
+            logger.clone()
+        )?;
 
         user_input(
             &mut broadcasting,

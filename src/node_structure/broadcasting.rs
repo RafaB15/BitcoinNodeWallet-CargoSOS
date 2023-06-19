@@ -1,10 +1,11 @@
 use super::{
-    error_process::ErrorProcess, message_response::MessageResponse, peer_manager::PeerManager,
+    error_node::ErrorNode, message_response::MessageResponse, peer_manager::PeerManager,
 };
 
-use cargosos_bitcoin::{
+use crate::{
     block_structure::transaction::Transaction,
-    logs::logger_sender::LoggerSender,
+    logs::logger_sender::LoggerSender, 
+    configurations::connection_config::ConnectionConfig,
 };
 
 use std::{
@@ -14,7 +15,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-type HandleSender<T> = (JoinHandle<Result<T, ErrorProcess>>, Sender<Transaction>);
+type HandleSender<T> = (JoinHandle<Result<T, ErrorNode>>, Sender<Transaction>);
 
 pub struct Broadcasting<RW>
 where
@@ -32,12 +33,19 @@ where
     pub fn new(
         peer_streams: Vec<RW>, 
         sender_response: Sender<MessageResponse>,
+        connection_config: ConnectionConfig,
         logger: LoggerSender,
     ) -> Self {
         let stop = Arc::new(Mutex::new(false));
 
         Broadcasting {
-            peers: Self::create_peers(peer_streams, sender_response, stop.clone(), logger.clone()),
+            peers: Self::create_peers(
+                peer_streams, 
+                sender_response, 
+                stop.clone(), 
+                connection_config,
+                logger.clone(),
+            ),
             stop,
             logger,
         }
@@ -47,6 +55,7 @@ where
         peers_streams: Vec<RW>,
         sender: Sender<MessageResponse>,
         stop: Arc<Mutex<bool>>,
+        connection_config: ConnectionConfig,
         logger: LoggerSender,
     ) -> Vec<HandleSender<RW>> {
         let mut peers: Vec<HandleSender<RW>> = Vec::new();
@@ -56,10 +65,18 @@ where
             let (sender_transaction, receiver_transaction) = mpsc::channel::<Transaction>();
             let stop_clone = stop.clone();
             let logger_clone = logger.clone();
+            let configuration_clone = connection_config.clone();
 
             let handle = thread::spawn(move || {
                 let peer_manager =
-                    PeerManager::new(peer_stream, sender_clone, receiver_transaction, stop_clone);
+                    PeerManager::new(
+                        peer_stream, 
+                        sender_clone, 
+                        receiver_transaction, 
+                        stop_clone,
+                        configuration_clone,
+                        logger_clone.clone(),
+                    );
 
                 peer_manager.listen_peers(logger_clone)
             });
@@ -79,7 +96,7 @@ where
         }
     }
 
-    pub fn destroy(self) -> Result<Vec<RW>, ErrorProcess> {
+    pub fn destroy(self) -> Result<Vec<RW>, ErrorNode> {
         let _ = self.logger.log_configuration("Closing peers".to_string());
         match self.stop.lock() {
             Ok(mut stop) => *stop = true,
