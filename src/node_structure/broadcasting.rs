@@ -1,11 +1,8 @@
-use super::{
-    error_node::ErrorNode, message_response::MessageResponse, peer_manager::PeerManager,
-};
+use super::{error_node::ErrorNode, message_response::MessageResponse, peer_manager::PeerManager};
 
 use crate::{
-    block_structure::transaction::Transaction,
-    logs::logger_sender::LoggerSender, 
-    configurations::connection_config::ConnectionConfig,
+    block_structure::transaction::Transaction, configurations::connection_config::ConnectionConfig,
+    logs::logger_sender::LoggerSender,
 };
 
 use std::{
@@ -31,7 +28,7 @@ where
     RW: Read + Write + Send + 'static,
 {
     pub fn new(
-        peer_streams: Vec<RW>, 
+        peer_streams: Vec<RW>,
         sender_response: Sender<MessageResponse>,
         connection_config: ConnectionConfig,
         logger: LoggerSender,
@@ -40,9 +37,9 @@ where
 
         Broadcasting {
             peers: Self::create_peers(
-                peer_streams, 
-                sender_response, 
-                stop.clone(), 
+                peer_streams,
+                sender_response,
+                stop.clone(),
                 connection_config,
                 logger.clone(),
             ),
@@ -68,15 +65,14 @@ where
             let configuration_clone = connection_config.clone();
 
             let handle = thread::spawn(move || {
-                let peer_manager =
-                    PeerManager::new(
-                        peer_stream, 
-                        sender_clone, 
-                        receiver_transaction, 
-                        stop_clone,
-                        configuration_clone,
-                        logger_clone.clone(),
-                    );
+                let peer_manager = PeerManager::new(
+                    peer_stream,
+                    sender_clone,
+                    receiver_transaction,
+                    stop_clone,
+                    configuration_clone,
+                    logger_clone.clone(),
+                );
 
                 peer_manager.listen_peers(logger_clone)
             });
@@ -87,27 +83,41 @@ where
         peers
     }
 
-    pub fn send_transaction(&mut self, transaction: Transaction) {
-        let _ = self.logger.log_transaction("Broadcasting transaction".to_string());
+    pub fn send_transaction(&mut self, transaction: Transaction) -> Result<(), ErrorNode> {
+        let _ = self
+            .logger
+            .log_transaction("Broadcasting transaction".to_string());
         for (_, sender) in self.peers.iter() {
             if sender.send(transaction.clone()).is_err() {
-                todo!()
+                return Err(ErrorNode::WhileSendingMessage(
+                    "Sending transaction message to peer".to_string(),
+                ));
             }
         }
+
+        Ok(())
     }
 
     pub fn destroy(self) -> Result<Vec<RW>, ErrorNode> {
         let _ = self.logger.log_configuration("Closing peers".to_string());
         match self.stop.lock() {
             Ok(mut stop) => *stop = true,
-            Err(_) => todo!(),
+            Err(_) => {
+                return Err(ErrorNode::NodeNotResponding(
+                    "Thread could not stop peers".to_string(),
+                ))
+            }
         }
 
         let mut peers_streams = Vec::new();
         for (handle, _) in self.peers {
             match handle.join() {
                 Ok(peer_stream) => peers_streams.push(peer_stream?),
-                Err(_) => todo!(),
+                Err(_) => {
+                    return Err(ErrorNode::NodeNotResponding(
+                        "Thread could not finish correctly".to_string(),
+                    ))
+                }
             }
         }
 

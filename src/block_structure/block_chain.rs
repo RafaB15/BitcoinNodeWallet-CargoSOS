@@ -102,7 +102,7 @@ impl BlockChain {
         Err(ErrorBlock::CouldNotUpdate)
     }
 
-    pub fn get_blocks_after_timestamp(&self, timestamp: u32) -> Result<Vec<Block>, ErrorBlock> {
+    pub fn get_blocks_after_timestamp(&self, timestamp: u32) -> Vec<Block> {
         let mut blocks_after_timestamp: Vec<Block> = Vec::new();
 
         for current_block in self.blocks.iter() {
@@ -111,7 +111,7 @@ impl BlockChain {
             }
         }
 
-        Ok(blocks_after_timestamp)
+        blocks_after_timestamp
     }
 
     pub fn get_all_blocks(&self) -> Vec<Block> {
@@ -152,16 +152,6 @@ impl BlockChain {
             None => Err(ErrorBlock::NodeChainReferenceNotFound),
         }
     }
-    /*
-        pub fn get_utxo(&self) -> Vec<TransactionOutput> {
-            let mut utxo: Vec<(TransactionOutput, HashType, u32)> = vec![];
-            for node_chain in self.blocks.iter() {
-                node_chain.block.update_utxo_list(&mut utxo);
-            }
-            utxo.retain(|(output, _, _)| output.value != -1);
-            utxo.iter().map(|(output, _, _)| output.clone()).collect()
-        }
-    */
 }
 
 impl TryDefault for BlockChain {
@@ -333,7 +323,7 @@ mod tests {
 
         blockchain.append_header(header_to_append.clone()).unwrap();
 
-        let block_after_timestamp = blockchain.get_blocks_after_timestamp(3).unwrap();
+        let block_after_timestamp = blockchain.get_blocks_after_timestamp(3);
         assert_eq!(block_after_timestamp[0].header, header_to_append);
     }
 

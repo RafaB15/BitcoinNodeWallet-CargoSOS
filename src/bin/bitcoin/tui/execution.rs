@@ -1,10 +1,11 @@
-use super::user_response::{handle_peers, user_input};
+use super::{
+    error_tui::ErrorTUI,
+    user_response::{handle_peers, user_input},
+};
 
 use crate::{
     error_execution::ErrorExecution,
-    process::{
-        download, handshake, load_system::LoadSystem, save_system::SaveSystem,
-    },
+    process::{download, handshake, load_system::LoadSystem, save_system::SaveSystem},
 };
 
 use cargosos_bitcoin::configurations::{
@@ -27,17 +28,24 @@ use std::{
 fn get_potential_peers(
     connection_config: ConnectionConfig,
     logger: LoggerSender,
-) -> Result<Vec<SocketAddr>, ErrorExecution> {
-    logger.log_connection("Getting potential peers with dns seeder".to_string())?;
+) -> Result<Vec<SocketAddr>, ErrorTUI> {
+    let _ = logger.log_connection("Getting potential peers with dns seeder".to_string());
 
-    let potential_peers = connection_config.dns_seeder.discover_peers()?;
+    let potential_peers = match connection_config.dns_seeder.discover_peers() {
+        Ok(potential_peers) => potential_peers,
+        Err(_) => {
+            return Err(ErrorTUI::ErrorFromPeer(
+                "Fail to getting potencial peers".to_string(),
+            ))
+        }
+    };
 
     let peer_count_max = std::cmp::min(connection_config.peer_count_max, potential_peers.len());
 
     let potential_peers = potential_peers[0..peer_count_max].to_vec();
 
     for potential_peer in &potential_peers {
-        logger.log_connection(format!("Potential peer: {:?}", potential_peer))?;
+        let _ = logger.log_connection(format!("Potential peer: {:?}", potential_peer));
     }
 
     Ok(potential_peers)
@@ -49,7 +57,7 @@ fn get_block_chain(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
     logger: LoggerSender,
-) -> Result<Vec<TcpStream>, ErrorExecution> {
+) -> Result<Vec<TcpStream>, ErrorTUI> {
     let _ = logger.log_connection("Getting block chain".to_string());
 
     Ok(match connection_config.ibd_method {
@@ -121,26 +129,21 @@ fn get_broadcasting(
     sender_response: Sender<MessageResponse>,
     connection_config: ConnectionConfig,
     logger: LoggerSender,
-) -> Result<Broadcasting<TcpStream>, ErrorExecution> {
+) -> Result<Broadcasting<TcpStream>, ErrorTUI> {
     let _ = logger.log_node("Broadcasting".to_string());
 
-    let boradcasting = Broadcasting::new(
-        peer_streams, 
-        sender_response,
-        connection_config,
-        logger,
-    );
+    let boradcasting = Broadcasting::new(peer_streams, sender_response, connection_config, logger);
 
     Ok(boradcasting)
 }
 
-fn get_inner<T>(reference: Arc<Mutex<T>>) -> Result<T, ErrorExecution> {
+fn get_inner<T>(reference: Arc<Mutex<T>>) -> Result<T, ErrorTUI> {
     match Arc::try_unwrap(reference) {
         Ok(reference_unwrap) => match reference_unwrap.into_inner() {
             Ok(reference) => Ok(reference),
-            Err(_) => todo!(),
+            Err(_) => Err(ErrorTUI::CannotGetInner),
         },
-        Err(_) => todo!(),
+        Err(_) => Err(ErrorTUI::CannotUnwrapArc),
     }
 }
 
@@ -149,7 +152,7 @@ pub fn program_execution(
     download_config: DownloadConfig,
     load_system: &mut LoadSystem,
     logger: LoggerSender,
-) -> Result<SaveSystem, ErrorExecution> {
+) -> Result<SaveSystem, ErrorTUI> {
     let potential_peers = get_potential_peers(connection_config.clone(), logger.clone())?;
 
     let peer_streams =
@@ -181,10 +184,10 @@ pub fn program_execution(
 
     {
         let mut broadcasting = get_broadcasting(
-            peer_streams, 
-            sender_response, 
+            peer_streams,
+            sender_response,
             connection_config,
-            logger.clone()
+            logger.clone(),
         )?;
 
         user_input(
@@ -195,11 +198,17 @@ pub fn program_execution(
             logger.clone(),
         )?;
 
-        let _ = broadcasting.destroy()?;
+        if broadcasting.destroy().is_err() {
+            return Err(ErrorTUI::ErrorFromPeer(
+                "Fail to destroy broadcasting".to_string(),
+            ));
+        }
     }
 
     if handle.join().is_err() {
-        todo!()
+        return Err(ErrorTUI::ErrorFromPeer(
+            "Fail to remove notifications".to_string(),
+        ));
     }
 
     Ok(SaveSystem::new(

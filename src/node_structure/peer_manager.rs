@@ -1,13 +1,9 @@
 use super::{error_node::ErrorNode, message_response::MessageResponse};
 
 use crate::{
-    block_structure::{
-        transaction::Transaction, 
-        hash::HashType,
-    },
-    logs::logger_sender::LoggerSender,
+    block_structure::{hash::HashType, transaction::Transaction},
     configurations::connection_config::ConnectionConfig,
-    node_structure::block_download::BlockDownload,
+    logs::logger_sender::LoggerSender,
     messages::{
         addr_message::AddrMessage,
         alert_message::AlertMessage,
@@ -24,10 +20,11 @@ use crate::{
         pong_message::PongMessage,
         send_cmpct_message::SendCmpctMessage,
         send_headers_message::SendHeadersMessage,
+        tx_message::TxMessage,
         verack_message::VerackMessage,
         version_message::VersionMessage,
-        tx_message::TxMessage,
-    }, 
+    },
+    node_structure::block_download::BlockDownload,
 };
 
 use std::{
@@ -58,7 +55,7 @@ where
         receiver: Receiver<Transaction>,
         stop: Arc<Mutex<bool>>,
         connection_config: ConnectionConfig,
-        logger: LoggerSender,        
+        logger: LoggerSender,
     ) -> Self {
         PeerManager {
             peer,
@@ -71,22 +68,25 @@ where
     }
 
     pub fn listen_peers(mut self, logger: LoggerSender) -> Result<RW, ErrorNode> {
-
         while let Ok(header) = MessageHeader::deserialize_header(&mut self.peer) {
             self.manage_message(header)?;
 
             if let Ok(transaction) = self.receiver.try_recv() {
-                self.send_transaction(transaction);
+                self.send_transaction(transaction)?;
             }
 
             match self.stop.lock() {
                 Ok(stop) => {
-                    let _ = logger.log_configuration("Closing this peer".to_string());
                     if *stop {
+                        let _ = logger.log_configuration("Closing this peer".to_string());
                         break;
                     }
                 }
-                Err(_) => todo!(),
+                Err(_) => {
+                    return Err(ErrorNode::NodeNotResponding(
+                        "Could not determine if to stop".to_string(),
+                    ))
+                }
             }
         }
 
@@ -95,6 +95,8 @@ where
 
     fn manage_message(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
         let magic_numbers = header.magic_numbers;
+
+        let _ = self.logger.log_connection(format!("Receive message of type {:?}", header.command_name));
 
         match header.command_name {
             CommandName::Version => ignore_message::<VersionMessage>(&mut self.peer, header)?,
@@ -108,9 +110,9 @@ where
             }
             CommandName::Pong => ignore_message::<PongMessage>(&mut self.peer, header)?,
             CommandName::GetHeaders => ignore_message::<GetHeadersMessage>(&mut self.peer, header)?,
-            CommandName::Headers => self.receive_headers(header),
+            CommandName::Headers => self.receive_headers(header)?,
             CommandName::GetData => ignore_message::<GetDataMessage>(&mut self.peer, header)?,
-            CommandName::Block => self.receive_blocks(header),
+            CommandName::Block => self.receive_blocks(header)?,
             CommandName::Inventory => ignore_message::<InventoryMessage>(&mut self.peer, header)?,
             CommandName::SendHeaders => {
                 ignore_message::<SendHeadersMessage>(&mut self.peer, header)?
@@ -119,74 +121,91 @@ where
             CommandName::Addr => ignore_message::<AddrMessage>(&mut self.peer, header)?,
             CommandName::FeeFilter => ignore_message::<FeeFilterMessage>(&mut self.peer, header)?,
             CommandName::Alert => ignore_message::<AlertMessage>(&mut self.peer, header)?,
-            CommandName::Tx => self.receive_transaction(header),
+            CommandName::Tx => self.receive_transaction(header)?,
         }
 
         Ok(())
     }
 
-    fn receive_headers(&mut self, header: MessageHeader) {
-        let headers_message = match HeadersMessage::deserialize_message(&mut self.peer, header) {
-            Ok(headers_message) => headers_message,
-            _ => todo!()
-        };
+    fn receive_headers(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
+        let _ = self.logger.log_connection("Receiving headers".to_string());
+        let headers_message = HeadersMessage::deserialize_message(&mut self.peer, header)?;
 
         let headers = headers_message.headers;
-        let headers: Vec<HashType> = headers.iter().filter_map(|header| 
-            match header.get_hash256d() {
+        let headers: Vec<HashType> = headers
+            .iter()
+            .filter_map(|header| match header.get_hash256d() {
                 Ok(header_hash) => Some(header_hash),
                 Err(_) => None,
-            }
-        ).collect();
+            })
+            .collect();
 
-        let block_download = BlockDownload::new(
-            self.connection_config.magic_numbers, 
-            self.logger.clone(),
-        );
+        let block_download =
+            BlockDownload::new(self.connection_config.magic_numbers, self.logger.clone());
 
-        let blocks = match block_download.get_data(&mut self.peer, headers) {
-            Ok(blocks) => blocks,
-            Err(_) => todo!(),
-        };
+        let blocks = block_download.get_data(&mut self.peer, headers)?;
 
         for block in blocks {
             if self.sender.send(MessageResponse::Block(block)).is_err() {
-                todo!()
+                return Err(ErrorNode::WhileSendingMessage(
+                    "Sending block back".to_string(),
+                ));
             }
         }
+
+        Ok(())
     }
 
-    fn receive_blocks(&mut self, header: MessageHeader) {
-        let block_message = match BlockMessage::deserialize_message(&mut self.peer, header) {
-            Ok(block_message) => block_message,
-            _ => todo!()
-        };
+    fn receive_blocks(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
+        let _ = self.logger.log_connection("Receiving blocks".to_string());
+        let block_message = BlockMessage::deserialize_message(&mut self.peer, header)?;
 
-        if self.sender.send(MessageResponse::Block(block_message.block)).is_err() {
-            todo!()
-        }   
+        if self
+            .sender
+            .send(MessageResponse::Block(block_message.block))
+            .is_err()
+        {
+            return Err(ErrorNode::WhileSendingMessage(
+                "Sending block back".to_string(),
+            ));
+        }
+
+        Ok(())
     }
 
-    fn receive_transaction(&mut self, header: MessageHeader) {
-        let tx_message = match TxMessage::deserialize_message(&mut self.peer, header) {
-            Ok(tx_message) => tx_message,
-            _ => todo!()
-        };
+    fn receive_transaction(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
+        let _ = self.logger.log_connection("Receiving a transaction".to_string());
+        let tx_message = TxMessage::deserialize_message(&mut self.peer, header)?;
 
-        if self.sender.send(MessageResponse::Transaction(tx_message.transaction)).is_err() {
-            todo!()
-        }   
+        if self
+            .sender
+            .send(MessageResponse::Transaction(tx_message.transaction))
+            .is_err()
+        {
+            return Err(ErrorNode::WhileSendingMessage(
+                "Sending transaction back".to_string(),
+            ));
+        }
+
+        Ok(())
     }
 
-    fn send_transaction(&mut self, transaction: Transaction) {
+    fn send_transaction(&mut self, transaction: Transaction) -> Result<(), ErrorNode> {
+        let _ = self.logger.log_connection("Sending a transaction".to_string());
         let tx_message = TxMessage { transaction };
 
         if TxMessage::serialize_message(
-            &mut self.peer, 
-            self.connection_config.magic_numbers, 
-            &tx_message
-        ).is_err() {
-            todo!()
+            &mut self.peer,
+            self.connection_config.magic_numbers,
+            &tx_message,
+        )
+        .is_err()
+        {
+            return Err(ErrorNode::WhileSendingMessage(
+                "Sending transaction to peers".to_string(),
+            ));
         }
+
+        Ok(())
     }
 }

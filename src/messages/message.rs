@@ -22,9 +22,9 @@ use super::{
     pong_message::PongMessage,
     send_cmpct_message::SendCmpctMessage,
     send_headers_message::SendHeadersMessage,
+    tx_message::TxMessage,
     verack_message::VerackMessage,
     version_message::VersionMessage,
-    tx_message::TxMessage,
 };
 
 use std::io::{Read, Write};

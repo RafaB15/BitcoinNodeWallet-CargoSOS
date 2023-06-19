@@ -1,12 +1,12 @@
-use crate::error_execution::ErrorExecution;
+use super::error_process::ErrorProcess;
 
 use cargosos_bitcoin::{
     block_structure::{block::Block, block_chain::BlockChain, hash::HashType},
     configurations::{connection_config::ConnectionConfig, download_config::DownloadConfig},
     logs::logger_sender::LoggerSender,
     node_structure::{
-        block_download::BlockDownload,
-        error_node::ErrorNode, initial_headers_download::InitialHeaderDownload,
+        block_download::BlockDownload, error_node::ErrorNode,
+        initial_headers_download::InitialHeaderDownload,
     },
 };
 
@@ -31,7 +31,7 @@ pub fn headers_first<RW: Read + Write + Send + Debug + 'static>(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
     logger: LoggerSender,
-) -> Result<Vec<RW>, ErrorExecution> {
+) -> Result<Vec<RW>, ErrorProcess> {
     let header_download = InitialHeaderDownload::new(
         connection_config.p2p_protocol_version,
         connection_config.magic_numbers,
@@ -52,7 +52,7 @@ pub fn headers_first<RW: Read + Write + Send + Debug + 'static>(
         get_peer_header(&mut peer_stream, &header_download, block_chain, &logger)?;
 
         let mut list_of_blocks: Vec<Block> = Vec::new();
-        for block in block_chain.get_blocks_after_timestamp(download_config.timestamp)? {
+        for block in block_chain.get_blocks_after_timestamp(download_config.timestamp) {
             if block.transactions.len() as u64 == 0 {
                 list_of_blocks.push(block);
             }
@@ -88,14 +88,20 @@ fn get_peer_header<RW: Read + Write>(
     header_download: &InitialHeaderDownload,
     block_chain: &mut BlockChain,
     logger: &LoggerSender,
-) -> Result<(), ErrorExecution> {
+) -> Result<(), ErrorProcess> {
     loop {
         let header_count: u32 = match header_download.get_headers(peer_stream, block_chain) {
             Err(ErrorNode::NodeNotResponding(message)) => {
                 let _ = logger.log_connection(format!("Node not responding, send: {}", message));
                 break;
             }
-            other_response => other_response?,
+            Ok(count) => count,
+            Err(ErrorNode::WhileSerializing(_)) => return Err(ErrorProcess::ErrorWriting),
+            Err(_) => {
+                return Err(ErrorProcess::ErrorFromPeer(
+                    "Proof of work failed".to_string(),
+                ))
+            }
         };
 
         let _ = logger.log_connection(format!("We get: {}", header_count));
@@ -146,7 +152,7 @@ fn updating_block_chain<RW: Read + Write + Send>(
     block_chain: &mut BlockChain,
     peer_download_handle: JoinHandle<(Vec<Block>, RW)>,
     logger: LoggerSender,
-) -> Result<RW, ErrorExecution> {
+) -> Result<RW, ErrorProcess> {
     let _ = logger.log_connection("Finish downloading, loading to blockchain".to_string());
     match peer_download_handle.join() {
         Ok((blocks, peer_stream)) => {
@@ -154,7 +160,9 @@ fn updating_block_chain<RW: Read + Write + Send>(
                 logger.log_connection(format!("Loading {} blocks to blockchain", blocks.len(),));
 
             for (i, block) in blocks.iter().enumerate() {
-                block_chain.update_block(block.clone())?;
+                if block_chain.update_block(block.clone()).is_err() {
+                    continue;
+                }
 
                 if i % 50 == 0 {
                     let _ = logger.log_connection(format!("Loading [{i}] blocks to blockchain",));
@@ -166,7 +174,7 @@ fn updating_block_chain<RW: Read + Write + Send>(
 
             Ok(peer_stream)
         }
-        _ => Err(ErrorExecution::FailThread),
+        _ => Err(ErrorProcess::FailThread),
     }
 }
 

@@ -34,7 +34,7 @@ pub fn select_option(logger: LoggerSender) -> Result<Timestamp, ErrorTUI> {
             Ok(result) => {
                 let _ = logger.log_wallet(format!("Valid option entered"));
                 return Ok(result);
-            },
+            }
             Err(error) => {
                 let _ =
                     logger.log_wallet(format!("Invalid option entered, with error: {:?}", error));

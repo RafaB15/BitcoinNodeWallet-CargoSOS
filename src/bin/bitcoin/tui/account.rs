@@ -172,8 +172,8 @@ pub fn select_account<'t>(
         match get_account_from_name(account_name.trim(), wallet) {
             Some(account) => {
                 let _ = logger.log_wallet(format!("Valid account name entered"));
-                return Ok(account)
-            },
+                return Ok(account);
+            }
             None => {
                 let _ = logger.log_wallet(format!("Invalid account name entered"));
 

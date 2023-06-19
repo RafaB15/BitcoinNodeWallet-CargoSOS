@@ -2,10 +2,12 @@ use cargosos_bitcoin::serialization::error_serialization::ErrorSerialization;
 
 use std::convert::From;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum ErrorProcess {
     ErrorReading,
     ErrorWriting,
+    FailThread,
+    ErrorFromPeer(String),
 }
 
 impl From<ErrorSerialization> for ErrorProcess {
