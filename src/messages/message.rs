@@ -20,8 +20,9 @@ use super::{
     message_header::{MagicType, MessageHeader},
     ping_message::PingMessage,
     pong_message::PongMessage,
-    send_cmpct::SendCmpctMessage,
-    send_headers::SendHeadersMessage,
+    send_cmpct_message::SendCmpctMessage,
+    send_headers_message::SendHeadersMessage,
+    tx_message::TxMessage,
     verack_message::VerackMessage,
     version_message::VersionMessage,
 };
@@ -114,24 +115,12 @@ pub fn deserialize_until_found<RW: Read + Write>(
         let magic_bytes = header.magic_numbers;
 
         match header.command_name {
-            CommandName::Version => {
-                let _ = VersionMessage::deserialize_message(stream, header)?;
-            }
-            CommandName::Verack => {
-                let _ = VerackMessage::deserialize_message(stream, header)?;
-            }
-            CommandName::GetHeaders => {
-                let _ = GetHeadersMessage::deserialize_message(stream, header)?;
-            }
-            CommandName::Headers => {
-                let _ = HeadersMessage::deserialize_message(stream, header)?;
-            }
-            CommandName::Inventory => {
-                let _ = InventoryMessage::deserialize_message(stream, header)?;
-            }
-            CommandName::Block => {
-                let _ = BlockMessage::deserialize_message(stream, header)?;
-            }
+            CommandName::Version => ignore_message::<VersionMessage>(stream, header)?,
+            CommandName::Verack => ignore_message::<VerackMessage>(stream, header)?,
+            CommandName::GetHeaders => ignore_message::<GetHeadersMessage>(stream, header)?,
+            CommandName::Headers => ignore_message::<HeadersMessage>(stream, header)?,
+            CommandName::Inventory => ignore_message::<InventoryMessage>(stream, header)?,
+            CommandName::Block => ignore_message::<BlockMessage>(stream, header)?,
             CommandName::Ping => {
                 let ping = PingMessage::deserialize_message(stream, header)?;
 
@@ -139,27 +128,22 @@ pub fn deserialize_until_found<RW: Read + Write>(
 
                 PongMessage::serialize_message(stream, magic_bytes, &pong)?;
             }
-            CommandName::Pong => {
-                let _ = PongMessage::deserialize_message(stream, header)?;
-            }
-            CommandName::SendHeaders => {
-                let _ = SendHeadersMessage::deserialize_message(stream, header)?;
-            }
-            CommandName::SendCmpct => {
-                let _ = SendCmpctMessage::deserialize_message(stream, header)?;
-            }
-            CommandName::Addr => {
-                let _ = AddrMessage::deserialize_message(stream, header)?;
-            }
-            CommandName::FeeFilter => {
-                let _ = FeeFilterMessage::deserialize_message(stream, header)?;
-            }
-            CommandName::GetData => {
-                let _ = GetDataMessage::deserialize_message(stream, header)?;
-            }
-            CommandName::Alert => {
-                let _ = AlertMessage::deserialize_message(stream, header)?;
-            }
+            CommandName::Pong => ignore_message::<PongMessage>(stream, header)?,
+            CommandName::SendHeaders => ignore_message::<SendHeadersMessage>(stream, header)?,
+            CommandName::SendCmpct => ignore_message::<SendCmpctMessage>(stream, header)?,
+            CommandName::Addr => ignore_message::<AddrMessage>(stream, header)?,
+            CommandName::FeeFilter => ignore_message::<FeeFilterMessage>(stream, header)?,
+            CommandName::GetData => ignore_message::<GetDataMessage>(stream, header)?,
+            CommandName::Alert => ignore_message::<AlertMessage>(stream, header)?,
+            CommandName::Tx => ignore_message::<TxMessage>(stream, header)?,
         }
     }
+}
+
+pub fn ignore_message<M: Message>(
+    stream: &mut dyn Read,
+    header: MessageHeader,
+) -> Result<(), ErrorSerialization> {
+    let _ = M::deserialize_message(stream, header)?;
+    Ok(())
 }

@@ -2,7 +2,9 @@ use super::error_gui::ErrorGUI;
 
 use crate::process::save_system::SaveSystem;
 
-use gtk::{prelude::*, glib::Object, Button, Entry, Application, Builder, Window};
+use gtk::{
+    gio::ApplicationFlags, glib::Object, prelude::*, Application, Builder, Button, Entry, Window,
+};
 
 pub trait VecOwnExt {
     fn search_by_name(&self, name: &str) -> Object;
@@ -10,7 +12,6 @@ pub trait VecOwnExt {
     fn search_button_named(&self, name: &str) -> Button;
     fn search_entry_named(&self, name: &str) -> Entry;
     //fn search_radio_button_named(&self, name: &str) -> RadioButton;
-
 }
 
 pub trait ObjectOwnExt {
@@ -24,13 +25,11 @@ impl ObjectOwnExt for Object {
 }
 
 impl VecOwnExt for Vec<Object> {
-
     fn search_by_name(&self, name: &str) -> Object {
         let found = self.iter().find(|&object| object.is_named(name));
         if let Some(found) = found {
             (*found).clone()
         } else {
-            println!("Todo para el orto che {name}");
             (*found.unwrap()).clone()
         }
     }
@@ -70,40 +69,21 @@ fn build_ui(application: &gtk::Application, glade_src: &str) {
         let entry_amount = obj_cl.search_entry_named("amount_entry");
         let entry_label = obj_cl.search_entry_named("label_entry");
 
-        
-
-        println!("{:?} {:?} {:?}", entry_address.text(), entry_amount.text(), entry_label.text());
+        println!(
+            "{:?} {:?} {:?}",
+            entry_address.text(),
+            entry_amount.text(),
+            entry_label.text()
+        );
         entry_address.set_text("");
         entry_amount.set_text("");
         entry_label.set_text("");
     });
 
     window.show_all();
-
 }
 
 pub fn program_execution() -> Result<SaveSystem, ErrorGUI> {
-    /* 
-    if gtk::init().is_err() {
-        println!("Failed to initialize GTK.");
-        return;
-    }
-
-    let glade_src = include_str!("MainWindow.glade");
-    let builder = gtk::Builder::from_string(glade_src);
-
-    let window: gtk::Window = builder.object("MainWindow").unwrap();
-    let grid: gtk::Grid = builder.object("Grid").unwrap();
-    let button1: gtk::Button = builder.object("button1").unwrap();
-    let button2: gtk::Button = builder.object("button2").unwrap();
-    let button3: gtk::Button = builder.object("button3").unwrap();
-    let button4: gtk::Button = builder.object("button4").unwrap();
-
-    window.show_all();
-
-    gtk::main();
-    */
-
     if gtk::init().is_err() {
         println!("Failed to initialize GTK.");
         return Err(ErrorGUI::FailedToInitializeGTK);
@@ -111,10 +91,13 @@ pub fn program_execution() -> Result<SaveSystem, ErrorGUI> {
 
     let glade_src = include_str!("WindowNotebook.glade");
 
-    let application = Application::builder().build();
+    let application = Application::builder()
+        .flags(ApplicationFlags::HANDLES_OPEN)
+        .build();
 
     application.connect_activate(move |app| build_ui(app, glade_src));
-    application.run();
+    let argumentos: Vec<String> = vec![];
+    application.run_with_args(&argumentos);
 
-    Err(ErrorGUI::TODO)
+    Err(ErrorGUI::FailedToInitializeGTK)
 }

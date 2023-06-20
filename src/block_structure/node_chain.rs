@@ -1,4 +1,7 @@
-use super::{block::Block, error_block::ErrorBlock, hash::HashType, block_header::BlockHeader, transaction::Transaction};
+use super::{
+    block::Block, block_header::BlockHeader, error_block::ErrorBlock, hash::HashType,
+    transaction::Transaction,
+};
 
 use crate::serialization::{
     deserializable_internal_order::DeserializableInternalOrder,
@@ -80,12 +83,12 @@ impl NodeChain {
 impl SerializableInternalOrder for NodeChain {
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.block.header.io_serialize(stream)?;
-        
+
         (self.block.transactions.len() as u64).le_serialize(stream)?;
         for transaction in &self.block.transactions {
             transaction.io_serialize(stream)?;
         }
-        
+
         self.header_hash.io_serialize(stream)?;
 
         match self.index_previous_node {

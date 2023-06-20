@@ -10,7 +10,13 @@ use cargosos_bitcoin::configurations::{
 
 use std::io::Read;
 
-type Configurations = (LogConfig, ConnectionConfig, DownloadConfig, SaveConfig, UIConfig);
+type Configurations = (
+    LogConfig,
+    ConnectionConfig,
+    DownloadConfig,
+    SaveConfig,
+    UIConfig,
+);
 
 const CONNECTION_CONFIG: &str = "Connection";
 const LOGS_CONFIG: &str = "Logs";

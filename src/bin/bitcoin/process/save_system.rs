@@ -1,11 +1,10 @@
 use crate::{error_execution::ErrorExecution, error_initialization::ErrorInitialization};
 
 use cargosos_bitcoin::{
-    block_structure::block_chain::BlockChain,
+    block_structure::block_chain::BlockChain, configurations::save_config::SaveConfig,
     logs::logger_sender::LoggerSender,
     serialization::serializable_internal_order::SerializableInternalOrder,
     wallet_structure::wallet::Wallet,
-    configurations::save_config::SaveConfig,
 };
 
 use std::fs::OpenOptions;
@@ -21,25 +20,26 @@ pub struct SaveSystem {
 
 impl SaveSystem {
     pub fn new(block_chain: BlockChain, wallet: Wallet, logger: LoggerSender) -> SaveSystem {
-        SaveSystem { block_chain, wallet, logger }
+        SaveSystem {
+            block_chain,
+            wallet,
+            logger,
+        }
     }
 
-    pub fn save_to_files(
-        self,
-        save_config: SaveConfig,
-    ) -> Result<(), ErrorExecution> {
+    pub fn save_to_files(self, save_config: SaveConfig) -> Result<(), ErrorExecution> {
         Self::save_value(
             self.block_chain,
             BLOCKCHAIN_FILE,
-            save_config.write_block_chain, 
-            self.logger.clone()
+            save_config.write_block_chain,
+            self.logger.clone(),
         )?;
-        
+
         Self::save_value(
-            self.wallet, 
+            self.wallet,
             WALLET_FILE,
-            save_config.write_wallet, 
-            self.logger
+            save_config.write_wallet,
+            self.logger,
         )?;
 
         Ok(())
@@ -55,8 +55,7 @@ impl SaveSystem {
         name: &str,
         path: Option<String>,
         logger: LoggerSender,
-    ) -> Result<(), ErrorExecution>
-    {
+    ) -> Result<(), ErrorExecution> {
         let path = match path {
             Some(path) => path,
             None => {

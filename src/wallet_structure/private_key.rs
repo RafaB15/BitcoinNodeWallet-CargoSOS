@@ -41,20 +41,6 @@ impl PrivateKey {
         Ok(PrivateKey { key })
     }
 
-    pub fn from_str(private_key_str: &str) -> Result<PrivateKey, ErrorWallet> {
-        let private_key = match SecretKey::from_str(private_key_str) {
-            Ok(private_key) => private_key,
-            Err(e) => {
-                return Err(ErrorWallet::CannotGeneratePrivateKey(format!(
-                    "Cannot generate PrivateKey object from string, error : {:?}",
-                    e
-                )))
-            }
-        };
-
-        Ok(PrivateKey {key: private_key})
-    }
-
     pub fn as_bytes(&self) -> PrivateKeyType {
         self.key.secret_bytes()
     }
@@ -73,8 +59,24 @@ impl PrivateKey {
         let secp = Secp256k1::new();
         Ok(secp.sign_ecdsa(&message, &self.key).serialize_der().to_vec())
     }
+}
 
+impl TryFrom<&str> for PrivateKey {
+    type Error = ErrorWallet;
 
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let private_key = match SecretKey::from_str(value) {
+            Ok(private_key) => private_key,
+            Err(e) => {
+                return Err(ErrorWallet::CannotGeneratePrivateKey(format!(
+                    "Cannot generate PrivateKey object from string, error : {:?}",
+                    e
+                )))
+            }
+        };
+
+        Ok(PrivateKey {key: private_key})
+    }
 }
 
 impl SerializableInternalOrder for PrivateKey {

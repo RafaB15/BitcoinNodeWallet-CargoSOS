@@ -1,8 +1,8 @@
 mod error_execution;
 mod error_initialization;
+mod gui;
 mod process;
 mod tui;
-mod gui;
 
 use std::{
     fs::{File, OpenOptions},
@@ -13,17 +13,11 @@ use std::{
 
 use error_execution::ErrorExecution;
 use error_initialization::ErrorInitialization;
-use process::{
-    configuration::Configuration, 
-    load_system::LoadSystem, 
-};
+use process::{configuration::Configuration, load_system::LoadSystem, save_system::SaveSystem};
 
 use cargosos_bitcoin::{
+    configurations::{interface::Interface, log_config::LogConfig, save_config::SaveConfig},
     logs::{error_log::ErrorLog, logger, logger_sender::LoggerSender},
-    configurations::{
-        log_config::LogConfig,
-        interface::Interface,
-    },
 };
 
 /// Get the configuration name given the arguments
@@ -85,14 +79,25 @@ fn initialize_logs(
 
     let filepath_log = Path::new(&log_config.filepath_log);
     let log_file = open_log_file(filepath_log)?;
-    let (logger, logger_receiver) =
-        logger::initialize_logger(log_file, log_config.show_console)?;
+    let (logger, logger_receiver) = logger::initialize_logger(log_file, log_config.show_console)?;
 
     let handle = thread::spawn(move || logger_receiver.receive_log());
 
     logger.log_configuration("Logs are already configured".to_string())?;
 
     Ok((handle, logger))
+}
+
+fn end_program(
+    save_system: SaveSystem,
+    save_config: SaveConfig,
+    logger: LoggerSender,
+) -> Result<(), ErrorExecution> {
+    save_system.save_to_files(save_config)?;
+
+    let _ = logger.log_configuration("Closing program".to_string());
+
+    Ok(())
 }
 
 fn main() -> Result<(), ErrorExecution> {
@@ -105,41 +110,25 @@ fn main() -> Result<(), ErrorExecution> {
     let config_file = open_config_file(config_name)?;
 
     let configuration = Configuration::new(config_file)?;
-    let (log_config, 
-        connection_config, 
-        download_config, 
-        save_config,
-        ui_config,
-    ) = configuration.separate();
+    let (log_config, connection_config, download_config, save_config, ui_config) =
+        configuration.separate();
 
     let (handle, logger) = initialize_logs(log_config)?;
 
-    {
-        let mut load_system = LoadSystem::new(
-            save_config.clone(),
+    let mut load_system = LoadSystem::new(save_config.clone(), logger.clone());
+
+    let save_system = match ui_config.interface {
+        Interface::Tui => tui::execution::program_execution(
+            connection_config,
+            download_config,
+            &mut load_system,
             logger.clone(),
-        );
+        )?,
+        Interface::Gui => gui::execution::program_execution()?,
+    };
 
-        let save_system = match ui_config.interface {
-            Interface::Tui => {
-                tui::execution::program_execution(
-                    connection_config,
-                    download_config,
-                    &mut load_system,
-                    logger.clone(),
-                )?
-            },
-            Interface::Gui => {
-                gui::execution::program_execution()?
-            },
-        };     
-    
-        save_system.save_to_files(save_config)?;
-    }
+    end_program(save_system, save_config, logger)?;
 
-    logger.log_configuration("Closing program".to_string())?;
-
-    std::mem::drop(logger);
     match handle.join() {
         Ok(result) => result?,
         _ => return Err(ErrorExecution::FailThread),

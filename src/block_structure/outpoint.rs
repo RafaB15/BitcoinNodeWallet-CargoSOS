@@ -8,8 +8,8 @@ use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
 };
 use std::{
-    io::{Read, Write},
     hash::{Hash, Hasher},
+    io::{Read, Write},
 };
 
 use std::cmp::PartialEq;
