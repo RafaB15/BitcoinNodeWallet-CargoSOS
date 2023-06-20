@@ -70,7 +70,7 @@ pub fn create_transaction<'t>(
     let amount = get_amount(logger.clone())?;
     let fee = amount / 10;
 
-    let available_outputs = utxo_set.get_utxo_list_with_outpoints(Some(&address));
+    let available_outputs = utxo_set.get_utxo_list_with_outpoints(Some(&account.address));
 
     match account.create_transaction_with_available_outputs(
         address, 
