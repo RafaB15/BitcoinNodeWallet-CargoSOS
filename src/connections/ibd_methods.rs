@@ -32,7 +32,8 @@ impl Parsable for IBDMethod {
         match value.parse::<IBDMethod>() {
             Ok(value) => Ok(value),
             _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
-                "ibd method of {:?}", value
+                "ibd method of {:?}",
+                value
             ))),
         }
     }

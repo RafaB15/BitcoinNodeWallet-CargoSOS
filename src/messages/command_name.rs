@@ -52,6 +52,9 @@ const GET_DATA_NAME: CommandNameType = [
 const ALERT_NAME: CommandNameType = [
     b'a', b'l', b'e', b'r', b't', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0',
 ];
+const TX_NAME: CommandNameType = [
+    b't', b'x', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0',
+];
 
 #[derive(Debug, Copy, Clone, std::cmp::PartialEq)]
 pub enum CommandName {
@@ -69,6 +72,7 @@ pub enum CommandName {
     FeeFilter,
     GetData,
     Alert,
+    Tx,
 }
 
 impl From<CommandName> for CommandNameType {
@@ -88,6 +92,7 @@ impl From<CommandName> for CommandNameType {
             CommandName::FeeFilter => FEE_FILTER_NAME,
             CommandName::GetData => GET_DATA_NAME,
             CommandName::Alert => ALERT_NAME,
+            CommandName::Tx => TX_NAME,
         }
     }
 }
@@ -111,6 +116,7 @@ impl TryFrom<CommandNameType> for CommandName {
             FEE_FILTER_NAME => Ok(CommandName::FeeFilter),
             GET_DATA_NAME => Ok(CommandName::GetData),
             ALERT_NAME => Ok(CommandName::Alert),
+            TX_NAME => Ok(CommandName::Tx),
             _ => Err(ErrorSerialization::ErrorInDeserialization(format!(
                 "Invalid command name, we get: {:?}",
                 value

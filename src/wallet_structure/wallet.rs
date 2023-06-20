@@ -1,35 +1,49 @@
-use super::{
-    account::Account,
-    error_wallet::ErrorWallet,
-};
+use super::{account::Account, error_wallet::ErrorWallet};
 
 use crate::{
     configurations::try_default::TryDefault,
     serialization::{
-        serializable_internal_order::SerializableInternalOrder,
-        serializable_little_endian::SerializableLittleEndian,
         deserializable_internal_order::DeserializableInternalOrder,
         deserializable_little_endian::DeserializableLittleEndian,
         error_serialization::ErrorSerialization,
-    }
+        serializable_internal_order::SerializableInternalOrder,
+        serializable_little_endian::SerializableLittleEndian,
+    },
 };
 
 use std::io::{Read, Write};
 
 #[derive(Debug)]
 pub struct Wallet {
+    pub selected_account: Option<Account>,
     pub accounts: Vec<Account>,
 }
 
 impl Wallet {
     pub fn new(accounts: Vec<Account>) -> Wallet {
         Wallet {
+            selected_account: accounts.first().cloned(),
             accounts,
         }
     }
 
     pub fn add_account(&mut self, account: Account) {
         self.accounts.push(account);
+    }
+
+    pub fn remove_account(&mut self, account: Account) {
+        self.accounts.retain(|x| x != &account);
+        if let None = self.selected_account {
+            self.selected_account = self.accounts.first().cloned();
+        }
+    }
+
+    pub fn change_account(&mut self, account: Account) {
+        self.selected_account = Some(account);
+    }
+
+    pub fn get_selected_account(&self) -> Option<&Account> {
+        self.selected_account.as_ref()
     }
 
     pub fn get_accounts(&self) -> &Vec<Account> {

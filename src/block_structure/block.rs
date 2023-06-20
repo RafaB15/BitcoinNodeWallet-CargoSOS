@@ -1,8 +1,5 @@
 use super::{
-    block_header::BlockHeader,
-    error_block::ErrorBlock,
-    hash::HashType,
-    merkle_tree::MerkleTree,
+    block_header::BlockHeader, error_block::ErrorBlock, hash::HashType, merkle_tree::MerkleTree,
     transaction::Transaction,
 };
 

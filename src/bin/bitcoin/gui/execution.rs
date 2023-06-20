@@ -44,7 +44,6 @@ pub trait VecOwnExt {
     fn search_entry_named(&self, name: &str) -> Entry;
     fn search_combo_box_named(&self, name: &str) -> ComboBoxText;
     //fn search_radio_button_named(&self, name: &str) -> RadioButton;
-
 }
 
 pub trait ObjectOwnExt {
@@ -58,7 +57,6 @@ impl ObjectOwnExt for Object {
 }
 
 impl VecOwnExt for Vec<Object> {
-
     fn search_by_name(&self, name: &str) -> Object {
         let found = self.iter().find(|&object| object.is_named(name));
         if let Some(found) = found {
@@ -274,15 +272,6 @@ pub fn backend_initialization(
     }
 
     println!("Wallet: {:?}", wallet);
-
-    get_block_chain(
-        peer_streams,
-        &mut block_chain,
-        connection_config,
-        download_config,
-        logger.clone(),
-    )?;
-
     Ok(())
 }
 
@@ -299,11 +288,13 @@ pub fn program_execution(
 
     let glade_src = include_str!("WindowNotebook.glade");
 
-    let application = Application::builder().build();
+    let application = Application::builder()
+        .flags(ApplicationFlags::HANDLES_OPEN)
+        .build();
 
     application.connect_activate(move |app| build_ui(app, glade_src, connection_config.clone(), download_config.clone(), save_config.clone(), logger.clone()));
     let vector: Vec<String> = Vec::new();
     application.run_with_args(&vector);
 
-    Err(ErrorGUI::TODO)
+    Err(ErrorGUI::FailedToInitializeGTK)
 }

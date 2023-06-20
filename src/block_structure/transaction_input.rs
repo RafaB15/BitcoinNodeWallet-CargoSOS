@@ -1,4 +1,8 @@
-use super::outpoint::Outpoint;
+use super::{
+    outpoint::Outpoint,
+    transaction::Transaction,
+    hash::hash256d,
+};
 
 use crate::messages::compact_size::CompactSize;
 
@@ -9,10 +13,19 @@ use crate::serialization::{
     serializable_internal_order::SerializableInternalOrder,
     serializable_little_endian::SerializableLittleEndian,
 };
+use crate::wallet_structure::{
+    account::Account,
+    error_wallet::ErrorWallet,
+};
 
-use std::io::{Read, Write};
+use std::{
+    io::{Read, Write},
+    cmp::PartialEq,
+};
 
-use std::cmp::PartialEq;
+const DEFAULT_SEQUENCE: u32 = 0xFFFFFFFF;
+const SIGHASH_ALL_MESSAGE: [u8; 4] = [0x01, 0x00, 0x00, 0x00];
+const SIGHASH_ALL_SIG_SCRIPT: u8 = 1;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TransactionInput {
@@ -33,6 +46,50 @@ impl TransactionInput {
             sequence,
         }
     }
+    
+    pub fn create_signature_script(
+        account: &Account,
+        unsigned_transaction: Transaction,
+        input_index: usize,
+    ) -> Result<Vec<u8>, ErrorWallet> {
+
+        let mut unsigned_transaction = unsigned_transaction;
+        unsigned_transaction.tx_in[input_index].signature_script = account.address.generate_script_pubkey_p2pkh();
+
+        let mut message: Vec<u8> = Vec::new();
+        if let Err(e) = unsigned_transaction.io_serialize(&mut message) {
+            return Err(ErrorWallet::CannotCreateNewTransaction(format!("Error serializing the transaction to sign: {:?}", e)));
+        };
+
+        message.extend(SIGHASH_ALL_MESSAGE.clone());
+
+        let hashed_message = match hash256d(&message) {
+            Ok(hashed_message) => hashed_message,
+            Err(e) => return Err(ErrorWallet::CannotCreateNewTransaction(format!("Error hashing the transaction to sign: {:?}", e))),
+        };
+        
+        let mut signed_message = account.sign(&hashed_message)?;
+
+        signed_message.push(SIGHASH_ALL_SIG_SCRIPT);
+
+        let mut final_script_signature = vec![];
+        final_script_signature.push(signed_message.len() as u8);
+        final_script_signature.extend(signed_message);
+
+        final_script_signature.push(account.public_key.as_bytes().len() as u8);
+        final_script_signature.extend(account.public_key.as_bytes());
+        
+        Ok(final_script_signature)
+    }
+    
+    pub fn from_outpoint_unsigned(
+        outpoint: &Outpoint,
+    ) -> TransactionInput {
+        let signature_script = vec![];
+        let sequence = DEFAULT_SEQUENCE;
+        TransactionInput::new(outpoint.clone(), signature_script, sequence)
+    }
+    
 }
 
 impl SerializableInternalOrder for TransactionInput {

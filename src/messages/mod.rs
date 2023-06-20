@@ -10,14 +10,15 @@ pub mod get_headers_message;
 
 pub mod block_message;
 pub mod headers_message;
+pub mod tx_message;
 
 pub mod addr_message;
 pub mod fee_filter_message;
 pub mod inventory_message;
 pub mod ping_message;
 pub mod pong_message;
-pub mod send_cmpct;
-pub mod send_headers;
+pub mod send_cmpct_message;
+pub mod send_headers_message;
 
 pub mod error_message;
 

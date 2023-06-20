@@ -18,6 +18,12 @@ pub struct TransactionOutput {
     pub pk_script: Vec<u8>,
 }
 
+impl TransactionOutput {
+    pub fn new(value: i64, pk_script: Vec<u8>) -> TransactionOutput {
+        TransactionOutput { value, pk_script }
+    }
+}
+
 impl SerializableInternalOrder for TransactionOutput {
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.value.le_serialize(stream)?;

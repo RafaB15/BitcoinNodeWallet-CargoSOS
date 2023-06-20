@@ -56,7 +56,8 @@ impl Parsable for SupportedServices {
         match value.parse::<SupportedServices>() {
             Ok(value) => Ok(value),
             _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
-                "Supported services of {:?}", value
+                "Supported services of {:?}",
+                value
             ))),
         }
     }
