@@ -3,7 +3,7 @@ use super::{account, error_tui::ErrorTUI, menu, menu_option::MenuOption, transac
 use cargosos_bitcoin::{
     block_structure::{
         block::Block, block_chain::BlockChain, error_block::ErrorBlock, transaction::Transaction,
-        utxo_set::UTXOSet,
+        utxo_set::{UTXOSet, self},
     },
     logs::logger_sender::LoggerSender,
     node_structure::{
@@ -40,7 +40,9 @@ pub fn user_input(
             MenuOption::CreateAccount => creating_accout(&wallet, logger.clone())?,
             MenuOption::ChangeAccount => changing_account(&wallet, logger.clone())?,
             MenuOption::RemoveAccount => removing_account(&wallet, logger.clone())?,
-            MenuOption::SendTransaction => sending_transaction(broadcasting, logger.clone())?,
+            MenuOption::SendTransaction => {
+                sending_transaction(broadcasting, &wallet, &utxo_set, logger.clone())?
+            },
             MenuOption::ShowAccounts => {
                 let wallet_ref = get_reference(&wallet)?;
                 account::show_accounts(&wallet_ref, logger.clone());
@@ -80,9 +82,23 @@ fn removing_account(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(),
 
 fn sending_transaction(
     broadcasting: &mut Broadcasting<TcpStream>,
+    wallet: &MutArc<Wallet>,
+    utxo_set: &MutArc<UTXOSet>,
     logger: LoggerSender,
 ) -> Result<(), ErrorTUI> {
-    let transaction = transaction::create_transaction();
+    let wallet = get_reference(wallet)?;
+    let account = match wallet.get_selected_account() {
+        Some(account) => account,
+        None => {
+            let message = "No account selected can't send transaction";
+            println!("{message}");
+            let _ = logger.log_wallet(message.to_string());
+            return Ok(());
+        }
+    };
+    let utxo_set = get_reference(utxo_set)?;
+
+    let transaction = transaction::create_transaction(&utxo_set, account, logger.clone())?;
     let _ = logger.log_transaction("Sending transaction".to_string());
 
     match broadcasting.send_transaction(transaction) {

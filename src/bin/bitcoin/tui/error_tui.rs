@@ -8,6 +8,7 @@ pub enum ErrorTUI {
     TerminalReadFail,
     CannotUnwrapArc,
     CannotGetInner,
+    TransactionCreationFail,
     ErrorReading(String),
     ErrorWriting(String),
     FailThread(String),

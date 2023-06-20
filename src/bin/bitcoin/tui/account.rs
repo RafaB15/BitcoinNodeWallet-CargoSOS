@@ -79,7 +79,7 @@ fn get_public_key(logger: LoggerSender) -> Result<PublicKey, ErrorTUI> {
 ///
 /// ### Error
 ///  * `ErrorExecution::TerminalReadFail`: It will appear when the terminal read fails
-fn get_address(logger: LoggerSender) -> Result<Address, ErrorTUI> {
+pub(super) fn get_address(logger: LoggerSender) -> Result<Address, ErrorTUI> {
     let mut address: String = String::new();
 
     println!("Enter the address: ");
