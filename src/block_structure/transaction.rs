@@ -14,10 +14,12 @@ use crate::{
         serializable_internal_order::SerializableInternalOrder,
         serializable_little_endian::SerializableLittleEndian,
     },
-    wallet_structure::address::Address,
+    wallet_structure::{
+        address::Address,
+        account::Account,
+        error_wallet::ErrorWallet,
+    },
 };
-
-use crate::wallet_structure::{account::Account, address::Address, error_wallet::ErrorWallet};
 
 use chrono::offset::Utc;
 
