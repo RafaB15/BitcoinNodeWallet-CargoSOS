@@ -25,7 +25,7 @@ fn get_private_key(logger_sender: LoggerSender) -> Result<PrivateKey, ErrorExecu
     }
 
     loop {
-        let _: PrivateKey = match PrivateKey::try_from(private_key.trim().to_string()) {
+        let _: PrivateKey = match PrivateKey::from_str(private_key.trim()) {
             Ok(result) => return Ok(result),
             Err(error) => {
                 logger_sender.log_wallet(format!(
