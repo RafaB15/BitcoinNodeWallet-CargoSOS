@@ -7,29 +7,32 @@ use crate::serialization::{
 };
 
 use std::{
-    convert::{TryFrom, TryInto},
     io::{Read, Write},
+    str::FromStr,
 };
 
-use k256::ecdsa::SigningKey;
+use secp256k1::{
+    SecretKey,
+    Secp256k1,
+};
 
 pub const PRIVATE_KEY_SIZE: usize = 32;
 pub type PrivateKeyType = [u8; PRIVATE_KEY_SIZE];
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PrivateKey {
-    key: SigningKey,
+    key: SecretKey,
 }
 
 impl PrivateKey {
     /// Recibe un string que representa una llave privada en formato WIF (no comprimida)
     /// Devuelve un objeto PrivateKey
     pub fn new(private_key_bytes: &PrivateKeyType) -> Result<PrivateKey, ErrorWallet> {
-        let key = match SigningKey::from_slice(private_key_bytes) {
+        let key = match SecretKey::from_slice(private_key_bytes) {
             Ok(key) => key,
             Err(e) => {
                 return Err(ErrorWallet::CannotGeneratePrivateKey(format!(
-                    "Cannot generate SigningKey object from {:?}, error : {:?}",
+                    "Cannot generate PrivateKey object from {:?}, error : {:?}",
                     private_key_bytes, e
                 )))
             }
@@ -38,72 +41,45 @@ impl PrivateKey {
         Ok(PrivateKey { key })
     }
 
-    pub fn as_bytes(&self) -> Result<PrivateKeyType, ErrorWallet> {
-        let bytes: PrivateKeyType = match self.key.to_bytes().try_into() {
-            Ok(bytes) => bytes,
+    pub fn from_str(private_key_str: &str) -> Result<PrivateKey, ErrorWallet> {
+        let private_key = match SecretKey::from_str(private_key_str) {
+            Ok(private_key) => private_key,
             Err(e) => {
                 return Err(ErrorWallet::CannotGeneratePrivateKey(format!(
-                    "Cannot convert SigningKey object to bytes, error : {:?}",
+                    "Cannot generate PrivateKey object from string, error : {:?}",
                     e
                 )))
             }
         };
-        Ok(bytes)
+
+        Ok(PrivateKey {key: private_key})
     }
-}
 
-impl TryFrom<String> for PrivateKey {
-    type Error = ErrorWallet;
+    pub fn as_bytes(&self) -> PrivateKeyType {
+        self.key.secret_bytes()
+    }
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        let mut bytes: Vec<u8> = Vec::new();
-
-        for (i, char) in value.chars().enumerate().step_by(2) {
-            let mut byte = String::new();
-            byte.push(char);
-
-            match value.chars().nth(i + 1) {
-                Some(next_char) => byte.push(next_char),
-                None => byte.push('0'),
-            }
-
-            match u8::from_str_radix(&byte, 16) {
-                Ok(byte) => bytes.push(byte),
-                Err(e) => {
-                    return Err(ErrorWallet::CannotGeneratePrivateKey(format!(
-                        "Error while converting a string ({byte}) into hexa: {:?}",
-                        e
-                    )))
-                }
-            }
-        }
-
-        let bytes: PrivateKeyType = match bytes.try_into() {
-            Ok(bytes) => bytes,
-            Err(bytes) => {
-                return Err(ErrorWallet::CannotGeneratePublicKey(format!(
-                    "Cannot convert string to bytes, we get: {:?}",
-                    bytes
+    pub fn sign(&self, message: &[u8]) -> Result<Vec<u8>, ErrorWallet> {
+        println!("Signing message {:?} with lenght {}", message, message.len());
+        let message = match secp256k1::Message::from_slice(message) {
+            Ok(message) => message,
+            Err(e) => {
+                return Err(ErrorWallet::CannotSignMessage(format!(
+                    "Cannot generate message to sign {:?}, error : {:?}",
+                    message, e
                 )))
             }
         };
-
-        PrivateKey::new(&bytes)
+        let secp = Secp256k1::new();
+        Ok(secp.sign_ecdsa(&message, &self.key).serialize_der().to_vec())
     }
+
+
 }
 
 impl SerializableInternalOrder for PrivateKey {
     fn io_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
-        match self.as_bytes() {
-            Ok(bytes) => bytes.io_serialize(stream)?,
-            Err(e) => {
-                return Err(ErrorSerialization::ErrorInSerialization(format!(
-                    "Cannot serialize private key, error : {:?}",
-                    e
-                )))
-            }
-        }
-
+        self.as_bytes().io_serialize(stream)?;
         Ok(())
     }
 }
@@ -137,7 +113,7 @@ mod tests {
             0xed, 0xa7, 0x68, 0x91,
         ];
         let private_key = PrivateKey::new(&private_key_bytes).unwrap();
-        let signing_bytes = private_key.as_bytes().unwrap();
+        let signing_bytes = private_key.as_bytes();
         assert!(signing_bytes == private_key_bytes);
     }
 }

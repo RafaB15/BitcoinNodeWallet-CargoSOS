@@ -1,6 +1,7 @@
 use super::{
     error_block::ErrorBlock,
     hash::{hash256d, HashType},
+    outpoint::Outpoint,
     transaction_input::TransactionInput,
     transaction_output::TransactionOutput,
 };
@@ -16,10 +17,15 @@ use crate::{
     wallet_structure::address::Address,
 };
 
+use crate::wallet_structure::{account::Account, address::Address, error_wallet::ErrorWallet};
+
+use chrono::offset::Utc;
+
 use crate::messages::compact_size::CompactSize;
 
 use std::{
     cmp::PartialEq,
+    collections::HashMap,
     fmt::Display,
     io::{Read, Write},
 };
@@ -78,6 +84,64 @@ impl Transaction {
         self.tx_out
             .iter()
             .any(|tx_out| address.verify_transaction_ownership(tx_out))
+    }
+
+    pub fn from_account_to_address(
+        account_from: &Account,
+        outputs_to_spend: &HashMap<Outpoint, TransactionOutput>,
+        account_to: &Address,
+        amount: i64,
+        fee: i64,
+    ) -> Result<Transaction, ErrorWallet> {
+        let mut tx_in: Vec<TransactionInput> = Vec::new();
+        for outpoint in outputs_to_spend.keys() {
+            let new_transaction_input = TransactionInput::from_outpoint_unsigned(outpoint);
+            tx_in.push(new_transaction_input);
+        }
+
+        let mut total_amount = 0;
+        outputs_to_spend
+            .iter()
+            .for_each(|(_, output)| total_amount += output.value);
+
+        let change = total_amount - amount - fee;
+
+        let mut tx_out: Vec<TransactionOutput> = Vec::new();
+        let transaction_output_to_address =
+            TransactionOutput::new(amount, account_to.generate_script_pubkey_p2pkh());
+        let transaction_output_change =
+            TransactionOutput::new(change, account_from.address.generate_script_pubkey_p2pkh());
+
+        tx_out.push(transaction_output_to_address);
+        tx_out.push(transaction_output_change);
+
+        let time: u32 = Utc::now().timestamp() as u32;
+
+        let mut unsigned_transaction = Transaction {
+            version: 1,
+            tx_in,
+            tx_out,
+            time,
+        };
+
+        if let Err(error) = unsigned_transaction.get_signed_by_account(account_from) {
+            return Err(error);
+        }
+        Ok(unsigned_transaction)
+    }
+
+    pub fn get_signed_by_account(&mut self, account: &Account) -> Result<(), ErrorWallet> {
+        let unsigned_transaction = self.clone();
+
+        for (index, tx_in) in self.tx_in.iter_mut().enumerate() {
+            let script_sig = TransactionInput::create_signature_script(
+                account,
+                unsigned_transaction.clone(),
+                index,
+            )?;
+            tx_in.signature_script = script_sig;
+        }
+        Ok(())
     }
 }
 

@@ -66,6 +66,13 @@ impl Address {
         hashed_pk
     }
 
+    pub fn generate_script_pubkey_p2pkh(&self) -> Vec<u8> {
+        let mut script_pubkey = vec![0x76, 0xa9, 0x14];
+        script_pubkey.extend_from_slice(self.extract_hashed_pk());
+        script_pubkey.extend_from_slice(&[0x88, 0xac]);
+        script_pubkey
+    }
+
     /// Returns true if the address owns the given utxo (works for P2PKH) and false otherwise.
     pub fn verify_transaction_ownership(&self, utxo: &TransactionOutput) -> bool {
         let pk_script = utxo.pk_script.clone();
