@@ -11,7 +11,7 @@ use std::thread;
 use crate::{
     error_execution::ErrorExecution,
     process::{
-        download, handshake, account,
+        download, handshake,
         save_system::SaveSystem, 
         load_system::LoadSystem, 
     }
@@ -43,7 +43,6 @@ pub trait VecOwnExt {
     fn search_button_named(&self, name: &str) -> Button;
     fn search_entry_named(&self, name: &str) -> Entry;
     fn search_combo_box_named(&self, name: &str) -> ComboBoxText;
-    //fn search_radio_button_named(&self, name: &str) -> RadioButton;
 }
 
 pub trait ObjectOwnExt {
@@ -101,9 +100,6 @@ fn login_main_window(application: &gtk::Application, objects: &Vec<Object>) {
     window.set_application(Some(application));
 
     let combo_box = objects.search_combo_box_named("WalletsComboBox");
-    /*
-    combo_box.connect_changed(move |combo_box| {
-    });*/
 
     let account_registration_button = objects.search_button_named("AccountRegistrationButton");
     let cloned_objects = objects.clone();
@@ -140,8 +136,6 @@ fn login_registration_window(objects: &Vec<Object>) {
     });
 }
 
-
-
 fn spawn_backend_handler(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
@@ -167,6 +161,17 @@ fn spawn_local_handler(objects: &Vec<Object>, rx_from_back: glib::Receiver<Signa
                 let combo_box = cloned_objects.search_combo_box_named("WalletsComboBox");
                 combo_box.append_text(&wallet_name);
                 println!("Registering wallet: {:?}", wallet_name);
+            }
+            SignalToFront::LoadAvailableBalance(balance) => {
+                let balance_label = cloned_objects.search_by_name("AvailableBalanceLabel");
+                balance_label.set_property("label", &balance);
+            }
+            SignalToFront::LoadRecentTransactions(transactions) => {
+                for transaction in transactions {
+                    let transactions_list_box = cloned_objects.search_by_name("TransactionsListBox");
+                    let transaction_label = gtk::Label::new(Some(&transaction));
+                    //transactions_list_box.append_text(&transaction_label);
+                }
             }
         }
         glib::Continue(true)
@@ -237,7 +242,7 @@ fn get_block_chain(
             )?;
         }
         IBDMethod::BlocksFirst => {
-            download::blocks_first();
+            download::blocks_first::<TcpStream>();
         }
     }
 
@@ -264,7 +269,9 @@ pub fn backend_initialization(
         logger.clone(),
     );
 
-    let mut block_chain = load_system.get_block_chain()?;
+    tx_to_front.send(SignalToFront::LoadBlockChain(load_system.get_block_chain()?)).unwrap();
+
+    //let mut block_chain = load_system.get_block_chain()?;
     let mut wallet = load_system.get_wallet()?;
 
     for account in wallet.accounts.iter() {
@@ -289,7 +296,6 @@ pub fn program_execution(
     let glade_src = include_str!("WindowNotebook.glade");
 
     let application = Application::builder()
-        .flags(ApplicationFlags::HANDLES_OPEN)
         .build();
 
     application.connect_activate(move |app| build_ui(app, glade_src, connection_config.clone(), download_config.clone(), save_config.clone(), logger.clone()));
