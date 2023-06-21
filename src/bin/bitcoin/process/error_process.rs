@@ -2,6 +2,7 @@ use cargosos_bitcoin::serialization::error_serialization::ErrorSerialization;
 
 use std::convert::From;
 
+/// It represents all posible errors that can occur in the process of connecting with a peer
 #[derive(Debug, Clone)]
 pub enum ErrorProcess {
     /// It will appear while reading from the stream

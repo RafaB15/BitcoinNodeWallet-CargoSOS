@@ -16,20 +16,46 @@ use std::fmt::{Debug, Error, Formatter};
 
 use std::convert::From;
 
+/// It represents all posible errors that can occur in the execution of the program
 pub enum ErrorExecution {
+
+    /// It represents all posible errors that can occur initializing the program
     Initialization(ErrorInitialization),
+
+    ///
     Log(ErrorLog),
+
+    ///
     Configuration(ErrorConfiguration),
+
+    ///
     Connection(ErrorConnection),
+
+    ///
     Serialization(ErrorSerialization),
+
+    ///
     Message(ErrorMessage),
+
+    ///
     Block(ErrorBlock),
+
+    ///
     Node(ErrorNode),
+
+    ///
     Wallet(ErrorWallet),
+
+    /// It represents all posible errors that can occur in the process of connecting with a peer
     Process(ErrorProcess),
+
+    ///
     GUI(ErrorGUI),
+
+    /// It represents all posible errors that can occur in the TUI
     TUI(ErrorTUI),
 
+    /// It will appear when a thread panics and fails
     FailThread,
     _ErrorBlock(String),
 }
