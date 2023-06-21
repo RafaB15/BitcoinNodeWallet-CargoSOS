@@ -11,10 +11,7 @@ use std::{
     str::FromStr,
 };
 
-use secp256k1::{
-    SecretKey,
-    Secp256k1,
-};
+use secp256k1::{Secp256k1, SecretKey};
 
 pub const PRIVATE_KEY_SIZE: usize = 32;
 pub type PrivateKeyType = [u8; PRIVATE_KEY_SIZE];
@@ -56,7 +53,10 @@ impl PrivateKey {
             }
         };
         let secp = Secp256k1::new();
-        Ok(secp.sign_ecdsa(&message, &self.key).serialize_der().to_vec())
+        Ok(secp
+            .sign_ecdsa(&message, &self.key)
+            .serialize_der()
+            .to_vec())
     }
 }
 
@@ -74,7 +74,7 @@ impl TryFrom<&str> for PrivateKey {
             }
         };
 
-        Ok(PrivateKey {key: private_key})
+        Ok(PrivateKey { key: private_key })
     }
 }
 

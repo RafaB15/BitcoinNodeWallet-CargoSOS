@@ -96,7 +96,9 @@ where
     fn manage_message(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
         let magic_numbers = header.magic_numbers;
 
-        let _ = self.logger.log_connection(format!("Receive message of type {:?}", header.command_name));
+        let _ = self
+            .logger
+            .log_connection(format!("Receive message of type {:?}", header.command_name));
 
         match header.command_name {
             CommandName::Version => ignore_message::<VersionMessage>(&mut self.peer, header)?,
@@ -174,7 +176,9 @@ where
     }
 
     fn receive_transaction(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
-        let _ = self.logger.log_connection("Receiving a transaction".to_string());
+        let _ = self
+            .logger
+            .log_connection("Receiving a transaction".to_string());
         let tx_message = TxMessage::deserialize_message(&mut self.peer, header)?;
 
         if self
@@ -191,7 +195,9 @@ where
     }
 
     fn send_transaction(&mut self, transaction: Transaction) -> Result<(), ErrorNode> {
-        let _ = self.logger.log_connection("Sending a transaction".to_string());
+        let _ = self
+            .logger
+            .log_connection("Sending a transaction".to_string());
         let tx_message = TxMessage { transaction };
 
         if TxMessage::serialize_message(

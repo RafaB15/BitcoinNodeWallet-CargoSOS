@@ -42,7 +42,7 @@ pub fn user_input(
             MenuOption::RemoveAccount => removing_account(&wallet, logger.clone())?,
             MenuOption::SendTransaction => {
                 sending_transaction(broadcasting, &wallet, &utxo_set, logger.clone())?
-            },
+            }
             MenuOption::ShowAccounts => {
                 let wallet_ref = get_reference(&wallet)?;
                 account::show_accounts(&wallet_ref, logger.clone());

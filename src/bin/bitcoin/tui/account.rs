@@ -27,7 +27,7 @@ fn get_private_key(logger: LoggerSender) -> Result<PrivateKey, ErrorTUI> {
             Ok(result) => {
                 let _ = logger.log_wallet(format!("Valid private key entered"));
                 return Ok(result);
-            },
+            }
             Err(error) => {
                 let _ = logger.log_wallet(format!(
                     "Invalid private key entered, with error: {:?}",
@@ -62,7 +62,7 @@ fn get_public_key(logger: LoggerSender) -> Result<PublicKey, ErrorTUI> {
             Ok(result) => {
                 let _ = logger.log_wallet(format!("Valid public key entered"));
                 return Ok(result);
-            },
+            }
             Err(error) => {
                 let _ = logger.log_wallet(format!(
                     "Invalid public key entered, with error: {:?}",
@@ -98,7 +98,7 @@ pub(super) fn get_address(logger: LoggerSender) -> Result<Address, ErrorTUI> {
             Ok(result) => {
                 let _ = logger.log_wallet(format!("Valid address entered"));
                 return Ok(result);
-            },
+            }
             Err(error) => {
                 let _ = logger.log_wallet(format!(
                     "Put an invalid public key, with error: {:?}",
@@ -117,6 +117,9 @@ pub(super) fn get_address(logger: LoggerSender) -> Result<Address, ErrorTUI> {
 }
 
 /// Get the account name from the terminal
+///
+/// ### Error
+///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
 fn get_account_name() -> Result<String, ErrorTUI> {
     let mut name: String = String::new();
 
@@ -146,7 +149,7 @@ pub fn create_account(logger: LoggerSender) -> Result<Account, ErrorTUI> {
     Ok(account)
 }
 
-/// get an account from the wallet with the corresponding name
+/// Get an account from the wallet with the corresponding name
 fn get_account_from_name<'t>(
     account_name: &str,
     wallet: &MutexGuard<'t, Wallet>,
@@ -161,6 +164,9 @@ fn get_account_from_name<'t>(
 }
 
 /// Select an account from the wallet
+///
+/// ### Error
+///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
 pub fn select_account<'t>(
     wallet: &MutexGuard<'t, Wallet>,
     logger: LoggerSender,

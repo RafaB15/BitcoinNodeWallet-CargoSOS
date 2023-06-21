@@ -50,17 +50,23 @@ impl UTXOSet {
             .collect()
     }
 
-    pub fn get_utxo_list_with_outpoints(&self, possible_address: Option<&Address>) -> Vec<(Outpoint, TransactionOutput)> {
-        self.utxo.iter().filter_map(|(outpoint, output)| {
-            if let Some(address) = possible_address {
-                match address.verify_transaction_ownership(output) {
-                    true => Some((outpoint.clone(), output.clone())),
-                    false => None,
+    pub fn get_utxo_list_with_outpoints(
+        &self,
+        possible_address: Option<&Address>,
+    ) -> Vec<(Outpoint, TransactionOutput)> {
+        self.utxo
+            .iter()
+            .filter_map(|(outpoint, output)| {
+                if let Some(address) = possible_address {
+                    match address.verify_transaction_ownership(output) {
+                        true => Some((outpoint.clone(), output.clone())),
+                        false => None,
+                    }
+                } else {
+                    Some((outpoint.clone(), output.clone()))
                 }
-            } else {
-                Some((outpoint.clone(), output.clone()))
-            }
-        }).collect()
+            })
+            .collect()
     }
 
     /// Updates the UTXOSet with the transaction outputs of a new block.
@@ -116,8 +122,6 @@ impl UTXOSet {
     pub fn get_balance_in_tbtc(&self, address: &Address) -> f64 {
         self.get_balance_in_satoshis(address) as f64 / 100_000_000.0
     }
-
-
 }
 
 #[cfg(test)]

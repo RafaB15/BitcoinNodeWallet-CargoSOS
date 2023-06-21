@@ -14,6 +14,7 @@ const SHOW_BALANCE: char = '6';
 const LAST_TRANSACTIONS: char = '7';
 const EXIT: char = '8';
 
+/// The options for the user in the menu
 #[derive(Debug, Clone, Copy)]
 pub enum MenuOption {
     CreateAccount,
@@ -27,7 +28,7 @@ pub enum MenuOption {
 }
 
 impl MenuOption {
-    pub fn print_all () {
+    pub fn print_all() {
         let options: &[MenuOption] = &[
             MenuOption::CreateAccount,
             MenuOption::ChangeAccount,

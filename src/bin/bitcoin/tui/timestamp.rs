@@ -17,6 +17,7 @@ const WEEK_OPTION: char = '2';
 const MONTH_OPTION: char = '3';
 const YEAR_OPTION: char = '4';
 
+/// Represents the different timestamp option that the user can select
 #[derive(Debug, Clone, Copy)]
 pub enum Timestamp {
     Day,
@@ -26,6 +27,7 @@ pub enum Timestamp {
 }
 
 impl Timestamp {
+    /// Get the timestamps from now in UTC time
     pub fn get_timestamps_from_now(&self) -> usize {
         let now = Utc::now();
         let now = now.timestamp() as usize;
