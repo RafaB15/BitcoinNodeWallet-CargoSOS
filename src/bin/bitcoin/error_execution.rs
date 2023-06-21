@@ -22,7 +22,7 @@ pub enum ErrorExecution {
     /// It represents all posible errors that can occur initializing the program
     Initialization(ErrorInitialization),
 
-    ///
+    /// It represents all posible errors that can occur in the logs
     Log(ErrorLog),
 
     ///
