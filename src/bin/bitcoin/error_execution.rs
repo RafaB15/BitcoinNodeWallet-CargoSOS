@@ -31,7 +31,7 @@ pub enum ErrorExecution {
     ///
     Connection(ErrorConnection),
 
-    ///
+    /// It represents all posible errors that can occur in the process of serializing and deserializing
     Serialization(ErrorSerialization),
 
     ///
