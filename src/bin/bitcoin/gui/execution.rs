@@ -4,7 +4,7 @@ use super::{
 };
 
 use gtk::glib::subclass::Signal;
-use gtk::{prelude::*, glib::Object, Button, Entry, Application, Builder, Window, ComboBoxText};
+use gtk::{prelude::*, glib::Object, Button, Entry, Application, Builder, Window, ComboBoxText, TreeView, TreeViewColumn, CellRendererText, TreeSelection};
 use gtk::glib;
 use std::thread;
 
@@ -43,6 +43,10 @@ pub trait VecOwnExt {
     fn search_button_named(&self, name: &str) -> Button;
     fn search_entry_named(&self, name: &str) -> Entry;
     fn search_combo_box_named(&self, name: &str) -> ComboBoxText;
+    fn search_tree_view_named(&self, name: &str) -> TreeView;
+    fn search_tree_view_column_named(&self, name: &str) -> TreeViewColumn;
+    fn search_cell_renderer_named(&self, name: &str) -> CellRendererText;
+    fn search_tree_view_selection_named(&self, name: &str) -> TreeSelection;
 }
 
 pub trait ObjectOwnExt {
@@ -64,7 +68,6 @@ impl VecOwnExt for Vec<Object> {
             (*found.unwrap()).clone()
         }
     }
-
     fn search_button_named(&self, name: &str) -> Button {
         self.search_by_name(name)
             .downcast_ref::<gtk::Button>()
@@ -77,21 +80,42 @@ impl VecOwnExt for Vec<Object> {
             .unwrap()
             .clone()
     }
-
     fn search_window_named(&self, name: &str) -> Window {
         self.search_by_name(name)
             .downcast_ref::<gtk::Window>()
             .unwrap()
             .clone()
     }
-
     fn search_combo_box_named(&self, name: &str) -> ComboBoxText {
         self.search_by_name(name)
             .downcast_ref::<gtk::ComboBoxText>()
             .unwrap()
             .clone()
     }
-    
+    fn search_tree_view_named(&self, name: &str) -> TreeView {
+        self.search_by_name(name)
+            .downcast_ref::<gtk::TreeView>()
+            .unwrap()
+            .clone()
+    }
+    fn search_tree_view_column_named(&self, name: &str) -> TreeViewColumn {
+        self.search_by_name(name)
+            .downcast_ref::<gtk::TreeViewColumn>()
+            .unwrap()
+            .clone()
+    }
+    fn search_cell_renderer_named(&self, name: &str) -> CellRendererText {
+        self.search_by_name(name)
+            .downcast_ref::<gtk::CellRendererText>()
+            .unwrap()
+            .clone()
+    }
+    fn search_tree_view_selection_named(&self, name: &str) -> TreeSelection {
+        self.search_by_name(name)
+            .downcast_ref::<gtk::TreeSelection>()
+            .unwrap()
+            .clone()
+    }
 }
 
 fn login_main_window(application: &gtk::Application, objects: &Vec<Object>) {
@@ -166,13 +190,17 @@ fn spawn_local_handler(objects: &Vec<Object>, rx_from_back: glib::Receiver<Signa
                 let balance_label = cloned_objects.search_by_name("AvailableBalanceLabel");
                 balance_label.set_property("label", &balance);
             }
+            /*
             SignalToFront::LoadRecentTransactions(transactions) => {
                 for transaction in transactions {
                     let transactions_list_box = cloned_objects.search_by_name("TransactionsListBox");
                     let transaction_label = gtk::Label::new(Some(&transaction));
                     //transactions_list_box.append_text(&transaction_label);
                 }
-            }
+            }*/
+            //recibir la blockchain -> integrarla al load bar
+            //obtener transacciones de bloques ->  cargarlas al tree view
+            _ => {}
         }
         glib::Continue(true)
     });
@@ -269,9 +297,9 @@ pub fn backend_initialization(
         logger.clone(),
     );
 
-    tx_to_front.send(SignalToFront::LoadBlockChain(load_system.get_block_chain()?)).unwrap();
+    //tx_to_front.send(SignalToFront::LoadBlockChain(load_system.get_block_chain()?)).unwrap();
 
-    //let mut block_chain = load_system.get_block_chain()?;
+    let mut block_chain = load_system.get_block_chain()?;
     let mut wallet = load_system.get_wallet()?;
 
     for account in wallet.accounts.iter() {
@@ -301,6 +329,7 @@ pub fn program_execution(
     application.connect_activate(move |app| build_ui(app, glade_src, connection_config.clone(), download_config.clone(), save_config.clone(), logger.clone()));
     let vector: Vec<String> = Vec::new();
     application.run_with_args(&vector);
+   //gtk_main_quit();
 
     Err(ErrorGUI::FailedToInitializeGTK)
 }

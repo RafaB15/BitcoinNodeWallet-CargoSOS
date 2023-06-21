@@ -175,6 +175,7 @@
             <property name="can-focus">True</property>
             <child>
               <object class="GtkFixed" id="grid_overview">
+                <property name="height-request">300</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <child>
@@ -628,39 +629,6 @@
                             <property name="model">TransactionTreeViewListStore</property>
                             <child internal-child="selection">
                               <object class="GtkTreeSelection"/>
-                            </child>
-                            <child>
-                              <object class="GtkTreeViewColumn" id="StatusColumn">
-                                <property name="resizable">True</property>
-                                <property name="fixed-width">68</property>
-                                <property name="title" translatable="yes">   </property>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkTreeViewColumn" id="DateColumn">
-                                <property name="fixed-width">117</property>
-                                <property name="title" translatable="yes">Date</property>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkTreeViewColumn" id="TypeColumn">
-                                <property name="fixed-width">136</property>
-                                <property name="title" translatable="yes">Type</property>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkTreeViewColumn" id="LabelColumn">
-                                <property name="fixed-width">160</property>
-                                <property name="title" translatable="yes">Label</property>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkTreeViewColumn" id="AmountColumn">
-                                <property name="spacing">13</property>
-                                <property name="fixed-width">14</property>
-                                <property name="title" translatable="yes">Amount (BTC)</property>
-                                <property name="alignment">1</property>
-                              </object>
                             </child>
                           </object>
                         </child>
