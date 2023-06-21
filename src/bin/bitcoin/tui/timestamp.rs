@@ -32,6 +32,20 @@ impl Timestamp {
         let delta_time: usize = (*self).into();
         now - delta_time
     }
+
+    pub fn print_all() {
+        let options: &[Timestamp] = &[
+            Timestamp::Day,
+            Timestamp::Week,
+            Timestamp::Month,
+            Timestamp::Year,
+        ];
+
+        for option in options {
+            let option_id: char = (*option).into();
+            println!("{option} [{option_id}]");
+        }
+    }
 }
 
 impl From<Timestamp> for usize {

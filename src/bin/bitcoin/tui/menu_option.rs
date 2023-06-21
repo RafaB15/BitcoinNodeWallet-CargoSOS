@@ -26,6 +26,26 @@ pub enum MenuOption {
     Exit,
 }
 
+impl MenuOption {
+    pub fn print_all () {
+        let options: &[MenuOption] = &[
+            MenuOption::CreateAccount,
+            MenuOption::ChangeAccount,
+            MenuOption::RemoveAccount,
+            MenuOption::SendTransaction,
+            MenuOption::ShowAccounts,
+            MenuOption::ShowBalance,
+            MenuOption::LastTransactions,
+            MenuOption::Exit,
+        ];
+
+        for option in options {
+            let option_id: char = (*option).into();
+            println!("{option} [{option_id}]");
+        }
+    }
+}
+
 impl Display for MenuOption {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

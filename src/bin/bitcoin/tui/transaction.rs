@@ -11,23 +11,9 @@ use std::{
     sync::MutexGuard,
 };
 
-fn print_timestamp() {
-    let options: &[Timestamp] = &[
-        Timestamp::Day,
-        Timestamp::Week,
-        Timestamp::Month,
-        Timestamp::Year,
-    ];
-
-    for option in options {
-        let option_id: char = (*option).into();
-        println!("{option} [{option_id}]");
-    }
-}
-
 pub fn select_option(logger: LoggerSender) -> Result<Timestamp, ErrorTUI> {
     println!("Select an option:");
-    print_timestamp();
+    Timestamp::print_all();
 
     let mut option: String = String::new();
     if stdin().read_line(&mut option).is_err() {
@@ -46,7 +32,7 @@ pub fn select_option(logger: LoggerSender) -> Result<Timestamp, ErrorTUI> {
 
                 option.clear();
                 println!("Error, please enter a valid option:");
-                print_timestamp();
+                Timestamp::print_all();
                 if stdin().read_line(&mut option).is_err() {
                     return Err(ErrorTUI::TerminalReadFail);
                 }
