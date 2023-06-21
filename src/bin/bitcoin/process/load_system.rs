@@ -45,7 +45,7 @@ impl LoadSystem {
 
     /// Get the block chain from a file, if already loaded it will return the value immediately.
     /// In the case of the file not existing, it will return the default value.
-    /// 
+    ///
     /// ### Error
     ///  * `ErrorProcess:FailThread`: It will appear when a thread panics and fails
     ///  * `ErrorProcess:CannotCreateDefault`: It will appear when can't create the default value
@@ -65,7 +65,7 @@ impl LoadSystem {
 
     /// Get the wallet from a file, if already loaded it will return the value immediately.
     /// In the case of the file not existing, it will return the default value.
-    /// 
+    ///
     /// ### Error
     ///  * `ErrorProcess:FailThread`: It will appear when a thread panics and fails
     ///  * `ErrorProcess:CannotCreateDefault`: It will appear when can't create the default value
@@ -84,7 +84,7 @@ impl LoadSystem {
     }
 
     /// Creates a thread to load a deserializable from a file, if the file does not exist or fail to read it will return the default value.
-    /// 
+    ///
     /// ### Error
     ///  * `ErrorProcess:CannotCreateDefault`: It will appear when can't create the default value
     fn load_value<V: TryDefault + DeserializableInternalOrder + Send + 'static>(

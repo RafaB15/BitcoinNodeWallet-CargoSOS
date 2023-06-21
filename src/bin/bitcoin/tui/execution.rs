@@ -165,9 +165,9 @@ fn get_inner<T>(reference: Arc<Mutex<T>>) -> Result<T, ErrorTUI> {
 }
 
 /// Broadcasting blocks and transactions from and to the given peers
-/// 
+///
 /// ### Error
-///  * 
+///  *
 fn broadcasting(
     peer_streams: Vec<TcpStream>,
     wallet: Arc<Mutex<Wallet>>,

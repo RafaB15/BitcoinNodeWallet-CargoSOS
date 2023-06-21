@@ -1,7 +1,6 @@
 /// It represents all posible errors that can occur in the logs
 #[derive(Debug, PartialEq)]
 pub enum ErrorLog {
-
     /// It will appear when the file does not exist
     FileNotFound,
 

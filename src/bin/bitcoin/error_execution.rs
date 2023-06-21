@@ -18,7 +18,6 @@ use std::convert::From;
 
 /// It represents all posible errors that can occur in the execution of the program
 pub enum ErrorExecution {
-
     /// It represents all posible errors that can occur initializing the program
     Initialization(ErrorInitialization),
 
@@ -40,7 +39,7 @@ pub enum ErrorExecution {
     ///
     Block(ErrorBlock),
 
-    ///
+    /// It represents all posible errors that can occur while making the protocols of a node
     Node(ErrorNode),
 
     ///

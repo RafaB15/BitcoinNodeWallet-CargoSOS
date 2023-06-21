@@ -3,7 +3,7 @@ use std::io::Write;
 use std::net::Ipv6Addr;
 
 /// This trait is used to serializing from a stream in big endian
-/// 
+///
 /// ### Error
 ///  * `ErrorSerialization::ErrorInSerialization`: It will appear when there is an error in the serialization
 pub trait SerializableBigEndian {

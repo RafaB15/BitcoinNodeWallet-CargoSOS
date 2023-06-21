@@ -5,7 +5,7 @@ use std::io::Read;
 use chrono::{offset::Utc, DateTime, NaiveDateTime};
 
 /// This trait is used to deserialize from a stream in little endian
-/// 
+///
 /// ### Error
 ///  * `ErrorSerialization::ErrorInDeserialization`: It will appear when there is an error in the deserialization
 pub trait DeserializableLittleEndian: Sized {

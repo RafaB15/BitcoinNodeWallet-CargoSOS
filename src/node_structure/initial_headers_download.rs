@@ -1,4 +1,10 @@
-use std::io::{Read, Write};
+use super::error_node::ErrorNode;
+
+use crate::{
+    block_structure::{block_chain::BlockChain, block_header::BlockHeader, hash::HashType},
+    connections::p2p_protocol::ProtocolVersionP2P,
+    logs::logger_sender::LoggerSender,
+};
 
 use crate::messages::{
     command_name::CommandName,
@@ -9,16 +15,11 @@ use crate::messages::{
     message_header::MagicType,
 };
 
-use crate::logs::logger_sender::LoggerSender;
-
-use crate::block_structure::{block_chain::BlockChain, block_header::BlockHeader, hash::HashType};
-
-use super::error_node::ErrorNode;
-
-use crate::connections::p2p_protocol::ProtocolVersionP2P;
+use std::io::{Read, Write};
 
 const NO_STOP_HASH: HashType = [0; 32];
 
+/// It represents the download of the headers from a peer
 #[derive(Debug, Clone)]
 pub struct InitialHeaderDownload {
     protocol_version: ProtocolVersionP2P,
@@ -39,6 +40,9 @@ impl InitialHeaderDownload {
         }
     }
 
+    /// It sends a get headers message to the peer given the latest headers from the blockchain
+    ///
+    /// ### Error
     ///  * `ErrorMessage::InSerialization`: It will appear when the serialization of the message fails or the SHA(SHA(header)) fails
     fn send_get_headers_message<RW: Read + Write>(
         &self,
@@ -68,6 +72,9 @@ impl InitialHeaderDownload {
         Ok(())
     }
 
+    /// Updates the block chain with the headers received from the peer
+    ///
+    /// ### Error
     ///  * `ErrorMessage::InSerialization`: It will appear when the serialization of the message fails or the SHA(SHA(header)) fails
     ///  * `ErrorNode::NodeNotResponding`: It will appear when no message is received from the node
     ///  * `ErrorNode::WhileValidating`: It will appear when a given header does not pass the proof of work to be added to the blockchain

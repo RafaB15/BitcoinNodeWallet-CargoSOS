@@ -5,7 +5,7 @@ use cargosos_bitcoin::logs::logger_sender::LoggerSender;
 use std::io::stdin;
 
 /// Get the option from the user via terminal
-/// 
+///
 /// ### Error
 ///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
 pub fn select_option(logger: LoggerSender) -> Result<MenuOption, ErrorTUI> {

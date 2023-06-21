@@ -2,7 +2,7 @@ use super::error_serialization::ErrorSerialization;
 use std::io::Write;
 
 /// This trait is used to serializing from a stream in the order was received
-/// 
+///
 /// ### Error
 ///  * `ErrorSerialization::ErrorInSerialization`: It will appear when there is an error in the serialization
 pub trait SerializableInternalOrder {

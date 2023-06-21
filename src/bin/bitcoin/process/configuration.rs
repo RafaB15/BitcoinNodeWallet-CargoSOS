@@ -35,11 +35,10 @@ pub struct Configuration {
 }
 
 impl Configuration {
-
     /// Creates a new configuration from a stream file
-    /// 
+    ///
     /// ### Error
-    ///  * 
+    ///  *
     pub fn new<R: Read>(mut stream: R) -> Result<Self, ErrorConfiguration> {
         let mut value = String::new();
         if stream.read_to_string(&mut value).is_err() {

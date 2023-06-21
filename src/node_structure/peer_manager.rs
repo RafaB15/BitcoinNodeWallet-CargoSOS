@@ -33,7 +33,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-pub struct PeerManager<RW>
+/// It represents how to manage the the peer, listening to the there messages and sending them transactions
+pub(super) struct PeerManager<RW>
 where
     RW: Read + Write + Send + 'static,
 {
@@ -67,7 +68,13 @@ where
         }
     }
 
-    pub fn listen_peers(mut self, logger: LoggerSender) -> Result<RW, ErrorNode> {
+    /// Listens and send messages to the peer
+    ///
+    /// ### Error
+    ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
+    ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
+    ///  * `ErrorNode::NodeNotResponding`: It will appear when the node is not responding to the messages
+    pub fn connecting_to_peer(mut self, logger: LoggerSender) -> Result<RW, ErrorNode> {
         while let Ok(header) = MessageHeader::deserialize_header(&mut self.peer) {
             self.manage_message(header)?;
 
@@ -93,6 +100,12 @@ where
         Ok(self.peer)
     }
 
+    /// Receives the message from the peer and manages it by sending to the peer or others threads via the sender
+    ///
+    /// ### Error
+    ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
+    ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
+    ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to others threads
     fn manage_message(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
         let magic_numbers = header.magic_numbers;
 
@@ -129,6 +142,12 @@ where
         Ok(())
     }
 
+    /// Receives the message of a new header, and request its corresponding block
+    ///
+    /// ### Error
+    ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
+    ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
+    ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to others threads
     fn receive_headers(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
         let _ = self.logger.log_connection("Receiving headers".to_string());
         let headers_message = HeadersMessage::deserialize_message(&mut self.peer, header)?;
@@ -158,6 +177,12 @@ where
         Ok(())
     }
 
+    /// Receives the message of a new block, and send it to others threads via the sender
+    ///
+    /// ### Error
+    ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
+    ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
+    ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to others threads
     fn receive_blocks(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
         let _ = self.logger.log_connection("Receiving blocks".to_string());
         let block_message = BlockMessage::deserialize_message(&mut self.peer, header)?;
@@ -175,6 +200,12 @@ where
         Ok(())
     }
 
+    /// Receives the message of a new transaction, and send it to others threads via the sender
+    ///
+    /// ### Error
+    ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
+    ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
+    ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to others threads
     fn receive_transaction(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
         let _ = self
             .logger
@@ -194,6 +225,12 @@ where
         Ok(())
     }
 
+    /// Sends a transaction to the peer
+    ///
+    /// ### Error
+    ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
+    ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
+    ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to others threads
     fn send_transaction(&mut self, transaction: Transaction) -> Result<(), ErrorNode> {
         let _ = self
             .logger

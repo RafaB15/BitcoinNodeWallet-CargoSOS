@@ -2,7 +2,7 @@ use super::error_serialization::ErrorSerialization;
 use std::io::Read;
 
 /// This trait is used to deserialize from a stream in the order was received
-/// 
+///
 /// ### Error
 ///  * `ErrorSerialization::ErrorInDeserialization`: It will appear when there is an error in the deserialization
 pub trait DeserializableInternalOrder: Sized {

@@ -3,7 +3,7 @@ use std::io::Read;
 use std::net::Ipv6Addr;
 
 /// This trait is used to deserialize from a stream in Big endian
-/// 
+///
 /// ### Error
 ///  * `ErrorSerialization::ErrorInDeserialization`: It will appear when there is an error in the deserialization
 pub trait DeserializableBigEndian: Sized {
