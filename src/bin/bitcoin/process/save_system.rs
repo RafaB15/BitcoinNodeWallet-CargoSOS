@@ -12,6 +12,7 @@ use std::fs::OpenOptions;
 const BLOCKCHAIN_FILE: &str = "Blockchain";
 const WALLET_FILE: &str = "Wallet";
 
+/// Represents the elements to save to files
 pub struct SaveSystem {
     block_chain: BlockChain,
     wallet: Wallet,
@@ -27,6 +28,11 @@ impl SaveSystem {
         }
     }
 
+    /// Saves the block chain and a wallet to there respective files if given
+    ///
+    /// ### Error
+    ///  * `ErrorInitialization::ValueFileDoesntExist`: It will appear when the file could not be created
+    ///  * `ErrorSerialization::ErrorInSerialization`: It will appear when the serialization of the value fails
     pub fn save_to_files(self, save_config: SaveConfig) -> Result<(), ErrorExecution> {
         Self::save_value(
             self.block_chain,
@@ -45,7 +51,7 @@ impl SaveSystem {
         Ok(())
     }
 
-    /// Saves the blockchain to a file
+    /// Saves a serializable to a file
     ///
     /// ### Error
     ///  * `ErrorInitialization::ValueFileDoesntExist`: It will appear when the file could not be created
@@ -75,60 +81,4 @@ impl SaveSystem {
 
         Ok(())
     }
-
-    /*
-    /// Saves the blockchain to a file
-    ///
-    /// ### Error
-    ///  * `ErrorInitialization::BlockchainFileDoesntExist`: It will appear when the file could not be created
-    ///  * `ErrorSerialization::ErrorInSerialization`: It will appear when the serialization of the blockchain fails
-    fn save_block_chain(
-        block_chain: BlockChain,
-        path_block_chain: Option<String>,
-        logger: LoggerSender,
-    ) -> Result<(), ErrorExecution> {
-        let path = match path_block_chain {
-            Some(path) => path,
-            None => {
-                let _ = logger.log_connection("No path to save the blockchain".to_string());
-                return Ok(());
-            }
-        };
-
-        let mut file = match OpenOptions::new().create(true).write(true).open(path) {
-            Ok(file) => file,
-            _ => return Err(ErrorInitialization::BlockchainFileDoesntExist.into()),
-        };
-
-        let _ = logger.log_connection("Writing the blockchain to file".to_string());
-
-        block_chain.io_serialize(&mut file)?;
-
-        Ok(())
-    }
-
-    fn save_wallet(
-        wallet: Wallet,
-        path_wallet: Option<String>,
-        logger: LoggerSender,
-    ) -> Result<(), ErrorExecution> {
-        let path = match path_wallet {
-            Some(path) => path,
-            None => {
-                let _ = logger.log_connection("No path to save the wallet".to_string());
-                return Ok(());
-            }
-        };
-
-        let mut file = match OpenOptions::new().create(true).write(true).open(path) {
-            Ok(file) => file,
-            _ => return Err(ErrorInitialization::BlockchainFileDoesntExist.into()),
-        };
-
-        let _ = logger.log_connection("Writing the wallet to file".to_string());
-
-        wallet.io_serialize(&mut file)?;
-
-        Ok(())
-    }*/
 }

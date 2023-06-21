@@ -21,6 +21,7 @@ type Handle<T> = Option<JoinHandle<T>>;
 const BLOCKCHAIN_FILE: &str = "Blockchain";
 const WALLET_FILE: &str = "Wallet";
 
+/// Represents the elements to load from files
 pub struct LoadSystem {
     block_chain: Handle<Result<BlockChain, ErrorProcess>>,
     wallet: Handle<Result<Wallet, ErrorProcess>>,
@@ -42,6 +43,13 @@ impl LoadSystem {
         }
     }
 
+    /// Get the block chain from a file, if already loaded it will return the value immediately.
+    /// In the case of the file not existing, it will return the default value.
+    /// 
+    /// ### Error
+    ///  * `ErrorProcess:FailThread`: It will appear when a thread panics and fails
+    ///  * `ErrorProcess:CannotCreateDefault`: It will appear when can't create the default value
+    ///  * `ErrorProcess:AlreadyLoaded`: It will appear when try to get a value that is already loaded
     pub fn get_block_chain(&mut self) -> Result<BlockChain, ErrorProcess> {
         let block_chain_handle = replace(&mut self.block_chain, None);
 
@@ -52,9 +60,16 @@ impl LoadSystem {
             };
         }
 
-        Err(ErrorProcess::FailThread)
+        Err(ErrorProcess::AlreadyLoaded)
     }
 
+    /// Get the wallet from a file, if already loaded it will return the value immediately.
+    /// In the case of the file not existing, it will return the default value.
+    /// 
+    /// ### Error
+    ///  * `ErrorProcess:FailThread`: It will appear when a thread panics and fails
+    ///  * `ErrorProcess:CannotCreateDefault`: It will appear when can't create the default value
+    ///  * `ErrorProcess:AlreadyLoaded`: It will appear when try to get a value that is already loaded
     pub fn get_wallet(&mut self) -> Result<Wallet, ErrorProcess> {
         let wallet_handle = replace(&mut self.wallet, None);
 
@@ -65,9 +80,13 @@ impl LoadSystem {
             };
         }
 
-        Err(ErrorProcess::FailThread)
+        Err(ErrorProcess::AlreadyLoaded)
     }
 
+    /// Creates a thread to load a deserializable from a file, if the file does not exist or fail to read it will return the default value.
+    /// 
+    /// ### Error
+    ///  * `ErrorProcess:CannotCreateDefault`: It will appear when can't create the default value
     fn load_value<V: TryDefault + DeserializableInternalOrder + Send + 'static>(
         name: String,
         path: Option<String>,
@@ -94,7 +113,7 @@ impl LoadSystem {
                 Ok(value) => Ok(value),
                 Err(_) => {
                     let _ = logger.log_file(format!("Could create default for {name}"));
-                    Err(ErrorProcess::FailThread)
+                    Err(ErrorProcess::CannotCreateDefault)
                 }
             }
         })
