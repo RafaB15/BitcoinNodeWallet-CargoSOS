@@ -34,6 +34,12 @@ pub enum ErrorTUI {
 
     /// It will appear when a conextion with a peer fails
     ErrorFromPeer(String),
+
+    /// It will appear when can't create the default value
+    CannotCreateDefault,
+
+    /// It will appear when try to get a value that is already loaded
+    AlreadyLoaded,
 }
 
 impl From<ErrorProcess> for ErrorTUI {
@@ -47,6 +53,8 @@ impl From<ErrorProcess> for ErrorTUI {
             }
             ErrorProcess::FailThread => ErrorTUI::FailThread("While processing data".to_string()),
             ErrorProcess::ErrorFromPeer(message) => ErrorTUI::ErrorFromPeer(message),
+            ErrorProcess::CannotCreateDefault => ErrorTUI::CannotCreateDefault,
+            ErrorProcess::AlreadyLoaded => ErrorTUI::AlreadyLoaded,
         }
     }
 }
