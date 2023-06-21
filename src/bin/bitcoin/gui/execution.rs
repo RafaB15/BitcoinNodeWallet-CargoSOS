@@ -1,10 +1,11 @@
 use super::{
     error_gui::ErrorGUI,
     signal_to_front::SignalToFront,
+    signal_to_back::SignalToBack,
 };
 
 use gtk::glib::subclass::Signal;
-use gtk::{prelude::*, glib::Object, Button, Entry, Application, Builder, Window, ComboBoxText, TreeView, TreeViewColumn, CellRendererText, TreeSelection};
+use gtk::{prelude::*, glib::Object, Button, Entry, Application, Builder, Window, ComboBoxText, TreeView, TreeViewColumn, CellRendererText, TreeSelection, Image, Label};
 use gtk::glib;
 use std::thread;
 
@@ -29,9 +30,13 @@ use cargosos_bitcoin::{
         utxo_set::UTXOSet,
     },
     connections::ibd_methods::IBDMethod,
+    wallet_structure::address::Address,
 };
 
-use std::net::{SocketAddr, TcpStream};
+use std::{
+    net::{SocketAddr, TcpStream},
+    sync::{Arc, Mutex},
+};
 
 use cargosos_bitcoin::wallet_structure::{private_key, public_key};
 
@@ -47,6 +52,8 @@ pub trait VecOwnExt {
     fn search_tree_view_column_named(&self, name: &str) -> TreeViewColumn;
     fn search_cell_renderer_named(&self, name: &str) -> CellRendererText;
     fn search_tree_view_selection_named(&self, name: &str) -> TreeSelection;
+    fn search_image_named(&self, name: &str) -> Image;
+    fn search_label_named(&self, name: &str) -> Label;
 }
 
 pub trait ObjectOwnExt {
@@ -116,6 +123,21 @@ impl VecOwnExt for Vec<Object> {
             .unwrap()
             .clone()
     }
+
+    fn search_image_named(&self, name: &str) -> Image {
+        self.search_by_name(name)
+            .downcast_ref::<gtk::Image>()
+            .unwrap()
+            .clone()
+    }
+
+    fn search_label_named(&self, name: &str) -> Label {
+        self.search_by_name(name)
+            .downcast_ref::<gtk::Label>()
+            .unwrap()
+            .clone()
+    }
+
 }
 
 fn login_main_window(application: &gtk::Application, objects: &Vec<Object>) {
@@ -160,13 +182,24 @@ fn login_registration_window(objects: &Vec<Object>) {
     });
 }
 
+fn login_combo_box(objects: &Vec<Object>, tx_to_back: mpsc::Sender<SignalToBack>) {
+    let combo_box = objects.search_combo_box_named("WalletsComboBox");
+    let cloned_objects = objects.clone();
+    combo_box.connect_changed(move |_| {
+        let combo_box_cloned = cloned_objects.search_combo_box_named("WalletsComboBox");
+        let selected_wallet = combo_box_cloned.active_text().unwrap();
+        let _ = tx_to_back.send(SignalToBack::GetAccountBalance(selected_wallet.to_string()));
+        println!("{}", selected_wallet);
+    });
+}
+
 fn spawn_backend_handler(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
     save_config: SaveConfig,
     logger: LoggerSender,
     tx_to_front: glib::Sender<SignalToFront>,
-    rx_from_front: mpsc::Receiver<String>,
+    rx_from_front: mpsc::Receiver<SignalToBack>,
 ) -> thread::JoinHandle<()> {
     thread::spawn(move || {
         let load_system = LoadSystem::new(
@@ -185,10 +218,14 @@ fn spawn_local_handler(objects: &Vec<Object>, rx_from_back: glib::Receiver<Signa
                 let combo_box = cloned_objects.search_combo_box_named("WalletsComboBox");
                 combo_box.append_text(&wallet_name);
                 println!("Registering wallet: {:?}", wallet_name);
-            }
+            },
             SignalToFront::LoadAvailableBalance(balance) => {
-                let balance_label = cloned_objects.search_by_name("AvailableBalanceLabel");
-                balance_label.set_property("label", &balance);
+                let balance_label = cloned_objects.search_label_named("AvailableBalanceLabel");
+                balance_label.set_text(balance.to_string().as_str());
+            },
+            SignalToFront::LoadBlockChain => {
+                let signal_blockchain_not_ready = cloned_objects.search_image_named("BlockchainNotReadySymbol");
+                signal_blockchain_not_ready.set_visible(false);
             }
             /*
             SignalToFront::LoadRecentTransactions(transactions) => {
@@ -200,7 +237,6 @@ fn spawn_local_handler(objects: &Vec<Object>, rx_from_back: glib::Receiver<Signa
             }*/
             //recibir la blockchain -> integrarla al load bar
             //obtener transacciones de bloques ->  cargarlas al tree view
-            _ => {}
         }
         glib::Continue(true)
     });
@@ -219,7 +255,7 @@ fn build_ui(
 
     let objects = builder.objects();
 
-    let (tx_to_back, rx_from_front) = mpsc::channel::<String>();
+    let (tx_to_back, rx_from_front) = mpsc::channel::<SignalToBack>();
     let (tx_to_front, rx_from_back) = glib::MainContext::channel::<SignalToFront>(glib::PRIORITY_DEFAULT);
 
     spawn_backend_handler(connection_config, download_config, save_config, logger, tx_to_front, rx_from_front);
@@ -229,6 +265,8 @@ fn build_ui(
     login_main_window(application, &objects);
 
     login_registration_window(&objects);
+
+    login_combo_box(&objects, tx_to_back.clone());
 }
 
 fn get_potential_peers(
@@ -283,7 +321,7 @@ pub fn backend_initialization(
     load_system: LoadSystem,
     logger: LoggerSender,
     tx_to_front: glib::Sender<SignalToFront>,
-    rx_from_front: mpsc::Receiver<String>,
+    rx_from_front: mpsc::Receiver<SignalToBack>,
 ) -> Result<(), ErrorExecution> {
 
 
@@ -291,20 +329,47 @@ pub fn backend_initialization(
 
     let potential_peers = get_potential_peers(connection_config.clone(), logger.clone())?;
 
+    let mut block_chain = load_system.get_block_chain()?;
+
     let peer_streams = handshake::connect_to_peers(
         potential_peers,
         connection_config.clone(),
         logger.clone(),
     );
 
-    //tx_to_front.send(SignalToFront::LoadBlockChain(load_system.get_block_chain()?)).unwrap();
+    let peer_streams = get_block_chain(
+        peer_streams,
+        &mut block_chain,
+        connection_config.clone(),
+        download_config,
+        logger.clone(),
+    )?;
 
-    let mut block_chain = load_system.get_block_chain()?;
     let mut wallet = load_system.get_wallet()?;
-
     for account in wallet.accounts.iter() {
         tx_to_front.send(SignalToFront::RegisterWallet(account.account_name.clone())).unwrap();
     }
+
+    tx_to_front.send(SignalToFront::LoadBlockChain).unwrap();
+
+    let utxo_set = UTXOSet::from_blockchain(&block_chain);
+
+    for rx in rx_from_front {
+        match rx {
+            SignalToBack::GetAccountBalance(account_name) => {
+                let balance = utxo_set.get_balance_in_tbtc(&wallet.get_account_with_name(&account_name).unwrap().address);
+                tx_to_front.send(SignalToFront::LoadAvailableBalance(balance)).unwrap();
+            },
+            _ => {}
+        }
+    }
+
+
+    //let block_chain = Arc::new(Mutex::new(block_chain));
+
+    //tx_to_front.send(SignalToFront::LoadBlockChain).unwrap();
+
+    //tx_to_front.send(SignalToFront::LoadBlockChain(load_system.get_block_chain()?)).unwrap();
 
     println!("Wallet: {:?}", wallet);
     Ok(())

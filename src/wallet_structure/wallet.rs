@@ -49,6 +49,10 @@ impl Wallet {
     pub fn get_accounts(&self) -> &Vec<Account> {
         &self.accounts
     }
+
+    pub fn get_account_with_name(&self, name: &str) -> Option<&Account> {
+        self.accounts.iter().find(|x| x.account_name == name)
+    }
 }
 
 impl TryDefault for Wallet {
