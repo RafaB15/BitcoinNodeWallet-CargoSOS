@@ -145,6 +145,20 @@
       </object>
     </child>
   </object>
+  <object class="GtkListStore" id="TransactionTreeViewListStore">
+    <columns>
+      <!-- column-name gtkcellrenderermode -->
+      <column type="GtkCellRendererMode"/>
+      <!-- column-name Date -->
+      <column type="GtkCellRendererMode"/>
+      <!-- column-name Type -->
+      <column type="GtkCellRendererMode"/>
+      <!-- column-name Label -->
+      <column type="GtkCellRendererMode"/>
+      <!-- column-name Amount -->
+      <column type="gint64"/>
+    </columns>
+  </object>
   <object class="GtkWindow" id="MainWindow">
     <property name="name">MainWindow</property>
     <property name="can-focus">False</property>
@@ -241,6 +255,7 @@
                             </child>
                             <child>
                               <object class="GtkLabel" id="AmountAvailable">
+                                <property name="name">AvailableBalanceLabel</property>
                                 <property name="width-request">51</property>
                                 <property name="height-request">7</property>
                                 <property name="visible">True</property>
@@ -495,10 +510,10 @@
                 </child>
                 <child>
                   <object class="GtkButton" id="send_button">
-                    <property name="label" translatable="yes">button</property>
+                    <property name="label" translatable="yes">Send</property>
                     <property name="name">send_button</property>
                     <property name="width-request">100</property>
-                    <property name="height-request">80</property>
+                    <property name="height-request">50</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">True</property>
@@ -590,6 +605,71 @@
                   <packing>
                     <property name="x">23</property>
                     <property name="y">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkScrolledWindow">
+                    <property name="width-request">752</property>
+                    <property name="height-request">168</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="hexpand">True</property>
+                    <property name="vexpand">True</property>
+                    <property name="shadow-type">in</property>
+                    <child>
+                      <object class="GtkViewport">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <child>
+                          <object class="GtkTreeView">
+                            <property name="name">TransactionTreeView</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="model">TransactionTreeViewListStore</property>
+                            <child internal-child="selection">
+                              <object class="GtkTreeSelection"/>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn" id="StatusColumn">
+                                <property name="resizable">True</property>
+                                <property name="fixed-width">68</property>
+                                <property name="title" translatable="yes">   </property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn" id="DateColumn">
+                                <property name="fixed-width">117</property>
+                                <property name="title" translatable="yes">Date</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn" id="TypeColumn">
+                                <property name="fixed-width">136</property>
+                                <property name="title" translatable="yes">Type</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn" id="LabelColumn">
+                                <property name="fixed-width">160</property>
+                                <property name="title" translatable="yes">Label</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn" id="AmountColumn">
+                                <property name="spacing">13</property>
+                                <property name="fixed-width">14</property>
+                                <property name="title" translatable="yes">Amount (BTC)</property>
+                                <property name="alignment">1</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="x">23</property>
+                    <property name="y">40</property>
                   </packing>
                 </child>
               </object>
