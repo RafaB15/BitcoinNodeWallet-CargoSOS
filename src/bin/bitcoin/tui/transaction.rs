@@ -11,6 +11,10 @@ use std::{
     sync::MutexGuard,
 };
 
+/// Get the timestamp from the user via terminal
+/// 
+/// ### Error
+///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
 pub fn select_option(logger: LoggerSender) -> Result<Timestamp, ErrorTUI> {
     println!("Select an option:");
     Timestamp::print_all();
@@ -114,7 +118,11 @@ fn get_fee(logger: LoggerSender) -> Result<i64, ErrorTUI> {
     }
 }
 
-
+/// Creates a transaction via terminal given the user user_input
+/// 
+/// ### Error
+///  * `ErrorTUI::TransactionWithoutSufficientFunds`: It will appear when the user does not have enough funds to make the transaction
+///  * `ErrorTUI::TransactionCreationFail`: It will appear when the transaction fail to create the signature script
 pub fn create_transaction<'t>(
     utxo_set: &MutexGuard<'t, UTXOSet>,
     account: &Account,
