@@ -115,7 +115,7 @@ impl Account {
         fee: i64,
         utxo_set: UTXOSet,
     ) -> Result<Transaction, ErrorWallet> {
-        let mut available_outputs = utxo_set.get_utxo_list_with_outpoints(Some(&self.address));
+        let available_outputs = utxo_set.get_utxo_list_with_outpoints(Some(&self.address));
         self.create_transaction_with_available_outputs(to, amount, fee, available_outputs)
     }
 

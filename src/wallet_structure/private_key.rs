@@ -46,7 +46,6 @@ impl PrivateKey {
     }
 
     pub fn sign(&self, message: &[u8]) -> Result<Vec<u8>, ErrorWallet> {
-        println!("Signing message {:?} with lenght {}", message, message.len());
         let message = match secp256k1::Message::from_slice(message) {
             Ok(message) => message,
             Err(e) => {

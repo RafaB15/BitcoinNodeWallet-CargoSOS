@@ -3,7 +3,7 @@ use super::{account, error_tui::ErrorTUI, menu, menu_option::MenuOption, transac
 use cargosos_bitcoin::{
     block_structure::{
         block::Block, block_chain::BlockChain, error_block::ErrorBlock, transaction::Transaction,
-        utxo_set::{UTXOSet, self},
+        utxo_set::UTXOSet,
     },
     logs::logger_sender::LoggerSender,
     node_structure::{
@@ -98,7 +98,16 @@ fn sending_transaction(
     };
     let utxo_set = get_reference(utxo_set)?;
 
-    let transaction = transaction::create_transaction(&utxo_set, account, logger.clone())?;
+    let transaction = match transaction::create_transaction(&utxo_set, account, logger.clone()) {
+        Ok(transaction) => transaction,
+        Err(ErrorTUI::TransactionWithoutSufficientFunds) => {
+            let message = "Transaction without sufficient funds";
+            println!("{message}");
+            let _ = logger.log_transaction(message.to_string());
+            return Ok(());
+        }
+        Err(error) => return Err(error),
+    };
     let _ = logger.log_transaction("Sending transaction".to_string());
 
     match broadcasting.send_transaction(transaction) {
