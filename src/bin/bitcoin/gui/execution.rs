@@ -130,6 +130,9 @@ fn spawn_local_handler(builder: &Builder, rx_from_back: glib::Receiver<SignalToF
                 let signal_blockchain_not_ready: Image = cloned_builder.object("BlockchainNotReadySymbol").unwrap();
                 signal_blockchain_not_ready.set_visible(false);
             }
+            SignalToFront::ErrorInTransaction(error) => {
+                login_transaction_error_window(&cloned_builder, error.as_str());
+            },
             _ => {}
 
 

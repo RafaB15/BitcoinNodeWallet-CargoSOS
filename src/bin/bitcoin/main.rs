@@ -79,7 +79,7 @@ fn initialize_logs(
 
     let filepath_log = Path::new(&log_config.filepath_log);
     let log_file = open_log_file(filepath_log)?;
-    let (logger, logger_receiver) = logger::initialize_logger(log_file, log_config.show_console)?;
+    let (logger, logger_receiver) = logger::initialize_logger(log_file, log_config.show_console);
 
     let handle = thread::spawn(move || logger_receiver.receive_log());
 
