@@ -3,6 +3,10 @@ use std::io::Write;
 
 use chrono::{offset::Utc, DateTime};
 
+/// This trait is used to serializing from a stream in little endian
+///
+/// ### Error
+///  * `ErrorSerialization::ErrorInSerialization`: It will appear when there is an error in the serialization
 pub trait SerializableLittleEndian {
     fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization>;
 }

@@ -1,6 +1,7 @@
 use super::error_serialization::ErrorSerialization;
 use std::io::Read;
 
+/// This trait is used to deserialize from a stream in Big endian while determining the size
 pub trait DeserializableFixSize: Sized {
     fn deserialize_fix_size(
         stream: &mut dyn Read,

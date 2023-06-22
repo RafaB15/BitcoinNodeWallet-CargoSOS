@@ -24,7 +24,7 @@ use std::{
 ///  * `ErrorNode::NodeNotResponding`: It will appear when
 ///  * `ErrorNode::WhileValidating`: It will appear when
 ///  * `ErrorBlock::CouldNotUpdate`: It will appear when the block is not in the blockchain.
-///  * `ErrorExecution::FailThread`: It will appear when the thread fails
+///  * `ErrorProcess::FailThread`: It will appear when the thread fails
 pub fn headers_first<RW: Read + Write + Send + Debug + 'static>(
     peer_streams: Vec<RW>,
     block_chain: &mut BlockChain,

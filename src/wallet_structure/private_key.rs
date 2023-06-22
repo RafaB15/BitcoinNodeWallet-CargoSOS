@@ -11,10 +11,7 @@ use std::{
     str::FromStr,
 };
 
-use secp256k1::{
-    SecretKey,
-    Secp256k1,
-};
+use secp256k1::{Secp256k1, SecretKey};
 
 pub const PRIVATE_KEY_SIZE: usize = 32;
 pub type PrivateKeyType = [u8; PRIVATE_KEY_SIZE];
@@ -46,7 +43,6 @@ impl PrivateKey {
     }
 
     pub fn sign(&self, message: &[u8]) -> Result<Vec<u8>, ErrorWallet> {
-        println!("Signing message {:?} with lenght {}", message, message.len());
         let message = match secp256k1::Message::from_slice(message) {
             Ok(message) => message,
             Err(e) => {
@@ -57,7 +53,10 @@ impl PrivateKey {
             }
         };
         let secp = Secp256k1::new();
-        Ok(secp.sign_ecdsa(&message, &self.key).serialize_der().to_vec())
+        Ok(secp
+            .sign_ecdsa(&message, &self.key)
+            .serialize_der()
+            .to_vec())
     }
 }
 
@@ -75,7 +74,7 @@ impl TryFrom<&str> for PrivateKey {
             }
         };
 
-        Ok(PrivateKey {key: private_key})
+        Ok(PrivateKey { key: private_key })
     }
 }
 

@@ -54,6 +54,11 @@ pub trait Message: SerializableInternalOrder + DeserializableInternalOrder {
         Ok(())
     }
 
+    ///
+    /// ### Error
+    ///  * `ErrorSerialization::ErrorSerialization`: It will appear when there is an error in the serialization
+    ///  * `ErrorSerialization::ErrorInDeserialization`: It will appear when there is an error in the deserialization
+    ///  * `ErrorSerialization::ErrorWhileReading`: It will appear when there is an error in the reading from a stream
     fn deserialize_message(
         stream: &mut dyn Read,
         message_header: MessageHeader,
@@ -98,6 +103,9 @@ pub trait Message: SerializableInternalOrder + DeserializableInternalOrder {
     fn get_command_name() -> CommandName;
 }
 
+///  * `ErrorSerialization::ErrorSerialization`: It will appear when there is an error in the serialization
+///  * `ErrorSerialization::ErrorInDeserialization`: It will appear when there is an error in the deserialization
+///  * `ErrorSerialization::ErrorWhileReading`: It will appear when there is an error in the reading from a stream
 pub fn deserialize_until_found<RW: Read + Write>(
     stream: &mut RW,
     search_name: CommandName,

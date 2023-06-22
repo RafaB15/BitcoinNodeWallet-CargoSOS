@@ -17,6 +17,7 @@ use cargosos_bitcoin::{
     connections::ibd_methods::IBDMethod,
     logs::logger_sender::LoggerSender,
     node_structure::{broadcasting::Broadcasting, message_response::MessageResponse},
+    wallet_structure::wallet::Wallet,
 };
 
 use std::{
@@ -25,6 +26,10 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+/// Get the peers from the dns seeder
+///
+/// ### Error
+///  * `ErrorTUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
 fn get_potential_peers(
     connection_config: ConnectionConfig,
     logger: LoggerSender,
@@ -51,7 +56,15 @@ fn get_potential_peers(
     Ok(potential_peers)
 }
 
-fn get_block_chain(
+/// Update the block chain given a downloading method and a list of peers
+///
+/// ### Error
+///  * `ErrorMessage::InSerialization`: It will appear when the serialization of the message fails or the SHA(SHA(header)) fails
+///  * `ErrorNode::NodeNotResponding`: It will appear when
+///  * `ErrorNode::WhileValidating`: It will appear when
+///  * `ErrorBlock::CouldNotUpdate`: It will appear when the block is not in the blockchain.
+///  * `ErrorProcess::FailThread`: It will appear when a thread panics and fails
+fn update_block_chain(
     peer_streams: Vec<TcpStream>,
     block_chain: &mut BlockChain,
     connection_config: ConnectionConfig,
@@ -115,6 +128,7 @@ fn _show_merkle_path(block_chain: &BlockChain, logger: LoggerSender) -> Result<(
     Ok(())
 }
 
+/// Creates the UTXO set from the given block chain
 fn get_utxo_set(block_chain: &BlockChain, logger: LoggerSender) -> UTXOSet {
     let _ = logger.log_wallet("Creating the UTXO set".to_string());
 
@@ -124,19 +138,22 @@ fn get_utxo_set(block_chain: &BlockChain, logger: LoggerSender) -> UTXOSet {
     utxo_set
 }
 
+/// Creates the broadcasting
 fn get_broadcasting(
     peer_streams: Vec<TcpStream>,
     sender_response: Sender<MessageResponse>,
     connection_config: ConnectionConfig,
     logger: LoggerSender,
-) -> Result<Broadcasting<TcpStream>, ErrorTUI> {
+) -> Broadcasting<TcpStream> {
     let _ = logger.log_node("Broadcasting".to_string());
-
-    let boradcasting = Broadcasting::new(peer_streams, sender_response, connection_config, logger);
-
-    Ok(boradcasting)
+    Broadcasting::new(peer_streams, sender_response, connection_config, logger)
 }
 
+/// Get the value of a mutable reference given by Arc<Mutex<T>>
+///
+/// ### Error
+///  * `ErrorTUI::CannotGetInner`: It will appear when we try to get the inner value of a mutex
+///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 fn get_inner<T>(reference: Arc<Mutex<T>>) -> Result<T, ErrorTUI> {
     match Arc::try_unwrap(reference) {
         Ok(reference_unwrap) => match reference_unwrap.into_inner() {
@@ -147,6 +164,52 @@ fn get_inner<T>(reference: Arc<Mutex<T>>) -> Result<T, ErrorTUI> {
     }
 }
 
+/// Broadcasting blocks and transactions from and to the given peers
+///
+/// ### Error
+///  *
+fn broadcasting(
+    peer_streams: Vec<TcpStream>,
+    wallet: Arc<Mutex<Wallet>>,
+    utxo_set: Arc<Mutex<UTXOSet>>,
+    block_chain: Arc<Mutex<BlockChain>>,
+    connection_config: ConnectionConfig,
+    logger: LoggerSender,
+) -> Result<(), ErrorExecution> {
+    let (sender_response, receiver_response) = mpsc::channel::<MessageResponse>();
+
+    let handle = handle_peers(
+        receiver_response,
+        wallet.clone(),
+        utxo_set.clone(),
+        block_chain.clone(),
+        logger.clone(),
+    );
+
+    let mut broadcasting = get_broadcasting(
+        peer_streams,
+        sender_response,
+        connection_config,
+        logger.clone(),
+    );
+
+    user_input(
+        &mut broadcasting,
+        wallet.clone(),
+        utxo_set,
+        block_chain.clone(),
+        logger.clone(),
+    )?;
+
+    broadcasting.destroy()?;
+
+    match handle.join() {
+        Ok(_) => Ok(()),
+        Err(_) => Err(ErrorTUI::ErrorFromPeer("Fail to remove notifications".to_string()).into()),
+    }
+}
+
+/// The main function of the program for the terminal
 pub fn program_execution(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
@@ -160,7 +223,7 @@ pub fn program_execution(
 
     let mut block_chain = load_system.get_block_chain()?;
 
-    let peer_streams = get_block_chain(
+    let peer_streams = update_block_chain(
         peer_streams,
         &mut block_chain,
         connection_config.clone(),
@@ -168,44 +231,18 @@ pub fn program_execution(
         logger.clone(),
     )?;
 
-    let (sender_response, receiver_response) = mpsc::channel::<MessageResponse>();
-
     let wallet = Arc::new(Mutex::new(load_system.get_wallet()?));
     let utxo_set = Arc::new(Mutex::new(get_utxo_set(&block_chain, logger.clone())));
     let block_chain = Arc::new(Mutex::new(block_chain));
 
-    let handle = handle_peers(
-        receiver_response,
+    broadcasting(
+        peer_streams,
         wallet.clone(),
-        utxo_set.clone(),
+        utxo_set,
         block_chain.clone(),
+        connection_config,
         logger.clone(),
-    );
-
-    {
-        let mut broadcasting = get_broadcasting(
-            peer_streams,
-            sender_response,
-            connection_config,
-            logger.clone(),
-        )?;
-
-        user_input(
-            &mut broadcasting,
-            wallet.clone(),
-            utxo_set,
-            block_chain.clone(),
-            logger.clone(),
-        )?;
-
-        broadcasting.destroy()?;
-    }
-
-    if handle.join().is_err() {
-        return Err(ErrorTUI::ErrorFromPeer(
-            "Fail to remove notifications".to_string(),
-        ).into());
-    }
+    )?;
 
     Ok(SaveSystem::new(
         get_inner(block_chain)?,
