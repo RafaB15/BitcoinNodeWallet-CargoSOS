@@ -150,7 +150,8 @@
     <property name="can-focus">False</property>
     <property name="resizable">False</property>
     <child>
-      <object class="GtkFixed">
+      <object class="GtkFixed" id="MainWIndowFixed">
+        <property name="name">MainWIndowFixed</property>
         <property name="visible">True</property>
         <property name="can-focus">False</property>
         <child>
@@ -160,7 +161,8 @@
             <property name="visible">True</property>
             <property name="can-focus">True</property>
             <child>
-              <object class="GtkFixed" id="grid_overview">
+              <object class="GtkFixed" id="OverviewGrid">
+                <property name="name">OverviewGrid</property>
                 <property name="height-request">300</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
@@ -381,7 +383,8 @@
               </object>
             </child>
             <child type="tab">
-              <object class="GtkLabel" id="overview_page1">
+              <object class="GtkLabel" id="OverviewPage">
+                <property name="name">OverviewPage</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="label" translatable="yes">Overview</property>
@@ -391,7 +394,8 @@
               </packing>
             </child>
             <child>
-              <object class="GtkFixed" id="grid_send">
+              <object class="GtkFixed" id="SendGrid">
+                <property name="name">SendGrid</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <child>
@@ -528,7 +532,8 @@
               </packing>
             </child>
             <child type="tab">
-              <object class="GtkLabel" id="send_page1">
+              <object class="GtkLabel" id="SendPage">
+                <property name="name">SendPage</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="label" translatable="yes">Send</property>
@@ -539,7 +544,8 @@
               </packing>
             </child>
             <child>
-              <object class="GtkFixed" id="grid_transaction">
+              <object class="GtkFixed" id="TransactionGrid">
+                <property name="name">TransactionGrid</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <child>
@@ -607,7 +613,8 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkScrolledWindow">
+                  <object class="GtkScrolledWindow" id="TransactionScrolledWindow">
+                    <property name="name">TransactionScrolledWindow</property>
                     <property name="width-request">752</property>
                     <property name="height-request">168</property>
                     <property name="visible">True</property>
@@ -616,7 +623,8 @@
                     <property name="vexpand">True</property>
                     <property name="shadow-type">in</property>
                     <child>
-                      <object class="GtkViewport">
+                      <object class="GtkViewport" id="TransactionViewPort">
+                        <property name="name">TransactionViewPort</property>
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <child>
@@ -635,6 +643,9 @@
                                 <property name="title" translatable="yes">Date</property>
                                 <child>
                                   <object class="GtkCellRendererText" id="DateRenderer"/>
+                                  <attributes>
+                                    <attribute name="visible">0</attribute>
+                                  </attributes>
                                 </child>
                               </object>
                             </child>
@@ -644,6 +655,9 @@
                                 <property name="title" translatable="yes">Type</property>
                                 <child>
                                   <object class="GtkCellRendererText" id="TypeRenderer"/>
+                                  <attributes>
+                                    <attribute name="visible">1</attribute>
+                                  </attributes>
                                 </child>
                               </object>
                             </child>
@@ -653,6 +667,9 @@
                                 <property name="title" translatable="yes">Label</property>
                                 <child>
                                   <object class="GtkCellRendererText" id="LabelRenderer"/>
+                                  <attributes>
+                                    <attribute name="visible">2</attribute>
+                                  </attributes>
                                 </child>
                               </object>
                             </child>
@@ -664,6 +681,9 @@
                                 <property name="alignment">1</property>
                                 <child>
                                   <object class="GtkCellRendererText" id="AmountRenderer"/>
+                                  <attributes>
+                                    <attribute name="visible">3</attribute>
+                                  </attributes>
                                 </child>
                               </object>
                             </child>
@@ -683,7 +703,8 @@
               </packing>
             </child>
             <child type="tab">
-              <object class="GtkLabel" id="transaction_page1">
+              <object class="GtkLabel" id="TransactionPage">
+                <property name="name">TransactionPage</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="label" translatable="yes">Transaction</property>
@@ -699,7 +720,8 @@
           </packing>
         </child>
         <child>
-          <object class="GtkMenuBar">
+          <object class="GtkMenuBar" id="MenuBar">
+            <property name="name">MenuBar</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <child>
@@ -938,20 +960,6 @@ There is an error in the information entered</property>
       <column type="gchararray"/>
       <!-- column-name AmountColumn -->
       <column type="gchararray"/>
-    </columns>
-  </object>
-  <object class="GtkListStore" id="TransactionTreeViewListStore">
-    <columns>
-      <!-- column-name gtkcellrenderermode -->
-      <column type="GtkCellRendererMode"/>
-      <!-- column-name Date -->
-      <column type="GtkCellRendererMode"/>
-      <!-- column-name Type -->
-      <column type="GtkCellRendererMode"/>
-      <!-- column-name Label -->
-      <column type="GtkCellRendererMode"/>
-      <!-- column-name Amount -->
-      <column type="gint64"/>
     </columns>
   </object>
 </interface>
