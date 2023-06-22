@@ -1,5 +1,7 @@
 use cargosos_bitcoin::{
     block_structure::block_chain::BlockChain,
+    wallet_structure::wallet::Wallet,
+    block_structure::transaction::Transaction,
 };
 
 pub enum SignalToFront {
@@ -7,4 +9,5 @@ pub enum SignalToFront {
     LoadAvailableBalance(f64),
     //LoadRecentTransactions(Vec<String>),
     LoadBlockChain,
+    LoadRecentTransactions(Vec<Transaction>, Wallet),
 }

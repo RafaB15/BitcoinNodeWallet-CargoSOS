@@ -4,8 +4,11 @@ use super::{
     signal_to_back::SignalToBack,
 };
 
+use cargosos_bitcoin::block_structure::transaction;
+use cargosos_bitcoin::wallet_structure::wallet::Wallet;
+use cargosos_bitcoin::block_structure::transaction::Transaction;
 use gtk::glib::subclass::Signal;
-use gtk::{prelude::*, glib::Object, Button, Entry, Application, Builder, Window, ComboBoxText, TreeView, TreeViewColumn, CellRendererText, TreeSelection, Image, Label};
+use gtk::{prelude::*, glib::Object, Button, Entry, Application, Builder, Window, ComboBoxText, TreeView, TreeViewColumn, CellRendererText, TreeSelection, Image, Label, ListBox, ListBoxRow};
 use gtk::glib;
 use std::thread;
 
@@ -54,6 +57,7 @@ pub trait VecOwnExt {
     fn search_tree_view_selection_named(&self, name: &str) -> TreeSelection;
     fn search_image_named(&self, name: &str) -> Image;
     fn search_label_named(&self, name: &str) -> Label;
+    fn search_list_box_named(&self, name: &str) -> ListBox;
 }
 
 pub trait ObjectOwnExt {
@@ -137,6 +141,12 @@ impl VecOwnExt for Vec<Object> {
             .unwrap()
             .clone()
     }
+    fn search_list_box_named(&self, name: &str) -> ListBox {
+        self.search_by_name(name)
+            .downcast_ref::<gtk::ListBox>()
+            .unwrap()
+            .clone()
+    }
 
 }
 
@@ -189,8 +199,49 @@ fn login_combo_box(objects: &Vec<Object>, tx_to_back: mpsc::Sender<SignalToBack>
         let combo_box_cloned = cloned_objects.search_combo_box_named("WalletsComboBox");
         let selected_wallet = combo_box_cloned.active_text().unwrap();
         let _ = tx_to_back.send(SignalToBack::GetAccountBalance(selected_wallet.to_string()));
+        //let _ = tx_to_back.send(SignalToBack::GetRecentTransactions(selected_wallet.to_string());
         println!("{}", selected_wallet);
     });
+}
+
+fn correct_entry_information(address: &str, label: &str, amount: &str) -> Result<(),ErrorGUI> {
+    todo!()
+}
+
+fn transaction_error_window(objects: &Vec<Object>) {
+    let transaction_error_window = objects.search_window_named("TransactionErrorWindow");
+    let cloned_objects = objects.clone();
+    let transaction_error_button = objects.search_button_named("OkButton");
+    transaction_error_button.connect_clicked(move |_| {
+        transaction_error_window.set_visible(false);
+    });
+}
+
+fn register_transaction(objects: &Vec<Object>, transaction: Transaction) {
+    let send_button = objects.search_button_named("SendButton");
+    let cloned_objects = objects.clone();
+    send_button.connect_clicked(move |_| {
+        let address_entry = cloned_objects.search_entry_named("AddressEntry");
+        let label_entry = cloned_objects.search_entry_named("LabelEntry");
+        let amount_entry = cloned_objects.search_entry_named("AmountEntry");
+    
+        if correct_entry_information(address_entry.text().as_str(), label_entry.text().as_str(), amount_entry.text().as_str()).is_err() {
+            //let error_label = cloned_objects.search_label_named("ErrorLabel");
+            //error_label.set_text("Error ");
+
+            //mostrar una window de error?
+            let transaction_error_window = cloned_objects.search_window_named("TransactionErrorWindow");
+            transaction_error_window.set_visible(true);
+
+            //let transaction = create_transaction();
+        } else {
+
+        };
+
+        println!("{}", transaction);
+    });
+
+
 }
 
 fn spawn_backend_handler(
@@ -227,14 +278,9 @@ fn spawn_local_handler(objects: &Vec<Object>, rx_from_back: glib::Receiver<Signa
                 let signal_blockchain_not_ready = cloned_objects.search_image_named("BlockchainNotReadySymbol");
                 signal_blockchain_not_ready.set_visible(false);
             }
-            /*
-            SignalToFront::LoadRecentTransactions(transactions) => {
-                for transaction in transactions {
-                    let transactions_list_box = cloned_objects.search_by_name("TransactionsListBox");
-                    let transaction_label = gtk::Label::new(Some(&transaction));
-                    //transactions_list_box.append_text(&transaction_label);
-                }
-            }*/
+            _ => {}
+
+
             //recibir la blockchain -> integrarla al load bar
             //obtener transacciones de bloques ->  cargarlas al tree view
         }
@@ -267,6 +313,9 @@ fn build_ui(
     login_registration_window(&objects);
 
     login_combo_box(&objects, tx_to_back.clone());
+
+
+
 }
 
 fn get_potential_peers(
@@ -345,6 +394,7 @@ pub fn backend_initialization(
         logger.clone(),
     )?;
 
+    let mut block_chain = load_system.get_block_chain()?;
     let mut wallet = load_system.get_wallet()?;
     for account in wallet.accounts.iter() {
         tx_to_front.send(SignalToFront::RegisterWallet(account.account_name.clone())).unwrap();
