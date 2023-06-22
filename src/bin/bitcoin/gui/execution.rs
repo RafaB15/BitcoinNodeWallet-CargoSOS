@@ -78,7 +78,6 @@ fn login_combo_box(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) {
         let combo_box_cloned: ComboBoxText = cloned_builder.object("WalletsComboBox").unwrap();
         let selected_wallet = combo_box_cloned.active_text().unwrap();
         let _ = tx_to_back.send(SignalToBack::GetAccountBalance(selected_wallet.to_string()));
-        println!("{}", selected_wallet);
     });
 }
 /* 
@@ -134,7 +133,14 @@ fn spawn_local_handler(builder: &Builder, rx_from_back: glib::Receiver<SignalToF
             },
             SignalToFront::LoadAvailableBalance(balance) => {
                 let balance_label: Label = cloned_builder.object("AvailableBalanceLabel").unwrap();
-                balance_label.set_text(balance.to_string().as_str());
+                let pending_label: Label = cloned_builder.object("PendingBalanceLabel").unwrap();
+                let total_label: Label = cloned_builder.object("TotalBalanceLabel").unwrap();
+
+                balance_label.set_text(balance.0.to_string().as_str());
+                if balance.1 != 0.0 {
+                    pending_label.set_text(balance.1.to_string().as_str());
+                }
+                total_label.set_text((balance.0 + balance.1).to_string().as_str());
             },
             SignalToFront::LoadBlockChain => {
                 let signal_blockchain_not_ready: Image = cloned_builder.object("BlockchainNotReadySymbol").unwrap();

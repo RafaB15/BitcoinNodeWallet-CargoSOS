@@ -6,7 +6,7 @@ use cargosos_bitcoin::{
 
 pub enum SignalToFront {
     RegisterWallet(String),
-    LoadAvailableBalance(f64),
+    LoadAvailableBalance((f64, f64)),
     //LoadRecentTransactions(Vec<String>),
     LoadBlockChain,
     LoadRecentTransactions(Vec<Transaction>, Wallet),

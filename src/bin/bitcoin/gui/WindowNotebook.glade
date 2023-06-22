@@ -220,7 +220,7 @@ There is an error in the information entered</property>
                 <child>
                   <object class="GtkFrame" id="BalancesFrame">
                     <property name="width-request">325</property>
-                    <property name="height-request">220</property>
+                    <property name="height-request">172</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="label-xalign">0</property>
@@ -271,26 +271,14 @@ There is an error in the information entered</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="Immature">
-                                <property name="width-request">60</property>
-                                <property name="height-request">12</property>
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Immature:</property>
-                              </object>
-                              <packing>
-                                <property name="y">110</property>
-                              </packing>
-                            </child>
-                            <child>
                               <object class="GtkSeparator" id="BalancesSeparator">
-                                <property name="width-request">253</property>
+                                <property name="width-request">291</property>
                                 <property name="height-request">-1</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                               </object>
                               <packing>
-                                <property name="y">140</property>
+                                <property name="y">110</property>
                               </packing>
                             </child>
                             <child>
@@ -300,7 +288,7 @@ There is an error in the information entered</property>
                                 <property name="height-request">7</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">0.000 BTC</property>
+                                <property name="label" translatable="yes">0.0000000</property>
                               </object>
                               <packing>
                                 <property name="x">180</property>
@@ -308,29 +296,17 @@ There is an error in the information entered</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="AmountPending">
+                              <object class="GtkLabel" id="PendingBalanceLabel">
+                                <property name="name">PendingBalanceLabel</property>
                                 <property name="width-request">57</property>
                                 <property name="height-request">6</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">0.000 BTC</property>
+                                <property name="label" translatable="yes">0.0000000</property>
                               </object>
                               <packing>
                                 <property name="x">180</property>
                                 <property name="y">80</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkLabel" id="AmountImmature">
-                                <property name="width-request">58</property>
-                                <property name="height-request">9</property>
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">0.000 BTC</property>
-                              </object>
-                              <packing>
-                                <property name="x">180</property>
-                                <property name="y">110</property>
                               </packing>
                             </child>
                             <child>
@@ -342,20 +318,21 @@ There is an error in the information entered</property>
                                 <property name="label" translatable="yes">Total:</property>
                               </object>
                               <packing>
-                                <property name="y">150</property>
+                                <property name="y">120</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="AmountTotal">
+                              <object class="GtkLabel" id="TotalBalanceLabel">
+                                <property name="name">TotalBalanceLabel</property>
                                 <property name="width-request">54</property>
                                 <property name="height-request">3</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">0.000 BTC</property>
+                                <property name="label" translatable="yes">0.0000000</property>
                               </object>
                               <packing>
                                 <property name="x">180</property>
-                                <property name="y">150</property>
+                                <property name="y">120</property>
                               </packing>
                             </child>
                             <child>
@@ -369,6 +346,39 @@ There is an error in the information entered</property>
                               <packing>
                                 <property name="x">63</property>
                                 <property name="y">11</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="tbtcAvailable">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="label" translatable="yes">TBTC</property>
+                              </object>
+                              <packing>
+                                <property name="x">255</property>
+                                <property name="y">50</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="tbtcPending">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="label" translatable="yes">TBTC</property>
+                              </object>
+                              <packing>
+                                <property name="x">255</property>
+                                <property name="y">80</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="tbtcTotal">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="label" translatable="yes">TBTC</property>
+                              </object>
+                              <packing>
+                                <property name="x">255</property>
+                                <property name="y">120</property>
                               </packing>
                             </child>
                           </object>

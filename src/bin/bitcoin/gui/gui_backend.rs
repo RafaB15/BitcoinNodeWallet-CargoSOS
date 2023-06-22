@@ -122,7 +122,8 @@ pub fn backend_initialization(
         match rx {
             SignalToBack::GetAccountBalance(account_name) => {
                 let balance = utxo_set.get_balance_in_tbtc(&wallet.get_account_with_name(&account_name).unwrap().address);
-                tx_to_front.send(SignalToFront::LoadAvailableBalance(balance)).unwrap();
+                let pending = 0.0;
+                tx_to_front.send(SignalToFront::LoadAvailableBalance((balance, pending))).unwrap();
             },
             _ => {}
         }
