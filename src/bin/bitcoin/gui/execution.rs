@@ -80,47 +80,31 @@ fn login_combo_box(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) {
         let _ = tx_to_back.send(SignalToBack::GetAccountBalance(selected_wallet.to_string()));
     });
 }
-/* 
-fn correct_entry_information(address: &str, label: &str, amount: &str) -> Result<(),ErrorGUI> {
-    todo!()
-}
 
-fn transaction_error_window(objects: &Vec<Object>) {
-    let transaction_error_window = objects.search_window_named("TransactionErrorWindow");
-    let cloned_objects = objects.clone();
-    let transaction_error_button = objects.search_button_named("OkButton");
+
+fn login_transaction_error_window(builder: &Builder, error: &str) {
+    let transaction_error_window: Window = builder.object("TransactionErrorWindow").unwrap();
+    let error_label: Label = builder.object("ErrorLabel").unwrap();
+    error_label.set_text(error);
+    let cloned_builder = builder.clone();
+    let transaction_error_button: Button = builder.object("OkButton").unwrap();
     transaction_error_button.connect_clicked(move |_| {
         transaction_error_window.set_visible(false);
     });
 }
 
-fn register_transaction(objects: &Vec<Object>, transaction: Transaction) {
-    let send_button = objects.search_button_named("SendButton");
-    let cloned_objects = objects.clone();
+fn register_transaction(tx_to_back: mpsc::Sender<SignalToBack> ,builder: &Builder) {
+
+    let send_button: Button = builder.object("SendButton").unwrap();
+    let cloned_builder: Builder = builder.clone();
     send_button.connect_clicked(move |_| {
-        let address_entry = cloned_objects.search_entry_named("AddressEntry");
-        let label_entry = cloned_objects.search_entry_named("LabelEntry");
-        let amount_entry = cloned_objects.search_entry_named("AmountEntry");
-    
-        if correct_entry_information(address_entry.text().as_str(), label_entry.text().as_str(), amount_entry.text().as_str()).is_err() {
-            //let error_label = cloned_objects.search_label_named("ErrorLabel");
-            //error_label.set_text("Error ");
+        let adress_entry: Label = cloned_builder.object("AddressEntry").unwrap();
+        let amount_entry: Label = cloned_builder.object("AmountEntry").unwrap();
 
-            //mostrar una window de error?
-            let transaction_error_window = cloned_objects.search_window_named("TransactionErrorWindow");
-            transaction_error_window.set_visible(true);
-
-            //let transaction = create_transaction();
-        } else {
-
-        };
-
-        println!("{}", transaction);
+        tx_to_back.send(SignalToBack::CreateTransaction(adress_entry.text().to_string(), amount_entry.text().to_string()));
     });
-
-
 }
-*/
+
 fn spawn_local_handler(builder: &Builder, rx_from_back: glib::Receiver<SignalToFront>) {
     let cloned_builder = builder.clone();
 
