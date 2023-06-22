@@ -1,3 +1,4 @@
+/// It represents all posible errors that can occur initializing the program
 #[derive(Debug)]
 pub enum ErrorInitialization {
     /// It will appear when there is not argument pass that configuration declaration

@@ -14,6 +14,7 @@ use std::{
 
 type HandleSender<T> = (JoinHandle<Result<T, ErrorNode>>, Sender<Transaction>);
 
+// It represents the broadcasting of the transactions and blocks to the peers
 pub struct Broadcasting<RW>
 where
     RW: Read + Write + Send + 'static,
@@ -48,6 +49,7 @@ where
         }
     }
 
+    /// It creates a thread for each peer with it's corresponding sender of transactions
     fn create_peers(
         peers_streams: Vec<RW>,
         sender: Sender<MessageResponse>,
@@ -74,7 +76,7 @@ where
                     logger_clone.clone(),
                 );
 
-                peer_manager.listen_peers(logger_clone)
+                peer_manager.connecting_to_peer(logger_clone)
             });
 
             peers.push((handle, sender_transaction));
@@ -83,6 +85,10 @@ where
         peers
     }
 
+    /// It sends a transaction to all the peers
+    ///
+    /// ### Error
+    ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to a peer
     pub fn send_transaction(&mut self, transaction: Transaction) -> Result<(), ErrorNode> {
         let _ = self
             .logger
@@ -98,6 +104,10 @@ where
         Ok(())
     }
 
+    /// It stops all the peers and returns their streams
+    ///
+    /// ### Error
+    ///  * `ErrorNode::NodeNotResponding`: It will appear when a thread could not finish
     pub fn destroy(self) -> Result<Vec<RW>, ErrorNode> {
         let _ = self.logger.log_configuration("Closing peers".to_string());
         match self.stop.lock() {

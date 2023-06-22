@@ -15,6 +15,7 @@ use crate::block_structure::{block::Block, hash::HashType};
 
 const MAX_HEADERS_COUNT: usize = 50_000;
 
+/// It represents the download of blocks given the headers to the block to download
 #[derive(Debug, Clone)]
 pub struct BlockDownload {
     magic_numbers: MagicType,
@@ -29,6 +30,10 @@ impl BlockDownload {
         }
     }
 
+    /// It sends a get data message to the peer given the hashed headers
+    ///
+    /// ### Error
+    ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
     fn send_get_data_message<RW: Read + Write>(
         &self,
         peer_stream: &mut RW,
@@ -43,6 +48,11 @@ impl BlockDownload {
         Ok(())
     }
 
+    /// It receives the blocks from the peer
+    ///
+    /// ### Error
+    ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
+    ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
     fn receive_blocks<RW: Read + Write>(
         &self,
         peer_stream: &mut RW,
@@ -74,6 +84,12 @@ impl BlockDownload {
         Ok(blocks)
     }
 
+    /// Get the blocks from the peer given the hashed headers
+    ///
+    /// ### Error
+    ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
+    ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
+    ///  * `ErrorNode::RequestedDataTooBig`: It will appear when the headers count is bigger than the maximum headers count
     pub fn get_data<RW: Read + Write>(
         &self,
         peer_stream: &mut RW,

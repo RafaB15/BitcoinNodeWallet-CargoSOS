@@ -1,14 +1,29 @@
-use crate::messages::error_message::ErrorMessage;
-use crate::serialization::error_serialization::ErrorSerialization;
+use crate::{
+    messages::error_message::ErrorMessage, serialization::error_serialization::ErrorSerialization,
+};
 
+/// It represents all posible errors that can occur while making the protocols of a node
 #[derive(Debug, PartialEq)]
 pub enum ErrorNode {
+    /// It will appear when there is an error while sending a message to a peer or others threads
     WhileSendingMessage(String),
+
+    /// It will appear when a given header does not pass the proof of work to be added to the blockchain
     WhileValidating(String),
+
+    /// It will appear when there is an error in the reading from a stream
     WhileReceivingMessage(String),
+
+    /// It will appear when there is an error in the serialization
     WhileSerializing(String),
+
+    /// It will appear when there is an error in the deserialization
     WhileDeserializing(String),
+
+    /// It will appear when the node is not responding to the messages
     NodeNotResponding(String),
+
+    /// It will appear when the headers count is bigger than the maximum headers count
     RequestedDataTooBig,
 }
 

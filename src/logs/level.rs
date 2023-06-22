@@ -1,3 +1,4 @@
+/// It represents all the locations from where a log can be called
 #[derive(Debug, Clone)]
 pub enum Level {
     NODE,
