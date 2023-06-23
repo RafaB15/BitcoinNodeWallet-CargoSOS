@@ -44,3 +44,24 @@ impl DeserializableLittleEndian for BlockVersion {
         Ok(version_int.into())
     }
 }
+
+#[cfg(test)]
+
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_01_correct_version_serialization() {
+        let version = BlockVersion::version(1);
+        let mut stream: Vec<u8> = Vec::new();
+        version.le_serialize(&mut stream).unwrap();
+        assert_eq!(stream, vec![1, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_02_correct_version_deserialization() {
+        let mut stream: &[u8] = &[1, 0, 0, 0];
+        let version = BlockVersion::le_deserialize(&mut stream).unwrap();
+        assert_eq!(version, BlockVersion::version(1));
+    }
+}
