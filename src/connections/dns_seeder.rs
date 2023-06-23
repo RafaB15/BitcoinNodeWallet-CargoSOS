@@ -29,7 +29,7 @@ impl DNSSeeder {
     }
 
     /// It return the peers that the DNS server has
-    /// 
+    ///
     /// ### Error
     ///  * `ErrorConnection::ErrorInvalidIPOrPortNumber`: It will appear if the IP or the port number its not valid
     pub fn discover_peers(&self) -> Result<Vec<SocketAddr>, ErrorConnection> {

@@ -27,7 +27,7 @@ pub enum ErrorExecution {
     /// It represents all the possible error that can appear in the parsing process
     Configuration(ErrorConfiguration),
 
-    ///
+    /// It represents all posible errors that can occur in the connection to a peer
     Connection(ErrorConnection),
 
     /// It represents all posible errors that can occur in the process of serializing and deserializing
