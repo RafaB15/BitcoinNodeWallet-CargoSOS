@@ -24,7 +24,7 @@ pub enum ErrorExecution {
     /// It represents all posible errors that can occur in the logs
     Log(ErrorLog),
 
-    ///
+    /// It represents all the possible error that can appear in the parsing process
     Configuration(ErrorConfiguration),
 
     ///

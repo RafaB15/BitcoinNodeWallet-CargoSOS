@@ -22,26 +22,38 @@ const NONCE: &str = "nonce";
 const USER_AGENT: &str = "user_agent";
 const RELAY: &str = "relay";
 
+/// It represents all the data needed to establish a connection
 #[derive(Debug, PartialEq, Clone)]
 pub struct ConnectionConfig {
+    
+    /// It's the DNS from where the potential peers will be obtaineds
     pub dns_seeder: DNSSeeder,
-    /// Es la versión del protocolo peer to peer que se planea utilizar
+    
+    /// It's the version of the peer to peer protocol that will be used
     pub p2p_protocol_version: ProtocolVersionP2P,
-    ///El método usado para el initial blocks download
+    
+    /// It's the method used for the initial blocks download
     pub ibd_method: IBDMethod,
 
+    /// It's the maximum number of peers that will be connected
     pub peer_count_max: usize,
 
+    /// It's the block height from where the initial blocks download will start
     pub block_height: i32,
 
+    /// It's the services that this node will offer
     pub services: BitfieldServices,
 
+    /// It's the magic numbers that will be used to identify the network
     pub magic_numbers: MagicType,
 
+    /// 
     pub nonce: u64,
 
+    ///
     pub user_agent: String,
 
+    ///
     pub relay: bool,
 }
 
