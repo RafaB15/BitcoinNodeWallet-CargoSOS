@@ -25,13 +25,12 @@ const RELAY: &str = "relay";
 /// It represents all the data needed to establish a connection
 #[derive(Debug, PartialEq, Clone)]
 pub struct ConnectionConfig {
-    
     /// It's the DNS from where the potential peers will be obtaineds
     pub dns_seeder: DNSSeeder,
-    
+
     /// It's the version of the peer to peer protocol that will be used
     pub p2p_protocol_version: ProtocolVersionP2P,
-    
+
     /// It's the method used for the initial blocks download
     pub ibd_method: IBDMethod,
 
@@ -47,13 +46,13 @@ pub struct ConnectionConfig {
     /// It's the magic numbers that will be used to identify the network
     pub magic_numbers: MagicType,
 
-    /// 
+    /// It's used to detect connections to self
     pub nonce: u64,
 
-    ///
+    /// It's used in the version message
     pub user_agent: String,
 
-    ///
+    /// It's the flag that indicates if the node will relay transactions
     pub relay: bool,
 }
 

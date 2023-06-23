@@ -12,6 +12,7 @@ const ASSIGNMENT: char = '=';
 const OPEN_GROUP: char = '{';
 const CLOSE_GROUP: char = '}';
 
+/// Trait that allows to parse from a configuration file
 pub trait Parsable: Sized {
     fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration>;
 }
