@@ -11,7 +11,7 @@ const INTERFACE: &str = "interface";
 /// It represents all the data needed for the UI
 #[derive(Debug, PartialEq, Clone)]
 pub struct UIConfig {
-    /// It's which interface will be used 
+    /// It's which interface will be used
     pub interface: Interface,
 }
 

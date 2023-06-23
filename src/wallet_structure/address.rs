@@ -11,27 +11,31 @@ use crate::serialization::{
 
 use crate::block_structure::transaction_output::TransactionOutput;
 
-use bs58::decode;
-
 use std::{
     convert::TryInto,
     io::{Read, Write},
 };
 
+use bs58::decode;
+
 pub const ADDRESS_SIZE: usize = 25;
 pub type AddressType = [u8; ADDRESS_SIZE];
 
+/// It's the internal representation of an address in an account
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Address {
-    pub address_bytes: AddressType,
-    pub address_string: String,
+    address_bytes: AddressType,
+    address_string: String,
 }
 
 impl Address {
     /// Creates an address object from a string with a Bitcoin address
+    ///
+    /// ### Error
+    ///  * `ErrorWallet::CannotDecodeAddress`: It will appear when address for an account cannot be generated
     pub fn new(address: &str) -> Result<Address, ErrorWallet> {
         if address.len() != 34 {
-            return Err(ErrorWallet::InvalidAddress(format!(
+            return Err(ErrorWallet::CannotDecodeAddress(format!(
                 "Invalid address length, expected 34, got {}",
                 address.len()
             )));
@@ -61,11 +65,12 @@ impl Address {
     }
 
     /// Extracts the hashed public key from the address
-    pub fn extract_hashed_pk(&self) -> &[u8] {
+    fn extract_hashed_pk(&self) -> &[u8] {
         let hashed_pk = &self.address_bytes[1..21];
         hashed_pk
     }
 
+    /// Generates the script pubkey for P2PKH from this address
     pub fn generate_script_pubkey_p2pkh(&self) -> Vec<u8> {
         let mut script_pubkey = vec![0x76, 0xa9, 0x14];
         script_pubkey.extend_from_slice(self.extract_hashed_pk());
@@ -73,9 +78,9 @@ impl Address {
         script_pubkey
     }
 
-    /// Returns true if the address owns the given utxo (works for P2PKH) and false otherwise.
-    pub fn verify_transaction_ownership(&self, utxo: &TransactionOutput) -> bool {
-        let pk_script = utxo.pk_script.clone();
+    /// Returns true if the address owns the given transaction output (works for P2PKH) and false otherwise.
+    pub fn verify_transaction_ownership(&self, txo: &TransactionOutput) -> bool {
+        let pk_script = txo.pk_script.clone();
         if pk_script.len() != 25 {
             return false;
         }

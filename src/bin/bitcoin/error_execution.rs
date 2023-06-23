@@ -42,7 +42,7 @@ pub enum ErrorExecution {
     /// It represents all posible errors that can occur while making the protocols of a node
     Node(ErrorNode),
 
-    ///
+    /// It represents all the possible error that can appear interacting with the wallet
     Wallet(ErrorWallet),
 
     /// It represents all posible errors that can occur in the process of connecting with a peer

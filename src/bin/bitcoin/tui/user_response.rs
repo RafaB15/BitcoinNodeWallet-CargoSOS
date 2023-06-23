@@ -33,7 +33,7 @@ fn get_reference<'t, T>(reference: &'t MutArc<T>) -> Result<MutexGuard<'t, T>, E
 }
 
 /// It will responde to the user input
-/// 
+///
 /// ### Error
 ///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
 ///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
@@ -67,7 +67,7 @@ pub fn user_input(
 }
 
 /// Appends an new account to the wallet created by the user
-/// 
+///
 /// ### Error
 ///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
 ///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
@@ -80,7 +80,7 @@ fn creating_accout(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(), 
 }
 
 /// Change the selected account to the one selected by the user
-/// 
+///
 /// ### Error
 ///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
 ///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
@@ -93,7 +93,7 @@ fn changing_account(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(),
 }
 
 /// Delete the selected account selected by the user
-/// 
+///
 /// ### Error
 ///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
 ///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
@@ -106,7 +106,7 @@ fn removing_account(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(),
 }
 
 /// Broadcast the transaction created by the user to the peers from the selected account in the wallet
-/// 
+///
 /// ### Error
 ///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
 ///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
@@ -143,7 +143,9 @@ fn sending_transaction(
 
     match broadcasting.send_transaction(transaction) {
         Ok(()) => Ok(()),
-        Err(ErrorNode::WhileSendingMessage(message)) => Err(ErrorTUI::ErrorFromPeer(format!("While sending message {message}"))),
+        Err(ErrorNode::WhileSendingMessage(message)) => Err(ErrorTUI::ErrorFromPeer(format!(
+            "While sending message {message}"
+        ))),
         _ => Err(ErrorTUI::ErrorFromPeer(
             "While sending transaction".to_string(),
         )),
@@ -151,7 +153,7 @@ fn sending_transaction(
 }
 
 /// Show the balance of the selected account in the wallet
-/// 
+///
 /// ### Error
 ///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 fn showing_balance(
@@ -183,7 +185,7 @@ fn showing_balance(
 }
 
 /// Show the lastest transactions given by the timestamp selected by the user
-/// 
+///
 /// ### Error
 ///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
 ///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
@@ -242,8 +244,8 @@ pub fn handle_peers(
     })
 }
 
-/// Manage receiving a transaction by updating the list of transactions seen so far if the transaction is from the selected account 
-/// 
+/// Manage receiving a transaction by updating the list of transactions seen so far if the transaction is from the selected account
+///
 /// ### Error
 ///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 fn receive_transaction(
@@ -266,7 +268,7 @@ fn receive_transaction(
 }
 
 /// Manage receiving a block by updating the block chain and the utxo set
-/// 
+///
 /// ### Error
 ///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 ///  * `ErrorTUI::ErrorWriting`: It will appear when writing to the block chain
