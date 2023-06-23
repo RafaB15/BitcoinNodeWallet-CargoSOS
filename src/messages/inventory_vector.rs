@@ -12,6 +12,7 @@ use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
 };
 
+#[derive(Debug, Clone)]
 pub struct InventoryVector {
     pub type_identifier: TypeIdentifier,
     pub hash_value: HashType,

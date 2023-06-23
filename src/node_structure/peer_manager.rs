@@ -4,6 +4,7 @@ use crate::{
     block_structure::{hash::HashType, transaction::Transaction},
     configurations::connection_config::ConnectionConfig,
     logs::logger_sender::LoggerSender,
+    connections::type_identifier::{TypeIdentifier, self},
     messages::{
         addr_message::AddrMessage,
         alert_message::AlertMessage,
@@ -22,7 +23,8 @@ use crate::{
         send_headers_message::SendHeadersMessage,
         tx_message::TxMessage,
         verack_message::VerackMessage,
-        version_message::VersionMessage,
+        version_message::VersionMessage, 
+        inventory_vector::InventoryVector,
     },
     node_structure::block_download::BlockDownload,
 };
@@ -128,7 +130,7 @@ where
             CommandName::Headers => self.receive_headers(header)?,
             CommandName::GetData => ignore_message::<GetDataMessage>(&mut self.peer, header)?,
             CommandName::Block => self.receive_blocks(header)?,
-            CommandName::Inventory => ignore_message::<InventoryMessage>(&mut self.peer, header)?,
+            CommandName::Inventory => self.receive_inventory_message(header)?,
             CommandName::SendHeaders => {
                 ignore_message::<SendHeadersMessage>(&mut self.peer, header)?
             }
@@ -222,6 +224,53 @@ where
             ));
         }
 
+        Ok(())
+    }
+
+    /// Receives the inventory message for requesting to know about a new transaction
+    /// 
+    /// ### Error
+    ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
+    ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
+    ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to others threads
+    fn receive_inventory_message(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
+        let _ = self
+            .logger
+            .log_connection("Receiving a inventory message".to_string());
+        let inventory_message = InventoryMessage::deserialize_message(&mut self.peer, header)?;
+        
+        let mut inventory_vectors: Vec<InventoryVector> = Vec::new();
+        for inventory_vector in inventory_message.inventory_vectors {
+            match inventory_vector.type_identifier.clone() {
+                TypeIdentifier::TransactionId | TypeIdentifier::Block => {
+                    inventory_vectors.push(inventory_vector);
+                }
+                _ => {}
+            }
+        }
+
+        if inventory_vectors.is_empty() {
+            return Ok(());
+        }
+
+        let get_data_message = GetDataMessage { inventory_vectors };
+
+        let _ = self
+            .logger
+            .log_connection("Sending get data message to peer".to_string());
+
+        if GetDataMessage::serialize_message(
+            &mut self.peer,
+            self.connection_config.magic_numbers,
+            &get_data_message,
+        )
+        .is_err()
+        {
+            return Err(ErrorNode::WhileSendingMessage(
+                "Sending get data message to peers".to_string(),
+            ));
+        }
+        
         Ok(())
     }
 
