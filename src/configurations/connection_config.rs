@@ -106,10 +106,10 @@ mod tests {
         let connection_result = ConnectionConfig::parse(name, &map);
 
         let config_connection = ConnectionConfig {
-            dns_seeder: DNSSeeder {
-                dns_addr: "seed.testnet.bitcoin.sprovoost.nl".to_string(),
-                port_number: 18333,
-            },
+            dns_seeder: DNSSeeder::new(
+                "seed.testnet.bitcoin.sprovoost.nl",
+                18333,
+            ),
             p2p_protocol_version: ProtocolVersionP2P::V70015,
             ibd_method: IBDMethod::HeaderFirst,
             peer_count_max: 8,
@@ -150,10 +150,10 @@ mod tests {
         let connection_result = ConnectionConfig::parse(name, &map);
 
         let config_connection = ConnectionConfig {
-            dns_seeder: DNSSeeder {
-                dns_addr: "seed.testnet.bitcoin.sprovoost.nl".to_string(),
-                port_number: 18333,
-            },
+            dns_seeder: DNSSeeder::new(
+                "seed.testnet.bitcoin.sprovoost.nl",
+                18333,
+            ),
             p2p_protocol_version: ProtocolVersionP2P::V70015,
             ibd_method: IBDMethod::HeaderFirst,
             peer_count_max: 8,
@@ -220,10 +220,10 @@ mod tests {
         let connection_result = ConnectionConfig::parse(name, &map);
 
         let config_connection = ConnectionConfig {
-            dns_seeder: DNSSeeder {
-                dns_addr: "seed.testnet.bitcoin.sprovoost.nl".to_string(),
-                port_number: 18333,
-            },
+            dns_seeder: DNSSeeder::new(
+                "seed.testnet.bitcoin.sprovoost.nl",
+                18333,
+            ),
             p2p_protocol_version: ProtocolVersionP2P::V70015,
             ibd_method: IBDMethod::HeaderFirst,
             peer_count_max: 8,

@@ -1,20 +1,23 @@
 use super::error_connection::ErrorConnection;
-use std::net::{SocketAddr, ToSocketAddrs};
 
 use crate::configurations::{
     error_configuration::ErrorConfiguration,
     parsable::{parse_structure, value_from_map, KeyValueMap, Parsable},
 };
 
-use std::cmp::PartialEq;
+use std::{
+    cmp::PartialEq,
+    net::{SocketAddr, ToSocketAddrs},
+};
 
 const SEED: &str = "seed";
 const PORT: &str = "port";
 
+/// It connects to a DNS server and gets the peers
 #[derive(Debug, PartialEq, Clone)]
 pub struct DNSSeeder {
-    pub dns_addr: String,
-    pub port_number: u16,
+    dns_addr: String,
+    port_number: u16,
 }
 
 impl DNSSeeder {
@@ -25,6 +28,10 @@ impl DNSSeeder {
         }
     }
 
+    /// It return the peers that the DNS server has
+    /// 
+    /// ### Error
+    ///  * `ErrorConnection::ErrorInvalidIPOrPortNumber`: It will appear if the IP or the port number its not valid
     pub fn discover_peers(&self) -> Result<Vec<SocketAddr>, ErrorConnection> {
         let mut peer_addrs: Vec<SocketAddr> = Vec::new();
 
