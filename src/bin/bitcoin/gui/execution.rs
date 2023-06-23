@@ -6,7 +6,7 @@ use super::{
 };
 
 use gtk::{prelude::*, Button, Entry, Application, Builder, Window, ComboBoxText, Image, Label};
-use gtk::{glib};
+use gtk::glib;
 
 use crate::process::save_system::SaveSystem;
 
@@ -21,7 +21,7 @@ use cargosos_bitcoin::{
 
 use std::sync::mpsc;
 
-fn login_main_window(application: &gtk::Application, builder: &Builder) {
+fn login_main_window(application: &gtk::Application, builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) -> Result<(), ErrorGUI>{
 
     let window: Window = builder.object("MainWindow").unwrap();
     window.set_application(Some(application));
@@ -29,19 +29,32 @@ fn login_main_window(application: &gtk::Application, builder: &Builder) {
     let application_clone = application.clone();
 
     window.connect_destroy(move |_| {
+        if tx_to_back.send(SignalToBack::ExitProgram).is_err(){
+            println!("Error sending exit program signal");
+        };
         application_clone.quit();
     });
 
-    let account_registration_button: Button = builder.object("AccountRegistrationButton").unwrap();
+    let account_registration_button: Button = match builder.object("AccountRegistrationButton") {
+        Some(account_registration_button) => account_registration_button,
+        None => return Err(ErrorGUI::MissingElement("AccountRegistrationButton".to_string())),
+    };
     
     let cloned_builer = builder.clone();
     
     account_registration_button.connect_clicked(move |_| {
-        let account_registration_window: Window = cloned_builer.object("AccountRegistrationWindow").unwrap();
+        let account_registration_window: Window = match cloned_builer.object("AccountRegistrationWindow"){
+            Some(account_registration_window) => account_registration_window,
+            None => {
+                println!("Error getting account registration window");
+                Window::new(gtk::WindowType::Toplevel)
+            },
+        };
         account_registration_window.set_visible(true);
     });
 
     window.show_all();
+    Ok(())
 }
 
 fn login_registration_window(builder: &Builder, application: &gtk::Application) {
@@ -161,7 +174,7 @@ fn build_ui(
 
     spawn_local_handler(&builder, rx_from_back);
 
-    login_main_window(application, &builder);
+    login_main_window(application, &builder, tx_to_back.clone());
 
     login_registration_window(&builder, application);
 
