@@ -1,6 +1,7 @@
 pub enum SignalToBack{
-    GetAccountBalance(String),
+    GetAccountBalance,
     GetRecentTransactions(String),
     CreateTransaction(String, String),
     ExitProgram,
+    ChangeSelectedAccount(String),
 }

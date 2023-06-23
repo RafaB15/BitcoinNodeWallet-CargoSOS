@@ -145,6 +145,11 @@
       </object>
     </child>
   </object>
+  <object class="GtkAdjustment" id="AdjustmentAmountSpinButton">
+    <property name="upper">100</property>
+    <property name="step-increment">0.0001</property>
+    <property name="page-increment">10</property>
+  </object>
   <object class="GtkWindow" id="TransactionErrorWindow">
     <property name="name">TransactionErrorWindow</property>
     <property name="can-focus">False</property>
@@ -219,8 +224,8 @@ There is an error in the information entered</property>
                 <property name="can-focus">False</property>
                 <child>
                   <object class="GtkFrame" id="BalancesFrame">
-                    <property name="width-request">325</property>
-                    <property name="height-request">172</property>
+                    <property name="width-request">346</property>
+                    <property name="height-request">222</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="label-xalign">0</property>
@@ -272,7 +277,7 @@ There is an error in the information entered</property>
                             </child>
                             <child>
                               <object class="GtkSeparator" id="BalancesSeparator">
-                                <property name="width-request">291</property>
+                                <property name="width-request">303</property>
                                 <property name="height-request">-1</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
@@ -288,7 +293,7 @@ There is an error in the information entered</property>
                                 <property name="height-request">7</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">0.0000000</property>
+                                <property name="label" translatable="yes">0.00000000</property>
                               </object>
                               <packing>
                                 <property name="x">180</property>
@@ -302,7 +307,7 @@ There is an error in the information entered</property>
                                 <property name="height-request">6</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">0.0000000</property>
+                                <property name="label" translatable="yes">0.00000000</property>
                               </object>
                               <packing>
                                 <property name="x">180</property>
@@ -328,7 +333,7 @@ There is an error in the information entered</property>
                                 <property name="height-request">3</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">0.0000000</property>
+                                <property name="label" translatable="yes">0.00000000</property>
                               </object>
                               <packing>
                                 <property name="x">180</property>
@@ -355,7 +360,7 @@ There is an error in the information entered</property>
                                 <property name="label" translatable="yes">TBTC</property>
                               </object>
                               <packing>
-                                <property name="x">255</property>
+                                <property name="x">270</property>
                                 <property name="y">50</property>
                               </packing>
                             </child>
@@ -366,7 +371,7 @@ There is an error in the information entered</property>
                                 <property name="label" translatable="yes">TBTC</property>
                               </object>
                               <packing>
-                                <property name="x">255</property>
+                                <property name="x">270</property>
                                 <property name="y">80</property>
                               </packing>
                             </child>
@@ -377,7 +382,7 @@ There is an error in the information entered</property>
                                 <property name="label" translatable="yes">TBTC</property>
                               </object>
                               <packing>
-                                <property name="x">255</property>
+                                <property name="x">270</property>
                                 <property name="y">120</property>
                               </packing>
                             </child>
@@ -399,7 +404,7 @@ There is an error in the information entered</property>
                 </child>
                 <child>
                   <object class="GtkFrame" id="RecentTransFrame">
-                    <property name="width-request">325</property>
+                    <property name="width-request">386</property>
                     <property name="height-request">220</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
@@ -429,7 +434,7 @@ There is an error in the information entered</property>
                             <child>
                               <object class="GtkListBox" id="RecentTransListBox">
                                 <property name="name">RecentTransactionsListBox</property>
-                                <property name="width-request">300</property>
+                                <property name="width-request">355</property>
                                 <property name="height-request">155</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
@@ -450,7 +455,7 @@ There is an error in the information entered</property>
                     </child>
                   </object>
                   <packing>
-                    <property name="x">346</property>
+                    <property name="x">387</property>
                     <property name="y">9</property>
                   </packing>
                 </child>
@@ -474,7 +479,7 @@ There is an error in the information entered</property>
                 <property name="can-focus">False</property>
                 <child>
                   <object class="GtkFrame" id="PayFrame">
-                    <property name="width-request">685</property>
+                    <property name="width-request">755</property>
                     <property name="height-request">150</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
@@ -499,7 +504,7 @@ There is an error in the information entered</property>
                                 <property name="label" translatable="yes">Pay to:</property>
                               </object>
                               <packing>
-                                <property name="x">4</property>
+                                <property name="x">17</property>
                                 <property name="y">5</property>
                               </packing>
                             </child>
@@ -513,7 +518,7 @@ There is an error in the information entered</property>
                                 <property name="placeholder-text" translatable="yes">Enter a Bitcoin address (e.g. INS17iag9]JgTHDIVXjvICEnZuQ3rJDE9I)</property>
                               </object>
                               <packing>
-                                <property name="x">56</property>
+                                <property name="x">70</property>
                               </packing>
                             </child>
                             <child>
@@ -524,23 +529,22 @@ There is an error in the information entered</property>
                                 <property name="label" translatable="yes">Amount:</property>
                               </object>
                               <packing>
-                                <property name="x">-9</property>
+                                <property name="x">4</property>
                                 <property name="y">50</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="AmountToPayEntry">
-                                <property name="name">AmountEntry</property>
+                              <object class="GtkSpinButton" id="AmountSpinButton">
+                                <property name="name">AmountSpinButton</property>
                                 <property name="width-request">184</property>
                                 <property name="height-request">20</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
-                                <property name="xalign">1</property>
-                                <property name="placeholder-text" translatable="yes">0.0000000000</property>
-                                <property name="input-purpose">number</property>
+                                <property name="adjustment">AdjustmentAmountSpinButton</property>
+                                <property name="digits">10</property>
                               </object>
                               <packing>
-                                <property name="x">56</property>
+                                <property name="x">70</property>
                                 <property name="y">42</property>
                               </packing>
                             </child>
@@ -572,6 +576,21 @@ There is an error in the information entered</property>
                   </object>
                   <packing>
                     <property name="x">20</property>
+                    <property name="y">169</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="TransactionClearAllButton">
+                    <property name="label" translatable="yes">Clear all</property>
+                    <property name="name">TransactionClearAllButton</property>
+                    <property name="width-request">100</property>
+                    <property name="height-request">50</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                  </object>
+                  <packing>
+                    <property name="x">136</property>
                     <property name="y">169</property>
                   </packing>
                 </child>
@@ -627,6 +646,7 @@ There is an error in the information entered</property>
                     <property name="width-request">100</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="active">1</property>
                     <items>
                       <item id="0" translatable="yes">All</item>
                       <item id="1" translatable="yes">Received with</item>

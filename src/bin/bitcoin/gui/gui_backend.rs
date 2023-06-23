@@ -234,8 +234,11 @@ pub fn spawn_frontend_handler(
 ) -> Result<(), ErrorGUI> {
     for rx in rx_from_front {
         match rx {
-            SignalToBack::GetAccountBalance(account_name) => {
-                give_account_balance(account_name, wallet.clone(), utxo_set.clone(), tx_to_front.clone())?;
+            SignalToBack::GetAccountBalance => {
+                give_account_balance(wallet.clone(), utxo_set.clone(), tx_to_front.clone())?;
+            },
+            SignalToBack::ChangeSelectedAccount(account_name) => {
+                change_selected_account(account_name, wallet.clone(), tx_to_front.clone())?;
             },
             SignalToBack::ExitProgram => {
                 break;
@@ -246,8 +249,34 @@ pub fn spawn_frontend_handler(
     Ok(())
 }
 
-pub fn give_account_balance(
+pub fn change_selected_account(
     account_name: String,
+    wallet: MutArc<Wallet>,
+    tx_to_front: glib::Sender<SignalToFront>,
+) -> Result<(), ErrorGUI> {
+    let mut wallet_reference = get_reference(&wallet)?;
+
+    let account_to_select = match wallet_reference.get_account_with_name(&account_name) {
+        Some(account) => account.clone(),
+        None => {
+            return Err(ErrorGUI::ErrorReading(
+                "Account does not exist".to_string(),
+            ))
+        }
+    };
+
+    wallet_reference.selected_account = Some(account_to_select);
+
+    if tx_to_front.send(SignalToFront::Update).is_err() {
+        return Err(ErrorGUI::FailedSignalToFront(
+            "Failed to send update signal to front".to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
+pub fn give_account_balance(
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
     tx_to_front: glib::Sender<SignalToFront>,
@@ -255,11 +284,11 @@ pub fn give_account_balance(
     let wallet_reference = get_reference(&wallet)?;
     let utxo_set_reference = get_reference(&utxo_set)?;
 
-    let account_to_check = match wallet_reference.get_account_with_name(&account_name) {
+    let account_to_check = match wallet_reference.selected_account.clone() {
         Some(account) => account,
         None => {
             return Err(ErrorGUI::ErrorReading(
-                "Account does not exist".to_string(),
+                "No account selected".to_string(),
             ))
         }
     };
@@ -312,6 +341,8 @@ fn broadcasting(
     )?;
 
     broadcasting.destroy()?;
+
+    println!("HOliwis");
 
     match handle.join() {
         Ok(_) => Ok(()),

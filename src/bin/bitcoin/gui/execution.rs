@@ -5,7 +5,7 @@ use super::{
     gui_backend::spawn_backend_handler,
 };
 
-use gtk::{prelude::*, Button, Entry, Application, Builder, Window, ComboBoxText, Image, Label};
+use gtk::{prelude::*, Button, Entry, Application, Builder, Window, ComboBoxText, Image, Label, SpinButton};
 use gtk::glib;
 
 use crate::process::save_system::SaveSystem;
@@ -27,9 +27,9 @@ fn login_main_window(application: &gtk::Application, builder: &Builder, tx_to_ba
     window.set_application(Some(application));
 
     let application_clone = application.clone();
-
+    let tx_to_back_clone = tx_to_back.clone();
     window.connect_destroy(move |_| {
-        if tx_to_back.send(SignalToBack::ExitProgram).is_err(){
+        if tx_to_back_clone.send(SignalToBack::ExitProgram).is_err(){
             println!("Error sending exit program signal");
         };
         application_clone.quit();
@@ -52,6 +52,8 @@ fn login_main_window(application: &gtk::Application, builder: &Builder, tx_to_ba
         };
         account_registration_window.set_visible(true);
     });
+
+    login_transaction_page(&builder, tx_to_back.clone())?;
 
     window.show_all();
     Ok(())
@@ -90,7 +92,8 @@ fn login_combo_box(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) {
     combo_box.connect_changed(move |_| {
         let combo_box_cloned: ComboBoxText = cloned_builder.object("WalletsComboBox").unwrap();
         let selected_wallet = combo_box_cloned.active_text().unwrap();
-        let _ = tx_to_back.send(SignalToBack::GetAccountBalance(selected_wallet.to_string()));
+        let _ = tx_to_back.send(SignalToBack::ChangeSelectedAccount(selected_wallet.to_string()));
+        let _ = tx_to_back.send(SignalToBack::GetAccountBalance);
     });
 }
 
@@ -156,6 +159,33 @@ fn spawn_local_handler(builder: &Builder, rx_from_back: glib::Receiver<SignalToF
     });
 } 
 
+fn login_transaction_page(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) -> Result<(), ErrorGUI>{
+    let transaction_clear_all_button: Button = match builder.object("TransactionClearAllButton") {
+        Some(button) => button,
+        None => return Err(ErrorGUI::MissingElement("TransactionClearAllButton".to_string())),
+    };
+    let cloned_builder = builder.clone();
+    transaction_clear_all_button.connect_clicked(move |_| {
+        let bitcoin_address_entry: Entry = match cloned_builder.object("BitcoinAddressEntry"){
+            Some(entry) => entry,
+            None => {
+                println!("Error: Missing element BitcoinAddressEntry");
+                Entry::new()
+            },
+        };
+        let amount_spin_button: SpinButton = match cloned_builder.object("AmountSpinButton"){
+            Some(entry) => entry,
+            None => {
+                println!("Error: Missing element AmountSpinButton");
+                SpinButton::with_range(0.0, 0.0, 0.0)
+            },
+        };
+        bitcoin_address_entry.set_text("");
+        amount_spin_button.set_value(0.0);
+    });
+
+    Ok(())
+}
 
 fn build_ui(
     application: &gtk::Application, 
