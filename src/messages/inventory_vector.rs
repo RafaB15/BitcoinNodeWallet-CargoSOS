@@ -2,8 +2,6 @@ use crate::connections::type_identifier::TypeIdentifier;
 
 use crate::block_structure::hash::HashType;
 
-use std::io::Read;
-
 use crate::serialization::{
     deserializable_internal_order::DeserializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian,
@@ -12,6 +10,9 @@ use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
 };
 
+use std::io::Read;
+
+/// It's the reduce representation of any sendable data
 pub struct InventoryVector {
     pub type_identifier: TypeIdentifier,
     pub hash_value: HashType,

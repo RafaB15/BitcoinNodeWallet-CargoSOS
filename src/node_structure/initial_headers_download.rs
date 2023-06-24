@@ -8,7 +8,6 @@ use crate::{
 
 use crate::messages::{
     command_name::CommandName,
-    error_message::ErrorMessage,
     get_headers_message::GetHeadersMessage,
     headers_message::HeadersMessage,
     message::{self, Message},
@@ -43,12 +42,12 @@ impl InitialHeaderDownload {
     /// It sends a get headers message to the peer given the latest headers from the blockchain
     ///
     /// ### Error
-    ///  * `ErrorMessage::InSerialization`: It will appear when the serialization of the message fails or the SHA(SHA(header)) fails
+    ///  * `ErrorNode::InSerialization`: It will appear when the serialization of the message fails or the SHA(SHA(header)) fails
     fn send_get_headers_message<RW: Read + Write>(
         &self,
         peer_stream: &mut RW,
         block_chain: &BlockChain,
-    ) -> Result<(), ErrorMessage> {
+    ) -> Result<(), ErrorNode> {
         let _ = self
             .sender_log
             .log_connection("Serializing last headers from blockchain".to_string());
@@ -75,7 +74,7 @@ impl InitialHeaderDownload {
     /// Updates the block chain with the headers received from the peer
     ///
     /// ### Error
-    ///  * `ErrorMessage::InSerialization`: It will appear when the serialization of the message fails or the SHA(SHA(header)) fails
+    ///  * `ErrorNode::InSerialization`: It will appear when the serialization of the message fails or the SHA(SHA(header)) fails
     ///  * `ErrorNode::NodeNotResponding`: It will appear when no message is received from the node
     ///  * `ErrorNode::WhileValidating`: It will appear when a given header does not pass the proof of work to be added to the blockchain
     pub fn get_headers<RW: Read + Write>(

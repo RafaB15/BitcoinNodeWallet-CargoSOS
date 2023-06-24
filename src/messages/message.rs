@@ -11,7 +11,6 @@ use super::{
     alert_message::AlertMessage,
     block_message::BlockMessage,
     command_name::CommandName,
-    error_message::ErrorMessage,
     fee_filter_message::FeeFilterMessage,
     get_data_message::GetDataMessage,
     get_headers_message::GetHeadersMessage,
@@ -32,6 +31,9 @@ use std::io::{Read, Write};
 pub const CHECKSUM_EMPTY_PAYLOAD: MagicType = [0x5d, 0xf6, 0xe0, 0xe2];
 
 pub trait Message: SerializableInternalOrder + DeserializableInternalOrder {
+    /// Serialize a message with a payload that is serializable
+    ///
+    ///  * `ErrorSerialization::ErrorSerialization`: It will appear when there is an error in the serialization
     fn serialize_message(
         stream: &mut dyn Write,
         magic_numbers: MagicType,
@@ -54,6 +56,7 @@ pub trait Message: SerializableInternalOrder + DeserializableInternalOrder {
         Ok(())
     }
 
+    /// Deserialize a message given the header of it
     ///
     /// ### Error
     ///  * `ErrorSerialization::ErrorSerialization`: It will appear when there is an error in the serialization
@@ -96,20 +99,25 @@ pub trait Message: SerializableInternalOrder + DeserializableInternalOrder {
         Ok(message)
     }
 
+    /// Calculate the checksum of a serialized message
     fn calculate_checksum(serialized_message: &[u8]) -> Result<[u8; 4], ErrorSerialization> {
         hash256d_reduce(serialized_message)
     }
 
+    /// Get the command name of the message to know the type of message
     fn get_command_name() -> CommandName;
 }
 
+/// Ignores any message that is not the one that is being searched for
+///
+/// ### Error
 ///  * `ErrorSerialization::ErrorSerialization`: It will appear when there is an error in the serialization
 ///  * `ErrorSerialization::ErrorInDeserialization`: It will appear when there is an error in the deserialization
 ///  * `ErrorSerialization::ErrorWhileReading`: It will appear when there is an error in the reading from a stream
 pub fn deserialize_until_found<RW: Read + Write>(
     stream: &mut RW,
     search_name: CommandName,
-) -> Result<MessageHeader, ErrorMessage> {
+) -> Result<MessageHeader, ErrorSerialization> {
     loop {
         let header = match MessageHeader::deserialize_header(stream) {
             Ok(header) => header,
@@ -148,6 +156,7 @@ pub fn deserialize_until_found<RW: Read + Write>(
     }
 }
 
+/// Ignores any message of type Message
 pub fn ignore_message<M: Message>(
     stream: &mut dyn Read,
     header: MessageHeader,
