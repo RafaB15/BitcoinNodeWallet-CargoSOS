@@ -6,6 +6,8 @@ use crate::serialization::{
     serializable_internal_order::SerializableInternalOrder,
 };
 
+use crate::block_structure::hash::hash160;
+
 use std::{
     convert::TryFrom,
     io::{Read, Write},
@@ -30,6 +32,10 @@ impl PublicKey {
     /// Returns the public key as a byte array
     pub fn as_bytes(&self) -> PublicKeyType {
         self.key.clone()
+    }
+
+    pub fn get_hashed_160(&self) -> Result<[u8; 20], ErrorSerialization> {
+        hash160(&self.key)
     }
 }
 

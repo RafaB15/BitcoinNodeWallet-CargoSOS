@@ -3,7 +3,7 @@ use super::error_tui::ErrorTUI;
 use cargosos_bitcoin::{
     logs::logger_sender::LoggerSender,
     wallet_structure::{
-        account::Account, address::Address, private_key::PrivateKey, public_key::PublicKey,
+        account::Account, address::Address, private_key::{PrivateKey, self}, public_key::PublicKey,
         wallet::Wallet,
     },
 };
@@ -137,11 +137,25 @@ fn get_account_name() -> Result<String, ErrorTUI> {
 pub fn create_account(logger: LoggerSender) -> Result<Account, ErrorTUI> {
     let _ = logger.log_wallet("Creating a new account".to_string());
 
+    let private_key = get_private_key(logger.clone())?;
+    let public_key = get_public_key(logger.clone())?;
+    let address = match Address::from_public_key(&public_key) {
+        Ok(result) => result,
+        Err(error) => {
+            let _ = logger.log_wallet(format!(
+                "Error creating the address from the public key, with error: {:?}",
+                error
+            ));
+            return Err(ErrorTUI::TerminalReadFail);
+        }
+    };
+    let account_name = get_account_name()?;
+
     let account = Account {
-        private_key: get_private_key(logger.clone())?,
-        public_key: get_public_key(logger.clone())?,
-        address: get_address(logger.clone())?,
-        account_name: get_account_name()?,
+        private_key,
+        public_key,
+        address,
+        account_name,
     };
 
     let _ = logger.log_wallet("Account created successfully!".to_string());

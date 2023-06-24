@@ -18,4 +18,7 @@ pub enum ErrorWallet {
 
     /// It will appear when an account does not have enough funds to create a transaction for the amount requested
     NotEnoughFunds(String),
+
+    /// It will appear when a problem appears when trying to create an address from a public key
+    CannotCreateAddress(String),
 }
