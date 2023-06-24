@@ -342,8 +342,6 @@ fn broadcasting(
 
     broadcasting.destroy()?;
 
-    println!("HOliwis");
-
     match handle.join() {
         Ok(_) => Ok(()),
         Err(_) => Err(ErrorGUI::ErrorFromPeer("Failed to remove notifications".to_string()).into()),

@@ -6,9 +6,12 @@ use super::{
 };
 
 use gtk::{prelude::*, Button, Entry, Application, Builder, Window, ComboBoxText, Image, Label, SpinButton};
-use gtk::glib;
+use gtk::glib::{self, Sender};
 
-use crate::process::save_system::SaveSystem;
+use crate::{
+    process::save_system::SaveSystem,
+    error_execution::ErrorExecution,
+};
 
 use cargosos_bitcoin::configurations::{
     connection_config::ConnectionConfig, download_config::DownloadConfig,
@@ -19,7 +22,10 @@ use cargosos_bitcoin::{
     logs::logger_sender::LoggerSender,
 };
 
-use std::sync::mpsc;
+use std::{
+    sync::mpsc, 
+    cell::Cell,
+};
 
 fn login_main_window(application: &gtk::Application, builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) -> Result<(), ErrorGUI>{
 
@@ -29,10 +35,10 @@ fn login_main_window(application: &gtk::Application, builder: &Builder, tx_to_ba
     let application_clone = application.clone();
     let tx_to_back_clone = tx_to_back.clone();
     window.connect_destroy(move |_| {
+        application_clone.quit();
         if tx_to_back_clone.send(SignalToBack::ExitProgram).is_err(){
             println!("Error sending exit program signal");
         };
-        application_clone.quit();
     });
 
     let account_registration_button: Button = match builder.object("AccountRegistrationButton") {
@@ -188,19 +194,21 @@ fn login_transaction_page(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBa
 }
 
 fn build_ui(
+    tx_to_back: mpsc::Sender<SignalToBack>,
+    rx_from_back: Option<glib::Receiver<SignalToFront>>,
     application: &gtk::Application, 
     glade_src: &str,
-    connection_config: ConnectionConfig,
-    download_config: DownloadConfig,
-    save_config: SaveConfig,
-    logger: LoggerSender,
 ) {
+
+    let rx_from_back = match rx_from_back {
+        Some(rx) => rx,
+        None => {
+            println!("Error: Missing rx_from_back");
+            return;
+        },
+    };
+
     let builder: Builder = Builder::from_string(glade_src);
-
-    let (tx_to_back, rx_from_front) = mpsc::channel::<SignalToBack>();
-    let (tx_to_front, rx_from_back) = glib::MainContext::channel::<SignalToFront>(glib::PRIORITY_DEFAULT);
-
-    spawn_backend_handler(connection_config, download_config, save_config, logger, tx_to_front, rx_from_front);
 
     spawn_local_handler(&builder, rx_from_back);
 
@@ -216,15 +224,26 @@ pub fn program_execution(
     download_config: DownloadConfig,
     save_config: SaveConfig,
     logger: LoggerSender,
-) -> Result<SaveSystem, ErrorGUI> {
+) -> Result<SaveSystem, ErrorExecution> {
+
+    let (tx_to_back, rx_from_front) = mpsc::channel::<SignalToBack>();
+    let (tx_to_front, rx_from_back) = glib::MainContext::channel::<SignalToFront>(glib::PRIORITY_DEFAULT);
+
+    let backend_handler = spawn_backend_handler(connection_config, download_config, save_config, logger, tx_to_front, rx_from_front);
+
     let glade_src = include_str!("WindowNotebook.glade");
 
     let application = Application::builder()
         .build();
 
-    application.connect_activate(move |app| build_ui(app, glade_src, connection_config.clone(), download_config.clone(), save_config.clone(), logger.clone()));
+    let wrapped_rx_to_back: Cell<Option<gtk::glib::Receiver<SignalToFront>>> = Cell::new(Some(rx_from_back));
+
+    application.connect_activate(move |app| build_ui(tx_to_back.clone(), wrapped_rx_to_back.take(), app, glade_src));
     let vector: Vec<String> = Vec::new();
     application.run_with_args(&vector);
 
-    Err(ErrorGUI::FailedToInitializeGTK)
+    match backend_handler.join() {
+        Ok(save_system) => save_system,
+        Err(_) => Err(ErrorExecution::FailThread),
+    }
 }
