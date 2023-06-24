@@ -36,7 +36,7 @@ pub enum ErrorExecution {
     ///
     Message(ErrorMessage),
 
-    ///
+    /// It represents all posible errors that can occur in the block chain, and related structures
     Block(ErrorBlock),
 
     /// It represents all posible errors that can occur while making the protocols of a node
