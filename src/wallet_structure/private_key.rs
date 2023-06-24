@@ -16,14 +16,17 @@ use secp256k1::{Secp256k1, SecretKey};
 pub const PRIVATE_KEY_SIZE: usize = 32;
 pub type PrivateKeyType = [u8; PRIVATE_KEY_SIZE];
 
+/// It's the internal representation of a private key for an account
 #[derive(Debug, Clone, PartialEq)]
 pub struct PrivateKey {
     key: SecretKey,
 }
 
 impl PrivateKey {
-    /// Recibe un string que representa una llave privada en formato WIF (no comprimida)
-    /// Devuelve un objeto PrivateKey
+    /// Creates a private key object from a string with a WIF (uncompressed)
+    ///
+    /// ### Error
+    ///  * `ErrorWallet::CannotGeneratePrivateKey`: It will appear when private key for an account cannot be generated
     pub fn new(private_key_bytes: &PrivateKeyType) -> Result<PrivateKey, ErrorWallet> {
         let key = match SecretKey::from_slice(private_key_bytes) {
             Ok(key) => key,
@@ -38,10 +41,15 @@ impl PrivateKey {
         Ok(PrivateKey { key })
     }
 
-    pub fn as_bytes(&self) -> PrivateKeyType {
+    /// Returns the private key as a byte array
+    fn as_bytes(&self) -> PrivateKeyType {
         self.key.secret_bytes()
     }
 
+    /// Return a message signed with the private key of the account
+    ///
+    /// ### Error
+    ///  * `ErrorWallet::CannotSignMessage`: It will appear when a transaction cannot be signed
     pub fn sign(&self, message: &[u8]) -> Result<Vec<u8>, ErrorWallet> {
         let message = match secp256k1::Message::from_slice(message) {
             Ok(message) => message,

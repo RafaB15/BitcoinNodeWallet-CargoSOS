@@ -20,8 +20,6 @@ pub mod pong_message;
 pub mod send_cmpct_message;
 pub mod send_headers_message;
 
-pub mod error_message;
-
 pub mod bitfield_services;
 pub mod compact_size;
 pub mod inventory_vector;

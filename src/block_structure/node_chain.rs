@@ -15,6 +15,7 @@ use std::io::{Read, Write};
 
 pub(super) const NONE_INDEX: u64 = u64::MAX;
 
+/// It's the representation of a node in the block chain
 #[derive(Debug, Clone)]
 pub(super) struct NodeChain {
     pub block: Block,
@@ -24,6 +25,10 @@ pub(super) struct NodeChain {
 }
 
 impl NodeChain {
+    /// It creates a node chain without a previous one
+    ///
+    /// ### Error
+    ///  * `ErrorBlock::CouldNotHash`: It will appear when a header could not be hash correctly
     pub fn first(block: Block) -> Result<Self, ErrorBlock> {
         let header_hash = match block.header.get_hash256d() {
             Ok(hash) => hash,
@@ -37,6 +42,10 @@ impl NodeChain {
         })
     }
 
+    /// It creates a node chain with a previous one
+    ///
+    /// ### Error
+    ///  * `ErrorBlock::CouldNotHash`: It will appear when a header could not be hash correctly
     pub fn new(block: Block, index_previous_node: usize) -> Result<Self, ErrorBlock> {
         let header_hash = match block.header.get_hash256d() {
             Ok(hash) => hash,
@@ -50,23 +59,26 @@ impl NodeChain {
         })
     }
 
+    /// Returns if a given block is the previous of the current one
     pub fn is_previous_of(&self, block: &Block) -> bool {
         self.header_hash
             .eq(&block.header.previous_block_header_hash)
     }
 
+    /// Returns if a given block is the same as the current one
     pub fn is_equal(&self, block: &Block) -> bool {
-        let (given_hash, hash) = match (
-            block.header.get_hash256d(),
-            self.block.header.get_hash256d(),
-        ) {
-            (Ok(given_hash), Ok(hash)) => (given_hash, hash),
+        let (given_hash, hash) = match (block.header.get_hash256d(), self.header_hash) {
+            (Ok(given_hash), hash) => (given_hash, hash),
             _ => return false,
         };
 
         given_hash.eq(&hash)
     }
 
+    /// It updates the information of the current node chain
+    ///
+    /// ### Error
+    ///  * `ErrorBlock::CouldNotHash`: It will appear when a header could not be hash correctly
     pub(super) fn update_block(&mut self, block: Block) -> Result<(), ErrorBlock> {
         let header_hash = match block.header.get_hash256d() {
             Ok(hash) => hash,

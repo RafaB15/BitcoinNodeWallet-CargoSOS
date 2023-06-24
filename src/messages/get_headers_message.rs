@@ -1,5 +1,3 @@
-use crate::connections::p2p_protocol::ProtocolVersionP2P;
-
 use super::{command_name::CommandName, compact_size::CompactSize, message::Message};
 
 use crate::serialization::{
@@ -10,14 +8,17 @@ use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
 };
 
-use std::io::{Read, Write};
-
 use crate::block_structure::hash::HashType;
 
+use crate::connections::p2p_protocol::ProtocolVersionP2P;
+
+use std::io::{Read, Write};
+
+/// It's the get headers message
 pub struct GetHeadersMessage {
     pub version: ProtocolVersionP2P,
-    pub header_locator_hashes: Vec<HashType>, //Lista de hashes de los headers que el recv node va a chequear si tiene
-    pub stop_hash: HashType, //El hash hasta el que quiero avanzar. Todos ceros significa que quiero ir hasta el final
+    pub header_locator_hashes: Vec<HashType>,
+    pub stop_hash: HashType,
 }
 
 impl GetHeadersMessage {

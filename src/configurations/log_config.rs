@@ -14,6 +14,7 @@ pub struct LogConfig {
     /// The file path to where to write the logs message
     pub filepath_log: String,
 
+    /// If the logs message are shown in the terminal
     pub show_console: bool,
 }
 

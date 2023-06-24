@@ -3,19 +3,20 @@ use super::{
     transaction::Transaction, transaction_output::TransactionOutput,
 };
 
-use crate::serialization::serializable_internal_order::SerializableInternalOrder;
-
-use crate::wallet_structure::address::Address;
+use crate::{
+    serialization::serializable_internal_order::SerializableInternalOrder,
+    wallet_structure::address::Address,
+};
 
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct UTXOSet {
-    pub utxo: HashMap<Outpoint, TransactionOutput>,
+    utxo: HashMap<Outpoint, TransactionOutput>,
 }
 
 impl UTXOSet {
-    /// Creates a new UTXOSet from a vector of blocks.
+    /// Creates a new UTXOSet from a vector of blocks
     pub fn new(blocks: Vec<Block>) -> UTXOSet {
         let mut utxo_set = UTXOSet {
             utxo: HashMap::new(),
@@ -28,12 +29,12 @@ impl UTXOSet {
         utxo_set
     }
 
-    /// Creates a new UTXOSet from a blockchain.
+    /// Creates a new UTXOSet from a blockchain
     pub fn from_blockchain(blockchain: &BlockChain) -> UTXOSet {
         Self::new(blockchain.get_all_blocks())
     }
 
-    /// Returns a list of the utxo that have not been spent yet.
+    /// Returns a list of the utxo that have not been spent yet
     pub fn get_utxo_list(&self, possible_address: &Option<Address>) -> Vec<TransactionOutput> {
         self.utxo
             .values()
@@ -50,6 +51,7 @@ impl UTXOSet {
             .collect()
     }
 
+    /// Get the list of transaction outputs of the given address. In case of not given an address it will get all of them
     pub fn get_utxo_list_with_outpoints(
         &self,
         possible_address: Option<&Address>,
@@ -69,7 +71,7 @@ impl UTXOSet {
             .collect()
     }
 
-    /// Updates the UTXOSet with the transaction outputs of a new block.
+    /// Updates the UTXOSet with the transaction outputs of a new block
     fn update_utxo_with_transaction_output(&mut self, transactions: &Vec<Transaction>) {
         for transaction in transactions {
             let mut serialized_transaction: Vec<u8> = Vec::new();
@@ -83,16 +85,13 @@ impl UTXOSet {
             };
 
             for (index_utxo, output) in transaction.tx_out.iter().enumerate() {
-                let outpoint = Outpoint {
-                    hash: hashed_transaction.clone(),
-                    index: index_utxo as u32,
-                };
+                let outpoint = Outpoint::new(hashed_transaction.clone(), index_utxo as u32);
                 self.utxo.insert(outpoint, output.clone());
             }
         }
     }
 
-    /// Updates the UTXOSet with the transaction inputs of a new block.
+    /// Updates the UTXOSet with the transaction inputs of a new block
     fn update_utxo_with_transaction_input(&mut self, transactions: &Vec<Transaction>) {
         for transaction in transactions {
             for input in &transaction.tx_in {
@@ -148,10 +147,7 @@ mod tests {
         ));
 
         let transaction_input = TransactionInput::new(
-            Outpoint {
-                hash: [1; 32],
-                index: 23,
-            },
+            Outpoint::new([1; 32], 23),
             "Prueba in".as_bytes().to_vec(),
             24,
         );
@@ -194,10 +190,7 @@ mod tests {
         ));
 
         let transaction_input = TransactionInput::new(
-            Outpoint {
-                hash: [1; 32],
-                index: 23,
-            },
+            Outpoint::new([1; 32], 23),
             "Prueba in".as_bytes().to_vec(),
             24,
         );
@@ -281,10 +274,7 @@ mod tests {
         let hashed_transaction = hash256d(&serialized_transaction).unwrap();
 
         let transaction_input_1 = TransactionInput::new(
-            Outpoint {
-                hash: hashed_transaction,
-                index: 0,
-            },
+            Outpoint::new(hashed_transaction, 0),
             "Prueba in".as_bytes().to_vec(),
             24,
         );
@@ -329,10 +319,7 @@ mod tests {
         ));
 
         let transaction_input = TransactionInput::new(
-            Outpoint {
-                hash: [1; 32],
-                index: 23,
-            },
+            Outpoint::new([1; 32], 23),
             "Prueba in".as_bytes().to_vec(),
             24,
         );
