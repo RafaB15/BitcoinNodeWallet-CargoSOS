@@ -104,3 +104,27 @@ impl DeserializableLittleEndian for Compact256 {
         Ok(value.into())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_01_correct_compact256_serialization() {
+        let value: u32 = 0x1F000000;
+        let compact256 = Compact256::from(value);
+
+        let mut stream: Vec<u8> = Vec::new();
+        compact256.le_serialize(&mut stream).unwrap();
+
+        assert_eq!(stream, vec![0x00, 0x00, 0x00, 0x1F]);
+    }
+
+    #[test]
+    fn test_02_correct_compact256_deserialization() {
+        let mut stream: &[u8] = &[0x00, 0x00, 0x00, 0x1F];
+        let compact256 = Compact256::le_deserialize(&mut stream).unwrap();
+
+        assert_eq!(compact256, Compact256::from(0x1F000000));
+    }
+}
