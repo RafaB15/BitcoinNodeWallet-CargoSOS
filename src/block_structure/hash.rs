@@ -1,6 +1,6 @@
 use crate::serialization::error_serialization::ErrorSerialization;
 
-use bitcoin_hashes::{sha256, sha256d, Hash, hash160};
+use bitcoin_hashes::{hash160, sha256, sha256d, Hash};
 
 pub const HASH_TYPE_SIZE: usize = 32;
 pub const HASH_TYPE_REDUCE_SIZE: usize = 4;
@@ -64,7 +64,6 @@ pub fn hash160(bytes: &[u8]) -> Result<[u8; 20], ErrorSerialization> {
 
     Ok(hash_bytes_20)
 }
-
 
 /// It hashes to times a byte array using sha256 and then it reduces it to 4 bytes
 ///

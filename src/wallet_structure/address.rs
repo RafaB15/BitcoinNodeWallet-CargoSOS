@@ -1,7 +1,4 @@
-use super::{
-    error_wallet::ErrorWallet,
-    public_key::PublicKey,
-};
+use super::{error_wallet::ErrorWallet, public_key::PublicKey};
 
 use crate::serialization::{
     deserializable_fix_size::DeserializableFixSize,
@@ -12,13 +9,11 @@ use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
 };
 
-use crate::block_structure::{
-    transaction_output::TransactionOutput,
-    hash::hash256d_reduce,
-};
+use crate::block_structure::{hash::hash256d_reduce, transaction_output::TransactionOutput};
 
 use std::{
     convert::TryInto,
+    fmt::Display,
     io::{Read, Write},
 };
 
@@ -71,7 +66,7 @@ impl Address {
             address_string: address.to_string(),
         })
     }
-    
+
     /// Generates an Address from a public key
     /// ### Error
     ///  * `ErrorWallet::CannotCreateAccount`: It will appear when there was a problem hashing
@@ -193,10 +188,14 @@ mod tests {
         let address = Address::new(&address).unwrap();
         assert!(address.extract_hashed_pk() == hashed_pk);
     }
-  
+
     #[test]
     fn test_03_correct_address_creation_from_pubkey() {
-        let pubkey_bytes: [u8; 33] = [0x03, 0xBC, 0x6D, 0x45, 0xD2, 0x10, 0x1E, 0x91, 0x28, 0xDE, 0x14, 0xB5, 0xB6, 0x68, 0x83, 0xD6, 0x9C, 0xF1, 0xC3, 0x1A, 0x50, 0xB9, 0x6F, 0xEA, 0x2D, 0xAD, 0x4E, 0xD2, 0x35, 0x14, 0x92, 0x4A, 0x22];
+        let pubkey_bytes: [u8; 33] = [
+            0x03, 0xBC, 0x6D, 0x45, 0xD2, 0x10, 0x1E, 0x91, 0x28, 0xDE, 0x14, 0xB5, 0xB6, 0x68,
+            0x83, 0xD6, 0x9C, 0xF1, 0xC3, 0x1A, 0x50, 0xB9, 0x6F, 0xEA, 0x2D, 0xAD, 0x4E, 0xD2,
+            0x35, 0x14, 0x92, 0x4A, 0x22,
+        ];
         let pubkey = PublicKey::new(&pubkey_bytes);
         let address = Address::from_public_key(&pubkey).unwrap();
         let actual_address = Address::new("mnQLoVaZ3w1NLVmUhfG8hh6WoG3iu7cnNw").unwrap();
