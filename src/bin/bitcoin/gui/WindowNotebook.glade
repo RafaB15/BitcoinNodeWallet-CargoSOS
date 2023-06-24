@@ -188,7 +188,18 @@ There is an error in the information entered</property>
           </object>
           <packing>
             <property name="x">179</property>
-            <property name="y">127</property>
+            <property name="y">182</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="ErrorLabel">
+            <property name="name">ErrorLabel</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+          </object>
+          <packing>
+            <property name="x">210</property>
+            <property name="y">135</property>
           </packing>
         </child>
       </object>

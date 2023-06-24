@@ -60,6 +60,8 @@ fn login_main_window(application: &gtk::Application, builder: &Builder, tx_to_ba
     });
 
     login_send_page(&builder, tx_to_back.clone())?;
+    
+    //login_transaction_page(&builder, tx_to_back.clone())?;
 
     window.show_all();
     Ok(())
@@ -104,15 +106,33 @@ fn login_combo_box(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) {
 }
 
 
-fn login_transaction_error_window(builder: &Builder, error: &str) {
-    let transaction_error_window: Window = builder.object("TransactionErrorWindow").unwrap();
-    let error_label: Label = builder.object("ErrorLabel").unwrap();
-    error_label.set_text(error);
-    let cloned_builder = builder.clone();
-    let transaction_error_button: Button = builder.object("OkButton").unwrap();
+fn login_transaction_error_window(builder: &Builder) -> Result<(), ErrorGUI> {
+    let transaction_error_window: Window = match builder.object("TransactionErrorWindow") {
+        Some(transaction_error_window) => transaction_error_window,
+        None => return Err(ErrorGUI::MissingElement("TransactionErrorWindow".to_string())),
+    };
+    let transaction_error_button: Button = match builder.object("OkButton") {
+        Some(transaction_error_button) => transaction_error_button,
+        None => return Err(ErrorGUI::MissingElement("OkButton".to_string())),
+    };
     transaction_error_button.connect_clicked(move |_| {
         transaction_error_window.set_visible(false);
     });
+    Ok(())
+}
+
+fn show_window_with_error(builder: &Builder, error: &str) -> Result<(), ErrorGUI> {
+    let transaction_error_window: Window = match builder.object("TransactionErrorWindow") {
+        Some(transaction_error_window) => transaction_error_window,
+        None => return Err(ErrorGUI::MissingElement("TransactionErrorWindow".to_string())),
+    };
+    let error_label: Label = match builder.object("ErrorLabel"){
+        Some(error_label) => error_label,
+        None => return Err(ErrorGUI::MissingElement("ErrorLabel".to_string())),
+    };
+    error_label.set_text(error);
+    transaction_error_window.set_visible(true);
+    Ok(())
 }
 /* 
 fn register_transaction(tx_to_back: mpsc::Sender<SignalToBack> ,builder: &Builder) {
@@ -153,7 +173,7 @@ fn spawn_local_handler(builder: &Builder, rx_from_back: glib::Receiver<SignalToF
                 signal_blockchain_not_ready.set_visible(false);
             }
             SignalToFront::ErrorInTransaction(error) => {
-                login_transaction_error_window(&cloned_builder, error.as_str());
+                let _ = show_window_with_error(&cloned_builder, error.as_str());
             },
             _ => {}
 
@@ -186,8 +206,16 @@ fn login_send_page(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) ->
                 SpinButton::with_range(0.0, 0.0, 0.0)
             },
         };
+        let fee_spin_button: SpinButton = match cloned_builder.object("FeeSpinButton"){
+            Some(entry) => entry,
+            None => {
+                println!("Error: Missing element FeeSpinButton");
+                SpinButton::with_range(0.0, 0.0, 0.0)
+            },
+        };
         bitcoin_address_entry.set_text("");
         amount_spin_button.set_value(0.0);
+        fee_spin_button.set_value(0.0);
     });
 
     let transaction_send_button: Button = match builder.object("TransactionSendButton") {
@@ -225,6 +253,10 @@ fn login_send_page(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) ->
     Ok(())
 }
 
+fn login_transaction_page(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) -> Result<(), ErrorGUI>{
+    Ok(())
+}
+
 fn build_ui(
     tx_to_back: mpsc::Sender<SignalToBack>,
     rx_from_back: Option<glib::Receiver<SignalToFront>>,
@@ -248,6 +280,9 @@ fn build_ui(
     login_registration_window(&builder, application);
 
     login_combo_box(&builder, tx_to_back.clone());
+
+    login_transaction_error_window(&builder);
+
     Ok(())
 }
 
