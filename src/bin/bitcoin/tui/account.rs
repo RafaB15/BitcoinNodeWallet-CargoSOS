@@ -210,5 +210,5 @@ pub fn show_accounts<'t>(wallet: &MutexGuard<'t, Wallet>, logger: LoggerSender) 
     wallet
         .accounts
         .iter()
-        .for_each(|account| println!("{account}"));
+        .for_each(|account| println!("{account}\n"));
 }

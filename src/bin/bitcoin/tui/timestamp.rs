@@ -43,10 +43,12 @@ impl Timestamp {
             Timestamp::Year,
         ];
 
+        let mut message = "".to_string();
         for option in options {
             let option_id: char = (*option).into();
-            println!("{option} [{option_id}]");
+            message.push_str(&format!("{option} [{option_id}]\n"));
         }
+        println!("{message}")
     }
 }
 

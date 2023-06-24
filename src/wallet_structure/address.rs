@@ -15,6 +15,7 @@ use bs58::decode;
 
 use std::{
     convert::TryInto,
+    fmt::Display,
     io::{Read, Write},
 };
 
@@ -110,6 +111,12 @@ impl DeserializableInternalOrder for Address {
             address_string: String::deserialize_fix_size(stream, address_string_length)?,
             address_bytes: <[u8; 25] as DeserializableInternalOrder>::io_deserialize(stream)?,
         })
+    }
+}
+
+impl Display for Address {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.address_string)
     }
 }
 

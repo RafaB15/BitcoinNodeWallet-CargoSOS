@@ -3,8 +3,8 @@ use super::{error_node::ErrorNode, message_response::MessageResponse};
 use crate::{
     block_structure::{hash::HashType, transaction::Transaction},
     configurations::connection_config::ConnectionConfig,
+    connections::type_identifier::TypeIdentifier,
     logs::logger_sender::LoggerSender,
-    connections::type_identifier::{TypeIdentifier, self},
     messages::{
         addr_message::AddrMessage,
         alert_message::AlertMessage,
@@ -15,6 +15,7 @@ use crate::{
         get_headers_message::GetHeadersMessage,
         headers_message::HeadersMessage,
         inventory_message::InventoryMessage,
+        inventory_vector::InventoryVector,
         message::{ignore_message, Message},
         message_header::MessageHeader,
         ping_message::PingMessage,
@@ -23,8 +24,7 @@ use crate::{
         send_headers_message::SendHeadersMessage,
         tx_message::TxMessage,
         verack_message::VerackMessage,
-        version_message::VersionMessage, 
-        inventory_vector::InventoryVector,
+        version_message::VersionMessage,
     },
     node_structure::block_download::BlockDownload,
 };
@@ -228,7 +228,7 @@ where
     }
 
     /// Receives the inventory message for requesting to know about a new transaction
-    /// 
+    ///
     /// ### Error
     ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
     ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
@@ -238,7 +238,7 @@ where
             .logger
             .log_connection("Receiving a inventory message".to_string());
         let inventory_message = InventoryMessage::deserialize_message(&mut self.peer, header)?;
-        
+
         let mut inventory_vectors: Vec<InventoryVector> = Vec::new();
         for inventory_vector in inventory_message.inventory_vectors {
             match inventory_vector.type_identifier.clone() {
@@ -270,7 +270,7 @@ where
                 "Sending get data message to peers".to_string(),
             ));
         }
-        
+
         Ok(())
     }
 
