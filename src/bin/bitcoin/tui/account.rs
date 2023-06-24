@@ -221,8 +221,16 @@ pub fn select_account<'t>(
 pub fn show_accounts<'t>(wallet: &MutexGuard<'t, Wallet>, logger: LoggerSender) {
     let _ = logger.log_wallet("Showing accounts".to_string());
 
-    wallet
-        .get_accounts()
-        .iter()
-        .for_each(|account| println!("{account}\n"));
+    let possible_selected_account = wallet.get_selected_account();
+
+    wallet.get_accounts().iter().for_each(|account| {
+        let mut selected = "";
+        if let Some(selected_account) = possible_selected_account {
+            if selected_account == account {
+                selected = "[★ ]";
+            }
+        }
+
+        println!("{selected} {account}\n");
+    });
 }
