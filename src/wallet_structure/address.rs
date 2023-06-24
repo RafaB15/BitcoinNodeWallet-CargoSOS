@@ -79,7 +79,7 @@ impl Address {
         let hashed_pk = match public_key.get_hashed_160() {
             Ok(hashed_pk) => hashed_pk,
             Err(e) => {
-                return Err(ErrorWallet::CannotCreateAccount(format!(
+                return Err(ErrorWallet::CannotCreateAddress(format!(
                     "Cannot hash public key, error : {:?}",
                     e
                 )))
@@ -91,7 +91,7 @@ impl Address {
         let checksum = match hash256d_reduce(&extended_hashed_pk) {
             Ok(checksum) => checksum,
             Err(e) => {
-                return Err(ErrorWallet::CannotCreateAccount(format!(
+                return Err(ErrorWallet::CannotCreateAddress(format!(
                     "Cannot hash public key, error : {:?}",
                     e
                 )))
