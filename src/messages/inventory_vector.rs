@@ -13,6 +13,7 @@ use crate::serialization::{
 use std::io::Read;
 
 /// It's the reduce representation of any sendable data
+#[derive(Debug, Clone)]
 pub struct InventoryVector {
     pub type_identifier: TypeIdentifier,
     pub hash_value: HashType,
