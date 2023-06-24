@@ -11,7 +11,7 @@ use crate::{
         block_message::BlockMessage,
         command_name::CommandName,
         fee_filter_message::FeeFilterMessage,
-        get_data_message::GetDataMessage,
+        get_data_message::{GetDataMessage, self},
         get_headers_message::GetHeadersMessage,
         headers_message::HeadersMessage,
         inventory_message::InventoryMessage,
@@ -163,17 +163,22 @@ where
             })
             .collect();
 
-        let block_download =
-            BlockDownload::new(self.connection_config.magic_numbers, self.logger.clone());
+        let get_data_message = GetDataMessage::get_blocks(headers);
 
-        let blocks = block_download.get_data(&mut self.peer, headers)?;
+        let _ = self
+            .logger
+            .log_connection("Sending get data message of blocks to peer".to_string());
 
-        for block in blocks {
-            if self.sender.send(MessageResponse::Block(block)).is_err() {
-                return Err(ErrorNode::WhileSendingMessage(
-                    "Sending block back".to_string(),
-                ));
-            }
+        if GetDataMessage::serialize_message(
+            &mut self.peer,
+            self.connection_config.magic_numbers,
+            &get_data_message,
+        )
+        .is_err()
+        {
+            return Err(ErrorNode::WhileSendingMessage(
+                "Sending get data message to peers".to_string(),
+            ));
         }
 
         Ok(())
@@ -253,11 +258,11 @@ where
             return Ok(());
         }
 
-        let get_data_message = GetDataMessage { inventory_vectors };
+        let get_data_message = GetDataMessage::new(inventory_vectors);
 
         let _ = self
             .logger
-            .log_connection("Sending get data message to peer".to_string());
+            .log_connection("Sending get data message of transactions and blocks to peer".to_string());
 
         if GetDataMessage::serialize_message(
             &mut self.peer,

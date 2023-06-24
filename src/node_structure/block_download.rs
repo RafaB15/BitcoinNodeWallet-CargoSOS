@@ -42,7 +42,7 @@ impl BlockDownload {
     ) -> Result<(), ErrorNode> {
         let _ = self.sender_log.log_connection("Getting data".to_string());
 
-        let get_data_message = GetDataMessage::new(hashed_headers);
+        let get_data_message = GetDataMessage::get_blocks(hashed_headers);
 
         GetDataMessage::serialize_message(peer_stream, self.magic_numbers, &get_data_message)?;
 
