@@ -139,6 +139,10 @@ impl Transaction {
         Ok(unsigned_transaction)
     }
 
+    /// Sign the transaction with the given account
+    /// 
+    /// ### Error
+    ///  * `ErrorWallet::CannotCreateNewTransaction`: It will appear when a transaction cannot be created
     pub fn get_signed_by_account(&mut self, account: &Account) -> Result<(), ErrorWallet> {
         let unsigned_transaction = self.clone();
 
