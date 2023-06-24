@@ -11,12 +11,19 @@ const WRITE_BLOCK_CHAIN: &str = "write_block_chain";
 const READ_WALLET: &str = "read_wallet";
 const WRITE_WALLET: &str = "write_wallet";
 
+/// It represents all the data needed to load and save the data of the program
 #[derive(Debug, PartialEq, Clone)]
 pub struct SaveConfig {
+    /// It's the file name where the block chain will be loaded
     pub read_block_chain: Option<String>,
+
+    /// It's the file name where the wallet will be loaded
     pub read_wallet: Option<String>,
 
+    /// It's the file name where the block chain will be saved
     pub write_block_chain: Option<String>,
+
+    /// It's the file name where the wallet will be saved
     pub write_wallet: Option<String>,
 }
 

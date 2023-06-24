@@ -9,6 +9,7 @@ use crate::serialization::{
 };
 use std::io::{Read, Write};
 
+/// It's the fee filter message
 #[derive(Debug)]
 pub struct FeeFilterMessage {
     pub feerate: u64,

@@ -10,6 +10,7 @@ use crate::serialization::{
 
 use std::io::{Read, Write};
 
+/// It's the block message
 pub struct BlockMessage {
     pub block: Block,
 }

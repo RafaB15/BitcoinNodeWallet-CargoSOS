@@ -168,7 +168,7 @@ fn get_account_from_name<'t>(
     account_name: &str,
     wallet: &MutexGuard<'t, Wallet>,
 ) -> Option<Account> {
-    for account in wallet.accounts.iter() {
+    for account in wallet.get_accounts() {
         if account.account_name == account_name {
             return Some(account.clone());
         }
@@ -222,7 +222,7 @@ pub fn show_accounts<'t>(wallet: &MutexGuard<'t, Wallet>, logger: LoggerSender) 
     let _ = logger.log_wallet("Showing accounts".to_string());
 
     wallet
-        .accounts
+        .get_accounts()
         .iter()
         .for_each(|account| println!("{account}"));
 }

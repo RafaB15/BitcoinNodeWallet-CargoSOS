@@ -17,30 +17,33 @@ use crate::block_structure::{
     hash::hash256d_reduce,
 };
 
-use bs58::decode;
-
 use std::{
     convert::TryInto,
     io::{Read, Write},
 };
+
+use bs58::decode;
 
 pub const ADDRESS_SIZE: usize = 25;
 pub const ADDRESS_TESTNET_VERSION_BYTE: u8 = 0x6f;
 
 pub type AddressType = [u8; ADDRESS_SIZE];
 
-
+/// It's the internal representation of an address in an account
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Address {
-    pub address_bytes: AddressType,
-    pub address_string: String,
+    address_bytes: AddressType,
+    address_string: String,
 }
 
 impl Address {
     /// Creates an address object from a string with a Bitcoin address
+    ///
+    /// ### Error
+    ///  * `ErrorWallet::CannotDecodeAddress`: It will appear when address for an account cannot be generated
     pub fn new(address: &str) -> Result<Address, ErrorWallet> {
         if address.len() != 34 {
-            return Err(ErrorWallet::InvalidAddress(format!(
+            return Err(ErrorWallet::CannotDecodeAddress(format!(
                 "Invalid address length, expected 34, got {}",
                 address.len()
             )));
@@ -68,7 +71,10 @@ impl Address {
             address_string: address.to_string(),
         })
     }
-
+    
+    /// Generates an Address from a public key
+    /// ### Error
+    ///  * `ErrorWallet::CannotCreateAccount`: It will appear when there was a problem hashing
     pub fn from_public_key(public_key: &PublicKey) -> Result<Address, ErrorWallet> {
         let hashed_pk = match public_key.get_hashed_160() {
             Ok(hashed_pk) => hashed_pk,
@@ -102,11 +108,12 @@ impl Address {
     }
 
     /// Extracts the hashed public key from the address
-    pub fn extract_hashed_pk(&self) -> &[u8] {
+    fn extract_hashed_pk(&self) -> &[u8] {
         let hashed_pk = &self.address_bytes[1..21];
         hashed_pk
     }
 
+    /// Generates the script pubkey for P2PKH from this address
     pub fn generate_script_pubkey_p2pkh(&self) -> Vec<u8> {
         let mut script_pubkey = vec![0x76, 0xa9, 0x14];
         script_pubkey.extend_from_slice(self.extract_hashed_pk());
@@ -114,9 +121,9 @@ impl Address {
         script_pubkey
     }
 
-    /// Returns true if the address owns the given utxo (works for P2PKH) and false otherwise.
-    pub fn verify_transaction_ownership(&self, utxo: &TransactionOutput) -> bool {
-        let pk_script = utxo.pk_script.clone();
+    /// Returns true if the address owns the given transaction output (works for P2PKH) and false otherwise.
+    pub fn verify_transaction_ownership(&self, txo: &TransactionOutput) -> bool {
+        let pk_script = txo.pk_script.clone();
         if pk_script.len() != 25 {
             return false;
         }
@@ -180,7 +187,7 @@ mod tests {
         let address = Address::new(&address).unwrap();
         assert!(address.extract_hashed_pk() == hashed_pk);
     }
-
+  
     #[test]
     fn test_03_correct_address_creation_from_pubkey() {
         let pubkey_bytes: [u8; 33] = [0x03, 0xBC, 0x6D, 0x45, 0xD2, 0x10, 0x1E, 0x91, 0x28, 0xDE, 0x14, 0xB5, 0xB6, 0x68, 0x83, 0xD6, 0x9C, 0xF1, 0xC3, 0x1A, 0x50, 0xB9, 0x6F, 0xEA, 0x2D, 0xAD, 0x4E, 0xD2, 0x35, 0x14, 0x92, 0x4A, 0x22];

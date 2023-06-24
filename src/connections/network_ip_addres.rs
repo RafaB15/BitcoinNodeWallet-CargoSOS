@@ -7,16 +7,18 @@ use crate::serialization::{
 
 use crate::messages::bitfield_services::BitfieldServices;
 
-use std::net::Ipv6Addr;
+use std::{
+    io::{Read, Write},
+    net::Ipv6Addr,
+};
 
-use std::io::{Read, Write};
-
+/// It's the representation of a new potential peer to connect to
 #[derive(Debug)]
 pub struct NetworkIpAddres {
-    pub time: u32,
-    pub services: BitfieldServices,
-    pub ip_address: Ipv6Addr,
-    pub port: u16,
+    time: u32,
+    services: BitfieldServices,
+    ip_address: Ipv6Addr,
+    port: u16,
 }
 
 impl SerializableLittleEndian for NetworkIpAddres {

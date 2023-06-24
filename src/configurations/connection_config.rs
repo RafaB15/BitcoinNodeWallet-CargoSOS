@@ -22,26 +22,37 @@ const NONCE: &str = "nonce";
 const USER_AGENT: &str = "user_agent";
 const RELAY: &str = "relay";
 
+/// It represents all the data needed to establish a connection
 #[derive(Debug, PartialEq, Clone)]
 pub struct ConnectionConfig {
+    /// It's the DNS from where the potential peers will be obtaineds
     pub dns_seeder: DNSSeeder,
-    /// Es la versión del protocolo peer to peer que se planea utilizar
+
+    /// It's the version of the peer to peer protocol that will be used
     pub p2p_protocol_version: ProtocolVersionP2P,
-    ///El método usado para el initial blocks download
+
+    /// It's the method used for the initial blocks download
     pub ibd_method: IBDMethod,
 
+    /// It's the maximum number of peers that will be connected
     pub peer_count_max: usize,
 
+    /// It's the block height from where the initial blocks download will start
     pub block_height: i32,
 
+    /// It's the services that this node will offer
     pub services: BitfieldServices,
 
+    /// It's the magic numbers that will be used to identify the network
     pub magic_numbers: MagicType,
 
+    /// It's used to detect connections to self
     pub nonce: u64,
 
+    /// It's used in the version message
     pub user_agent: String,
 
+    /// It's the flag that indicates if the node will relay transactions
     pub relay: bool,
 }
 
@@ -95,10 +106,7 @@ mod tests {
         let connection_result = ConnectionConfig::parse(name, &map);
 
         let config_connection = ConnectionConfig {
-            dns_seeder: DNSSeeder {
-                dns_addr: "seed.testnet.bitcoin.sprovoost.nl".to_string(),
-                port_number: 18333,
-            },
+            dns_seeder: DNSSeeder::new("seed.testnet.bitcoin.sprovoost.nl", 18333),
             p2p_protocol_version: ProtocolVersionP2P::V70015,
             ibd_method: IBDMethod::HeaderFirst,
             peer_count_max: 8,
@@ -139,10 +147,7 @@ mod tests {
         let connection_result = ConnectionConfig::parse(name, &map);
 
         let config_connection = ConnectionConfig {
-            dns_seeder: DNSSeeder {
-                dns_addr: "seed.testnet.bitcoin.sprovoost.nl".to_string(),
-                port_number: 18333,
-            },
+            dns_seeder: DNSSeeder::new("seed.testnet.bitcoin.sprovoost.nl", 18333),
             p2p_protocol_version: ProtocolVersionP2P::V70015,
             ibd_method: IBDMethod::HeaderFirst,
             peer_count_max: 8,
@@ -209,10 +214,7 @@ mod tests {
         let connection_result = ConnectionConfig::parse(name, &map);
 
         let config_connection = ConnectionConfig {
-            dns_seeder: DNSSeeder {
-                dns_addr: "seed.testnet.bitcoin.sprovoost.nl".to_string(),
-                port_number: 18333,
-            },
+            dns_seeder: DNSSeeder::new("seed.testnet.bitcoin.sprovoost.nl", 18333),
             p2p_protocol_version: ProtocolVersionP2P::V70015,
             ibd_method: IBDMethod::HeaderFirst,
             peer_count_max: 8,

@@ -56,6 +56,7 @@ const TX_NAME: CommandNameType = [
     b't', b'x', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0', b'\0',
 ];
 
+/// It's the representation of the type of message received or sent
 #[derive(Debug, Copy, Clone, std::cmp::PartialEq)]
 pub enum CommandName {
     Version,

@@ -12,8 +12,8 @@ use crate::configurations::{
 
 use std::{cmp::PartialEq, str::FromStr};
 
+/// It's the representation of the P2P protocol version
 #[derive(Debug, PartialEq, Copy, Clone)]
-///Enum que representa la versión del protocolo P2P que se va a utilizar
 pub enum ProtocolVersionP2P {
     V70016,
     V70015,
@@ -32,9 +32,9 @@ pub enum ProtocolVersionP2P {
     V209,
     V106,
 }
-///Implementación del trait que permite hacer parse
+
 impl FromStr for ProtocolVersionP2P {
-    type Err = ErrorConnection;
+    type Err = ErrorConfiguration;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         match value {
@@ -54,16 +54,6 @@ impl FromStr for ProtocolVersionP2P {
             "V311" => Ok(ProtocolVersionP2P::V311),
             "V209" => Ok(ProtocolVersionP2P::V209),
             "V106" => Ok(ProtocolVersionP2P::V106),
-            _ => Err(ErrorConnection::ErrorInvalidInputParse),
-        }
-    }
-}
-
-impl Parsable for ProtocolVersionP2P {
-    fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
-        let value = value_from_map(name.to_string(), map)?;
-        match value.parse::<ProtocolVersionP2P>() {
-            Ok(value) => Ok(value),
             _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
                 "protocol version p2p of {:?}",
                 value
@@ -71,9 +61,16 @@ impl Parsable for ProtocolVersionP2P {
         }
     }
 }
-/// Implementación del trait try_from que permite convertir a i32
+
+impl Parsable for ProtocolVersionP2P {
+    fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
+        let value = value_from_map(name.to_string(), map)?;
+        value.parse::<ProtocolVersionP2P>()
+    }
+}
+
 impl std::convert::TryFrom<i32> for ProtocolVersionP2P {
-    type Error = ErrorConnection;
+    type Error = ErrorConfiguration;
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
@@ -93,12 +90,14 @@ impl std::convert::TryFrom<i32> for ProtocolVersionP2P {
             311 => Ok(ProtocolVersionP2P::V311),
             209 => Ok(ProtocolVersionP2P::V209),
             106 => Ok(ProtocolVersionP2P::V106),
-            _ => Err(ErrorConnection::ErrorInvalidInputParse),
+            _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
+                "protocol version p2p of {:?}",
+                value
+            ))),
         }
     }
 }
 
-/// Implementación del trait que permite convertir a i32
 impl std::convert::TryInto<i32> for ProtocolVersionP2P {
     type Error = ErrorConnection;
 

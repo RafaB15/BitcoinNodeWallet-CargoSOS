@@ -1,7 +1,5 @@
 use super::{command_name::CommandName, compact_size::CompactSize, message::Message};
 
-use crate::block_structure::block_header::BlockHeader;
-
 use crate::serialization::{
     deserializable_internal_order::DeserializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian,
@@ -10,8 +8,11 @@ use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
 };
 
+use crate::block_structure::block_header::BlockHeader;
+
 use std::io::{Read, Write};
 
+/// It's the headers message
 pub struct HeadersMessage {
     pub headers: Vec<BlockHeader>,
 }

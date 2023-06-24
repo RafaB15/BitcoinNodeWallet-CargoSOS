@@ -11,6 +11,7 @@ use crate::serialization::{
 
 use std::io::{Read, Write};
 
+/// It's the send headers message
 #[derive(Debug, std::cmp::PartialEq)]
 pub struct SendHeadersMessage;
 
