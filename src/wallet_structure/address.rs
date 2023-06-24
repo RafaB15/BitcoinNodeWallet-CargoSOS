@@ -1,4 +1,7 @@
-use super::error_wallet::ErrorWallet;
+use super::{
+    error_wallet::ErrorWallet,
+    public_key::PublicKey,
+};
 
 use crate::serialization::{
     deserializable_fix_size::DeserializableFixSize,
@@ -9,7 +12,10 @@ use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
 };
 
-use crate::block_structure::transaction_output::TransactionOutput;
+use crate::block_structure::{
+    transaction_output::TransactionOutput,
+    hash::hash256d_reduce,
+};
 
 use bs58::decode;
 
@@ -19,7 +25,10 @@ use std::{
 };
 
 pub const ADDRESS_SIZE: usize = 25;
+pub const ADDRESS_TESTNET_VERSION_BYTE: u8 = 0x6f;
+
 pub type AddressType = [u8; ADDRESS_SIZE];
+
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Address {
@@ -57,6 +66,41 @@ impl Address {
         Ok(Address {
             address_bytes: decoded_list,
             address_string: address.to_string(),
+        })
+    }
+
+    pub fn from_public_key(public_key: &PublicKey) -> Result<Address, ErrorWallet> {
+        let hashed_pk = match public_key.get_hashed_160() {
+            Ok(hashed_pk) => hashed_pk,
+            Err(e) => {
+                return Err(ErrorWallet::CannotCreateAccount(format!(
+                    "Cannot hash public key, error : {:?}",
+                    e
+                )))
+            }
+        };
+        let checksum = match hash256d_reduce(&hashed_pk) {
+            Ok(checksum) => checksum,
+            Err(e) => {
+                return Err(ErrorWallet::CannotCreateAccount(format!(
+                    "Cannot hash public key, error : {:?}",
+                    e
+                )))
+            }
+        };
+        let mut address_bytes = [0; 25];
+        address_bytes[0] = ADDRESS_TESTNET_VERSION_BYTE;
+        address_bytes[1..21].clone_from_slice(&hashed_pk);
+        address_bytes[21..25].clone_from_slice(&checksum[0..4]);
+        /* 
+        address_bytes.push(ADDRESS_TESTNET_VERSION_BYTE);
+        address_bytes.extend_from_slice(&hashed_pk);
+        address_bytes.extend_from_slice(&checksum);
+        */
+        let address_string = bs58::encode(address_bytes.to_vec()).into_string();
+        Ok(Address {
+            address_bytes,
+            address_string,
         })
     }
 
