@@ -23,13 +23,17 @@ pub struct GetDataMessage {
 }
 
 impl GetDataMessage {
-    pub fn new(hash_vector: Vec<HashType>) -> GetDataMessage {
+    pub fn new(inventory_vectors: Vec<InventoryVector>) -> GetDataMessage {
+        GetDataMessage { inventory_vectors }
+    }
+
+    pub fn get_blocks(hash_vector: Vec<HashType>) -> GetDataMessage {
         let mut inventory_vectors = Vec::new();
         for hash in hash_vector {
             inventory_vectors.push(InventoryVector::new(TypeIdentifier::Block, hash));
         }
 
-        GetDataMessage { inventory_vectors }
+        GetDataMessage::new(inventory_vectors)
     }
 }
 
