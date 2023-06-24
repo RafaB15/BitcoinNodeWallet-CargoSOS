@@ -82,3 +82,236 @@ impl DeserializableInternalOrder for Block {
         })
     }
 }
+
+#[cfg(test)]
+
+mod tests {
+    use super::*;
+
+    use crate::block_structure::{
+        block_version,
+        compact256::Compact256, 
+        outpoint::Outpoint, 
+        transaction_input::TransactionInput,
+        transaction_output::TransactionOutput,
+    };
+
+    use crate::messages::compact_size::CompactSize;
+
+    #[test]
+    fn test_01_correct_block_serialization() {
+        let block_header = BlockHeader::new(
+            block_version::BlockVersion::version(1),
+            [0; 32],
+            [0; 32],
+            0,
+            Compact256::from(10),
+            0,
+            CompactSize::new(2),
+        );
+
+        let transaction_input = TransactionInput::new(
+            Outpoint {
+                hash: [1; 32],
+                index: 23,
+            },
+            vec![1, 2, 3],
+            24,
+        );
+
+        let transaction_output = TransactionOutput {
+            value: 10,
+            pk_script: vec![4, 5, 6],
+        };
+
+        let transaction_1 = Transaction {
+            version: 1,
+            tx_in: vec![transaction_input],
+            tx_out: vec![transaction_output],
+            time: 0,
+        };
+
+        let transaction_2 = transaction_1.clone();
+
+        let transactions = vec![transaction_1, transaction_2];
+
+        let block = Block {
+            header: block_header.clone(),
+            transactions: transactions.clone(),
+        };
+
+        let mut serialized_fields = Vec::new();
+        block_header.io_serialize(&mut serialized_fields).unwrap();
+        for transaction in transactions.iter() {
+            transaction.io_serialize(&mut serialized_fields).unwrap();
+        }
+
+        let mut serialized_block = Vec::new();
+        block.io_serialize(&mut serialized_block).unwrap();
+
+        assert_eq!(serialized_fields, serialized_block);
+    }
+
+    #[test]
+    fn test_02_correct_block_deserialization() {
+        let block_header = BlockHeader::new(
+            block_version::BlockVersion::version(1),
+            [0; 32],
+            [0; 32],
+            0,
+            Compact256::from(10),
+            0,
+            CompactSize::new(2),
+        );
+
+        let transaction_input = TransactionInput::new(
+            Outpoint {
+                hash: [1; 32],
+                index: 23,
+            },
+            vec![1, 2, 3],
+            24,
+        );
+
+        let transaction_output = TransactionOutput {
+            value: 10,
+            pk_script: vec![4, 5, 6],
+        };
+
+        let transaction_1 = Transaction {
+            version: 1,
+            tx_in: vec![transaction_input],
+            tx_out: vec![transaction_output],
+            time: 0,
+        };
+
+        let transaction_2 = transaction_1.clone();
+
+        let transactions = vec![transaction_1, transaction_2];
+
+        let block = Block {
+            header: block_header.clone(),
+            transactions: transactions.clone(),
+        };
+
+        let mut serialized_block = Vec::new();
+        block.io_serialize(&mut serialized_block).unwrap();
+
+        let deserialized_block = Block::io_deserialize(&mut serialized_block.as_slice()).unwrap();
+
+        assert_eq!(block, deserialized_block);
+    }
+
+    #[test]
+    fn test_03_correct_transaction_error() {
+        let block_header = BlockHeader::new(
+            block_version::BlockVersion::version(1),
+            [0; 32],
+            [0; 32],
+            0,
+            Compact256::from(10),
+            0,
+            CompactSize::new(1),
+        );
+
+        let transaction_input = TransactionInput::new(
+            Outpoint {
+                hash: [1; 32],
+                index: 23,
+            },
+            vec![1, 2, 3],
+            24,
+        );
+
+        let transaction_output = TransactionOutput {
+            value: 10,
+            pk_script: vec![4, 5, 6],
+        };
+
+        let transaction_1 = Transaction {
+            version: 1,
+            tx_in: vec![transaction_input],
+            tx_out: vec![transaction_output],
+            time: 0,
+        };
+
+        let transaction_input = TransactionInput::new(
+            Outpoint {
+                hash: [2; 32],
+                index: 26,
+            },
+            vec![1, 2, 3],
+            24,
+        );
+
+        let transaction_output = TransactionOutput {
+            value: 10,
+            pk_script: vec![4, 5, 6],
+        };
+
+        let transaction_2 = Transaction {
+            version: 1,
+            tx_in: vec![transaction_input],
+            tx_out: vec![transaction_output],
+            time: 0,
+        };
+
+        let transactions = vec![transaction_1];
+
+        let mut block = Block {
+            header: block_header.clone(),
+            transactions: transactions.clone(),
+        };
+
+        assert!(block.transactions.len() == 1);
+        block.append_transaction(transaction_2).unwrap();
+        assert!(block.transactions.len() == 2);
+    }
+
+    #[test]
+    fn test_04_cannot_append_a_transaction_already_in_block() {
+        let block_header = BlockHeader::new(
+            block_version::BlockVersion::version(1),
+            [0; 32],
+            [0; 32],
+            0,
+            Compact256::from(10),
+            0,
+            CompactSize::new(1),
+        );
+
+        let transaction_input = TransactionInput::new(
+            Outpoint {
+                hash: [1; 32],
+                index: 23,
+            },
+            vec![1, 2, 3],
+            24,
+        );
+
+        let transaction_output = TransactionOutput {
+            value: 10,
+            pk_script: vec![4, 5, 6],
+        };
+
+        let transaction_1 = Transaction {
+            version: 1,
+            tx_in: vec![transaction_input],
+            tx_out: vec![transaction_output],
+            time: 0,
+        };
+
+        let transaction_2 = transaction_1.clone();
+
+        let transactions = vec![transaction_1];
+
+        let mut block = Block {
+            header: block_header.clone(),
+            transactions: transactions.clone(),
+        };
+
+        assert!(block.transactions.len() == 1);
+        assert!(block.append_transaction(transaction_2).is_err());
+    }
+
+}
