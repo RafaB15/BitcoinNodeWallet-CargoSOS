@@ -11,7 +11,7 @@ use crate::{
         block_message::BlockMessage,
         command_name::CommandName,
         fee_filter_message::FeeFilterMessage,
-        get_data_message::{GetDataMessage, self},
+        get_data_message::GetDataMessage,
         get_headers_message::GetHeadersMessage,
         headers_message::HeadersMessage,
         inventory_message::InventoryMessage,
@@ -26,7 +26,6 @@ use crate::{
         verack_message::VerackMessage,
         version_message::VersionMessage,
     },
-    node_structure::block_download::BlockDownload,
 };
 
 use std::{
@@ -260,9 +259,9 @@ where
 
         let get_data_message = GetDataMessage::new(inventory_vectors);
 
-        let _ = self
-            .logger
-            .log_connection("Sending get data message of transactions and blocks to peer".to_string());
+        let _ = self.logger.log_connection(
+            "Sending get data message of transactions and blocks to peer".to_string(),
+        );
 
         if GetDataMessage::serialize_message(
             &mut self.peer,
