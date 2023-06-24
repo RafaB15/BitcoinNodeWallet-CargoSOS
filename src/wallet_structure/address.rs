@@ -79,7 +79,10 @@ impl Address {
                 )))
             }
         };
-        let checksum = match hash256d_reduce(&hashed_pk) {
+        let mut extended_hashed_pk = Vec::new();
+        extended_hashed_pk.push(ADDRESS_TESTNET_VERSION_BYTE);
+        extended_hashed_pk.extend_from_slice(&hashed_pk);
+        let checksum = match hash256d_reduce(&extended_hashed_pk) {
             Ok(checksum) => checksum,
             Err(e) => {
                 return Err(ErrorWallet::CannotCreateAccount(format!(
@@ -89,14 +92,8 @@ impl Address {
             }
         };
         let mut address_bytes = [0; 25];
-        address_bytes[0] = ADDRESS_TESTNET_VERSION_BYTE;
-        address_bytes[1..21].clone_from_slice(&hashed_pk);
-        address_bytes[21..25].clone_from_slice(&checksum[0..4]);
-        /* 
-        address_bytes.push(ADDRESS_TESTNET_VERSION_BYTE);
-        address_bytes.extend_from_slice(&hashed_pk);
-        address_bytes.extend_from_slice(&checksum);
-        */
+        address_bytes[..21].clone_from_slice(&extended_hashed_pk);
+        address_bytes[21..25].clone_from_slice(&checksum);
         let address_string = bs58::encode(address_bytes.to_vec()).into_string();
         Ok(Address {
             address_bytes,
@@ -182,5 +179,14 @@ mod tests {
         ];
         let address = Address::new(&address).unwrap();
         assert!(address.extract_hashed_pk() == hashed_pk);
+    }
+
+    #[test]
+    fn test_03_correct_address_creation_from_pubkey() {
+        let pubkey_bytes: [u8; 33] = [0x03, 0xBC, 0x6D, 0x45, 0xD2, 0x10, 0x1E, 0x91, 0x28, 0xDE, 0x14, 0xB5, 0xB6, 0x68, 0x83, 0xD6, 0x9C, 0xF1, 0xC3, 0x1A, 0x50, 0xB9, 0x6F, 0xEA, 0x2D, 0xAD, 0x4E, 0xD2, 0x35, 0x14, 0x92, 0x4A, 0x22];
+        let pubkey = PublicKey::new(&pubkey_bytes);
+        let address = Address::from_public_key(&pubkey).unwrap();
+        let actual_address = Address::new("mnQLoVaZ3w1NLVmUhfG8hh6WoG3iu7cnNw").unwrap();
+        assert_eq!(address, actual_address);
     }
 }
