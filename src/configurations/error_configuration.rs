@@ -1,4 +1,4 @@
-/// Represents all the possible error that can appear in the parsing process
+/// It represents all the possible error that can appear in the parsing process
 #[derive(Debug, std::cmp::PartialEq)]
 pub enum ErrorConfiguration {
     /// It will appear when there isn't a configuration at all

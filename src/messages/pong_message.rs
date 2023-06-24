@@ -10,6 +10,7 @@ use crate::serialization::{
 
 use std::io::{Read, Write};
 
+/// It's the pong message
 pub struct PongMessage {
     pub nonce: u64,
 }

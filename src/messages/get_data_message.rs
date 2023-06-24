@@ -3,12 +3,6 @@ use super::{
     message::Message,
 };
 
-use crate::connections::type_identifier::TypeIdentifier;
-
-use crate::block_structure::hash::HashType;
-
-use std::io::Read;
-
 use crate::serialization::{
     deserializable_internal_order::DeserializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian,
@@ -17,6 +11,13 @@ use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
 };
 
+use crate::connections::type_identifier::TypeIdentifier;
+
+use crate::block_structure::hash::HashType;
+
+use std::io::Read;
+
+/// It's the get data message
 pub struct GetDataMessage {
     pub inventory_vectors: Vec<InventoryVector>,
 }

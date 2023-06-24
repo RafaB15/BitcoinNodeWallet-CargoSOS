@@ -1,9 +1,8 @@
-use std::io::{Read, Write};
+use super::error_node::ErrorNode;
 
 use crate::messages::{
     block_message::BlockMessage,
     command_name::CommandName,
-    error_message::ErrorMessage,
     get_data_message::GetDataMessage,
     message::{self, Message},
     message_header::MagicType,
@@ -12,6 +11,8 @@ use crate::messages::{
 use crate::logs::logger_sender::LoggerSender;
 
 use crate::block_structure::{block::Block, hash::HashType};
+
+use std::io::{Read, Write};
 
 const MAX_HEADERS_COUNT: usize = 50_000;
 
@@ -38,7 +39,7 @@ impl BlockDownload {
         &self,
         peer_stream: &mut RW,
         hashed_headers: Vec<HashType>,
-    ) -> Result<(), ErrorMessage> {
+    ) -> Result<(), ErrorNode> {
         let _ = self.sender_log.log_connection("Getting data".to_string());
 
         let get_data_message = GetDataMessage::new(hashed_headers);
@@ -57,7 +58,7 @@ impl BlockDownload {
         &self,
         peer_stream: &mut RW,
         headers_count: usize,
-    ) -> Result<Vec<Block>, ErrorMessage> {
+    ) -> Result<Vec<Block>, ErrorNode> {
         let mut blocks: Vec<Block> = Vec::new();
         for i in 0..headers_count {
             if i % 100 == 0 {
@@ -94,14 +95,14 @@ impl BlockDownload {
         &self,
         peer_stream: &mut RW,
         hashed_headers: Vec<HashType>,
-    ) -> Result<Vec<Block>, ErrorMessage> {
+    ) -> Result<Vec<Block>, ErrorNode> {
         let headers_count = hashed_headers.len();
 
         if headers_count >= MAX_HEADERS_COUNT {
             let _ = self
                 .sender_log
                 .log_connection("More headers than possible".to_string());
-            return Err(ErrorMessage::RequestedDataTooBig);
+            return Err(ErrorNode::RequestedDataTooBig);
         }
 
         self.send_get_data_message(peer_stream, hashed_headers)?;

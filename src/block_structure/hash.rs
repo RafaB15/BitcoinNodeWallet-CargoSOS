@@ -8,6 +8,10 @@ pub const HASH_TYPE_REDUCE_SIZE: usize = 4;
 pub type HashType = [u8; HASH_TYPE_SIZE];
 pub type HashTypeReduced = [u8; HASH_TYPE_REDUCE_SIZE];
 
+/// It hashes a byte array using sha256
+///
+/// ### Error
+///  * `ErrorSerialization::ErrorInSerialization`: It will appear when there is an error in the serialization
 pub fn hash256(bytes: &[u8]) -> Result<HashType, ErrorSerialization> {
     let hash_bytes = sha256::Hash::hash(bytes);
     let hash_bytes: &[u8] = hash_bytes.as_ref();
@@ -23,6 +27,10 @@ pub fn hash256(bytes: &[u8]) -> Result<HashType, ErrorSerialization> {
     Ok(hash_bytes_32)
 }
 
+/// It hashes to times a byte array using sha256
+///
+/// ### Error
+///  * `ErrorSerialization::ErrorInSerialization`: It will appear when there is an error in the serialization
 pub fn hash256d(bytes: &[u8]) -> Result<HashType, ErrorSerialization> {
     let hash_bytes = sha256d::Hash::hash(bytes);
     let hash_bytes: &[u8] = hash_bytes.as_ref();
@@ -38,6 +46,10 @@ pub fn hash256d(bytes: &[u8]) -> Result<HashType, ErrorSerialization> {
     Ok(hash_bytes_32)
 }
 
+/// It hashes to times a byte array using sha256 and then it reduces it to 4 bytes
+///
+/// ### Error
+///  * `ErrorSerialization::ErrorInSerialization`: It will appear when there is an error in the serialization
 pub fn hash256d_reduce(bytes: &[u8]) -> Result<HashTypeReduced, ErrorSerialization> {
     let hash_byte_32: HashType = hash256d(bytes)?;
 

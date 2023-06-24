@@ -59,7 +59,7 @@ fn filters_peer(
         }
     };
 
-    match node.connect_to_testnet_peer(&mut peer_stream, &local_socket, &potential_peer) {
+    match node.connect_to_peer(&mut peer_stream, &local_socket, &potential_peer) {
         Ok(_) => Some(peer_stream),
         Err(error) => {
             let _ = logger_sender.log_connection(format!(

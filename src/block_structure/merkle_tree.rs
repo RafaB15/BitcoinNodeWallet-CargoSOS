@@ -12,12 +12,11 @@ pub struct MerkleTree {
 }
 
 impl MerkleTree {
-    ///Creates a new Merkle Tree from a list of transactions
-    ///
+    /// Creates a new Merkle Tree from a list of transactions
     ///
     /// ### Errors
-    ///  * `CouldNotWriteTxId` - If the transaction id could not be written
-    ///  * `CouldNotGetVecTxIds` - If the transaction id vector could not be obtained
+    ///  * `ErrorBlock::CouldNotWriteTxId`: It will appear when the transaction id could not be written
+    ///  * `ErrorBlock::CouldNotGetVecTxIds`: It will appear when the transaction id could not be created
     pub fn new(transactions: &[Transaction]) -> Result<MerkleTree, ErrorBlock> {
         //chequeo que sea base de 2, si lo es no hago nada, sino -> aplico 2 ^ log_2(transactions.len) = initial_count
 
@@ -72,7 +71,7 @@ impl MerkleTree {
     /// It will be at the first position of the vector
     ///
     /// ### Errors
-    ///    * `RootHashNotFound` - If the root hash could not be found
+    ///    * `ErrorBlock::RootHashNotFound`: It will appear when the root hash in merkle tree could not be found
     pub fn get_root(&self) -> Result<HashType, ErrorBlock> {
         let hashes: Vec<HashType> = self.hashes.clone();
         let root: HashType = match hashes.last() {
@@ -85,7 +84,7 @@ impl MerkleTree {
     /// Returns the hash at the given index
     ///
     /// ### Errors
-    ///   * `NoHashFound` - If the hash could not be found
+    ///   * `ErrorBlock::NoHashFound`: It will appear when the hash in merkle tree could not be found at given index
     pub fn get_hash_at(&self, index: usize) -> Result<HashType, ErrorBlock> {
         let hashes: Vec<HashType> = self.hashes.clone();
         let hash: HashType = match hashes.get(index) {
@@ -98,9 +97,9 @@ impl MerkleTree {
     /// Returns the merkle path of the given transaction
     ///
     /// ### Errors
-    ///  * `TransactionNotFound` - If the transaction could not be found
-    ///  * `NoHashFound` - If the hash could not be found
-    ///  * `CouldNotWriteTxId` - If the transaction id could not be written (while creating the merkle tree)
+    ///  * `ErrorBlock::TransactionNotFound`: It will appear when the transaction could not be found
+    ///  * `ErrorBlock::NoHashFound`: It will appear when the hash in merkle tree could not be found at given index
+    ///  * `ErrorBlock::CouldNotWriteTxId`: It will appear when the transaction id could not be written (while creating the merkle tree)
     pub fn get_merkle_path(
         transactions: &[Transaction],
         target_transaction: Transaction,

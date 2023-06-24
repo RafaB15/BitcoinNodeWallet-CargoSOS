@@ -11,6 +11,7 @@ use crate::serialization::{
 
 use std::io::{Read, Write};
 
+/// It's the verack message
 #[derive(Debug, std::cmp::PartialEq)]
 pub struct VerackMessage;
 

@@ -18,6 +18,7 @@ const WITNESS_BLOCK_VALUE: u32 = 0x40000002;
 const FILTERED_WITNESS_BLOCK_VALUE: u32 = 0x40000003;
 const PLACE_HOLDER_VALUE: u32 = 0x0201;
 
+/// It's the representation of the type of data to request
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeIdentifier {
     Error,

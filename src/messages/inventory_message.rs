@@ -3,8 +3,6 @@ use super::{
     message::Message,
 };
 
-use std::io::Read;
-
 use crate::serialization::{
     deserializable_internal_order::DeserializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian,
@@ -13,6 +11,9 @@ use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
 };
 
+use std::io::Read;
+
+/// It's the inventory message
 pub struct InventoryMessage {
     pub inventory_vectors: Vec<InventoryVector>,
 }

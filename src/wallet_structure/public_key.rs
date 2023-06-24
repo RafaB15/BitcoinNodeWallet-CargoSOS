@@ -14,6 +14,7 @@ use std::{
 pub const PUBLIC_KEY_SIZE: usize = 33;
 pub type PublicKeyType = [u8; PUBLIC_KEY_SIZE];
 
+/// It's the internal representation of a public key for an account
 #[derive(Debug, Clone, PartialEq)]
 pub struct PublicKey {
     key: PublicKeyType,
@@ -26,6 +27,7 @@ impl PublicKey {
         }
     }
 
+    /// Returns the public key as a byte array
     pub fn as_bytes(&self) -> PublicKeyType {
         self.key.clone()
     }
