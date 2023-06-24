@@ -39,12 +39,11 @@ impl Account {
         name: &str,
         private_key_bytes: &PrivateKeyType,
         public_key_bytes: &PublicKeyType,
-        addres: &str,
     ) -> Result<Account, ErrorWallet> {
         let account_name = name.to_string();
         let private_key = PrivateKey::new(private_key_bytes)?;
         let public_key = PublicKey::new(public_key_bytes);
-        let address = Address::new(addres)?;
+        let address = Address::from_public_key(&public_key)?;
 
         Ok(Account {
             account_name,
