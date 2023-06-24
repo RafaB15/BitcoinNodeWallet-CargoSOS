@@ -173,6 +173,10 @@ impl DeserializableInternalOrder for Account {
 
 impl Display for Account {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Account Name: {}\n\twith address: {}", self.account_name, self.address)
+        write!(
+            f,
+            "Account Name: {}\n\twith address: {}",
+            self.account_name, self.address
+        )
     }
 }
