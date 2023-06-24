@@ -12,6 +12,7 @@ use crate::configurations::{
 
 use std::{cmp::PartialEq, convert::TryInto};
 
+/// It's a bitfield of the services supported by the node
 #[derive(Debug, Clone)]
 pub struct BitfieldServices {
     pub elements: Vec<SupportedServices>,

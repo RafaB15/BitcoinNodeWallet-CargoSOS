@@ -5,8 +5,10 @@ use super::{
 
 const TIMESTAMP: &str = "timestamp";
 
+/// It represents all the data needed in the download process
 #[derive(Debug, PartialEq, Clone)]
 pub struct DownloadConfig {
+    /// It's the time from where the block download will start
     pub timestamp: u32,
 }
 

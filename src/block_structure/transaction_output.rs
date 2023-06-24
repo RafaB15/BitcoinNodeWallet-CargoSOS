@@ -8,10 +8,12 @@ use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
 };
 
-use std::io::{Read, Write};
+use std::{
+    cmp::PartialEq,
+    io::{Read, Write},
+};
 
-use std::cmp::PartialEq;
-
+/// It's the representation of a transaction output
 #[derive(Debug, Clone, PartialEq)]
 pub struct TransactionOutput {
     pub value: i64,

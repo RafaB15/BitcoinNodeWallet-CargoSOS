@@ -89,6 +89,15 @@ impl LoggerSender {
         Ok(())
     }
 
+    /// Sends the desired message with level: `Level::NOTIFICATION`
+    ///
+    /// ### Errores
+    ///  * `ErrorLog::ReceiverNotFound`: It will appear when the receiver it's drop and can't send the message
+    pub fn log_notification(&self, mensaje: String) -> Result<(), ErrorLog> {
+        self.log(Level::NOTIFICATION, mensaje)?;
+        Ok(())
+    }
+
     /// Sends the desired message with level: `Level::CONNECTION`
     ///
     /// ### Errores

@@ -5,9 +5,13 @@ use crate::configurations::{
 
 use std::{cmp::PartialEq, str::FromStr};
 
+/// It represents the interface that will be used
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Interface {
+    /// To use the graphical interface
     Gui,
+
+    /// To use the terminal interface
     Tui,
 }
 

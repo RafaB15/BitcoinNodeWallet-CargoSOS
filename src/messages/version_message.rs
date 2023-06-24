@@ -1,4 +1,7 @@
-use super::{bitfield_services::BitfieldServices, compact_size::CompactSize};
+use super::{
+    bitfield_services::BitfieldServices, command_name::CommandName, compact_size::CompactSize,
+    message::Message,
+};
 
 use crate::serialization::{
     deserializable_big_endian::DeserializableBigEndian,
@@ -10,16 +13,16 @@ use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
 };
 
-use super::{command_name::CommandName, message::Message};
+use crate::connections::p2p_protocol::ProtocolVersionP2P;
 
-use std::net::Ipv6Addr;
+use std::{
+    io::{Read, Write},
+    net::Ipv6Addr,
+};
 
 use chrono::{offset::Utc, DateTime};
 
-use std::io::{Read, Write};
-
-use crate::connections::p2p_protocol::ProtocolVersionP2P;
-
+/// It's the version message
 #[derive(Debug, std::cmp::PartialEq)]
 pub struct VersionMessage {
     pub version: ProtocolVersionP2P,
@@ -115,10 +118,8 @@ impl DeserializableInternalOrder for VersionMessage {
 mod tests {
     use crate::{
         connections::{p2p_protocol::ProtocolVersionP2P, suppored_services::SupportedServices},
-        messages::{
-            bitfield_services::BitfieldServices, compact_size::CompactSize,
-            error_message::ErrorMessage,
-        },
+        messages::{bitfield_services::BitfieldServices, compact_size::CompactSize},
+        serialization::error_serialization::ErrorSerialization,
     };
 
     use super::{
@@ -131,7 +132,7 @@ mod tests {
     use std::net::Ipv6Addr;
 
     #[test]
-    fn test01_serialize() -> Result<(), ErrorMessage> {
+    fn test01_serialize() -> Result<(), ErrorSerialization> {
         let version = ProtocolVersionP2P::V31402;
         let services = BitfieldServices::new(vec![SupportedServices::NodeNetworkLimited]);
 
@@ -194,7 +195,7 @@ mod tests {
     }
 
     #[test]
-    fn test02_deserialize() -> Result<(), ErrorMessage> {
+    fn test02_deserialize() -> Result<(), ErrorSerialization> {
         let version = ProtocolVersionP2P::V31402;
         let services = BitfieldServices::new(vec![SupportedServices::NodeNetworkLimited]);
 

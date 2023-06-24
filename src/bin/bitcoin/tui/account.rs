@@ -137,11 +137,25 @@ fn get_account_name() -> Result<String, ErrorTUI> {
 pub fn create_account(logger: LoggerSender) -> Result<Account, ErrorTUI> {
     let _ = logger.log_wallet("Creating a new account".to_string());
 
+    let private_key = get_private_key(logger.clone())?;
+    let public_key = get_public_key(logger.clone())?;
+    let address = match Address::from_public_key(&public_key) {
+        Ok(result) => result,
+        Err(error) => {
+            let _ = logger.log_wallet(format!(
+                "Error creating the address from the public key, with error: {:?}",
+                error
+            ));
+            return Err(ErrorTUI::TerminalReadFail);
+        }
+    };
+    let account_name = get_account_name()?;
+
     let account = Account {
-        private_key: get_private_key(logger.clone())?,
-        public_key: get_public_key(logger.clone())?,
-        address: get_address(logger.clone())?,
-        account_name: get_account_name()?,
+        private_key,
+        public_key,
+        address,
+        account_name,
     };
 
     let _ = logger.log_wallet("Account created successfully!".to_string());
@@ -154,7 +168,7 @@ fn get_account_from_name<'t>(
     account_name: &str,
     wallet: &MutexGuard<'t, Wallet>,
 ) -> Option<Account> {
-    for account in wallet.accounts.iter() {
+    for account in wallet.get_accounts() {
         if account.account_name == account_name {
             return Some(account.clone());
         }
@@ -208,7 +222,7 @@ pub fn show_accounts<'t>(wallet: &MutexGuard<'t, Wallet>, logger: LoggerSender) 
     let _ = logger.log_wallet("Showing accounts".to_string());
 
     wallet
-        .accounts
+        .get_accounts()
         .iter()
-        .for_each(|account| println!("{account}"));
+        .for_each(|account| println!("{account}\n"));
 }

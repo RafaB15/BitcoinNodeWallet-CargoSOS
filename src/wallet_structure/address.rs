@@ -1,4 +1,4 @@
-use super::error_wallet::ErrorWallet;
+use super::{error_wallet::ErrorWallet, public_key::PublicKey};
 
 use crate::serialization::{
     deserializable_fix_size::DeserializableFixSize,
@@ -9,29 +9,36 @@ use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
 };
 
-use crate::block_structure::transaction_output::TransactionOutput;
-
-use bs58::decode;
+use crate::block_structure::{hash::hash256d_reduce, transaction_output::TransactionOutput};
 
 use std::{
     convert::TryInto,
+    fmt::Display,
     io::{Read, Write},
 };
 
+use bs58::decode;
+
 pub const ADDRESS_SIZE: usize = 25;
+pub const ADDRESS_TESTNET_VERSION_BYTE: u8 = 0x6f;
+
 pub type AddressType = [u8; ADDRESS_SIZE];
 
+/// It's the internal representation of an address in an account
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Address {
-    pub address_bytes: AddressType,
-    pub address_string: String,
+    address_bytes: AddressType,
+    address_string: String,
 }
 
 impl Address {
     /// Creates an address object from a string with a Bitcoin address
+    ///
+    /// ### Error
+    ///  * `ErrorWallet::CannotDecodeAddress`: It will appear when address for an account cannot be generated
     pub fn new(address: &str) -> Result<Address, ErrorWallet> {
         if address.len() != 34 {
-            return Err(ErrorWallet::InvalidAddress(format!(
+            return Err(ErrorWallet::CannotDecodeAddress(format!(
                 "Invalid address length, expected 34, got {}",
                 address.len()
             )));
@@ -60,12 +67,48 @@ impl Address {
         })
     }
 
+    /// Generates an Address from a public key
+    /// ### Error
+    ///  * `ErrorWallet::CannotCreateAccount`: It will appear when there was a problem hashing
+    pub fn from_public_key(public_key: &PublicKey) -> Result<Address, ErrorWallet> {
+        let hashed_pk = match public_key.get_hashed_160() {
+            Ok(hashed_pk) => hashed_pk,
+            Err(e) => {
+                return Err(ErrorWallet::CannotCreateAddress(format!(
+                    "Cannot hash public key, error : {:?}",
+                    e
+                )))
+            }
+        };
+        let mut extended_hashed_pk = Vec::new();
+        extended_hashed_pk.push(ADDRESS_TESTNET_VERSION_BYTE);
+        extended_hashed_pk.extend_from_slice(&hashed_pk);
+        let checksum = match hash256d_reduce(&extended_hashed_pk) {
+            Ok(checksum) => checksum,
+            Err(e) => {
+                return Err(ErrorWallet::CannotCreateAddress(format!(
+                    "Cannot hash public key, error : {:?}",
+                    e
+                )))
+            }
+        };
+        let mut address_bytes = [0; 25];
+        address_bytes[..21].clone_from_slice(&extended_hashed_pk);
+        address_bytes[21..25].clone_from_slice(&checksum);
+        let address_string = bs58::encode(address_bytes.to_vec()).into_string();
+        Ok(Address {
+            address_bytes,
+            address_string,
+        })
+    }
+
     /// Extracts the hashed public key from the address
-    pub fn extract_hashed_pk(&self) -> &[u8] {
+    fn extract_hashed_pk(&self) -> &[u8] {
         let hashed_pk = &self.address_bytes[1..21];
         hashed_pk
     }
 
+    /// Generates the script pubkey for P2PKH from this address
     pub fn generate_script_pubkey_p2pkh(&self) -> Vec<u8> {
         let mut script_pubkey = vec![0x76, 0xa9, 0x14];
         script_pubkey.extend_from_slice(self.extract_hashed_pk());
@@ -73,9 +116,9 @@ impl Address {
         script_pubkey
     }
 
-    /// Returns true if the address owns the given utxo (works for P2PKH) and false otherwise.
-    pub fn verify_transaction_ownership(&self, utxo: &TransactionOutput) -> bool {
-        let pk_script = utxo.pk_script.clone();
+    /// Returns true if the address owns the given transaction output (works for P2PKH) and false otherwise.
+    pub fn verify_transaction_ownership(&self, txo: &TransactionOutput) -> bool {
+        let pk_script = txo.pk_script.clone();
         if pk_script.len() != 25 {
             return false;
         }
@@ -113,6 +156,12 @@ impl DeserializableInternalOrder for Address {
     }
 }
 
+impl Display for Address {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.address_string)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -138,5 +187,18 @@ mod tests {
         ];
         let address = Address::new(&address).unwrap();
         assert!(address.extract_hashed_pk() == hashed_pk);
+    }
+
+    #[test]
+    fn test_03_correct_address_creation_from_pubkey() {
+        let pubkey_bytes: [u8; 33] = [
+            0x03, 0xBC, 0x6D, 0x45, 0xD2, 0x10, 0x1E, 0x91, 0x28, 0xDE, 0x14, 0xB5, 0xB6, 0x68,
+            0x83, 0xD6, 0x9C, 0xF1, 0xC3, 0x1A, 0x50, 0xB9, 0x6F, 0xEA, 0x2D, 0xAD, 0x4E, 0xD2,
+            0x35, 0x14, 0x92, 0x4A, 0x22,
+        ];
+        let pubkey = PublicKey::new(&pubkey_bytes);
+        let address = Address::from_public_key(&pubkey).unwrap();
+        let actual_address = Address::new("mnQLoVaZ3w1NLVmUhfG8hh6WoG3iu7cnNw").unwrap();
+        assert_eq!(address, actual_address);
     }
 }

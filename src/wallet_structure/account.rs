@@ -14,6 +14,11 @@ use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
 };
 
+use crate::block_structure::{
+    outpoint::Outpoint, transaction::Transaction, transaction_output::TransactionOutput,
+    utxo_set::UTXOSet,
+};
+
 use std::{
     cmp::PartialEq,
     collections::HashMap,
@@ -21,11 +26,7 @@ use std::{
     io::{Read, Write},
 };
 
-use crate::block_structure::{
-    outpoint::Outpoint, transaction::Transaction, transaction_output::TransactionOutput,
-    utxo_set::UTXOSet,
-};
-
+/// It's the internal representation of an account in the wallet
 #[derive(Debug, Clone)]
 pub struct Account {
     pub account_name: String,
@@ -39,12 +40,11 @@ impl Account {
         name: &str,
         private_key_bytes: &PrivateKeyType,
         public_key_bytes: &PublicKeyType,
-        addres: &str,
     ) -> Result<Account, ErrorWallet> {
         let account_name = name.to_string();
         let private_key = PrivateKey::new(private_key_bytes)?;
         let public_key = PublicKey::new(public_key_bytes);
-        let address = Address::new(addres)?;
+        let address = Address::from_public_key(&public_key)?;
 
         Ok(Account {
             account_name,
@@ -54,11 +54,12 @@ impl Account {
         })
     }
 
-    /// Returns true if the account owns the given utxo (works for P2PKH) and false otherwise.
-    pub fn verify_transaction_output_ownership(&self, utxo: &TransactionOutput) -> bool {
-        self.address.verify_transaction_ownership(utxo)
+    /// Returns true if the account owns the given transaction output (works for P2PKH) and false otherwise.
+    pub fn verify_transaction_output_ownership(&self, txo: &TransactionOutput) -> bool {
+        self.address.verify_transaction_ownership(txo)
     }
 
+    /// Returns true if the account owns any transaction output given the transaction (works for P2PKH) and false otherwise.
     pub fn verify_transaction_ownership(&self, tx: &Transaction) -> bool {
         tx.verify_transaction_ownership(&self.address)
     }
@@ -73,6 +74,11 @@ impl Account {
         utxo_set.get_balance_in_tbtc(&self.address)
     }
 
+    /// Returns a transaction given the amount and to whom it is sent
+    ///
+    /// ### Error
+    ///  * `ErrorWallet::CannotCreateNewTransaction`: It will appear when a transaction cannot be created
+    ///  * `ErrorWallet::NotEnoughFunds`: It will appear when an account does not have enough funds to create a transaction for the amount requested
     pub fn create_transaction_with_available_outputs(
         &self,
         to: Address,
@@ -108,6 +114,11 @@ impl Account {
         }
     }
 
+    /// Returns a transaction given the amount and to whom it is sent
+    ///
+    /// ### Error
+    ///  * `ErrorWallet::CannotCreateNewTransaction`: It will appear when a transaction cannot be created
+    ///  * `ErrorWallet::NotEnoughFunds`: It will appear when an account does not have enough funds to create a transaction for the amount requested
     pub fn create_transaction(
         &self,
         to: Address,
@@ -119,6 +130,10 @@ impl Account {
         self.create_transaction_with_available_outputs(to, amount, fee, available_outputs)
     }
 
+    /// Return a message signed with the private key of the account
+    ///
+    /// ### Error
+    ///  * `ErrorWallet::CannotSignMessage`: It will appear when a transaction cannot be signed
     pub fn sign(&self, message: &[u8]) -> Result<Vec<u8>, ErrorWallet> {
         self.private_key.sign(message)
     }

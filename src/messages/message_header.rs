@@ -1,3 +1,5 @@
+use super::command_name::CommandName;
+
 use crate::serialization::{
     deserializable_internal_order::DeserializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian,
@@ -7,8 +9,6 @@ use crate::serialization::{
 };
 
 use crate::block_structure::hash::HashTypeReduced;
-
-use super::command_name::CommandName;
 
 use std::io::{Read, Write};
 
@@ -21,6 +21,7 @@ const HEADER_SIZE: usize = MAGIC_BYTES_SIZE + MASSAGE_TYPE_SIZE + PAYLOAD_SIZE +
 
 pub type MagicType = [u8; 4];
 
+/// It;s the header of any message
 #[derive(Debug)]
 pub struct MessageHeader {
     pub magic_numbers: MagicType,
@@ -30,6 +31,10 @@ pub struct MessageHeader {
 }
 
 impl MessageHeader {
+    /// Reads the header from the stream
+    ///
+    /// ### Error
+    ///  * `ErrorSerialization::ErrorWhileReading`: It will appear when there is an error in the reading from a stream
     pub fn deserialize_header(stream: &mut dyn Read) -> Result<MessageHeader, ErrorSerialization> {
         let mut buffer: Vec<u8> = vec![0; HEADER_SIZE];
 

@@ -8,9 +8,13 @@ use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
 };
 
-use std::io::{Read, Write};
+use std::{
+    cmp::PartialEq,
+    io::{Read, Write},
+};
 
-#[derive(Debug, std::cmp::PartialEq)]
+/// It's the sendcmpct message
+#[derive(Debug, PartialEq)]
 pub struct SendCmpctMessage {
     pub announce: bool,
     pub version: u64,

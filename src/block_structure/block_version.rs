@@ -3,8 +3,12 @@ use crate::serialization::{
     error_serialization::ErrorSerialization, serializable_little_endian::SerializableLittleEndian,
 };
 
-use std::io::{Read, Write};
+use std::{
+    convert::From,
+    io::{Read, Write},
+};
 
+/// Represents the version of a block in the block chain
 #[derive(Debug, std::cmp::PartialEq, Copy, Clone)]
 pub struct BlockVersion {
     pub value: i32,
@@ -16,13 +20,13 @@ impl BlockVersion {
     }
 }
 
-impl std::convert::From<i32> for BlockVersion {
+impl From<i32> for BlockVersion {
     fn from(value: i32) -> Self {
         BlockVersion { value }
     }
 }
 
-impl std::convert::From<BlockVersion> for i32 {
+impl From<BlockVersion> for i32 {
     fn from(block_version: BlockVersion) -> Self {
         block_version.value
     }
