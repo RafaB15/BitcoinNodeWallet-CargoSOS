@@ -59,7 +59,7 @@ fn login_main_window(application: &gtk::Application, builder: &Builder, tx_to_ba
         account_registration_window.set_visible(true);
     });
 
-    login_transaction_page(&builder, tx_to_back.clone())?;
+    login_send_page(&builder, tx_to_back.clone())?;
 
     window.show_all();
     Ok(())
@@ -114,7 +114,7 @@ fn login_transaction_error_window(builder: &Builder, error: &str) {
         transaction_error_window.set_visible(false);
     });
 }
-
+/* 
 fn register_transaction(tx_to_back: mpsc::Sender<SignalToBack> ,builder: &Builder) {
 
     let send_button: Button = builder.object("SendButton").unwrap();
@@ -126,7 +126,7 @@ fn register_transaction(tx_to_back: mpsc::Sender<SignalToBack> ,builder: &Builde
         tx_to_back.send(SignalToBack::CreateTransaction(adress_entry.text().to_string(), amount_entry.text().to_string()));
     });
 }
-
+*/
 fn spawn_local_handler(builder: &Builder, rx_from_back: glib::Receiver<SignalToFront>) {
     let cloned_builder = builder.clone();
 
@@ -165,7 +165,7 @@ fn spawn_local_handler(builder: &Builder, rx_from_back: glib::Receiver<SignalToF
     });
 } 
 
-fn login_transaction_page(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) -> Result<(), ErrorGUI>{
+fn login_send_page(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) -> Result<(), ErrorGUI>{
     let transaction_clear_all_button: Button = match builder.object("TransactionClearAllButton") {
         Some(button) => button,
         None => return Err(ErrorGUI::MissingElement("TransactionClearAllButton".to_string())),
@@ -190,6 +190,38 @@ fn login_transaction_page(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBa
         amount_spin_button.set_value(0.0);
     });
 
+    let transaction_send_button: Button = match builder.object("TransactionSendButton") {
+        Some(button) => button,
+        None => return Err(ErrorGUI::MissingElement("TransactionSendButton".to_string())),
+    };
+
+    let cloned_builder = builder.clone();
+
+    transaction_send_button.connect_clicked(move |_| {
+        let bitcoin_address_entry: Entry = match cloned_builder.object("BitcoinAddressEntry"){
+            Some(entry) => entry,
+            None => {
+                println!("Error: Missing element BitcoinAddressEntry");
+                Entry::new()
+            },
+        };
+        let amount_spin_button: SpinButton = match cloned_builder.object("AmountSpinButton"){
+            Some(entry) => entry,
+            None => {
+                println!("Error: Missing element AmountSpinButton");
+                SpinButton::with_range(0.0, 0.0, 0.0)
+            },
+        };
+        let fee_spin_button: SpinButton = match cloned_builder.object("FeeSpinButton"){
+            Some(entry) => entry,
+            None => {
+                println!("Error: Missing element FeeSpinButton");
+                SpinButton::with_range(0.0, 0.0, 0.0)
+            },
+        };
+        let _ = tx_to_back.send(SignalToBack::CreateTransaction(bitcoin_address_entry.text().to_string(), amount_spin_button.value(), fee_spin_button.value()));
+    });
+
     Ok(())
 }
 
@@ -198,13 +230,12 @@ fn build_ui(
     rx_from_back: Option<glib::Receiver<SignalToFront>>,
     application: &gtk::Application, 
     glade_src: &str,
-) {
+) -> Result<(), ErrorGUI>{
 
     let rx_from_back = match rx_from_back {
         Some(rx) => rx,
         None => {
-            println!("Error: Missing rx_from_back");
-            return;
+            return Err(ErrorGUI::MissingReceiver);
         },
     };
 
@@ -212,11 +243,12 @@ fn build_ui(
 
     spawn_local_handler(&builder, rx_from_back);
 
-    login_main_window(application, &builder, tx_to_back.clone());
+    login_main_window(application, &builder, tx_to_back.clone())?;
 
     login_registration_window(&builder, application);
 
     login_combo_box(&builder, tx_to_back.clone());
+    Ok(())
 }
 
 pub fn program_execution(
@@ -238,7 +270,11 @@ pub fn program_execution(
 
     let wrapped_rx_to_back: Cell<Option<gtk::glib::Receiver<SignalToFront>>> = Cell::new(Some(rx_from_back));
 
-    application.connect_activate(move |app| build_ui(tx_to_back.clone(), wrapped_rx_to_back.take(), app, glade_src));
+    application.connect_activate(move |app| {
+        if let Err(error) = build_ui(tx_to_back.clone(), wrapped_rx_to_back.take(), app, glade_src) {
+            println!("Error: {:?}", error);
+        }
+    });
     let vector: Vec<String> = Vec::new();
     application.run_with_args(&vector);
 

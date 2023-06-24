@@ -4,7 +4,7 @@ use super::{
 };
 
 use gtk::glib;
-use std::thread;
+use std::{thread, ops::Add};
 
 use crate::{
     error_execution::ErrorExecution,
@@ -19,7 +19,7 @@ use crate::{
 use cargosos_bitcoin::{configurations::{
     connection_config::ConnectionConfig, download_config::DownloadConfig,
     save_config::SaveConfig,
-}, block_structure::utxo_set};
+}, block_structure::utxo_set, wallet_structure::address};
 
 use cargosos_bitcoin::{
     logs::logger_sender::LoggerSender,
@@ -31,8 +31,17 @@ use cargosos_bitcoin::{
         error_block::ErrorBlock,
     },
     connections::ibd_methods::IBDMethod,
-    wallet_structure::wallet::Wallet,
-    node_structure::{broadcasting::Broadcasting, message_response::MessageResponse}
+    wallet_structure::{
+        wallet::Wallet,
+        account::Account,
+        address::Address,
+        error_wallet::ErrorWallet,
+    },
+    node_structure::{
+        broadcasting::Broadcasting, 
+        message_response::MessageResponse,
+        error_node::ErrorNode,
+    }
 };
 
 use std::{
@@ -223,6 +232,108 @@ pub fn handle_peers(
     })
 }
 
+pub fn fron_tbtc_to_satoshi(tbtc: f64) -> i64 {
+    (tbtc * 100_000_000.0) as i64
+}
+
+/// Creates a transaction via terminal given the user user_input
+///
+/// ### Error
+///  * `ErrorTUI::TransactionWithoutSufficientFunds`: It will appear when the user does not have enough funds to make the transaction
+///  * `ErrorTUI::TransactionCreationFail`: It will appear when the transaction fail to create the signature script
+pub fn create_transaction<'t>(
+    utxo_set: &MutexGuard<'t, UTXOSet>,
+    account: &Account,
+    logger: LoggerSender,
+    address: &Address,
+    amount: f64,
+    fee: f64,
+) -> Result<Transaction, ErrorGUI> {
+    let available_outputs = utxo_set.get_utxo_list_with_outpoints(Some(&account.address));
+
+    match account.create_transaction_with_available_outputs(address.clone(), fron_tbtc_to_satoshi(amount), fron_tbtc_to_satoshi(fee), available_outputs)
+    {
+        Ok(transaction) => Ok(transaction),
+        Err(ErrorWallet::NotEnoughFunds(error_string)) => {
+            let _ = logger.log_wallet(format!(
+                "Error creating transaction, with error: {:?}",
+                ErrorWallet::NotEnoughFunds(error_string))
+            );
+            Err(ErrorGUI::ErrorInTransaction("Not enough funds".to_string()))
+        },
+        Err(error) => {
+            let _ = logger.log_wallet(format!(
+                "Error creating transaction, with error: {:?}",
+                error
+            ));
+            Err(ErrorGUI::ErrorInTransaction("Transaction creation failed".to_string()))
+        }
+    }
+}
+
+fn sending_transaction(
+    broadcasting: &mut Broadcasting<TcpStream>,
+    wallet: &MutArc<Wallet>,
+    utxo_set: &MutArc<UTXOSet>,
+    logger: LoggerSender,
+    address_string: &str,
+    amount: f64,
+    fee: f64,
+    tx_to_front: glib::Sender<SignalToFront>,
+) -> Result<(), ErrorGUI> {
+
+    let address = match Address::new(address_string) {
+        Ok(address) => address,
+        Err(_) => {
+            let message = "Invalid address";
+            let _ = logger.log_wallet(message.to_string());
+            if tx_to_front.send(SignalToFront::ErrorInTransaction(message.to_string())).is_err() {
+                return Err(ErrorGUI::FailedSignalToFront(
+                    "Failed to send error signal to front".to_string(),
+                ));
+            }
+            return Ok(());
+        }
+    };
+
+    let wallet = get_reference(wallet)?;
+    let account = match wallet.get_selected_account() {
+        Some(account) => account,
+        None => {
+            let message = "No account selected can't send transaction";
+            let _ = logger.log_wallet(message.to_string());
+            if tx_to_front.send(SignalToFront::ErrorInTransaction(message.to_string())).is_err() {
+                return Err(ErrorGUI::FailedSignalToFront(
+                    "Failed to send error signal to front".to_string(),
+                ));
+            }
+            return Ok(());
+        }
+    };
+    let utxo_set = get_reference(utxo_set)?;
+
+    let transaction = match create_transaction(&utxo_set, account, logger.clone(), &address, amount, fee) {
+        Ok(transaction) => transaction,
+        Err(error) => {
+            if tx_to_front.send(SignalToFront::ErrorInTransaction("Error creating the transaction".to_string())).is_err() {
+                return Err(ErrorGUI::FailedSignalToFront(
+                    "Failed to send error signal to front".to_string(),
+                ));
+            };
+            return Err(error)
+        },
+    };
+    let _ = logger.log_transaction("Sending transaction".to_string());
+
+    match broadcasting.send_transaction(transaction) {
+        Ok(()) => Ok(()),
+        Err(ErrorNode::WhileSendingMessage(message)) => Err(ErrorGUI::ErrorFromPeer(message)),
+        _ => Err(ErrorGUI::ErrorFromPeer(
+            "While sending transaction".to_string(),
+        )),
+    }
+}
+
 pub fn spawn_frontend_handler(
     rx_from_front: Receiver<SignalToBack>,
     tx_to_front: glib::Sender<SignalToFront>,
@@ -240,6 +351,9 @@ pub fn spawn_frontend_handler(
             SignalToBack::ChangeSelectedAccount(account_name) => {
                 change_selected_account(account_name, wallet.clone(), tx_to_front.clone())?;
             },
+            SignalToBack::CreateTransaction(address_string, amount, fee) => {
+                sending_transaction(broadcasting, &wallet, &utxo_set, logger.clone(), &address_string, amount, fee, tx_to_front.clone());
+            }
             SignalToBack::ExitProgram => {
                 break;
             },

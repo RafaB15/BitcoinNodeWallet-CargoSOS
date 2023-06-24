@@ -150,6 +150,11 @@
     <property name="step-increment">0.0001</property>
     <property name="page-increment">10</property>
   </object>
+  <object class="GtkAdjustment" id="AdjustmentFeeSpinButton">
+    <property name="upper">100</property>
+    <property name="step-increment">0.0001</property>
+    <property name="page-increment">10</property>
+  </object>
   <object class="GtkWindow" id="TransactionErrorWindow">
     <property name="name">TransactionErrorWindow</property>
     <property name="can-focus">False</property>
@@ -548,6 +553,33 @@ There is an error in the information entered</property>
                                 <property name="y">42</property>
                               </packing>
                             </child>
+                            <child>
+                              <object class="GtkLabel" id="FeeTitle">
+                                <property name="name">FeeTitle</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="label" translatable="yes">Fee:</property>
+                              </object>
+                              <packing>
+                                <property name="x">28</property>
+                                <property name="y">95</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkSpinButton" id="FeeSpinButton">
+                                <property name="name">FeeSpinButton</property>
+                                <property name="width-request">184</property>
+                                <property name="height-request">20</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="adjustment">AdjustmentFeeSpinButton</property>
+                                <property name="digits">10</property>
+                              </object>
+                              <packing>
+                                <property name="x">70</property>
+                                <property name="y">88</property>
+                              </packing>
+                            </child>
                           </object>
                         </child>
                       </object>
@@ -565,9 +597,9 @@ There is an error in the information entered</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="send_button">
+                  <object class="GtkButton" id="TransactionSendButton">
                     <property name="label" translatable="yes">Send</property>
-                    <property name="name">send_button</property>
+                    <property name="name">TransactionSendButton</property>
                     <property name="width-request">100</property>
                     <property name="height-request">50</property>
                     <property name="visible">True</property>

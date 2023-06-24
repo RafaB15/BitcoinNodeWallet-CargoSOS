@@ -8,4 +8,6 @@ pub enum ErrorGUI {
     ErrorFromPeer(String),
     MissingElement(String),
     CannotGetInner,
+    MissingReceiver,
+    ErrorInTransaction(String),
 }
