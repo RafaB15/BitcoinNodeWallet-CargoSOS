@@ -4,8 +4,8 @@ use crate::serialization::{
 };
 
 use std::{
-    io::{Read, Write},
     cmp::PartialEq,
+    io::{Read, Write},
 };
 
 const ERROR_VALUE: u32 = 0x00;

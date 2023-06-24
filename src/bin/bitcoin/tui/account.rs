@@ -3,7 +3,7 @@ use super::error_tui::ErrorTUI;
 use cargosos_bitcoin::{
     logs::logger_sender::LoggerSender,
     wallet_structure::{
-        account::Account, address::Address, private_key::{PrivateKey, self}, public_key::PublicKey,
+        account::Account, address::Address, private_key::PrivateKey, public_key::PublicKey,
         wallet::Wallet,
     },
 };
@@ -224,5 +224,5 @@ pub fn show_accounts<'t>(wallet: &MutexGuard<'t, Wallet>, logger: LoggerSender) 
     wallet
         .get_accounts()
         .iter()
-        .for_each(|account| println!("{account}"));
+        .for_each(|account| println!("{account}\n"));
 }
