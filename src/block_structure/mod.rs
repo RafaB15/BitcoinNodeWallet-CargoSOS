@@ -8,11 +8,9 @@ pub mod compact256;
 pub mod hash;
 
 pub mod transaction;
-pub mod transaction_coinbase;
 
 pub mod merkle_tree;
 pub mod outpoint;
-pub mod transaction_coinbase_input;
 pub mod transaction_input;
 pub mod transaction_output;
 
