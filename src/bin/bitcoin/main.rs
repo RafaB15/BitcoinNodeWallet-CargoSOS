@@ -115,18 +115,29 @@ fn main() -> Result<(), ErrorExecution> {
 
     let (handle, logger) = initialize_logs(log_config)?;
 
-    let mut load_system = LoadSystem::new(save_config.clone(), logger.clone());
-
     let save_system = match ui_config.interface {
-        Interface::Tui => tui::execution::program_execution(
-            connection_config,
-            download_config,
-            &mut load_system,
-            logger.clone(),
-        )?,
-        Interface::Gui => gui::execution::program_execution()?,
-    };
-
+        Interface::Tui => {
+            let mut load_system = LoadSystem::new(
+                save_config.clone(),
+                logger.clone(),
+            );
+            tui::execution::program_execution(
+                connection_config,
+                download_config,
+                &mut load_system,
+                logger.clone(),
+            )?
+        },
+        Interface::Gui => {
+            gui::execution::program_execution(
+                connection_config,
+                download_config,
+                save_config.clone(),
+                logger.clone(),
+            )?
+        },
+    };     
+    
     end_program(save_system, save_config, logger)?;
 
     match handle.join() {
