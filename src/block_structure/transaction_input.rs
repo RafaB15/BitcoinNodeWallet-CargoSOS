@@ -137,14 +137,14 @@ mod tests {
 
     #[test]
     fn test_01_correct_transaction_input_from_outpoint() {
-        let previous_output =  Outpoint {
-            hash: [
+        let previous_output =  Outpoint::new(
+            [
                 0x7b, 0x1e, 0xab, 0xe0, 0x20, 0x9b, 0x1f, 0xe7, 0x94, 0x12, 0x45, 0x75, 0xef, 0x80, 
                 0x70, 0x57, 0xc7, 0x7a, 0xda, 0x21, 0x38, 0xae, 0x4f, 0xa8, 0xd6, 0xc4, 0xde, 0x03, 
                 0x98, 0xa1, 0x4f, 0x3f
                 ],
-            index: 1,
-        };
+            1,
+        );
         let signature_script = vec![];
         let sequence = DEFAULT_SEQUENCE;
         let transaction_input = TransactionInput::new(previous_output.clone(), signature_script, sequence);
@@ -168,8 +168,7 @@ mod tests {
                 0x03, 0xBC, 0x6D, 0x45, 0xD2, 0x10, 0x1E, 0x91, 0x28, 0xDE, 0x14, 0xB5, 0xB6, 0x68, 
                 0x83, 0xD6, 0x9C, 0xF1, 0xC3, 0x1A, 0x50, 0xB9, 0x6F, 0xEA, 0x2D, 0xAD, 0x4E, 0xD2, 
                 0x35, 0x14, 0x92, 0x4A, 0x22
-                ],
-            "mnQLoVaZ3w1NLVmUhfG8hh6WoG3iu7cnNw"
+                ]
         ).unwrap();
 
         let mut transaction_to_sign_bytes: &[u8] = &[
@@ -201,14 +200,14 @@ mod tests {
 
     #[test]
     fn test_03_correct_transaction_input_serialization() {
-        let previous_output =  Outpoint {
-            hash: [
+        let previous_output =  Outpoint::new( 
+            [
                 0x7b, 0x1e, 0xab, 0xe0, 0x20, 0x9b, 0x1f, 0xe7, 0x94, 0x12, 0x45, 0x75, 0xef, 0x80, 
                 0x70, 0x57, 0xc7, 0x7a, 0xda, 0x21, 0x38, 0xae, 0x4f, 0xa8, 0xd6, 0xc4, 0xde, 0x03, 
                 0x98, 0xa1, 0x4f, 0x3f
                 ],
-            index: 1,
-        };
+            1,
+        );
         let signature_script = vec![1, 2, 3];
         let sequence = DEFAULT_SEQUENCE;
         let input = TransactionInput {
@@ -238,14 +237,14 @@ mod tests {
             0xFF, 0xFF
             ];
         let input_deserialized = TransactionInput::io_deserialize(&mut input_bytes_real.as_ref()).unwrap();
-        let previous_output =  Outpoint {
-            hash: [
+        let previous_output =  Outpoint::new( 
+            [
                 0x7b, 0x1e, 0xab, 0xe0, 0x20, 0x9b, 0x1f, 0xe7, 0x94, 0x12, 0x45, 0x75, 0xef, 0x80, 
                 0x70, 0x57, 0xc7, 0x7a, 0xda, 0x21, 0x38, 0xae, 0x4f, 0xa8, 0xd6, 0xc4, 0xde, 0x03, 
                 0x98, 0xa1, 0x4f, 0x3f
                 ],
-            index: 1,
-        };
+            1,
+        );
         let signature_script = vec![1, 2, 3];
         let sequence = DEFAULT_SEQUENCE;
         let input = TransactionInput {

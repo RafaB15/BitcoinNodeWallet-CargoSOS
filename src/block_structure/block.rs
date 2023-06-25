@@ -121,10 +121,10 @@ mod tests {
         );
 
         let transaction_input = TransactionInput::new(
-            Outpoint {
-                hash: [1; 32],
-                index: 23,
-            },
+            Outpoint::new(
+                [1; 32],
+                23,
+        ),
             vec![1, 2, 3],
             24,
         );
@@ -175,10 +175,10 @@ mod tests {
         );
 
         let transaction_input = TransactionInput::new(
-            Outpoint {
-                hash: [1; 32],
-                index: 23,
-            },
+            Outpoint::new(
+                [1; 32],
+                23,
+            ),
             vec![1, 2, 3],
             24,
         );
@@ -225,10 +225,10 @@ mod tests {
         );
 
         let transaction_input = TransactionInput::new(
-            Outpoint {
-                hash: [1; 32],
-                index: 23,
-            },
+            Outpoint::new(
+                [1; 32],
+                23,
+            ),
             vec![1, 2, 3],
             24,
         );
@@ -246,10 +246,10 @@ mod tests {
         };
 
         let transaction_input = TransactionInput::new(
-            Outpoint {
-                hash: [2; 32],
-                index: 26,
-            },
+            Outpoint::new(
+                [2; 32],
+                26,
+            ),
             vec![1, 2, 3],
             24,
         );
@@ -291,10 +291,10 @@ mod tests {
         );
 
         let transaction_input = TransactionInput::new(
-            Outpoint {
-                hash: [1; 32],
-                index: 23,
-            },
+            Outpoint::new(
+                [1; 32],
+                23,
+            ),
             vec![1, 2, 3],
             24,
         );

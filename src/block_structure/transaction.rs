@@ -218,10 +218,10 @@ mod tests {
     #[test]
     fn test_01_correct_transaction_serialization() {
         let transaction_input = TransactionInput::new(
-            Outpoint {
-                hash: [1; 32],
-                index: 23,
-            },
+            Outpoint::new( 
+                [1; 32],
+                23,
+            ),
             vec![1, 2, 3],
             24,
         );
@@ -257,10 +257,10 @@ mod tests {
     #[test]
     fn test_02_correct_transaction_deserialization() {
         let transaction_input = TransactionInput::new(
-            Outpoint {
-                hash: [1; 32],
-                index: 23,
-            },
+            Outpoint::new(
+                [1; 32],
+                23,
+            ),
             vec![1, 2, 3],
             24,
         );
@@ -288,10 +288,10 @@ mod tests {
     #[test]
     fn test_03_correct_tx_id() {
         let transaction_input = TransactionInput::new(
-            Outpoint {
-                hash: [1; 32],
-                index: 23,
-            },
+            Outpoint::new(
+                [1; 32],
+                23,
+        ),
             vec![1, 2, 3],
             24,
         );
@@ -342,8 +342,7 @@ mod tests {
                 0x03, 0xBC, 0x6D, 0x45, 0xD2, 0x10, 0x1E, 0x91, 0x28, 0xDE, 0x14, 0xB5, 0xB6, 0x68, 
                 0x83, 0xD6, 0x9C, 0xF1, 0xC3, 0x1A, 0x50, 0xB9, 0x6F, 0xEA, 0x2D, 0xAD, 0x4E, 0xD2, 
                 0x35, 0x14, 0x92, 0x4A, 0x22
-                ],
-            "mnQLoVaZ3w1NLVmUhfG8hh6WoG3iu7cnNw"
+                ]
         ).unwrap();
         
         let transaction_to_be_signed_bytes: Vec<u8> = vec![
