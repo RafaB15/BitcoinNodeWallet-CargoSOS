@@ -127,9 +127,9 @@ impl DeserializableLittleEndian for SupportedServices {
 #[cfg(test)]
 mod tests {
 
-    use super::{
-        DeserializableLittleEndian, ErrorSerialization, SerializableLittleEndian, SupportedServices,
-    };
+    use super::*;
+
+    use crate::configurations::parsable::parse_structure;
 
     #[test]
     fn test01_serialize_correctly_supported_services() -> Result<(), ErrorSerialization> {
@@ -157,5 +157,19 @@ mod tests {
         assert_eq!(expected_services, services);
 
         Ok(())
+    }
+
+    #[test]
+    fn test03_accept_valid_input() {
+        let configuration = "supported = NodeGetUTXO";
+
+        let name = "supported";
+        let map = parse_structure(configuration.to_string()).unwrap();
+
+        let suppored_services_result = SupportedServices::parse(name, &map);
+
+        let expected_supported_services = SupportedServices::NodeGetUTXO;
+
+        assert_eq!(Ok(expected_supported_services), suppored_services_result);
     }
 }
