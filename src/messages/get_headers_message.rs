@@ -15,6 +15,7 @@ use crate::connections::p2p_protocol::ProtocolVersionP2P;
 use std::io::{Read, Write};
 
 /// It's the get headers message
+#[derive(Debug, std::cmp::PartialEq)]
 pub struct GetHeadersMessage {
     pub version: ProtocolVersionP2P,
     pub header_locator_hashes: Vec<HashType>,
@@ -79,10 +80,8 @@ impl DeserializableInternalOrder for GetHeadersMessage {
 #[cfg(test)]
 mod tests {
 
-    use super::{
-        CompactSize, ErrorSerialization, GetHeadersMessage, HashType, ProtocolVersionP2P,
-        SerializableInternalOrder, SerializableLittleEndian,
-    };
+    use super::*;
+
 
     #[test]
     fn test01_serialize() -> Result<(), ErrorSerialization> {
@@ -108,5 +107,24 @@ mod tests {
         assert_eq!(expected_stream, stream);
 
         Ok(())
+    }
+
+    #[test]
+    fn test02_deserialize() {
+        let version = ProtocolVersionP2P::V70015;
+        let header_locator_hash: Vec<HashType> = vec![[1; 32], [2; 32], [0; 32]];
+        let stop_hash: HashType = [1; 32];
+
+        let mut serialized_stream: Vec<u8> = Vec::new();
+        let get_headers_message = GetHeadersMessage {
+            version,
+            header_locator_hashes: header_locator_hash.clone(),
+            stop_hash,
+        };
+        
+        get_headers_message.io_serialize(&mut serialized_stream).unwrap();
+        let deserialized_message = GetHeadersMessage::io_deserialize(&mut serialized_stream.as_slice()).unwrap();
+
+        assert_eq!(deserialized_message, get_headers_message);
     }
 }
