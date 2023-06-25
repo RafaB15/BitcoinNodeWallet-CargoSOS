@@ -63,6 +63,7 @@ impl BlockHeader {
         }
     }
 
+    /// Generates the genesis block header
     pub fn generate_genesis_block_header() -> Self {
         BlockHeader::new(
             GENESIS_BLOCK_VERSION,
@@ -75,6 +76,7 @@ impl BlockHeader {
         )
     }
 
+    /// Calculates the header hash to verify the proof of work
     pub fn proof_of_work(&self) -> bool {
         let hash = match self.get_hash256d() {
             Ok(hash) => hash,
@@ -89,6 +91,7 @@ impl BlockHeader {
         self.n_bits > compact_hash
     }
 
+    /// Verifies that the merkle root hash is correct
     pub fn proof_of_inclusion(&self, transactions: &[Transaction]) -> bool {
         let merkle_tree: MerkleTree = match MerkleTree::new(transactions) {
             Ok(merkle_tree) => merkle_tree,
@@ -113,6 +116,10 @@ impl BlockHeader {
         }
     }
 
+    /// Get the hash 256 double of the block header
+    ///
+    /// ### Error
+    ///  * `ErrorSerialization::ErrorInSerialization`: It will appear when there is an error in the serialization
     pub fn get_hash256d(&self) -> Result<HashType, ErrorSerialization> {
         let mut buffer = vec![];
 

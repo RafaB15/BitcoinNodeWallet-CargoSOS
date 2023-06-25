@@ -14,6 +14,7 @@ use crate::configurations::try_default::TryDefault;
 
 use std::io::{Read, Write};
 
+/// It's the internal representation of the block chain
 #[derive(Debug, Clone)]
 pub struct BlockChain {
     blocks: Vec<NodeChain>,
@@ -33,10 +34,18 @@ impl BlockChain {
         })
     }
 
+    /// Appends a block header to the block chain
+    ///
+    /// ### Error
+    ///  * `ErrorBlock::`
     pub fn append_header(&mut self, header: BlockHeader) -> Result<(), ErrorBlock> {
         self.append_block(Block::new(header))
     }
 
+    /// Appends a vector of block headers to the block chain
+    ///
+    /// ### Error
+    ///  * `ErrorBlock::`
     pub fn append_headers(&mut self, headers: Vec<BlockHeader>) -> Result<u32, ErrorBlock> {
         let mut added_headers = 0;
         for header in headers.iter() {
@@ -53,6 +62,10 @@ impl BlockChain {
         Ok(added_headers)
     }
 
+    /// Appends a block to the block chain
+    ///
+    /// ### Error
+    ///  * `ErrorBlock::TransactionAlreadyInBlock`: It will appear when the Transaction is already in the block
     pub fn append_block(&mut self, block: Block) -> Result<(), ErrorBlock> {
         for (i, index_last_block) in self.last_blocks.clone().iter().enumerate() {
             let last_block = self.get_block_at(*index_last_block)?;
@@ -91,6 +104,9 @@ impl BlockChain {
         Err(ErrorBlock::CouldNotAppendBlock)
     }
 
+    /// Updating the information of a block with its header hash
+    ///
+    /// ### Error
     ///  * `ErrorBlock::CouldNotUpdate`: It will appear when the block is not in the blockchain.
     pub fn update_block(&mut self, block: Block) -> Result<(), ErrorBlock> {
         for current_block in self.blocks.iter_mut().rev() {
@@ -102,6 +118,7 @@ impl BlockChain {
         Err(ErrorBlock::CouldNotUpdate)
     }
 
+    /// Get all blocks after the given timestamp
     pub fn get_blocks_after_timestamp(&self, timestamp: u32) -> Vec<Block> {
         let mut blocks_after_timestamp: Vec<Block> = Vec::new();
 
@@ -114,6 +131,7 @@ impl BlockChain {
         blocks_after_timestamp
     }
 
+    /// Get all completed blocks
     pub fn get_all_blocks(&self) -> Vec<Block> {
         self.blocks
             .iter()
@@ -124,6 +142,7 @@ impl BlockChain {
             .collect()
     }
 
+    /// Get the block at the end of all forks
     pub fn latest(&self) -> Vec<Block> {
         let mut latest: Vec<Block> = Vec::new();
 
@@ -139,6 +158,10 @@ impl BlockChain {
         latest
     }
 
+    /// Get the node at the given index
+    ///
+    /// ### Error
+    ///  * `ErrorBlock::NodeChainReferenceNotFound`: It will appear when a node position it's not found in the block chain
     fn get_block_at(&self, index: usize) -> Result<NodeChain, ErrorBlock> {
         match self.blocks.get(index) {
             Some(block) => Ok(block.clone()),
@@ -146,6 +169,10 @@ impl BlockChain {
         }
     }
 
+    /// Get the node at the given index
+    ///
+    /// ### Error
+    ///  * `ErrorBlock::NodeChainReferenceNotFound`: It will appear when a node position it's not found in the block chain
     fn get_block_at_mut(&mut self, index: usize) -> Result<NodeChain, ErrorBlock> {
         match self.blocks.get(index) {
             Some(block) => Ok(block.clone()),
@@ -253,10 +280,7 @@ mod tests {
     #[test]
     fn test_02_correct_block_update() {
         let transaction_input = TransactionInput::new(
-            Outpoint {
-                hash: [1; 32],
-                index: 23,
-            },
+            Outpoint::new([1; 32], 23),
             "Prueba in".as_bytes().to_vec(),
             24,
         );

@@ -13,10 +13,11 @@ use crate::{
 
 use std::io::{Read, Write};
 
+/// It's the internal representation of a wallet
 #[derive(Debug)]
 pub struct Wallet {
-    pub selected_account: Option<Account>,
-    pub accounts: Vec<Account>,
+    selected_account: Option<Account>,
+    accounts: Vec<Account>,
 }
 
 impl Wallet {
@@ -27,10 +28,12 @@ impl Wallet {
         }
     }
 
+    /// Appends an account to the wallet
     pub fn add_account(&mut self, account: Account) {
         self.accounts.push(account);
     }
 
+    /// Removes an account from the wallet if it exists
     pub fn remove_account(&mut self, account: Account) {
         self.accounts.retain(|x| x != &account);
         if let None = self.selected_account {
@@ -38,14 +41,17 @@ impl Wallet {
         }
     }
 
+    /// Changes the selected account
     pub fn change_account(&mut self, account: Account) {
         self.selected_account = Some(account);
     }
 
+    /// Returns the selected account from the wallet
     pub fn get_selected_account(&self) -> Option<&Account> {
         self.selected_account.as_ref()
     }
 
+    /// Returns the accounts from the wallet
     pub fn get_accounts(&self) -> &Vec<Account> {
         &self.accounts
     }

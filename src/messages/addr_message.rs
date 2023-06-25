@@ -12,6 +12,7 @@ use crate::connections::network_ip_addres::NetworkIpAddres;
 
 use std::io::{Read, Write};
 
+/// It's the address message
 #[derive(Debug)]
 pub struct AddrMessage {
     pub ip_addresses: Vec<NetworkIpAddres>,

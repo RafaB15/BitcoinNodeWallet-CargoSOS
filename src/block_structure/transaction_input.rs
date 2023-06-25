@@ -1,7 +1,5 @@
 use super::{hash::hash256d, outpoint::Outpoint, transaction::Transaction};
 
-use crate::messages::compact_size::CompactSize;
-
 use crate::serialization::{
     deserializable_internal_order::DeserializableInternalOrder,
     deserializable_little_endian::DeserializableLittleEndian,
@@ -9,7 +7,10 @@ use crate::serialization::{
     serializable_internal_order::SerializableInternalOrder,
     serializable_little_endian::SerializableLittleEndian,
 };
+
 use crate::wallet_structure::{account::Account, error_wallet::ErrorWallet};
+
+use crate::messages::compact_size::CompactSize;
 
 use std::{
     cmp::PartialEq,
@@ -20,6 +21,7 @@ const DEFAULT_SEQUENCE: u32 = 0xFFFFFFFF;
 const SIGHASH_ALL_MESSAGE: [u8; 4] = [0x01, 0x00, 0x00, 0x00];
 const SIGHASH_ALL_SIG_SCRIPT: u8 = 1;
 
+/// It's the representation of a transaction input
 #[derive(Debug, Clone, PartialEq)]
 pub struct TransactionInput {
     pub previous_output: Outpoint,
@@ -40,6 +42,10 @@ impl TransactionInput {
         }
     }
 
+    /// It create the signature script from the given transaction
+    ///
+    /// ### Error
+    ///  * `ErrorWallet::CannotCreateNewTransaction`: It will appear when a transaction cannot be created
     pub fn create_signature_script(
         account: &Account,
         unsigned_transaction: Transaction,
@@ -83,6 +89,7 @@ impl TransactionInput {
         Ok(final_script_signature)
     }
 
+    /// It create a new transaction input from the given outpoint
     pub fn from_outpoint_unsigned(outpoint: &Outpoint) -> TransactionInput {
         let signature_script = vec![];
         let sequence = DEFAULT_SEQUENCE;

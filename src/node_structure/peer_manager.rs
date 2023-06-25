@@ -3,6 +3,7 @@ use super::{error_node::ErrorNode, message_response::MessageResponse};
 use crate::{
     block_structure::{hash::HashType, transaction::Transaction},
     configurations::connection_config::ConnectionConfig,
+    connections::type_identifier::TypeIdentifier,
     logs::logger_sender::LoggerSender,
     messages::{
         addr_message::AddrMessage,
@@ -14,6 +15,7 @@ use crate::{
         get_headers_message::GetHeadersMessage,
         headers_message::HeadersMessage,
         inventory_message::InventoryMessage,
+        inventory_vector::InventoryVector,
         message::{ignore_message, Message},
         message_header::MessageHeader,
         ping_message::PingMessage,
@@ -24,7 +26,6 @@ use crate::{
         verack_message::VerackMessage,
         version_message::VersionMessage,
     },
-    node_structure::block_download::BlockDownload,
 };
 
 use std::{
@@ -128,7 +129,7 @@ where
             CommandName::Headers => self.receive_headers(header)?,
             CommandName::GetData => ignore_message::<GetDataMessage>(&mut self.peer, header)?,
             CommandName::Block => self.receive_blocks(header)?,
-            CommandName::Inventory => ignore_message::<InventoryMessage>(&mut self.peer, header)?,
+            CommandName::Inventory => self.receive_inventory_message(header)?,
             CommandName::SendHeaders => {
                 ignore_message::<SendHeadersMessage>(&mut self.peer, header)?
             }
@@ -161,17 +162,22 @@ where
             })
             .collect();
 
-        let block_download =
-            BlockDownload::new(self.connection_config.magic_numbers, self.logger.clone());
+        let get_data_message = GetDataMessage::get_blocks(headers);
 
-        let blocks = block_download.get_data(&mut self.peer, headers)?;
+        let _ = self
+            .logger
+            .log_connection("Sending get data message of blocks to peer".to_string());
 
-        for block in blocks {
-            if self.sender.send(MessageResponse::Block(block)).is_err() {
-                return Err(ErrorNode::WhileSendingMessage(
-                    "Sending block back".to_string(),
-                ));
-            }
+        if GetDataMessage::serialize_message(
+            &mut self.peer,
+            self.connection_config.magic_numbers,
+            &get_data_message,
+        )
+        .is_err()
+        {
+            return Err(ErrorNode::WhileSendingMessage(
+                "Sending get data message to peers".to_string(),
+            ));
         }
 
         Ok(())
@@ -219,6 +225,53 @@ where
         {
             return Err(ErrorNode::WhileSendingMessage(
                 "Sending transaction back".to_string(),
+            ));
+        }
+
+        Ok(())
+    }
+
+    /// Receives the inventory message for requesting to know about a new transaction
+    ///
+    /// ### Error
+    ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
+    ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
+    ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to others threads
+    fn receive_inventory_message(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
+        let _ = self
+            .logger
+            .log_connection("Receiving a inventory message".to_string());
+        let inventory_message = InventoryMessage::deserialize_message(&mut self.peer, header)?;
+
+        let mut inventory_vectors: Vec<InventoryVector> = Vec::new();
+        for inventory_vector in inventory_message.inventory_vectors {
+            match inventory_vector.type_identifier.clone() {
+                TypeIdentifier::TransactionId | TypeIdentifier::Block => {
+                    inventory_vectors.push(inventory_vector);
+                }
+                _ => {}
+            }
+        }
+
+        if inventory_vectors.is_empty() {
+            return Ok(());
+        }
+
+        let get_data_message = GetDataMessage::new(inventory_vectors);
+
+        let _ = self.logger.log_connection(
+            "Sending get data message of transactions and blocks to peer".to_string(),
+        );
+
+        if GetDataMessage::serialize_message(
+            &mut self.peer,
+            self.connection_config.magic_numbers,
+            &get_data_message,
+        )
+        .is_err()
+        {
+            return Err(ErrorNode::WhileSendingMessage(
+                "Sending get data message to peers".to_string(),
             ));
         }
 

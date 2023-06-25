@@ -8,16 +8,22 @@ use crate::serialization::{
     serializable_little_endian::SerializableLittleEndian,
 };
 use std::{
+    cmp::PartialEq,
     hash::{Hash, Hasher},
     io::{Read, Write},
 };
 
-use std::cmp::PartialEq;
-
+/// It represents the outpoint of a transaction
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Outpoint {
-    pub hash: HashType,
-    pub index: u32,
+    hash: HashType,
+    index: u32,
+}
+
+impl Outpoint {
+    pub fn new(hash: HashType, index: u32) -> Self {
+        Outpoint { hash, index }
+    }
 }
 
 impl SerializableInternalOrder for Outpoint {

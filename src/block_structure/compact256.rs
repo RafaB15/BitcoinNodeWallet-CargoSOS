@@ -5,15 +5,16 @@ use crate::serialization::{
     error_serialization::ErrorSerialization, serializable_little_endian::SerializableLittleEndian,
 };
 
-use std::convert::{From, Into, TryFrom};
-
-use std::io::{Read, Write};
-
-use std::cmp::{Ordering, PartialOrd};
+use std::{
+    cmp::{Ordering, PartialOrd},
+    convert::{From, Into, TryFrom},
+    io::{Read, Write},
+};
 
 const BYTES_OF_SIGNIFICAND: u8 = 3;
 const MAX_EXPONENT: u8 = 0x1F;
 
+/// It represents a number of 256 bits with 4 bytes
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Compact256 {
     pub mantissa: [u8; 3],

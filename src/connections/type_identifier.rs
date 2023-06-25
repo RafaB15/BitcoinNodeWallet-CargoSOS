@@ -3,7 +3,10 @@ use crate::serialization::{
     error_serialization::ErrorSerialization, serializable_little_endian::SerializableLittleEndian,
 };
 
-use std::io::{Read, Write};
+use std::{
+    cmp::PartialEq,
+    io::{Read, Write},
+};
 
 const ERROR_VALUE: u32 = 0x00;
 const TRANSACTION_ID_VALUE: u32 = 0x01;
@@ -15,7 +18,8 @@ const WITNESS_BLOCK_VALUE: u32 = 0x40000002;
 const FILTERED_WITNESS_BLOCK_VALUE: u32 = 0x40000003;
 const PLACE_HOLDER_VALUE: u32 = 0x0201;
 
-#[derive(Debug)]
+/// It's the representation of the type of data to request
+#[derive(Debug, Clone, PartialEq)]
 pub enum TypeIdentifier {
     Error,
     TransactionId,

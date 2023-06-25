@@ -1,40 +1,39 @@
+/// It represents all posible errors that can occur in the block chain, and related structures
 #[derive(Debug)]
 pub enum ErrorBlock {
-    /// This will appear when the TxId could not be created
+    /// It will appear when the transaction id could not be created
     CouldNotGetTxId,
 
-    /// This will appear when the TxId could not be written
+    /// It will appear when the transaction id could not be written
     CouldNotWriteTxId,
 
-    ///This will appear when the Transaction is already in the block
+    /// It will appear when the Transaction is already in the block
     TransactionAlreadyInBlock,
 
+    /// It will appear when the proof of work of a header is not valid
     ErrorWithProofOfWork,
 
-    CouldNotSerialize,
-
+    /// It will appear when a header could not be hash correctly
     CouldNotHash,
 
+    /// It will appear when the block could not be appended to the block chain
     CouldNotAppendBlock,
 
+    /// It will appear when the block chain could not be updated with a block or header
     CouldNotUpdate,
 
-    CouldNotFindBlockFarEnough,
-
+    /// It will appear when a node position it's not found in the block chain
     NodeChainReferenceNotFound,
 
-    ///This will appear when the merkle path could not be calculated
+    /// It will appear when the merkle path could not be calculated
     CouldNotCalculateMerklePath,
 
-    ///This will appear when the transaction could not be found
-    NoTransactions,
-
-    ///This will appear when the transaction could not be found
+    /// It will appear when the transaction could not be found
     TransactionNotFound,
 
-    ///This will appear when the root hash in merkle tree could not be found
+    /// It will appear when the root hash in merkle tree could not be found
     RootHashNotFound,
 
-    ///This will appear when the hash in merkle tree could not be found at given index
+    /// It will appear when the hash in merkle tree could not be found at given index
     NoHashFound,
 }

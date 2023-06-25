@@ -7,6 +7,7 @@ use super::{
 };
 
 use crate::{
+    messages::compact_size::CompactSize,
     serialization::{
         deserializable_internal_order::DeserializableInternalOrder,
         deserializable_little_endian::DeserializableLittleEndian,
@@ -19,8 +20,6 @@ use crate::{
 
 use chrono::offset::Utc;
 
-use crate::messages::compact_size::CompactSize;
-
 use std::{
     cmp::PartialEq,
     collections::HashMap,
@@ -28,6 +27,7 @@ use std::{
     io::{Read, Write},
 };
 
+/// It's the representation of a transaction in the block chain
 #[derive(Debug, Clone, PartialEq)]
 pub struct Transaction {
     pub version: i32,
@@ -37,6 +37,10 @@ pub struct Transaction {
 }
 
 impl Transaction {
+    /// It create the id for this transaction
+    ///
+    /// ### Error
+    ///  * `ErrorBlock::CouldNotGetTxId`: It will appear when the transaction id could not be created
     pub fn get_tx_id(&self) -> Result<HashType, ErrorBlock> {
         let mut buffer = vec![];
         if self.io_serialize(&mut buffer).is_err() {
@@ -67,23 +71,30 @@ impl Transaction {
         Ok(buffer)
     }
 
+    /// It create the id for all the transaction
+    ///
+    /// ### Error
+    ///  * `ErrorBlock::CouldNotGetTxId`: It will appear when the transaction id could not be created
     pub fn get_vec_txids(transactions: &[Transaction]) -> Result<Vec<HashType>, ErrorBlock> {
         let mut tx_ids: Vec<HashType> = Vec::new();
         for tx in transactions.iter() {
-            match tx.get_tx_id() {
-                Ok(txid) => tx_ids.push(txid),
-                Err(_) => return Err(ErrorBlock::CouldNotGetTxId),
-            };
+            tx_ids.push(tx.get_tx_id()?)
         }
         Ok(tx_ids)
     }
 
+    /// Returns true if the address owns any of transaction output (works for P2PKH) and false otherwise
     pub fn verify_transaction_ownership(&self, address: &Address) -> bool {
         self.tx_out
             .iter()
             .any(|tx_out| address.verify_transaction_ownership(tx_out))
     }
 
+    /// Returns a transaction given the amount and to whom it is sent
+    ///
+    /// ### Error
+    ///  * `ErrorWallet::CannotCreateNewTransaction`: It will appear when a transaction cannot be created
+    ///  * `ErrorWallet::NotEnoughFunds`: It will appear when an account does not have enough funds to create a transaction for the amount requested
     pub fn from_account_to_address(
         account_from: &Account,
         outputs_to_spend: &HashMap<Outpoint, TransactionOutput>,
@@ -128,6 +139,10 @@ impl Transaction {
         Ok(unsigned_transaction)
     }
 
+    /// Sign the transaction with the given account
+    ///
+    /// ### Error
+    ///  * `ErrorWallet::CannotCreateNewTransaction`: It will appear when a transaction cannot be created
     pub fn get_signed_by_account(&mut self, account: &Account) -> Result<(), ErrorWallet> {
         let unsigned_transaction = self.clone();
 

@@ -1,13 +1,14 @@
 use super::{command_name::CommandName, message::Message};
 
-use std::io::{Read, Write};
-
 use crate::serialization::{
     deserializable_internal_order::DeserializableInternalOrder,
     error_serialization::ErrorSerialization, serializable_big_endian::SerializableBigEndian,
     serializable_internal_order::SerializableInternalOrder,
 };
 
+use std::io::{Read, Write};
+
+/// It's the alert message
 #[derive(Debug)]
 pub struct AlertMessage {
     contents: Vec<u8>,

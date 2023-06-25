@@ -20,7 +20,7 @@ const NODE_WITNESS: u64 = 0x08;
 const NODE_XTHIN: u64 = 0x10;
 const NODE_NETWORK_LIMITED: u64 = 0x0400;
 
-///
+/// It's the representation of the supported services of a node
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum SupportedServices {
     Unname,
@@ -32,9 +32,8 @@ pub enum SupportedServices {
     NodeNetworkLimited,
 }
 
-///Implementación del trait que permite hacer parse
 impl FromStr for SupportedServices {
-    type Err = ErrorConnection;
+    type Err = ErrorConfiguration;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         match value {
@@ -45,16 +44,6 @@ impl FromStr for SupportedServices {
             "NodeWitness" => Ok(SupportedServices::NodeWitness),
             "NodeXThin" => Ok(SupportedServices::NodeXThin),
             "NodeNetworkLimited" => Ok(SupportedServices::NodeNetworkLimited),
-            _ => Err(ErrorConnection::ErrorInvalidInputParse),
-        }
-    }
-}
-
-impl Parsable for SupportedServices {
-    fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
-        let value = value_from_map(name.to_string(), map)?;
-        match value.parse::<SupportedServices>() {
-            Ok(value) => Ok(value),
             _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
                 "Supported services of {:?}",
                 value
@@ -63,8 +52,15 @@ impl Parsable for SupportedServices {
     }
 }
 
+impl Parsable for SupportedServices {
+    fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
+        let value = value_from_map(name.to_string(), map)?;
+        value.parse::<SupportedServices>()
+    }
+}
+
 impl TryFrom<u64> for SupportedServices {
-    type Error = ErrorConnection;
+    type Error = ErrorConfiguration;
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
         match value {
@@ -75,7 +71,10 @@ impl TryFrom<u64> for SupportedServices {
             NODE_WITNESS => Ok(SupportedServices::NodeWitness),
             NODE_XTHIN => Ok(SupportedServices::NodeXThin),
             NODE_NETWORK_LIMITED => Ok(SupportedServices::NodeNetworkLimited),
-            _ => Err(ErrorConnection::ErrorInvalidInputParse),
+            _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
+                "Supported services of {:?}",
+                value
+            ))),
         }
     }
 }

@@ -11,6 +11,7 @@ use crate::serialization::{
 
 use std::io::{Read, Write};
 
+/// It's the representation of a block in the block chain
 #[derive(Debug, Clone, PartialEq)]
 pub struct Block {
     pub header: BlockHeader,
@@ -25,10 +26,15 @@ impl Block {
         }
     }
 
+    /// Verifies that the merkle root hash is correct
     pub fn proof_of_inclusion(&self) -> bool {
         self.header.proof_of_inclusion(&self.transactions)
     }
 
+    /// Appends the transaction to the block if it's not already in the block
+    ///
+    /// ### Error
+    ///  * `ErrorBlock::TransactionAlreadyInBlock`: It will appear when the Transaction is already in the block
     pub fn append_transaction(&mut self, transaction: Transaction) -> Result<(), ErrorBlock> {
         match self
             .transactions
@@ -42,6 +48,10 @@ impl Block {
         Ok(())
     }
 
+    /// Calculate the merkle path for a transaction in the block
+    ///
+    /// ### Error
+    ///  * `ErrorBlock::CouldNotCalculateMerklePath`: It will appear when the merkle path could not be calculated
     pub fn get_merkle_path(&self, transaction: &Transaction) -> Result<Vec<HashType>, ErrorBlock> {
         let path: Vec<HashType> =
             match MerkleTree::get_merkle_path(&self.transactions, transaction.clone()) {

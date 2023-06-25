@@ -8,10 +8,10 @@ use std::cmp::PartialEq;
 
 const INTERFACE: &str = "interface";
 
-/// Configuration for the logs process
+/// It represents all the data needed for the UI
 #[derive(Debug, PartialEq, Clone)]
 pub struct UIConfig {
-    /// The file path to where to write the logs message
+    /// It's which interface will be used
     pub interface: Interface,
 }
 
