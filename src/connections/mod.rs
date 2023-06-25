@@ -12,4 +12,4 @@ pub mod socket_conversion;
 
 pub mod type_identifier;
 
-pub mod network_ip_addres;
+pub mod network_ip_address;

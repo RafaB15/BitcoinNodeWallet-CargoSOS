@@ -14,14 +14,14 @@ use std::{
 
 /// It's the representation of a new potential peer to connect to
 #[derive(Debug, PartialEq)]
-pub struct NetworkIpAddres {
+pub struct NetworkIpAddress {
     time: u32,
     services: BitfieldServices,
     ip_address: Ipv6Addr,
     port: u16,
 }
 
-impl SerializableLittleEndian for NetworkIpAddres {
+impl SerializableLittleEndian for NetworkIpAddress {
     fn le_serialize(&self, stream: &mut dyn Write) -> Result<(), ErrorSerialization> {
         self.time.le_serialize(stream)?;
         self.services.le_serialize(stream)?;
@@ -32,9 +32,9 @@ impl SerializableLittleEndian for NetworkIpAddres {
     }
 }
 
-impl DeserializableLittleEndian for NetworkIpAddres {
+impl DeserializableLittleEndian for NetworkIpAddress {
     fn le_deserialize(stream: &mut dyn Read) -> Result<Self, ErrorSerialization> {
-        Ok(NetworkIpAddres {
+        Ok(NetworkIpAddress {
             time: u32::le_deserialize(stream)?,
             services: BitfieldServices::le_deserialize(stream)?,
             ip_address: Ipv6Addr::be_deserialize(stream)?,
@@ -59,7 +59,7 @@ mod tests {
         (0 as u16).be_serialize(&mut expected_stream)?;
 
         let mut stream: Vec<u8> = Vec::new();
-        let network_ip_address: NetworkIpAddres = NetworkIpAddres {
+        let network_ip_address: NetworkIpAddress = NetworkIpAddress {
             time: 1234,
             services: BitfieldServices::new(vec![SupportedServices::Unname]),
             ip_address: Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0),
@@ -76,7 +76,7 @@ mod tests {
     #[test]
     fn test02_deserialize_correctly_network_ip_address() -> Result<(), ErrorSerialization> {
         let mut stream: Vec<u8> = Vec::new();
-        let network_ip_address: NetworkIpAddres = NetworkIpAddres {
+        let network_ip_address: NetworkIpAddress = NetworkIpAddress {
             time: 1234,
             services: BitfieldServices::new(vec![SupportedServices::Unname]),
             ip_address: Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0),
@@ -87,7 +87,7 @@ mod tests {
 
         let mut stream: &[u8] = &stream;
 
-        let network_ip_address_deserialized = NetworkIpAddres::le_deserialize(&mut stream)?;
+        let network_ip_address_deserialized = NetworkIpAddress::le_deserialize(&mut stream)?;
 
         assert_eq!(network_ip_address, network_ip_address_deserialized);
 
