@@ -145,5 +145,40 @@ impl DeserializableInternalOrder for CommandName {
 }
 
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_01_command_name_try_from() {
+        let command_name_type: CommandNameType = VERSION_NAME;
+        let command_name: CommandName = command_name_type.try_into().unwrap();
+
+        assert_eq!(command_name, CommandName::Version);
+    }
+
+    #[test]
+    fn test_02_command_name_serialize() {
+        let command_name: CommandName = CommandName::Ping;
+        let mut vec = Vec::new();
+        command_name.io_serialize(&mut vec).unwrap();
+
+        assert_eq!(vec, PING_NAME);
+    }
+
+    #[test]
+    fn test_03_command_name_deserialize() {
+
+        let command_name_alert: CommandName = CommandName::Alert;
+        let mut vec = Vec::new();
+        command_name_alert.io_serialize(&mut vec).unwrap();
+        let deserialized_command = CommandName::io_deserialize(&mut vec.as_slice()).unwrap();
+
+        assert_eq!(deserialized_command, command_name_alert);
+    }
+
+}
+
+
 
 
