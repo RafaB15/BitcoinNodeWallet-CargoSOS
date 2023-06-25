@@ -285,6 +285,12 @@ fn receive_transaction(
 ) -> Result<(), ErrorTUI> {
     let mut transaction_own_by_account = false;
 
+    {
+        if get_reference(&pending_transactions)?.contains(&transaction.clone()) {
+            return Ok(());
+        }
+    }
+
     for account in get_reference(&wallet)?.get_accounts() {
         if account.verify_transaction_ownership(&(transaction.clone())) {
             notify(
