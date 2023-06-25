@@ -105,3 +105,39 @@ impl DeserializableLittleEndian for Compact256 {
         Ok(value.into())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_01_correct_compact256_serialization() {
+        let value: u32 = 0x1F000000;
+        let compact256 = Compact256::from(value);
+
+        let mut stream: Vec<u8> = Vec::new();
+        compact256.le_serialize(&mut stream).unwrap();
+
+        assert_eq!(stream, vec![0x00, 0x00, 0x00, 0x1F]);
+    }
+
+    #[test]
+    fn test_02_correct_compact256_deserialization() {
+        let mut stream: &[u8] = &[0x00, 0x00, 0x00, 0x1F];
+        let compact256 = Compact256::le_deserialize(&mut stream).unwrap();
+
+        assert_eq!(compact256, Compact256::from(0x1F000000));
+    }
+
+    #[test]
+    fn test_03_correct_compact256_from_hash(){
+        let hash: HashType = HashType::from([
+            0x43, 0x49, 0x7f, 0xd7, 0xf8, 0x26, 0x95, 0x71, 0x08, 0xf4, 0xa3, 0x0f, 0xd9, 0xce, 
+            0xc3, 0xae, 0xba, 0x79, 0x97, 0x20, 0x84, 0xe9, 0x0e, 0xad, 0x01, 0xea, 0x33, 0x09, 
+            0x00, 0x00, 0x00, 0x00
+            ]);
+        let hash_compact256 = Compact256::try_from(hash).unwrap();
+        let actual_compact256 = Compact256::from(0x1F43497F);
+        assert_eq!(hash_compact256, actual_compact256);
+    }
+}
