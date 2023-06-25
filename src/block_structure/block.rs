@@ -213,7 +213,7 @@ mod tests {
     }
 
     #[test]
-    fn test_03_correct_transaction_error() {
+    fn test_03_correct_append_transaction() {
         let block_header = BlockHeader::new(
             block_version::BlockVersion::version(1),
             [0; 32],
