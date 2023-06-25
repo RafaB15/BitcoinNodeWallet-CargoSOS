@@ -5,7 +5,7 @@
   <object class="GtkWindow" id="AccountRegistrationWindow">
     <property name="name">AccountRegistrationWindow</property>
     <property name="width-request">365</property>
-    <property name="height-request">350</property>
+    <property name="height-request">320</property>
     <property name="can-focus">False</property>
     <property name="resizable">False</property>
     <child>
@@ -155,9 +155,9 @@ There is an error in the information entered</property>
           </packing>
         </child>
         <child>
-          <object class="GtkButton" id="OkButton">
+          <object class="GtkButton" id="OkErrorButton">
             <property name="label" translatable="yes">Ok</property>
-            <property name="name">OkButton</property>
+            <property name="name">OkErrorButton</property>
             <property name="width-request">100</property>
             <property name="height-request">34</property>
             <property name="visible">True</property>
@@ -183,7 +183,8 @@ There is an error in the information entered</property>
           </packing>
         </child>
         <child>
-          <object class="GtkImage">
+          <object class="GtkImage" id="ErrorImage">
+            <property name="name">ErrorImage</property>
             <property name="width-request">48</property>
             <property name="height-request">48</property>
             <property name="visible">True</property>
@@ -194,6 +195,75 @@ There is an error in the information entered</property>
           <packing>
             <property name="x">197</property>
             <property name="y">11</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkWindow" id="TransactionNotificationWindow">
+    <property name="name">TransactionNotificationWindow</property>
+    <property name="can-focus">False</property>
+    <child>
+      <object class="GtkFixed" id="TransactionNotificationFrame">
+        <property name="name">TransactionNotificationFrame</property>
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <child>
+          <object class="GtkImage" id="NotificationImage">
+            <property name="name">NotificationImage</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="stock">gtk-info</property>
+            <property name="icon_size">6</property>
+          </object>
+          <packing>
+            <property name="x">197</property>
+            <property name="y">11</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="TransactionNotificationExplanation">
+            <property name="name">TransactionNotificationExplanation</property>
+            <property name="width-request">446</property>
+            <property name="height-request">80</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="label" translatable="yes">A transaction involving one of your accounts 
+has been identified but is still unconfirmed</property>
+            <property name="justify">center</property>
+          </object>
+          <packing>
+            <property name="x">4</property>
+            <property name="y">49</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="TransactionNotificationLabel">
+            <property name="name">TransactionNotificationLabel</property>
+            <property name="width-request">200</property>
+            <property name="height-request">40</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="justify">center</property>
+          </object>
+          <packing>
+            <property name="x">123</property>
+            <property name="y">125</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="OkNotificationButton">
+            <property name="label" translatable="yes">Ok</property>
+            <property name="name">OkNotificationButton</property>
+            <property name="width-request">100</property>
+            <property name="height-request">34</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+          </object>
+          <packing>
+            <property name="x">174</property>
+            <property name="y">182</property>
           </packing>
         </child>
       </object>

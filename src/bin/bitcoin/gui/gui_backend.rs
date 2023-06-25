@@ -253,12 +253,7 @@ pub fn handle_peers(
                     )?;
                 }
             }
-            if tx_to_front.send(SignalToFront::Update).is_err() {
-                return Err(ErrorGUI::FailedSignalToFront(
-                    "Failed to send update signal to front".to_string(),
-                ));
-            }
-        }
+        };
 
         Ok(())
     })
@@ -463,6 +458,7 @@ pub fn spawn_frontend_handler(
             SignalToBack::ExitProgram => {
                 break;
             },
+            _ => {}
         }
     }
     Ok(())

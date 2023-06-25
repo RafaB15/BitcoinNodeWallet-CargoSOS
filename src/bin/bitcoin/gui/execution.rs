@@ -27,6 +27,7 @@ use std::{
     cell::Cell,
 };
 
+/// This function sets up the main window
 fn login_main_window(application: &gtk::Application, builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) -> Result<(), ErrorGUI>{
 
     let window: Window = builder.object("MainWindow").unwrap();
@@ -67,6 +68,7 @@ fn login_main_window(application: &gtk::Application, builder: &Builder, tx_to_ba
     Ok(())
 }
 
+/// This function sets up the registration window
 fn login_registration_window(builder: &Builder, application: &gtk::Application, tx_to_back: mpsc::Sender<SignalToBack>) -> Result<(), ErrorGUI>{
     let account_registration_window: Window = builder.object("AccountRegistrationWindow").unwrap();
     account_registration_window.set_application(Some(application));
@@ -92,6 +94,7 @@ fn login_registration_window(builder: &Builder, application: &gtk::Application, 
     Ok(())
 }
 
+/// THis function sets up the combo box
 fn login_combo_box(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) {
     let combo_box: ComboBoxText = builder.object("WalletsComboBox").unwrap();
     let cloned_builder = builder.clone();
@@ -104,15 +107,15 @@ fn login_combo_box(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) {
     });
 }
 
-
+/// This function sets up the error window
 fn login_transaction_error_window(builder: &Builder) -> Result<(), ErrorGUI> {
     let transaction_error_window: Window = match builder.object("TransactionErrorWindow") {
         Some(transaction_error_window) => transaction_error_window,
         None => return Err(ErrorGUI::MissingElement("TransactionErrorWindow".to_string())),
     };
-    let transaction_error_button: Button = match builder.object("OkButton") {
+    let transaction_error_button: Button = match builder.object("OkErrorButton") {
         Some(transaction_error_button) => transaction_error_button,
-        None => return Err(ErrorGUI::MissingElement("OkButton".to_string())),
+        None => return Err(ErrorGUI::MissingElement("OkErrorButton".to_string())),
     };
     transaction_error_button.connect_clicked(move |_| {
         transaction_error_window.set_visible(false);
@@ -120,6 +123,23 @@ fn login_transaction_error_window(builder: &Builder) -> Result<(), ErrorGUI> {
     Ok(())
 }
 
+/// This function sets up the notification window
+fn login_transaction_notification_window(builder: &Builder) -> Result<(), ErrorGUI> {
+    let transaction_notification_window: Window = match builder.object("TransactionNotificationWindow") {
+        Some(transaction_notification_window) => transaction_notification_window,
+        None => return Err(ErrorGUI::MissingElement("TransactionNotificationWindow".to_string())),
+    };
+    let transaction_notification_button: Button = match builder.object("OkNotificationButton") {
+        Some(transaction_notification_button) => transaction_notification_button,
+        None => return Err(ErrorGUI::MissingElement("OkNotificationButton".to_string())),
+    };
+    transaction_notification_button.connect_clicked(move |_| {
+        transaction_notification_window.set_visible(false);
+    });
+    Ok(())
+}
+
+/// This function makes the error window visible and sets the error message
 fn show_window_with_error(builder: &Builder, error: &str) -> Result<(), ErrorGUI> {
     let transaction_error_window: Window = match builder.object("TransactionErrorWindow") {
         Some(transaction_error_window) => transaction_error_window,
@@ -131,6 +151,21 @@ fn show_window_with_error(builder: &Builder, error: &str) -> Result<(), ErrorGUI
     };
     error_label.set_text(error);
     transaction_error_window.set_visible(true);
+    Ok(())
+}
+
+/// This function makes the notification window visible and sets the notification message
+fn show_new_transaction_notification(builder: &Builder, account_name: String) -> Result<(), ErrorGUI> {
+    let transaction_notification_window: Window = match builder.object("TransactionNotificationWindow") {
+        Some(transaction_notification_window) => transaction_notification_window,
+        None => return Err(ErrorGUI::MissingElement("TransactionNotificationWindow".to_string())),
+    };
+    let notification_label: Label = match builder.object("TransactionNotificationLabel"){
+        Some(notification_label) => notification_label,
+        None => return Err(ErrorGUI::MissingElement("TransactionNotificationLabel".to_string())),
+    };
+    notification_label.set_text(format!("New transaction for account {}", account_name).as_str());
+    transaction_notification_window.set_visible(true);
     Ok(())
 }
 /* 
@@ -147,6 +182,7 @@ fn register_transaction(tx_to_back: mpsc::Sender<SignalToBack> ,builder: &Builde
 }
 */
 
+/// This function adds an account to the combo box
 fn add_account_to_combo_box(builder: &Builder, account_name: &str) -> Result<(), ErrorGUI> {
     let combo_box: ComboBoxText = match builder.object("WalletsComboBox") {
         Some(combo_box) => combo_box,
@@ -156,49 +192,35 @@ fn add_account_to_combo_box(builder: &Builder, account_name: &str) -> Result<(),
     Ok(())
 }
 
-fn spawn_local_handler(builder: &Builder, rx_from_back: glib::Receiver<SignalToFront>, tx_to_back: mpsc::Sender<SignalToBack>) {
-    let cloned_builder = builder.clone();
+///Function that clears the contents of the send transaction window
+fn clear_send_transaction_contents(builder: &Builder) {
+    let bitcoin_address_entry: Entry = match builder.object("BitcoinAddressEntry"){
+        Some(entry) => entry,
+        None => {
+            println!("Error: Missing element BitcoinAddressEntry");
+            Entry::new()
+        },
+    };
+    let amount_spin_button: SpinButton = match builder.object("AmountSpinButton"){
+        Some(entry) => entry,
+        None => {
+            println!("Error: Missing element AmountSpinButton");
+            SpinButton::with_range(0.0, 0.0, 0.0)
+        },
+    };
+    let fee_spin_button: SpinButton = match builder.object("FeeSpinButton"){
+        Some(entry) => entry,
+        None => {
+            println!("Error: Missing element FeeSpinButton");
+            SpinButton::with_range(0.0, 0.0, 0.0)
+        },
+    };
+    bitcoin_address_entry.set_text("");
+    amount_spin_button.set_value(0.0);
+    fee_spin_button.set_value(0.0);
+}
 
-    rx_from_back.attach(None, move |signal| {
-        match signal {
-            SignalToFront::RegisterWallet(wallet_name) => {
-                if let Err(error) = add_account_to_combo_box(&cloned_builder, wallet_name.as_str()){
-                    println!("Error adding account to combo box, with error {:?}", error);
-                };   
-            },
-            SignalToFront::LoadAvailableBalance(balance) => {
-                let balance_label: Label = cloned_builder.object("AvailableBalanceLabel").unwrap();
-                let pending_label: Label = cloned_builder.object("PendingBalanceLabel").unwrap();
-                let total_label: Label = cloned_builder.object("TotalBalanceLabel").unwrap();
-
-                let balance_string = format!("{:.8}", balance.0);
-                let pending_string = format!("{:.8}", balance.1);
-                let total_string = format!("{:.8}", balance.0 + balance.1);
-
-                balance_label.set_text(&balance_string);
-                pending_label.set_text(&pending_string);
-                total_label.set_text(&total_string);
-            },
-            SignalToFront::NotifyBlockchainIsReady => {
-                let signal_blockchain_not_ready: Image = cloned_builder.object("BlockchainNotReadySymbol").unwrap();
-                signal_blockchain_not_ready.set_visible(false);
-            }
-            SignalToFront::ErrorInTransaction(error) => {
-                let _ = show_window_with_error(&cloned_builder, error.as_str());
-            },
-            SignalToFront::Update => {
-                let _ = tx_to_back.send(SignalToBack::GetAccountBalance);
-            }
-            _ => {}
-
-
-            //recibir la blockchain -> integrarla al load bar
-            //obtener transacciones de bloques ->  cargarlas al tree view
-        }
-        glib::Continue(true)
-    });
-} 
-
+/// Function that sets up the send transaction page
 fn login_send_page(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) -> Result<(), ErrorGUI>{
     let transaction_clear_all_button: Button = match builder.object("TransactionClearAllButton") {
         Some(button) => button,
@@ -206,30 +228,7 @@ fn login_send_page(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) ->
     };
     let cloned_builder = builder.clone();
     transaction_clear_all_button.connect_clicked(move |_| {
-        let bitcoin_address_entry: Entry = match cloned_builder.object("BitcoinAddressEntry"){
-            Some(entry) => entry,
-            None => {
-                println!("Error: Missing element BitcoinAddressEntry");
-                Entry::new()
-            },
-        };
-        let amount_spin_button: SpinButton = match cloned_builder.object("AmountSpinButton"){
-            Some(entry) => entry,
-            None => {
-                println!("Error: Missing element AmountSpinButton");
-                SpinButton::with_range(0.0, 0.0, 0.0)
-            },
-        };
-        let fee_spin_button: SpinButton = match cloned_builder.object("FeeSpinButton"){
-            Some(entry) => entry,
-            None => {
-                println!("Error: Missing element FeeSpinButton");
-                SpinButton::with_range(0.0, 0.0, 0.0)
-            },
-        };
-        bitcoin_address_entry.set_text("");
-        amount_spin_button.set_value(0.0);
-        fee_spin_button.set_value(0.0);
+        clear_send_transaction_contents(&cloned_builder);
     });
 
     let transaction_send_button: Button = match builder.object("TransactionSendButton") {
@@ -262,6 +261,9 @@ fn login_send_page(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) ->
             },
         };
         let _ = tx_to_back.send(SignalToBack::CreateTransaction(bitcoin_address_entry.text().to_string(), amount_spin_button.value(), fee_spin_button.value()));
+        bitcoin_address_entry.set_text("");
+        amount_spin_button.set_value(0.0);
+        fee_spin_button.set_value(0.0);
     });
 
     Ok(())
@@ -271,6 +273,54 @@ fn login_transaction_page(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBa
     Ok(())
 }
 
+/// This functions sets up the behaviour of the GUI when it receives a signal from the backend
+fn spawn_local_handler(builder: &Builder, rx_from_back: glib::Receiver<SignalToFront>, tx_to_back: mpsc::Sender<SignalToBack>) {
+    let cloned_builder = builder.clone();
+
+    rx_from_back.attach(None, move |signal| {
+        match signal {
+            SignalToFront::RegisterWallet(wallet_name) => {
+                if let Err(error) = add_account_to_combo_box(&cloned_builder, wallet_name.as_str()){
+                    println!("Error adding account to combo box, with error {:?}", error);
+                };   
+            },
+            SignalToFront::LoadAvailableBalance(balance) => {
+                let balance_label: Label = cloned_builder.object("AvailableBalanceLabel").unwrap();
+                let pending_label: Label = cloned_builder.object("PendingBalanceLabel").unwrap();
+                let total_label: Label = cloned_builder.object("TotalBalanceLabel").unwrap();
+
+                let balance_string = format!("{:.8}", balance.0);
+                let pending_string = format!("{:.8}", balance.1);
+                let total_string = format!("{:.8}", balance.0 + balance.1);
+
+                balance_label.set_text(&balance_string);
+                pending_label.set_text(&pending_string);
+                total_label.set_text(&total_string);
+            },
+            SignalToFront::NotifyBlockchainIsReady => {
+                let signal_blockchain_not_ready: Image = cloned_builder.object("BlockchainNotReadySymbol").unwrap();
+                signal_blockchain_not_ready.set_visible(false);
+            }
+            SignalToFront::ErrorInTransaction(error) => {
+                let _ = show_window_with_error(&cloned_builder, error.as_str());
+            },
+            SignalToFront::TransactionOfAccountReceived(account) => {
+                show_new_transaction_notification(&cloned_builder, account);
+            }
+            SignalToFront::Update => {
+                let _ = tx_to_back.send(SignalToBack::GetAccountBalance);
+            }
+            _ => {}
+
+
+            //recibir la blockchain -> integrarla al load bar
+            //obtener transacciones de bloques ->  cargarlas al tree view
+        }
+        glib::Continue(true)
+    });
+} 
+
+/// Function that sets up all the elemeents in the ui
 fn build_ui(
     tx_to_back: mpsc::Sender<SignalToBack>,
     rx_from_back: Option<glib::Receiver<SignalToFront>>,
@@ -296,10 +346,12 @@ fn build_ui(
     login_combo_box(&builder, tx_to_back.clone());
 
     login_transaction_error_window(&builder)?;
+    login_transaction_notification_window(&builder)?;
 
     Ok(())
 }
 
+/// The main function of the program for the graphical interface.
 pub fn program_execution(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
