@@ -4,8 +4,8 @@
   <requires lib="gtk+" version="3.24"/>
   <object class="GtkWindow" id="AccountRegistrationWindow">
     <property name="name">AccountRegistrationWindow</property>
-    <property name="width-request">79</property>
-    <property name="height-request">300</property>
+    <property name="width-request">365</property>
+    <property name="height-request">350</property>
     <property name="can-focus">False</property>
     <property name="resizable">False</property>
     <child>
@@ -22,7 +22,7 @@
             <property name="can-focus">True</property>
           </object>
           <packing>
-            <property name="x">110</property>
+            <property name="x">120</property>
             <property name="y">45</property>
           </packing>
         </child>
@@ -36,7 +36,7 @@
             <property name="label" translatable="yes">Enter a new wallet:</property>
           </object>
           <packing>
-            <property name="x">6</property>
+            <property name="x">16</property>
             <property name="y">6</property>
           </packing>
         </child>
@@ -48,7 +48,7 @@
             <property name="label" translatable="yes">Private Key:</property>
           </object>
           <packing>
-            <property name="x">10</property>
+            <property name="x">20</property>
             <property name="y">50</property>
           </packing>
         </child>
@@ -60,20 +60,8 @@
             <property name="label" translatable="yes">Public Key:</property>
           </object>
           <packing>
-            <property name="x">10</property>
+            <property name="x">26</property>
             <property name="y">100</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkLabel" id="AddressKeyEntryCue">
-            <property name="name">AddressKeyEntryCue</property>
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="label" translatable="yes">Address:</property>
-          </object>
-          <packing>
-            <property name="x">10</property>
-            <property name="y">150</property>
           </packing>
         </child>
         <child>
@@ -84,8 +72,8 @@
             <property name="label" translatable="yes">Name:</property>
           </object>
           <packing>
-            <property name="x">10</property>
-            <property name="y">200</property>
+            <property name="x">54</property>
+            <property name="y">150</property>
           </packing>
         </child>
         <child>
@@ -97,21 +85,8 @@
             <property name="can-focus">True</property>
           </object>
           <packing>
-            <property name="x">110</property>
+            <property name="x">120</property>
             <property name="y">95</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkEntry" id="AddressEntry">
-            <property name="name">AddressEntry</property>
-            <property name="width-request">170</property>
-            <property name="height-request">30</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-          </object>
-          <packing>
-            <property name="x">110</property>
-            <property name="y">145</property>
           </packing>
         </child>
         <child>
@@ -123,8 +98,8 @@
             <property name="can-focus">True</property>
           </object>
           <packing>
-            <property name="x">110</property>
-            <property name="y">195</property>
+            <property name="x">120</property>
+            <property name="y">145</property>
           </packing>
         </child>
         <child>
@@ -138,8 +113,8 @@
             <property name="receives-default">True</property>
           </object>
           <packing>
-            <property name="x">180</property>
-            <property name="y">242</property>
+            <property name="x">190</property>
+            <property name="y">202</property>
           </packing>
         </child>
       </object>
@@ -157,7 +132,9 @@
   </object>
   <object class="GtkWindow" id="TransactionErrorWindow">
     <property name="name">TransactionErrorWindow</property>
+    <property name="height-request">275</property>
     <property name="can-focus">False</property>
+    <property name="title" translatable="yes">⛔ Error ⛔</property>
     <child>
       <object class="GtkFixed" id="TransactionErrorWindowGrid">
         <property name="visible">True</property>
@@ -173,6 +150,7 @@
 There is an error in the information entered</property>
           </object>
           <packing>
+            <property name="x">4</property>
             <property name="y">49</property>
           </packing>
         </child>
@@ -187,19 +165,35 @@ There is an error in the information entered</property>
             <property name="receives-default">True</property>
           </object>
           <packing>
-            <property name="x">179</property>
+            <property name="x">174</property>
             <property name="y">182</property>
           </packing>
         </child>
         <child>
           <object class="GtkLabel" id="ErrorLabel">
             <property name="name">ErrorLabel</property>
+            <property name="width-request">140</property>
+            <property name="height-request">40</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
           </object>
           <packing>
-            <property name="x">210</property>
-            <property name="y">135</property>
+            <property name="x">154</property>
+            <property name="y">125</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkImage">
+            <property name="width-request">48</property>
+            <property name="height-request">48</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="stock">gtk-delete</property>
+            <property name="icon_size">6</property>
+          </object>
+          <packing>
+            <property name="x">197</property>
+            <property name="y">11</property>
           </packing>
         </child>
       </object>

@@ -11,5 +11,7 @@ pub enum SignalToFront {
     LoadBlockChain,
     LoadRecentTransactions(Vec<Transaction>, Wallet),
     ErrorInTransaction(String),
+    ErrorInAccountCreation(String),
+    AccountCreated(String),
     Update,
 }

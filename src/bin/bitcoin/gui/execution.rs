@@ -67,7 +67,7 @@ fn login_main_window(application: &gtk::Application, builder: &Builder, tx_to_ba
     Ok(())
 }
 
-fn login_registration_window(builder: &Builder, application: &gtk::Application) {
+fn login_registration_window(builder: &Builder, application: &gtk::Application, tx_to_back: mpsc::Sender<SignalToBack>) -> Result<(), ErrorGUI>{
     let account_registration_window: Window = builder.object("AccountRegistrationWindow").unwrap();
     account_registration_window.set_application(Some(application));
 
@@ -79,19 +79,17 @@ fn login_registration_window(builder: &Builder, application: &gtk::Application) 
         
         let private_key_entry: Entry = cloned_builder.object("PrivateKeyEntry").unwrap();
         let public_key_entry: Entry = cloned_builder.object("PublicKeyEntry").unwrap();
-        let address_entry: Entry = cloned_builder.object("AddressEntry").unwrap();
         let name_entry: Entry = cloned_builder.object("NameEntry").unwrap();
 
-        let combo_box: ComboBoxText= cloned_builder.object("WalletsComboBox").unwrap();
-        combo_box.append_text(name_entry.text().as_str());
-
-        println!("{:?} {:?} {:?} {:?}", private_key_entry.text(), public_key_entry.text(), address_entry.text(), name_entry.text());
+        if tx_to_back.send(SignalToBack::CreateAccount(name_entry.text().to_string(), private_key_entry.text().to_string(), public_key_entry.text().to_string())).is_err() {
+            println!("Error sending create account signal");
+        }
 
         private_key_entry.set_text("");
         public_key_entry.set_text("");
-        address_entry.set_text("");
         name_entry.set_text("");            
     });
+    Ok(())
 }
 
 fn login_combo_box(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) {
@@ -147,6 +145,16 @@ fn register_transaction(tx_to_back: mpsc::Sender<SignalToBack> ,builder: &Builde
     });
 }
 */
+
+fn add_account_to_combo_box(builder: &Builder, account_name: &str) -> Result<(), ErrorGUI> {
+    let combo_box: ComboBoxText = match builder.object("WalletsComboBox") {
+        Some(combo_box) => combo_box,
+        None => return Err(ErrorGUI::MissingElement("WalletsComboBox".to_string())),
+    };
+    combo_box.append_text(account_name);
+    Ok(())
+}
+
 fn spawn_local_handler(builder: &Builder, rx_from_back: glib::Receiver<SignalToFront>) {
     let cloned_builder = builder.clone();
 
@@ -174,6 +182,11 @@ fn spawn_local_handler(builder: &Builder, rx_from_back: glib::Receiver<SignalToF
             }
             SignalToFront::ErrorInTransaction(error) => {
                 let _ = show_window_with_error(&cloned_builder, error.as_str());
+            },
+            SignalToFront::AccountCreated(name) => {
+                if let Err(error) = add_account_to_combo_box(&cloned_builder, name.as_str()){
+                    println!("Error adding account to combo box, with error {:?}", error);
+                };   
             },
             _ => {}
 
@@ -277,11 +290,11 @@ fn build_ui(
 
     login_main_window(application, &builder, tx_to_back.clone())?;
 
-    login_registration_window(&builder, application);
+    login_registration_window(&builder, application, tx_to_back.clone())?;
 
     login_combo_box(&builder, tx_to_back.clone());
 
-    login_transaction_error_window(&builder);
+    login_transaction_error_window(&builder)?;
 
     Ok(())
 }

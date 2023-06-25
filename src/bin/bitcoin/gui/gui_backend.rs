@@ -4,7 +4,7 @@ use super::{
 };
 
 use gtk::glib;
-use std::{thread, ops::Add};
+use std::thread;
 
 use crate::{
     error_execution::ErrorExecution,
@@ -19,7 +19,7 @@ use crate::{
 use cargosos_bitcoin::{configurations::{
     connection_config::ConnectionConfig, download_config::DownloadConfig,
     save_config::SaveConfig,
-}, block_structure::utxo_set, wallet_structure::address};
+}, block_structure::utxo_set, wallet_structure::{address, public_key}};
 
 use cargosos_bitcoin::{
     logs::logger_sender::LoggerSender,
@@ -34,6 +34,8 @@ use cargosos_bitcoin::{
     wallet_structure::{
         wallet::Wallet,
         account::Account,
+        private_key::PrivateKey,
+        public_key::PublicKey,
         address::Address,
         error_wallet::ErrorWallet,
     },
@@ -334,6 +336,76 @@ fn sending_transaction(
     }
 }
 
+pub fn create_account(
+    wallet: MutArc<Wallet>,
+    account_name: &str,
+    private_key_string: &str,
+    public_key_string: &str,
+    tx_to_front: glib::Sender<SignalToFront>,
+    logger: LoggerSender,
+) -> Result<(), ErrorGUI> {
+    
+    let mut wallet = get_reference(&wallet)?;
+
+    let private_key = match PrivateKey::try_from(private_key_string) {
+        Ok(private_key) => private_key,
+        Err(_) => {
+            let message = "Invalid private key";
+            let _ = logger.log_wallet(message.to_string());
+            if tx_to_front.send(SignalToFront::ErrorInAccountCreation(message.to_string())).is_err() {
+                return Err(ErrorGUI::FailedSignalToFront(
+                    "Failed to send error signal to front".to_string(),
+                ));
+            }
+            return Ok(());
+        }
+    };
+
+    let public_key = match PublicKey::try_from(public_key_string.to_string()) {
+        Ok(public_key) => public_key,
+        Err(_) => {
+            let message = "Invalid public key";
+            let _ = logger.log_wallet(message.to_string());
+            if tx_to_front.send(SignalToFront::ErrorInAccountCreation(message.to_string())).is_err() {
+                return Err(ErrorGUI::FailedSignalToFront(
+                    "Failed to send error signal to front".to_string(),
+                ));
+            }
+            return Ok(());
+        }
+    };
+
+    let address = match Address::from_public_key(&public_key) {
+        Ok(result) => result,
+        Err(error) => {
+            let message = format!("Error creating address: {:?}", error);
+            let _ = logger.log_wallet(message.to_string());
+            if tx_to_front.send(SignalToFront::ErrorInAccountCreation(message.to_string())).is_err() {
+                return Err(ErrorGUI::FailedSignalToFront(
+                    "Failed to send error signal to front".to_string(),
+                ));
+            }
+            return Ok(());
+        }
+    };
+
+    let account = Account {
+        account_name: account_name.to_string(),
+        private_key,
+        public_key,
+        address,
+    };
+
+    wallet.add_account(account);
+    if tx_to_front.send(SignalToFront::AccountCreated(account_name.to_string())).is_err() {
+        return Err(ErrorGUI::FailedSignalToFront(
+            "Failed to send account created signal to front".to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
 pub fn spawn_frontend_handler(
     rx_from_front: Receiver<SignalToBack>,
     tx_to_front: glib::Sender<SignalToFront>,
@@ -354,6 +426,9 @@ pub fn spawn_frontend_handler(
             SignalToBack::CreateTransaction(address_string, amount, fee) => {
                 sending_transaction(broadcasting, &wallet, &utxo_set, logger.clone(), &address_string, amount, fee, tx_to_front.clone());
             }
+            SignalToBack::CreateAccount(name, private_key, public_key) => {
+                create_account(wallet.clone(), &name, &private_key, &public_key, tx_to_front.clone(), logger.clone())?;
+            },
             SignalToBack::ExitProgram => {
                 break;
             },
@@ -379,7 +454,7 @@ pub fn change_selected_account(
         }
     };
 
-    wallet_reference.selected_account = Some(account_to_select);
+    wallet_reference.change_account(account_to_select.clone());
 
     if tx_to_front.send(SignalToFront::Update).is_err() {
         return Err(ErrorGUI::FailedSignalToFront(
@@ -398,7 +473,7 @@ pub fn give_account_balance(
     let wallet_reference = get_reference(&wallet)?;
     let utxo_set_reference = get_reference(&utxo_set)?;
 
-    let account_to_check = match wallet_reference.selected_account.clone() {
+    let account_to_check = match wallet_reference.get_selected_account().clone() {
         Some(account) => account,
         None => {
             return Err(ErrorGUI::ErrorReading(
@@ -492,7 +567,7 @@ pub fn backend_initialization(
     )?;
 
     let mut wallet = load_system.get_wallet()?;
-    for account in wallet.accounts.iter() {
+    for account in wallet.get_accounts().iter() {
         tx_to_front.send(SignalToFront::RegisterWallet(account.account_name.clone())).unwrap();
     }
 

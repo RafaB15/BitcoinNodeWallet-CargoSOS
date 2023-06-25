@@ -61,7 +61,6 @@ impl Wallet {
         self.accounts.iter().find(|x| x.account_name == name)
     }
 }
-}
 
 impl TryDefault for Wallet {
     type Error = ErrorWallet;
