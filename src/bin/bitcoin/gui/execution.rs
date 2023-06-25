@@ -6,7 +6,7 @@ use super::{
 };
 
 use gtk::{prelude::*, Button, Entry, Application, Builder, Window, ComboBoxText, Image, Label, SpinButton};
-use gtk::glib::{self, Sender};
+use gtk::glib;
 
 use crate::{
     process::save_system::SaveSystem,
@@ -100,6 +100,7 @@ fn login_combo_box(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) {
         let selected_wallet = combo_box_cloned.active_text().unwrap();
         let _ = tx_to_back.send(SignalToBack::ChangeSelectedAccount(selected_wallet.to_string()));
         let _ = tx_to_back.send(SignalToBack::GetAccountBalance);
+        let _ = tx_to_back.send(SignalToBack::GetAccountTransactions);
     });
 }
 
@@ -155,39 +156,39 @@ fn add_account_to_combo_box(builder: &Builder, account_name: &str) -> Result<(),
     Ok(())
 }
 
-fn spawn_local_handler(builder: &Builder, rx_from_back: glib::Receiver<SignalToFront>) {
+fn spawn_local_handler(builder: &Builder, rx_from_back: glib::Receiver<SignalToFront>, tx_to_back: mpsc::Sender<SignalToBack>) {
     let cloned_builder = builder.clone();
 
     rx_from_back.attach(None, move |signal| {
         match signal {
             SignalToFront::RegisterWallet(wallet_name) => {
-                let combo_box: ComboBoxText = cloned_builder.object("WalletsComboBox").unwrap();
-                combo_box.append_text(&wallet_name);
-                println!("Registering wallet: {:?}", wallet_name);
+                if let Err(error) = add_account_to_combo_box(&cloned_builder, wallet_name.as_str()){
+                    println!("Error adding account to combo box, with error {:?}", error);
+                };   
             },
             SignalToFront::LoadAvailableBalance(balance) => {
                 let balance_label: Label = cloned_builder.object("AvailableBalanceLabel").unwrap();
                 let pending_label: Label = cloned_builder.object("PendingBalanceLabel").unwrap();
                 let total_label: Label = cloned_builder.object("TotalBalanceLabel").unwrap();
 
-                balance_label.set_text(balance.0.to_string().as_str());
-                if balance.1 != 0.0 {
-                    pending_label.set_text(balance.1.to_string().as_str());
-                }
-                total_label.set_text((balance.0 + balance.1).to_string().as_str());
+                let balance_string = format!("{:.8}", balance.0);
+                let pending_string = format!("{:.8}", balance.1);
+                let total_string = format!("{:.8}", balance.0 + balance.1);
+
+                balance_label.set_text(&balance_string);
+                pending_label.set_text(&pending_string);
+                total_label.set_text(&total_string);
             },
-            SignalToFront::LoadBlockChain => {
+            SignalToFront::NotifyBlockchainIsReady => {
                 let signal_blockchain_not_ready: Image = cloned_builder.object("BlockchainNotReadySymbol").unwrap();
                 signal_blockchain_not_ready.set_visible(false);
             }
             SignalToFront::ErrorInTransaction(error) => {
                 let _ = show_window_with_error(&cloned_builder, error.as_str());
             },
-            SignalToFront::AccountCreated(name) => {
-                if let Err(error) = add_account_to_combo_box(&cloned_builder, name.as_str()){
-                    println!("Error adding account to combo box, with error {:?}", error);
-                };   
-            },
+            SignalToFront::Update => {
+                let _ = tx_to_back.send(SignalToBack::GetAccountBalance);
+            }
             _ => {}
 
 
@@ -286,7 +287,7 @@ fn build_ui(
 
     let builder: Builder = Builder::from_string(glade_src);
 
-    spawn_local_handler(&builder, rx_from_back);
+    spawn_local_handler(&builder, rx_from_back, tx_to_back.clone());
 
     login_main_window(application, &builder, tx_to_back.clone())?;
 
