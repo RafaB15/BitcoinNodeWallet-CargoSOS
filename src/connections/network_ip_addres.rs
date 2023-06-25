@@ -13,7 +13,7 @@ use std::{
 };
 
 /// It's the representation of a new potential peer to connect to
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct NetworkIpAddres {
     time: u32,
     services: BitfieldServices,
@@ -41,4 +41,56 @@ impl DeserializableLittleEndian for NetworkIpAddres {
             port: u16::be_deserialize(stream)?,
         })
     }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    
+    use crate::connections::suppored_services::SupportedServices;
+
+    #[test]
+    fn test01_serialize_correctly_network_ip_adress() -> Result<(), ErrorSerialization> {
+        let mut expected_stream: Vec<u8> = Vec::new();
+        (1234 as u32).le_serialize(&mut expected_stream)?;
+        BitfieldServices::new(vec![SupportedServices::Unname]).le_serialize(&mut expected_stream)?;
+        Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0).be_serialize(&mut expected_stream)?;
+        (0 as u16).be_serialize(&mut expected_stream)?;
+
+        let mut stream: Vec<u8> = Vec::new();
+        let network_ip_address: NetworkIpAddres = NetworkIpAddres {
+            time: 1234,
+            services: BitfieldServices::new(vec![SupportedServices::Unname]),
+            ip_address: Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0),
+            port: 0,
+        };
+
+        network_ip_address.le_serialize(&mut stream)?;
+
+        assert_eq!(expected_stream, stream);
+
+        Ok(())
+    } 
+
+    #[test]
+    fn test02_deserialize_correctly_network_ip_adress() -> Result<(), ErrorSerialization> {
+        let mut stream: Vec<u8> = Vec::new();
+        let network_ip_address: NetworkIpAddres = NetworkIpAddres {
+            time: 1234,
+            services: BitfieldServices::new(vec![SupportedServices::Unname]),
+            ip_address: Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0),
+            port: 0,
+        };
+
+        network_ip_address.le_serialize(&mut stream)?;
+
+        let mut stream: &[u8] = &stream;
+
+        let network_ip_address_deserialized = NetworkIpAddres::le_deserialize(&mut stream)?;
+
+        assert_eq!(network_ip_address, network_ip_address_deserialized);
+
+        Ok(())
+    } 
 }
