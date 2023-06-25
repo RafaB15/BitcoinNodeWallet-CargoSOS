@@ -51,7 +51,7 @@ mod tests {
     use crate::connections::suppored_services::SupportedServices;
 
     #[test]
-    fn test01_serialize_correctly_network_ip_adress() -> Result<(), ErrorSerialization> {
+    fn test01_serialize_correctly_network_ip_address() -> Result<(), ErrorSerialization> {
         let mut expected_stream: Vec<u8> = Vec::new();
         (1234 as u32).le_serialize(&mut expected_stream)?;
         BitfieldServices::new(vec![SupportedServices::Unname]).le_serialize(&mut expected_stream)?;
@@ -74,7 +74,7 @@ mod tests {
     } 
 
     #[test]
-    fn test02_deserialize_correctly_network_ip_adress() -> Result<(), ErrorSerialization> {
+    fn test02_deserialize_correctly_network_ip_address() -> Result<(), ErrorSerialization> {
         let mut stream: Vec<u8> = Vec::new();
         let network_ip_address: NetworkIpAddres = NetworkIpAddres {
             time: 1234,

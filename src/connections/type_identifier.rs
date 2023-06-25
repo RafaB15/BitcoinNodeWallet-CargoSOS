@@ -16,7 +16,7 @@ const COMPACT_BLOCK_VALUE: u32 = 0x04;
 const WITNESS_TRANSACTION_VALUE: u32 = 0x40000001;
 const WITNESS_BLOCK_VALUE: u32 = 0x40000002;
 const FILTERED_WITNESS_BLOCK_VALUE: u32 = 0x40000003;
-const PLACE_HOLDER_VALUE: u32 = 0x0201;
+const UNKNOWN_VALUE: u32 = 0x0201;
 
 /// It's the representation of the type of data to request
 #[derive(Debug, Clone, PartialEq)]
@@ -29,8 +29,7 @@ pub enum TypeIdentifier {
     WitnessTransaction,
     WitnessBlock,
     FilteredWitnessBlock,
-
-    PlaceHolder,
+    Unknown,
 }
 
 impl SerializableLittleEndian for TypeIdentifier {
@@ -45,7 +44,7 @@ impl SerializableLittleEndian for TypeIdentifier {
             TypeIdentifier::WitnessBlock => WITNESS_BLOCK_VALUE,
             TypeIdentifier::FilteredWitnessBlock => FILTERED_WITNESS_BLOCK_VALUE,
 
-            TypeIdentifier::PlaceHolder => PLACE_HOLDER_VALUE,
+            TypeIdentifier::Unknown => UNKNOWN_VALUE,
         };
 
         match value.le_serialize(stream) {
@@ -72,9 +71,9 @@ impl DeserializableLittleEndian for TypeIdentifier {
             WITNESS_BLOCK_VALUE => Ok(TypeIdentifier::WitnessBlock),
             FILTERED_WITNESS_BLOCK_VALUE => Ok(TypeIdentifier::FilteredWitnessBlock),
 
-            PLACE_HOLDER_VALUE => {
+            UNKNOWN_VALUE => {
                 println!("We get a placeholder");
-                Ok(TypeIdentifier::PlaceHolder)
+                Ok(TypeIdentifier::Unknown)
             }
             _ => Err(ErrorSerialization::ErrorInDeserialization(format!(
                 "While deserializing the type identifier, we get: {}",
@@ -82,4 +81,38 @@ impl DeserializableLittleEndian for TypeIdentifier {
             ))),
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test01_serialize_correctly_type_identifier() -> Result<(), ErrorSerialization> {
+        let expected_stream: Vec<u8> = vec![0x01, 0x00, 0x00, 0x40];
+        
+        let mut stream: Vec<u8> = Vec::new();
+        let type_identifier = TypeIdentifier::WitnessTransaction;
+
+        type_identifier.le_serialize(&mut stream)?;
+
+        assert_eq!(expected_stream, stream);
+        Ok(())
+    } 
+
+    #[test]
+    fn test02_deserialize_correctly_type_identifier() -> Result<(), ErrorSerialization> {
+        let mut stream: Vec<u8> = Vec::new();
+        let type_identifier = TypeIdentifier::WitnessTransaction;
+
+        type_identifier.le_serialize(&mut stream)?;
+
+        let mut stream: &[u8] = &stream;
+
+        let type_identifier_deserialized = TypeIdentifier::le_deserialize(&mut stream)?;
+
+        assert_eq!(type_identifier, type_identifier_deserialized);
+
+        Ok(())
+    } 
 }
