@@ -3,7 +3,7 @@ use crate::serialization::{
     error_serialization::ErrorSerialization, serializable_little_endian::SerializableLittleEndian,
 };
 
-use crate::connections::suppored_services::SupportedServices;
+use crate::connections::supported_services::SupportedServices;
 
 use crate::configurations::{
     error_configuration::ErrorConfiguration,

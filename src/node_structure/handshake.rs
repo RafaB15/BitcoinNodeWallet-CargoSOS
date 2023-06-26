@@ -11,7 +11,7 @@ use crate::messages::{
 
 use crate::connections::{
     error_connection::ErrorConnection, p2p_protocol::ProtocolVersionP2P,
-    socket_conversion::socket_to_ipv6_port, suppored_services::SupportedServices,
+    socket_conversion::socket_to_ipv6_port, supported_services::SupportedServices,
 };
 
 use crate::logs::logger_sender::LoggerSender;
