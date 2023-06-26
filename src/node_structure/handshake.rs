@@ -305,7 +305,6 @@ mod tests {
 
     use chrono::{NaiveDateTime, DateTime};
 
-    #[derive(Debug)]
     struct Stream {
         stream: Vec<u8>,
         pointer: usize,

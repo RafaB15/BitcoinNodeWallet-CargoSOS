@@ -16,7 +16,7 @@ use std::io::{Read, Write};
 pub(super) const NONE_INDEX: u64 = u64::MAX;
 
 /// It's the representation of a node in the block chain
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub(super) struct NodeChain {
     pub block: Block,
     pub header_hash: HashType,

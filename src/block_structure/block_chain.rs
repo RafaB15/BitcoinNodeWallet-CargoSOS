@@ -15,7 +15,7 @@ use crate::configurations::try_default::TryDefault;
 use std::io::{Read, Write};
 
 /// It's the internal representation of the block chain
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BlockChain {
     blocks: Vec<NodeChain>,
     last_blocks: Vec<usize>,
@@ -39,7 +39,11 @@ impl BlockChain {
     /// ### Error
     ///  * `ErrorBlock::`
     pub fn append_header(&mut self, header: BlockHeader) -> Result<(), ErrorBlock> {
-        self.append_block(Block::new(header))
+        if header.proof_of_work() {
+            self.append_block(Block::new(header))
+        } else {
+            Err(ErrorBlock::ErrorWithProofOfWork)
+        }
     }
 
     /// Appends a vector of block headers to the block chain
@@ -49,12 +53,9 @@ impl BlockChain {
     pub fn append_headers(&mut self, headers: Vec<BlockHeader>) -> Result<u32, ErrorBlock> {
         let mut added_headers = 0;
         for header in headers.iter() {
-            if !header.proof_of_work() {
-                return Err(ErrorBlock::ErrorWithProofOfWork);
-            }
-
             match self.append_header(*header) {
                 Ok(_) => added_headers += 1,
+                Err(ErrorBlock::ErrorWithProofOfWork) => return Err(ErrorBlock::ErrorWithProofOfWork),
                 _ => break,
             }
         }
@@ -254,7 +255,7 @@ mod tests {
             [0; 32],
             [0; 32],
             0,
-            Compact256::from(10),
+            Compact256::from(u32::MAX),
             0,
             CompactSize::new(0),
         ));
@@ -268,7 +269,7 @@ mod tests {
             hash_of_first_block_header.clone(),
             [0; 32],
             0,
-            Compact256::from(10),
+            Compact256::from(u32::MAX),
             0,
             CompactSize::new(0),
         );
@@ -302,7 +303,7 @@ mod tests {
             [0; 32],
             [0; 32],
             0,
-            Compact256::from(10),
+            Compact256::from(u32::MAX),
             0,
             CompactSize::new(0),
         ));
@@ -340,7 +341,7 @@ mod tests {
             hash_of_first_block_header.clone(),
             [3; 32],
             5,
-            Compact256::from(10),
+            Compact256::from(u32::MAX),
             21,
             CompactSize::new(0),
         );
@@ -372,7 +373,7 @@ mod tests {
             hash_of_first_block_header.clone(),
             [3; 32],
             5,
-            Compact256::from(10),
+            Compact256::from(u32::MAX),
             21,
             CompactSize::new(0),
         );
