@@ -295,7 +295,7 @@ impl Handshake {
 mod tests {
     use super::*;
 
-    use crate::{logs::logger, messages::{verack_message, version_message}};
+    use crate::{logs::logger, messages::{verack_message, version_message}, block_structure::block, node_structure::handshake_data};
 
     use std::net::{
         SocketAddr,
@@ -344,12 +344,49 @@ mod tests {
         }
     }
 
+    fn serialize_verack_message<RW: Read + Write>(stream: &mut RW, magic_number: [u8; 4]) -> Result<(), ErrorNode> {
+        VerackMessage::serialize_message(stream, magic_number, &VerackMessage)?;
+        Ok(())
+    }
+
+    fn serialize_version_message<RW: Read + Write>(
+        stream: &mut RW, 
+        protocol_version: ProtocolVersionP2P,
+        services: BitfieldServices,
+        block_height: i32,
+        handshake_data: HandshakeData,
+        local_ip: (Ipv4Addr, u16),
+        remote_ip: (Ipv4Addr, u16),
+    ) -> Result<(), ErrorNode> {
+        let naive = NaiveDateTime::from_timestamp_opt(1234 as i64, 0).unwrap();
+        let timestamp: DateTime<Utc> = DateTime::from_utc(naive, Utc);
+
+        let version_message = VersionMessage {
+            version: protocol_version,
+            services: services,
+            timestamp,
+            recv_services: BitfieldServices::new(vec![SupportedServices::Unname]),
+            recv_addr: Ipv4Addr::to_ipv6_mapped(&local_ip.0),
+            recv_port: local_ip.1,
+            trans_addr: Ipv4Addr::to_ipv6_mapped(&remote_ip.0),
+            trans_port: remote_ip.1,
+            nonce: handshake_data.nonce,
+            user_agent: handshake_data.user_agent.clone(),
+            start_height: block_height,
+            relay: handshake_data.relay,
+        };
+
+        VersionMessage::serialize_message(stream, handshake_data.magic_number, &version_message)?;
+
+        Ok(())
+    }
+
     #[test]
     fn test01_verack_exchange() -> Result<(), ErrorNode>{
         let mut stream: Stream = Stream::new();
-        let magic_number = [11, 17, 9, 7];
 
-        VerackMessage::serialize_message(&mut stream, magic_number.clone(), &VerackMessage)?;
+        let magic_number = [11, 17, 9, 7];
+        serialize_verack_message(&mut stream, magic_number)?;
 
         let mut logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
@@ -368,53 +405,72 @@ mod tests {
     }
 
     #[test]
-    fn test02_version_exchange() {
+    fn test02_version_exchange() -> Result<(), ErrorNode> {
         let mut stream: Stream = Stream::new();
-        let magic_number = [11, 17, 9, 7];
+
+        let handshake_data = HandshakeData { nonce: 0, user_agent: "".to_string(), relay: false, magic_number: [11, 17, 9, 7] };
         
-        let local_ip = Ipv4Addr::new(127, 0, 0, 1);
-        let potencial_ip = Ipv4Addr::new(127, 0, 0, 2);
+        let local_ip: (Ipv4Addr, u16) = (Ipv4Addr::new(127, 0, 0, 1), 8333);
+        let remote_ip: (Ipv4Addr, u16) = (Ipv4Addr::new(127, 0, 0, 2), 8333);
 
-        let naive = NaiveDateTime::from_timestamp_opt(1234 as i64, 0).unwrap();
-        let timestamp: DateTime<Utc> = DateTime::from_utc(naive, Utc);
+        let p2p_protocol = ProtocolVersionP2P::V70016;
+        let services = BitfieldServices::new(vec![SupportedServices::Unname]);
+        let block_height = 0;
 
-        let version_message = VersionMessage {
-            version: ProtocolVersionP2P::V70016,
-            services: BitfieldServices::new(vec![SupportedServices::Unname]),
-            timestamp,
-            recv_services: BitfieldServices::new(vec![SupportedServices::Unname]),
-            recv_addr: Ipv4Addr::to_ipv6_mapped(&local_ip),
-            recv_port: 8333,
-            trans_addr: Ipv4Addr::to_ipv6_mapped(&potencial_ip),
-            trans_port: 8333,
-            nonce: 0,
-            user_agent: "".to_string(),
-            start_height: 0,
-            relay: false,
-        };
-
-        VersionMessage::serialize_message(&mut stream, magic_number.clone(), &version_message).unwrap();
-        
-        println!("{:02X?}\n", stream);
+        serialize_version_message(
+            &mut stream, 
+            p2p_protocol.clone(), 
+            services.clone(), 
+            block_height, 
+            handshake_data.clone(), 
+            local_ip.clone(), 
+            remote_ip.clone(),
+        )?;
 
         let mut logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
 
-        let handshake = Handshake::new(
-            ProtocolVersionP2P::V70016,
-            BitfieldServices::new(vec![SupportedServices::Unname]),
-            0,
-            HandshakeData { nonce: 0, user_agent: "".to_string(), relay: false, magic_number },
-            sender,
-        );
+        let handshake = Handshake::new(p2p_protocol, services, block_height, handshake_data, sender);
 
-        let local_socket = SocketAddr::new(IpAddr::V4(local_ip), 8333);
-        let potential_peer = SocketAddr::new(IpAddr::V4(potencial_ip), 8333);
+        let local_socket = SocketAddr::new(IpAddr::V4(local_ip.0), local_ip.1);
+        let potential_peer = SocketAddr::new(IpAddr::V4(remote_ip.0), remote_ip.1);
 
-        let result_handshake = handshake.attempt_version_message_exchange(&mut stream, &local_socket, &potential_peer);
+        handshake.attempt_version_message_exchange(&mut stream, &local_socket, &potential_peer)
+    }
 
-        println!("{:02X?}", stream);
+    #[test]
+    fn test03_connection_to_peer_successfully() -> Result<(), ErrorConnection> {
+        let mut stream: Stream = Stream::new();
 
-        assert_eq!(Ok(()), result_handshake);
+        let handshake_data = HandshakeData { nonce: 0, user_agent: "".to_string(), relay: false, magic_number: [11, 17, 9, 7] };
+        
+        let local_ip: (Ipv4Addr, u16) = (Ipv4Addr::new(127, 0, 0, 1), 8333);
+        let remote_ip: (Ipv4Addr, u16) = (Ipv4Addr::new(127, 0, 0, 2), 8333);
+
+        let p2p_protocol = ProtocolVersionP2P::V70016;
+        let services = BitfieldServices::new(vec![SupportedServices::Unname]);
+        let block_height = 0;
+
+        serialize_version_message(
+            &mut stream, 
+            p2p_protocol.clone(), 
+            services.clone(), 
+            block_height, 
+            handshake_data.clone(), 
+            local_ip.clone(), 
+            remote_ip.clone(),
+        ).unwrap();
+
+        serialize_verack_message(&mut stream, handshake_data.magic_number).unwrap();
+
+        let mut logger_text: Vec<u8> = Vec::new();
+        let (sender, _) = logger::initialize_logger(logger_text, false);
+
+        let handshake = Handshake::new(p2p_protocol, services, block_height, handshake_data, sender);
+
+        let local_socket = SocketAddr::new(IpAddr::V4(local_ip.0), local_ip.1);
+        let potential_peer = SocketAddr::new(IpAddr::V4(remote_ip.0), remote_ip.1);
+
+        handshake.connect_to_peer(&mut stream, &local_socket, &potential_peer)   
     }
 }
