@@ -123,14 +123,12 @@ mod tests {
     use crate::{
         block_structure::{
             block::Block, block_header::BlockHeader, block_version::BlockVersion,
-            compact256::Compact256, error_block::ErrorBlock, outpoint::Outpoint,
-            transaction::Transaction, transaction_input::TransactionInput,
-            transaction_output::TransactionOutput,
+            compact256::Compact256, outpoint::Outpoint, transaction::Transaction,
+            transaction_input::TransactionInput, transaction_output::TransactionOutput,
         },
         connections::type_identifier::TypeIdentifier,
-        logs::{logger, logger_sender::LoggerSender},
+        logs::logger,
         messages::{compact_size::CompactSize, inventory_vector::InventoryVector},
-        node_structure::initial_headers_download,
         serialization::error_serialization::ErrorSerialization,
     };
 
@@ -259,7 +257,7 @@ mod tests {
 
         let hashed_headers: Vec<HashType> = vec![first_block_header_hash, second_block_header_hash];
 
-        let mut logger_text: Vec<u8> = Vec::new();
+        let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
         let block_download = BlockDownload::new(magic_numbers, sender);
 

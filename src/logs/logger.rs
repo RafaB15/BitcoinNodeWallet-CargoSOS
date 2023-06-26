@@ -23,8 +23,6 @@ mod tests {
 
     use super::*;
     use crate::logs::error_log::ErrorLog;
-    use std::fs::File;
-    use std::path::Path;
 
     #[test]
     fn test01_correct_log_creation() {

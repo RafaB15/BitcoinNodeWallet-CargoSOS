@@ -1,4 +1,4 @@
-pub enum SignalToBack{
+pub enum SignalToBack {
     GetAccountBalance,
     CreateTransaction(String, f64, f64),
     ExitProgram,

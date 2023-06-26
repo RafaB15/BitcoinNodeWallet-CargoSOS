@@ -290,12 +290,7 @@ impl Handshake {
 mod tests {
     use super::*;
 
-    use crate::{
-        block_structure::block,
-        logs::logger,
-        messages::{verack_message, version_message},
-        node_structure::handshake_data,
-    };
+    use crate::logs::logger;
 
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
@@ -389,7 +384,7 @@ mod tests {
         let magic_number = [11, 17, 9, 7];
         serialize_verack_message(&mut stream, magic_number)?;
 
-        let mut logger_text: Vec<u8> = Vec::new();
+        let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
 
         let handshake = Handshake::new(
@@ -438,7 +433,7 @@ mod tests {
             remote_ip.clone(),
         )?;
 
-        let mut logger_text: Vec<u8> = Vec::new();
+        let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
 
         let handshake =
@@ -481,7 +476,7 @@ mod tests {
 
         serialize_verack_message(&mut stream, handshake_data.magic_number).unwrap();
 
-        let mut logger_text: Vec<u8> = Vec::new();
+        let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
 
         let handshake =

@@ -5,9 +5,7 @@ use super::{
 
 use crate::{
     serialization::serializable_internal_order::SerializableInternalOrder,
-    wallet_structure::{
-        address::Address,
-    },
+    wallet_structure::address::Address,
 };
 
 use std::collections::HashMap;
@@ -87,7 +85,7 @@ impl UTXOSet {
             };
 
             for (index_utxo, output) in transaction.tx_out.iter().enumerate() {
-                let outpoint = Outpoint::new(hashed_transaction.clone(), index_utxo as u32);
+                let outpoint = Outpoint::new(hashed_transaction, index_utxo as u32);
                 self.utxo.insert(outpoint, output.clone());
             }
         }
@@ -123,7 +121,6 @@ impl UTXOSet {
     pub fn get_balance_in_tbtc(&self, address: &Address) -> f64 {
         self.get_balance_in_satoshis(address) as f64 / 100_000_000.0
     }
-
 }
 
 #[cfg(test)]

@@ -47,14 +47,15 @@ impl DeserializableLittleEndian for NetworkIpAddress {
 mod tests {
 
     use super::*;
-    
+
     use crate::connections::supported_services::SupportedServices;
 
     #[test]
     fn test01_serialize_correctly_network_ip_address() -> Result<(), ErrorSerialization> {
         let mut expected_stream: Vec<u8> = Vec::new();
         (1234 as u32).le_serialize(&mut expected_stream)?;
-        BitfieldServices::new(vec![SupportedServices::Unname]).le_serialize(&mut expected_stream)?;
+        BitfieldServices::new(vec![SupportedServices::Unname])
+            .le_serialize(&mut expected_stream)?;
         Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0).be_serialize(&mut expected_stream)?;
         (0 as u16).be_serialize(&mut expected_stream)?;
 
@@ -71,7 +72,7 @@ mod tests {
         assert_eq!(expected_stream, stream);
 
         Ok(())
-    } 
+    }
 
     #[test]
     fn test02_deserialize_correctly_network_ip_address() -> Result<(), ErrorSerialization> {
@@ -92,5 +93,5 @@ mod tests {
         assert_eq!(network_ip_address, network_ip_address_deserialized);
 
         Ok(())
-    } 
+    }
 }

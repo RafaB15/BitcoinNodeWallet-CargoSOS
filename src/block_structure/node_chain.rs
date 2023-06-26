@@ -140,12 +140,9 @@ impl DeserializableInternalOrder for NodeChain {
 mod tests {
     use super::*;
     use crate::block_structure::{
-        block_version::BlockVersion,
-        compact256::Compact256,
-        outpoint::Outpoint,
+        block_version::BlockVersion, compact256::Compact256, outpoint::Outpoint,
+        transaction::Transaction, transaction_input::TransactionInput,
         transaction_output::TransactionOutput,
-        transaction_input::TransactionInput,
-        transaction::Transaction,
     };
     use crate::messages::compact_size::CompactSize;
 
@@ -182,14 +179,14 @@ mod tests {
     #[test]
     pub fn test_03_correct_is_previous_of() {
         let block = Block::new(BlockHeader::generate_genesis_block_header());
-        
+
         let node_chain = NodeChain::new(block, 23).unwrap();
         let block = Block::new(BlockHeader::new(
             BlockVersion::version(1),
             [
-                0x00, 0x00, 0x00, 0x00, 0x09, 0x33, 0xEA, 0x01, 0xAD, 0x0E, 0xE9, 0x84, 
-                0x20, 0x97, 0x79, 0xBA, 0xAE, 0xC3, 0xCE, 0xD9, 0x0F, 0xA3, 0xF4, 0x08, 
-                0x71, 0x95, 0x26, 0xF8, 0xD7, 0x7F, 0x49, 0x43
+                0x00, 0x00, 0x00, 0x00, 0x09, 0x33, 0xEA, 0x01, 0xAD, 0x0E, 0xE9, 0x84, 0x20, 0x97,
+                0x79, 0xBA, 0xAE, 0xC3, 0xCE, 0xD9, 0x0F, 0xA3, 0xF4, 0x08, 0x71, 0x95, 0x26, 0xF8,
+                0xD7, 0x7F, 0x49, 0x43,
             ],
             [0; 32],
             0,
@@ -214,9 +211,9 @@ mod tests {
         let block_2 = Block::new(BlockHeader::new(
             BlockVersion::version(1),
             [
-                0x00, 0x00, 0x00, 0x00, 0x09, 0x33, 0xEA, 0x01, 0xAD, 0x0E, 0xE9, 0x84, 
-                0x20, 0x97, 0x79, 0xBA, 0xAE, 0xC3, 0xCE, 0xD9, 0x0F, 0xA3, 0xF4, 0x08, 
-                0x71, 0x95, 0x26, 0xF8, 0xD7, 0x7F, 0x49, 0x43
+                0x00, 0x00, 0x00, 0x00, 0x09, 0x33, 0xEA, 0x01, 0xAD, 0x0E, 0xE9, 0x84, 0x20, 0x97,
+                0x79, 0xBA, 0xAE, 0xC3, 0xCE, 0xD9, 0x0F, 0xA3, 0xF4, 0x08, 0x71, 0x95, 0x26, 0xF8,
+                0xD7, 0x7F, 0x49, 0x43,
             ],
             [0; 32],
             0,
@@ -240,14 +237,8 @@ mod tests {
             CompactSize::new(2),
         );
 
-        let transaction_input = TransactionInput::new(
-            Outpoint::new(
-                [1; 32],
-                23,
-        ),
-            vec![1, 2, 3],
-            24,
-        );
+        let transaction_input =
+            TransactionInput::new(Outpoint::new([1; 32], 23), vec![1, 2, 3], 24);
 
         let transaction_output = TransactionOutput {
             value: 10,
@@ -274,12 +265,19 @@ mod tests {
 
         let mut serialized_fields = Vec::new();
         block_header.io_serialize(&mut serialized_fields).unwrap();
-        (block.transactions.len() as u64).le_serialize(&mut serialized_fields).unwrap();
+        (block.transactions.len() as u64)
+            .le_serialize(&mut serialized_fields)
+            .unwrap();
         for transaction in &block.transactions {
             transaction.io_serialize(&mut serialized_fields).unwrap();
         }
-        block.header.get_hash256d().unwrap().io_serialize(&mut serialized_fields).unwrap();
-        (23 as u64).le_serialize(&mut serialized_fields).unwrap();  
+        block
+            .header
+            .get_hash256d()
+            .unwrap()
+            .io_serialize(&mut serialized_fields)
+            .unwrap();
+        (23 as u64).le_serialize(&mut serialized_fields).unwrap();
 
         let mut serialized_node_chain = Vec::new();
         node_chain.io_serialize(&mut serialized_node_chain).unwrap();
@@ -299,14 +297,8 @@ mod tests {
             CompactSize::new(1),
         );
 
-        let transaction_input = TransactionInput::new(
-            Outpoint::new(
-                [1; 32],
-                23,
-            ),
-            vec![1, 2, 3],
-            24,
-        );
+        let transaction_input =
+            TransactionInput::new(Outpoint::new([1; 32], 23), vec![1, 2, 3], 24);
 
         let transaction_output = TransactionOutput {
             value: 10,
@@ -320,14 +312,8 @@ mod tests {
             time: 0,
         };
 
-        let transaction_input = TransactionInput::new(
-            Outpoint::new(
-                [2; 32],
-                26,
-            ),
-            vec![1, 2, 3],
-            24,
-        );
+        let transaction_input =
+            TransactionInput::new(Outpoint::new([2; 32], 26), vec![1, 2, 3], 24);
 
         let transaction_output = TransactionOutput {
             value: 10,
@@ -353,7 +339,8 @@ mod tests {
         let mut serialized_node_chain = Vec::new();
         node_chain.io_serialize(&mut serialized_node_chain).unwrap();
 
-        let deserialized_node_chain = NodeChain::io_deserialize(&mut serialized_node_chain.as_slice()).unwrap();
+        let deserialized_node_chain =
+            NodeChain::io_deserialize(&mut serialized_node_chain.as_slice()).unwrap();
 
         assert!(deserialized_node_chain.is_equal(&block));
     }

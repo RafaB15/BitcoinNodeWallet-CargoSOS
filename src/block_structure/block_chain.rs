@@ -55,7 +55,9 @@ impl BlockChain {
         for header in headers.iter() {
             match self.append_header(*header) {
                 Ok(_) => added_headers += 1,
-                Err(ErrorBlock::ErrorWithProofOfWork) => return Err(ErrorBlock::ErrorWithProofOfWork),
+                Err(ErrorBlock::ErrorWithProofOfWork) => {
+                    return Err(ErrorBlock::ErrorWithProofOfWork)
+                }
                 _ => break,
             }
         }
@@ -136,7 +138,7 @@ impl BlockChain {
     pub fn get_all_blocks(&self) -> Vec<Block> {
         self.blocks
             .iter()
-            .filter_map(|node| match node.block.transactions.len() > 0 {
+            .filter_map(|node| match !node.block.transactions.is_empty() {
                 true => Some(node.block.clone()),
                 false => None,
             })

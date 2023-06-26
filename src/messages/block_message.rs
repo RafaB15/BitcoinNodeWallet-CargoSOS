@@ -37,18 +37,13 @@ impl DeserializableInternalOrder for BlockMessage {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     use crate::block_structure::{
-        block_version,
-        block_header::BlockHeader,
-        compact256::Compact256, 
-        outpoint::Outpoint, 
-        transaction::Transaction,
-        transaction_input::TransactionInput,
+        block_header::BlockHeader, block_version, compact256::Compact256, outpoint::Outpoint,
+        transaction::Transaction, transaction_input::TransactionInput,
         transaction_output::TransactionOutput,
     };
 
@@ -66,14 +61,8 @@ mod tests {
             CompactSize::new(2),
         );
 
-        let transaction_input = TransactionInput::new(
-            Outpoint::new(
-                [1; 32],
-                23,
-        ),
-            vec![1, 2, 3],
-            24,
-        );
+        let transaction_input =
+            TransactionInput::new(Outpoint::new([1; 32], 23), vec![1, 2, 3], 24);
 
         let transaction_output = TransactionOutput {
             value: 10,
@@ -107,7 +96,9 @@ mod tests {
         }
 
         let mut serialized_block_message = Vec::new();
-        block_message.io_serialize(&mut serialized_block_message).unwrap();
+        block_message
+            .io_serialize(&mut serialized_block_message)
+            .unwrap();
 
         assert_eq!(serialized_fields, serialized_block_message);
     }
@@ -124,14 +115,8 @@ mod tests {
             CompactSize::new(2),
         );
 
-        let transaction_input = TransactionInput::new(
-            Outpoint::new(
-                [1; 32],
-                23,
-            ),
-            vec![1, 2, 3],
-            24,
-        );
+        let transaction_input =
+            TransactionInput::new(Outpoint::new([1; 32], 23), vec![1, 2, 3], 24);
 
         let transaction_output = TransactionOutput {
             value: 10,
@@ -159,11 +144,13 @@ mod tests {
         };
 
         let mut serialized_block_message = Vec::new();
-        block_message.io_serialize(&mut serialized_block_message).unwrap();
+        block_message
+            .io_serialize(&mut serialized_block_message)
+            .unwrap();
 
-        let deserialized_block = BlockMessage::io_deserialize(&mut serialized_block_message.as_slice()).unwrap();
+        let deserialized_block =
+            BlockMessage::io_deserialize(&mut serialized_block_message.as_slice()).unwrap();
 
         assert_eq!(block_message, deserialized_block);
-
     }
 }

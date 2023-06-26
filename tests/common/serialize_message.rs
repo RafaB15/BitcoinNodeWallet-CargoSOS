@@ -1,61 +1,21 @@
-use super::stream::Stream;
-
 use cargosos_bitcoin::{
-    serialization::{
-        error_serialization::ErrorSerialization,
-    },
-    connections::{
-        p2p_protocol::ProtocolVersionP2P,
-        supported_services::SupportedServices,
-        ibd_methods::IBDMethod,
-        type_identifier::TypeIdentifier,
-    },
+    block_structure::{block::Block, block_header::BlockHeader, transaction::Transaction},
+    connections::{p2p_protocol::ProtocolVersionP2P, supported_services::SupportedServices},
     messages::{
-        bitfield_services::BitfieldServices,
-        addr_message::AddrMessage,
-        alert_message::AlertMessage,
-        block_message::BlockMessage,
-        command_name::CommandName,
-        fee_filter_message::FeeFilterMessage,
-        get_data_message::GetDataMessage,
-        get_headers_message::GetHeadersMessage,
-        headers_message::HeadersMessage,
-        inventory_message::InventoryMessage,
-        inventory_vector::InventoryVector,
-        message::{ignore_message, Message},
-        message_header::MessageHeader,
-        ping_message::PingMessage,
-        pong_message::PongMessage,
-        send_cmpct_message::SendCmpctMessage,
-        send_headers_message::SendHeadersMessage,
-        tx_message::TxMessage,
-        verack_message::VerackMessage,
-        version_message::VersionMessage,
+        bitfield_services::BitfieldServices, block_message::BlockMessage,
+        headers_message::HeadersMessage, message::Message, tx_message::TxMessage,
+        verack_message::VerackMessage, version_message::VersionMessage,
     },
-    block_structure::{
-        block::Block,
-        block_header::BlockHeader,
-        block_chain::BlockChain,
-        transaction::Transaction,
-        hash::HashType,
-    },
-    node_structure::{
-        handshake::Handshake,
-        handshake_data::HandshakeData,
-        initial_headers_download::InitialHeaderDownload,
-        block_download::BlockDownload,
-        peer_manager::PeerManager,
-        message_response::MessageResponse,
-        error_node::ErrorNode,
-    },
+    node_structure::{error_node::ErrorNode, handshake_data::HandshakeData},
+    serialization::error_serialization::ErrorSerialization,
 };
 
 use std::{
     io::{Read, Write},
-    net::{Ipv4Addr, IpAddr, SocketAddr},
+    net::Ipv4Addr,
 };
 
-use chrono::{DateTime, NaiveDateTime, offset::Utc};
+use chrono::{offset::Utc, DateTime, NaiveDateTime};
 
 pub fn serialize_verack_message<RW: Read + Write>(
     stream: &mut RW,
@@ -122,21 +82,4 @@ pub fn serialize_tx_message<RW: Read + Write>(
 ) -> Result<(), ErrorSerialization> {
     let tx_message = TxMessage { transaction };
     TxMessage::serialize_message(stream, magic_numbers, &tx_message)
-}
-
-pub fn serialize_inv_message<RW: Read + Write>(
-    stream: &mut RW,
-    magic_numbers: [u8; 4],
-    inventory_vectors: Vec<InventoryVector>,
-) -> Result<(), ErrorSerialization> {
-    let inventory_message = InventoryMessage::new(inventory_vectors);
-    InventoryMessage::serialize_message(stream, magic_numbers, &inventory_message)
-}
-
-pub fn serialize_ping_message<RW: Read + Write>(
-    stream: &mut RW,
-    magic_numbers: [u8; 4],
-) -> Result<(), ErrorSerialization> {
-    let ping_message = PingMessage { nonce: 1234 };
-    PingMessage::serialize_message(stream, magic_numbers, &ping_message)
 }

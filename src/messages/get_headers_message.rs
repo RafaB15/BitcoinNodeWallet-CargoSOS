@@ -82,7 +82,6 @@ mod tests {
 
     use super::*;
 
-
     #[test]
     fn test01_serialize() -> Result<(), ErrorSerialization> {
         let version = ProtocolVersionP2P::V70015;
@@ -121,9 +120,12 @@ mod tests {
             header_locator_hashes: header_locator_hash.clone(),
             stop_hash,
         };
-        
-        get_headers_message.io_serialize(&mut serialized_stream).unwrap();
-        let deserialized_message = GetHeadersMessage::io_deserialize(&mut serialized_stream.as_slice()).unwrap();
+
+        get_headers_message
+            .io_serialize(&mut serialized_stream)
+            .unwrap();
+        let deserialized_message =
+            GetHeadersMessage::io_deserialize(&mut serialized_stream.as_slice()).unwrap();
 
         assert_eq!(deserialized_message, get_headers_message);
     }

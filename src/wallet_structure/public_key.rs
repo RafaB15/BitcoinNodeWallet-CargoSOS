@@ -25,13 +25,13 @@ pub struct PublicKey {
 impl PublicKey {
     pub fn new(public_key_bytes: &PublicKeyType) -> PublicKey {
         PublicKey {
-            key: public_key_bytes.clone(),
+            key: *public_key_bytes,
         }
     }
 
     /// Returns the public key as a byte array
     pub fn as_bytes(&self) -> PublicKeyType {
-        self.key.clone()
+        self.key
     }
 
     pub fn get_hashed_160(&self) -> Result<[u8; 20], ErrorSerialization> {
@@ -133,7 +133,8 @@ mod tests {
         let public_key = PublicKey::new(&pubkey_bytes);
         let mut serialized_public_key = Vec::new();
         public_key.io_serialize(&mut serialized_public_key).unwrap();
-        let deserialized_pubkey = PublicKey::io_deserialize(&mut serialized_public_key.as_slice()).unwrap();
+        let deserialized_pubkey =
+            PublicKey::io_deserialize(&mut serialized_public_key.as_slice()).unwrap();
         assert_eq!(deserialized_pubkey, public_key);
     }
 
@@ -148,11 +149,10 @@ mod tests {
         let hashed_160 = public_key.get_hashed_160().unwrap();
 
         let hash_expected = [
-            0xF5, 0x4A, 0x58, 0x51, 0xE9, 0x37, 0x2B, 0x87, 0x81, 0x0A, 0x8E, 0x60, 0xCD, 0xD2, 
-            0xE7, 0xCF, 0xD8, 0x0B, 0x6E, 0x31
+            0xF5, 0x4A, 0x58, 0x51, 0xE9, 0x37, 0x2B, 0x87, 0x81, 0x0A, 0x8E, 0x60, 0xCD, 0xD2,
+            0xE7, 0xCF, 0xD8, 0x0B, 0x6E, 0x31,
         ];
 
         assert_eq!(hashed_160, hash_expected);
     }
-
 }

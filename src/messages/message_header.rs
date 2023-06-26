@@ -75,8 +75,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test01_correct_message_header_serialization(){
-
+    fn test01_correct_message_header_serialization() {
         let mut serialized_fields = vec![];
         let magic_numbers: [u8; 4] = [0x55, 0x66, 0xee, 0xee];
         magic_numbers.io_serialize(&mut serialized_fields).unwrap();
@@ -98,14 +97,15 @@ mod tests {
         };
 
         let mut serialized_message_header = vec![];
-        message_header.io_serialize(&mut serialized_message_header).unwrap();
+        message_header
+            .io_serialize(&mut serialized_message_header)
+            .unwrap();
 
         assert_eq!(serialized_fields, serialized_message_header);
-        
     }
 
     #[test]
-    fn test02_correct_message_header_deserialization(){
+    fn test02_correct_message_header_deserialization() {
         let magic_bytes: [u8; 4] = [0x55, 0x66, 0xee, 0xee];
         let checksum = [0xC7, 0xF1, 0x8F, 0xE8];
 
@@ -117,14 +117,13 @@ mod tests {
         };
 
         let mut serialized_headers_message = vec![];
-        header.io_serialize(&mut serialized_headers_message).unwrap();
+        header
+            .io_serialize(&mut serialized_headers_message)
+            .unwrap();
 
-
-        let expected_message_header = MessageHeader::io_deserialize(&mut serialized_headers_message.as_slice()).unwrap();
+        let expected_message_header =
+            MessageHeader::io_deserialize(&mut serialized_headers_message.as_slice()).unwrap();
 
         assert_eq!(header, expected_message_header);
-
     }
 }
-
-

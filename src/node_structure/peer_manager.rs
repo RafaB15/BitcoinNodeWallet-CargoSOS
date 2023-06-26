@@ -301,21 +301,16 @@ mod tests {
     use crate::{
         block_structure::{
             block::Block, block_header::BlockHeader, block_version::BlockVersion,
-            compact256::Compact256, error_block::ErrorBlock, outpoint::Outpoint,
-            transaction::{Transaction, self}, transaction_input::TransactionInput,
-            transaction_output::TransactionOutput,
+            compact256::Compact256, outpoint::Outpoint, transaction::Transaction,
+            transaction_input::TransactionInput, transaction_output::TransactionOutput,
         },
         connections::type_identifier::TypeIdentifier,
-        logs::{logger, logger_sender::LoggerSender},
-        messages::{compact_size::CompactSize, inventory_vector::{InventoryVector, self}, tx_message, message, pong_message, inventory_message},
-        node_structure::initial_headers_download,
+        logs::logger,
+        messages::{compact_size::CompactSize, inventory_vector::InventoryVector, message},
         serialization::error_serialization::ErrorSerialization,
     };
 
-    use std::{
-        thread::{self, JoinHandle},
-        sync::mpsc::channel,
-    };
+    use std::sync::mpsc::channel;
 
     struct Stream {
         stream: Vec<u8>,
@@ -442,15 +437,15 @@ mod tests {
 
         let transaction = create_transaction(0);
 
-        serialize_tx_message(&mut stream, magic_numbers.clone(), transaction.clone());
+        serialize_tx_message(&mut stream, magic_numbers.clone(), transaction.clone()).unwrap();
 
         let (sender_message, receiver_message) = channel::<MessageResponse>();
-        let (sender_transaction, receiver_transaction) = channel::<Transaction>();
+        let (_, receiver_transaction) = channel::<Transaction>();
 
-        let mut logger_text: Vec<u8> = Vec::new();
+        let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
         let peer_manager = PeerManager::new(
-            stream, 
+            stream,
             sender_message,
             receiver_transaction,
             Arc::new(Mutex::new(true)),
@@ -458,9 +453,12 @@ mod tests {
             sender,
         );
 
-        let mut stream = peer_manager.connecting_to_peer();
+        let _ = peer_manager.connecting_to_peer().unwrap();
 
-        assert_eq!(MessageResponse::Transaction(transaction), receiver_message.try_recv().unwrap());
+        assert_eq!(
+            MessageResponse::Transaction(transaction),
+            receiver_message.try_recv().unwrap()
+        );
     }
 
     #[test]
@@ -473,15 +471,15 @@ mod tests {
         block.append_transaction(create_transaction(1)).unwrap();
         block.append_transaction(create_transaction(2)).unwrap();
 
-        serialize_block_message(&mut stream, magic_numbers.clone(), block.clone());
+        serialize_block_message(&mut stream, magic_numbers.clone(), block.clone()).unwrap();
 
         let (sender_message, receiver_message) = channel::<MessageResponse>();
-        let (sender_transaction, receiver_transaction) = channel::<Transaction>();
+        let (_, receiver_transaction) = channel::<Transaction>();
 
-        let mut logger_text: Vec<u8> = Vec::new();
+        let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
         let peer_manager = PeerManager::new(
-            stream, 
+            stream,
             sender_message,
             receiver_transaction,
             Arc::new(Mutex::new(true)),
@@ -489,9 +487,12 @@ mod tests {
             sender,
         );
 
-        let mut stream = peer_manager.connecting_to_peer();
+        let _ = peer_manager.connecting_to_peer().unwrap();
 
-        assert_eq!(MessageResponse::Block(block), receiver_message.try_recv().unwrap());
+        assert_eq!(
+            MessageResponse::Block(block),
+            receiver_message.try_recv().unwrap()
+        );
     }
 
     #[test]
@@ -505,15 +506,20 @@ mod tests {
         let second_header = create_header(2);
         let second_header_hash = second_header.get_hash256d().unwrap();
 
-        serialize_headers_message(&mut stream, magic_numbers.clone(), vec![first_header.clone(), second_header.clone()]);
+        serialize_headers_message(
+            &mut stream,
+            magic_numbers.clone(),
+            vec![first_header.clone(), second_header.clone()],
+        )
+        .unwrap();
 
-        let (sender_message, receiver_message) = channel::<MessageResponse>();
-        let (sender_transaction, receiver_transaction) = channel::<Transaction>();
+        let (sender_message, _) = channel::<MessageResponse>();
+        let (_, receiver_transaction) = channel::<Transaction>();
 
-        let mut logger_text: Vec<u8> = Vec::new();
+        let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
         let peer_manager = PeerManager::new(
-            stream, 
+            stream,
             sender_message,
             receiver_transaction,
             Arc::new(Mutex::new(true)),
@@ -534,7 +540,7 @@ mod tests {
             InventoryVector::new(TypeIdentifier::Block, second_header_hash),
         ];
 
-        assert_eq!(inventory_vectors, get_data_message.inventory_vectors);        
+        assert_eq!(inventory_vectors, get_data_message.inventory_vectors);
     }
 
     #[test]
@@ -548,18 +554,23 @@ mod tests {
         let transaction = create_transaction(0);
         let transaction_id = transaction.get_tx_id().unwrap();
 
-        serialize_inv_message(&mut stream, magic_numbers.clone(), vec![
-            InventoryVector::new(TypeIdentifier::Block, block_hash),
-            InventoryVector::new(TypeIdentifier::TransactionId, transaction_id),
-        ]);
+        serialize_inv_message(
+            &mut stream,
+            magic_numbers.clone(),
+            vec![
+                InventoryVector::new(TypeIdentifier::Block, block_hash),
+                InventoryVector::new(TypeIdentifier::TransactionId, transaction_id),
+            ],
+        )
+        .unwrap();
 
-        let (sender_message, receiver_message) = channel::<MessageResponse>();
-        let (sender_transaction, receiver_transaction) = channel::<Transaction>();
+        let (sender_message, _) = channel::<MessageResponse>();
+        let (_, receiver_transaction) = channel::<Transaction>();
 
-        let mut logger_text: Vec<u8> = Vec::new();
+        let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
         let peer_manager = PeerManager::new(
-            stream, 
+            stream,
             sender_message,
             receiver_transaction,
             Arc::new(Mutex::new(true)),
@@ -580,7 +591,7 @@ mod tests {
             InventoryVector::new(TypeIdentifier::TransactionId, transaction_id),
         ];
 
-        assert_eq!(inventory_vectors, get_data_message.inventory_vectors);        
+        assert_eq!(inventory_vectors, get_data_message.inventory_vectors);
     }
 
     #[test]
@@ -590,15 +601,15 @@ mod tests {
 
         let transaction = create_transaction(0);
 
-        serialize_ping_message(&mut stream, magic_numbers.clone());
+        serialize_ping_message(&mut stream, magic_numbers.clone()).unwrap();
 
-        let (sender_message, receiver_message) = channel::<MessageResponse>();
+        let (sender_message, _) = channel::<MessageResponse>();
         let (sender_transaction, receiver_transaction) = channel::<Transaction>();
 
-        let mut logger_text: Vec<u8> = Vec::new();
+        let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
         let peer_manager = PeerManager::new(
-            stream, 
+            stream,
             sender_message,
             receiver_transaction,
             Arc::new(Mutex::new(true)),

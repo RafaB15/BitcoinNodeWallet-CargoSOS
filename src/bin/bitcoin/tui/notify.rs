@@ -4,10 +4,7 @@ use std::cmp::max;
 
 /// Notify the user in a clean way
 pub fn notify(title: &str, body: &str, logger: LoggerSender) {
-    let len_message = max(
-        calculate_body_len(title.clone()),
-        calculate_body_len(body.clone()),
-    );
+    let len_message = max(calculate_body_len(title), calculate_body_len(body));
     let border = "#".repeat(len_message + 4);
 
     let mut message = format!("{border}\n");
@@ -21,10 +18,10 @@ pub fn notify(title: &str, body: &str, logger: LoggerSender) {
         message.push_str(&format!("# {}{} #\n", body_line, " ".repeat(spaces)));
     }
 
-    message.push_str(&format!("{border}"));
+    message.push_str(border.as_str());
 
     println!("{message}");
-    let _ = logger.log_notification(format!("{body}"));
+    let _ = logger.log_notification(body.to_string());
 }
 
 /// Given a body of text, returns the length of the longest line
