@@ -5,7 +5,7 @@ use super::{
     gui_backend::spawn_backend_handler,
 };
 
-use gtk::{prelude::*, Button, Entry, Application, Builder, Window, ComboBoxText, Image, Label, SpinButton};
+use gtk::{prelude::*, Button, Entry, Application, Builder, Window, ComboBoxText, Image, Label, SpinButton, TreeView, TreeStore};
 use gtk::glib;
 
 use crate::{
@@ -20,11 +20,18 @@ use cargosos_bitcoin::configurations::{
 
 use cargosos_bitcoin::{
     logs::logger_sender::LoggerSender,
+    block_structure::transaction::Transaction,
 };
 
 use std::{
     sync::mpsc, 
     cell::Cell,
+};
+
+use chrono::{
+    NaiveDateTime,
+    Utc,
+    DateTime
 };
 
 /// This function sets up the main window
@@ -273,6 +280,42 @@ fn login_transaction_page(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBa
     Ok(())
 }
 
+fn from_timestamp_to_string(timestamp: &u32) -> Result<String, ErrorGUI> {
+    let naive = match NaiveDateTime::from_timestamp_opt(timestamp.clone() as i64, 0) {
+        Some(naive) => naive,
+        None => return Err(ErrorGUI::ErrorReading("Error reading timestamp".to_string()))
+    };
+    let datetime: DateTime<Utc> = DateTime::from_utc(naive, Utc);
+    Ok(datetime.format("%Y-%m-%d %H:%M:%S").to_string())
+}
+
+fn from_vector_to_string(vector: &[u8; 32]) -> String{
+    let mut string = String::new();
+    for byte in vector.iter() {
+        string.push_str(&format!("{:02x}", byte));
+    }
+    string
+}
+
+fn show_transactions_in_tree_view(builder: &Builder, transaction_information: Vec<(u32, [u8;32], i64)>) -> Result<(), ErrorGUI> {
+    let transactions_tree_store: TreeStore = match builder.object("TransactionTreeStore") {
+        Some(list_store) => list_store,
+        None => return Err(ErrorGUI::MissingElement("TransactionTreeStore".to_string())),
+    };
+
+    transactions_tree_store.clear();
+
+    for (timestamp, label, amount) in transaction_information.iter().rev() {
+        let tree_iter = transactions_tree_store.append(None);
+        transactions_tree_store.set_value(&tree_iter, 0, &glib::Value::from(from_timestamp_to_string(timestamp)?));
+        transactions_tree_store.set_value(&tree_iter, 1, &glib::Value::from("Mined".to_string()));
+        transactions_tree_store.set_value(&tree_iter, 2, &glib::Value::from(from_vector_to_string(label)));
+        transactions_tree_store.set_value(&tree_iter, 3, &glib::Value::from(amount.to_string()));
+    }
+    
+    Ok(())
+}
+
 /// This functions sets up the behaviour of the GUI when it receives a signal from the backend
 fn spawn_local_handler(builder: &Builder, rx_from_back: glib::Receiver<SignalToFront>, tx_to_back: mpsc::Sender<SignalToBack>) {
     let cloned_builder = builder.clone();
@@ -306,9 +349,15 @@ fn spawn_local_handler(builder: &Builder, rx_from_back: glib::Receiver<SignalToF
             },
             SignalToFront::TransactionOfAccountReceived(account) => {
                 show_new_transaction_notification(&cloned_builder, account);
-            }
+            },
+            SignalToFront::AccountTransactions(transaction_information) => {
+                show_transactions_in_tree_view(&cloned_builder, transaction_information);
+            },
             SignalToFront::Update => {
-                let _ = tx_to_back.send(SignalToBack::GetAccountBalance);
+                if tx_to_back.send(SignalToBack::GetAccountBalance).is_err() || 
+                   tx_to_back.send(SignalToBack::GetAccountTransactions).is_err() {
+                    println!("Error sending signal to back");
+                };
             }
             _ => {}
 

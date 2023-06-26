@@ -12,7 +12,7 @@ use crate::{
         download, handshake,
         load_system::LoadSystem, 
         save_system::SaveSystem,
-    }, tui::{account, transaction},
+    }
 };
 
 
@@ -431,6 +431,67 @@ pub fn create_account(
     Ok(())
 }
 
+pub fn get_account_transactions_information(account: &Account, blockchain: &BlockChain) -> Vec<(u32, [u8;32], i64)> {
+    let mut transactions: Vec<Transaction> = Vec::new();
+    let blocks = blockchain.get_all_blocks();
+    for block in blocks {
+        for transaction in block.transactions {
+            if account.verify_transaction_ownership(&transaction) {
+                transactions.push(transaction);
+            }
+        }
+    }
+    let filtered_transactions = transactions.iter().filter_map(|transaction| {
+        let timestamp = transaction.time;
+        let label = match transaction.get_tx_id(){
+            Ok(txid) => txid,
+            Err(_) => return None,
+        };
+        let mut amount: i64 = 0;
+        for utxo in transaction.tx_out.clone() {
+            if account.verify_transaction_output_ownership(&utxo) {
+                amount += utxo.value;
+            }
+        }
+        Some((timestamp, label, amount))
+    }).collect();
+    filtered_transactions
+}
+
+fn give_account_transactions(
+    wallet: MutArc<Wallet>,
+    blockchain: MutArc<BlockChain>,
+    logger: LoggerSender,
+    tx_to_front: glib::Sender<SignalToFront>
+) -> Result<(), ErrorGUI>{
+    let wallet = get_reference(&wallet).unwrap();
+    let blockchain = get_reference(&blockchain).unwrap();
+
+    let account = match wallet.get_selected_account() {
+        Some(account) => account,
+        None => {
+            let message = "No account selected cannot get transactions";
+            let _ = logger.log_wallet(message.to_string());
+            if tx_to_front.send(SignalToFront::ErrorInTransaction(message.to_string())).is_err() {
+                return Err(ErrorGUI::FailedSignalToFront(
+                    "Failed to send error signal to front".to_string(),
+                ));
+            }
+            return Ok(());
+        }
+    };
+
+    let transactions = get_account_transactions_information(&account, &blockchain);
+    if tx_to_front.send(SignalToFront::AccountTransactions(transactions)).is_err() {
+        tx_to_front.send(SignalToFront::ErrorInTransaction("Failed to send transactions to front".to_string()));
+        return Err(ErrorGUI::FailedSignalToFront(
+            "Failed to send error signal to front".to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
 pub fn spawn_frontend_handler(
     rx_from_front: Receiver<SignalToBack>,
     tx_to_front: glib::Sender<SignalToFront>,
@@ -454,6 +515,9 @@ pub fn spawn_frontend_handler(
             }
             SignalToBack::CreateAccount(name, private_key, public_key) => {
                 create_account(wallet.clone(), &name, &private_key, &public_key, tx_to_front.clone(), logger.clone())?;
+            },
+            SignalToBack::GetAccountTransactions => {
+                give_account_transactions(wallet.clone(), block_chain.clone(), logger.clone(), tx_to_front.clone())?;
             },
             SignalToBack::ExitProgram => {
                 break;

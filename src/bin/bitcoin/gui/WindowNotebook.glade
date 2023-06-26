@@ -809,7 +809,11 @@ has been identified but is still unconfirmed</property>
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
                             <property name="model">TransactionTreeStore</property>
+                            <property name="enable-search">False</property>
                             <property name="search-column">0</property>
+                            <property name="hover-selection">True</property>
+                            <property name="show-expanders">False</property>
+                            <property name="enable-grid-lines">both</property>
                             <child internal-child="selection">
                               <object class="GtkTreeSelection" id="TransactionTreeSelection"/>
                             </child>
@@ -820,7 +824,7 @@ has been identified but is still unconfirmed</property>
                                 <child>
                                   <object class="GtkCellRendererText" id="DateRenderer"/>
                                   <attributes>
-                                    <attribute name="visible">0</attribute>
+                                    <attribute name="text">0</attribute>
                                   </attributes>
                                 </child>
                               </object>
@@ -832,19 +836,19 @@ has been identified but is still unconfirmed</property>
                                 <child>
                                   <object class="GtkCellRendererText" id="TypeRenderer"/>
                                   <attributes>
-                                    <attribute name="visible">1</attribute>
+                                    <attribute name="text">1</attribute>
                                   </attributes>
                                 </child>
                               </object>
                             </child>
                             <child>
                               <object class="GtkTreeViewColumn" id="LabelColumn">
-                                <property name="fixed-width">160</property>
+                                <property name="fixed-width">320</property>
                                 <property name="title" translatable="yes">Label</property>
                                 <child>
                                   <object class="GtkCellRendererText" id="LabelRenderer"/>
                                   <attributes>
-                                    <attribute name="visible">2</attribute>
+                                    <attribute name="text">2</attribute>
                                   </attributes>
                                 </child>
                               </object>
@@ -858,7 +862,7 @@ has been identified but is still unconfirmed</property>
                                 <child>
                                   <object class="GtkCellRendererText" id="AmountRenderer"/>
                                   <attributes>
-                                    <attribute name="visible">3</attribute>
+                                    <attribute name="text">3</attribute>
                                   </attributes>
                                 </child>
                               </object>

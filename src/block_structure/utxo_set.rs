@@ -5,7 +5,10 @@ use super::{
 
 use crate::{
     serialization::serializable_internal_order::SerializableInternalOrder,
-    wallet_structure::address::Address,
+    wallet_structure::{
+        address::Address,
+        account::Account,
+    },
 };
 
 use std::collections::HashMap;
@@ -121,6 +124,7 @@ impl UTXOSet {
     pub fn get_balance_in_tbtc(&self, address: &Address) -> f64 {
         self.get_balance_in_satoshis(address) as f64 / 100_000_000.0
     }
+
 }
 
 #[cfg(test)]
