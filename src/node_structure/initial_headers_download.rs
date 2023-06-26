@@ -130,9 +130,7 @@ mod tests {
     use super::*;
 
     use crate::{
-        block_structure::{
-            block::Block, block_version::BlockVersion, compact256::Compact256,
-        },
+        block_structure::{block::Block, block_version::BlockVersion, compact256::Compact256},
         logs::logger,
         messages::compact_size::CompactSize,
         serialization::error_serialization::ErrorSerialization,

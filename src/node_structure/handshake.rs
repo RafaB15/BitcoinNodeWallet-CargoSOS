@@ -290,11 +290,7 @@ impl Handshake {
 mod tests {
     use super::*;
 
-    use crate::{
-        
-        logs::logger,
-        
-    };
+    use crate::logs::logger;
 
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 

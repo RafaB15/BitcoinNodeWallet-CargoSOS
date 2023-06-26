@@ -6,13 +6,8 @@ mod test_integration {
     use super::common::{creation, serialize_message, stream::Stream};
 
     use cargosos_bitcoin::{
-        block_structure::{
-            block_chain::BlockChain, hash::HashType,
-            transaction::Transaction,
-        },
-        connections::{
-            p2p_protocol::ProtocolVersionP2P,
-            supported_services::SupportedServices},
+        block_structure::{block_chain::BlockChain, hash::HashType, transaction::Transaction},
+        connections::{p2p_protocol::ProtocolVersionP2P, supported_services::SupportedServices},
         logs::logger,
         messages::{
             bitfield_services::BitfieldServices,
@@ -105,12 +100,14 @@ mod test_integration {
             &mut stream,
             magic_numbers.clone(),
             first_block.clone(),
-        ).unwrap();
+        )
+        .unwrap();
         serialize_message::serialize_block_message(
             &mut stream,
             magic_numbers.clone(),
             block_to_append.clone(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let mut expected_blockchain = BlockChain::new(creation::create_genesis_block()).unwrap();
         expected_blockchain
@@ -123,7 +120,8 @@ mod test_integration {
             &mut stream,
             magic_numbers.clone(),
             new_transaction.clone(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let send_transaction = creation::create_transaction(4);
 

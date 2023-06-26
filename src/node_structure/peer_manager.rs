@@ -300,30 +300,17 @@ mod tests {
 
     use crate::{
         block_structure::{
-            block::Block,
-            block_header::BlockHeader,
-            block_version::BlockVersion,
-            compact256::Compact256,
-            outpoint::Outpoint,
-            transaction:: Transaction,
-            transaction_input::TransactionInput,
-            transaction_output::TransactionOutput,
+            block::Block, block_header::BlockHeader, block_version::BlockVersion,
+            compact256::Compact256, outpoint::Outpoint, transaction::Transaction,
+            transaction_input::TransactionInput, transaction_output::TransactionOutput,
         },
         connections::type_identifier::TypeIdentifier,
         logs::logger,
-        messages::{
-            compact_size::CompactSize,
-            
-            inventory_vector::InventoryVector,
-            message, 
-        },
-        
+        messages::{compact_size::CompactSize, inventory_vector::InventoryVector, message},
         serialization::error_serialization::ErrorSerialization,
     };
 
-    use std::{
-        sync::mpsc::channel,
-    };
+    use std::sync::mpsc::channel;
 
     struct Stream {
         stream: Vec<u8>,
@@ -523,7 +510,8 @@ mod tests {
             &mut stream,
             magic_numbers.clone(),
             vec![first_header.clone(), second_header.clone()],
-        ).unwrap();
+        )
+        .unwrap();
 
         let (sender_message, _) = channel::<MessageResponse>();
         let (_, receiver_transaction) = channel::<Transaction>();
@@ -573,7 +561,8 @@ mod tests {
                 InventoryVector::new(TypeIdentifier::Block, block_hash),
                 InventoryVector::new(TypeIdentifier::TransactionId, transaction_id),
             ],
-        ).unwrap();
+        )
+        .unwrap();
 
         let (sender_message, _) = channel::<MessageResponse>();
         let (_, receiver_transaction) = channel::<Transaction>();

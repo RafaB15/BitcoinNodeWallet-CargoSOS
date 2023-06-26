@@ -123,12 +123,11 @@ mod tests {
     use crate::{
         block_structure::{
             block::Block, block_header::BlockHeader, block_version::BlockVersion,
-            compact256::Compact256, outpoint::Outpoint,
-            transaction::Transaction, transaction_input::TransactionInput,
-            transaction_output::TransactionOutput,
+            compact256::Compact256, outpoint::Outpoint, transaction::Transaction,
+            transaction_input::TransactionInput, transaction_output::TransactionOutput,
         },
         connections::type_identifier::TypeIdentifier,
-        logs::{logger},
+        logs::logger,
         messages::{compact_size::CompactSize, inventory_vector::InventoryVector},
         serialization::error_serialization::ErrorSerialization,
     };

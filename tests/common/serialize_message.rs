@@ -1,31 +1,18 @@
-
 use cargosos_bitcoin::{
-    block_structure::{
-        block::Block, block_header::BlockHeader, transaction::Transaction,
-    },
-    connections::{
-        p2p_protocol::ProtocolVersionP2P,
-        supported_services::SupportedServices,
-    },
+    block_structure::{block::Block, block_header::BlockHeader, transaction::Transaction},
+    connections::{p2p_protocol::ProtocolVersionP2P, supported_services::SupportedServices},
     messages::{
-        bitfield_services::BitfieldServices,
-        block_message::BlockMessage,
-        headers_message::HeadersMessage,
-        message:: Message,
-        tx_message::TxMessage,
-        verack_message::VerackMessage,
-        version_message::VersionMessage,
+        bitfield_services::BitfieldServices, block_message::BlockMessage,
+        headers_message::HeadersMessage, message::Message, tx_message::TxMessage,
+        verack_message::VerackMessage, version_message::VersionMessage,
     },
-    node_structure::{
-        error_node::ErrorNode,
-        handshake_data::HandshakeData,
-    },
+    node_structure::{error_node::ErrorNode, handshake_data::HandshakeData},
     serialization::error_serialization::ErrorSerialization,
 };
 
 use std::{
     io::{Read, Write},
-    net:: Ipv4Addr,
+    net::Ipv4Addr,
 };
 
 use chrono::{offset::Utc, DateTime, NaiveDateTime};
@@ -96,5 +83,3 @@ pub fn serialize_tx_message<RW: Read + Write>(
     let tx_message = TxMessage { transaction };
     TxMessage::serialize_message(stream, magic_numbers, &tx_message)
 }
-
-
