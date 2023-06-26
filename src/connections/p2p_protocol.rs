@@ -1,5 +1,3 @@
-use super::error_connection::ErrorConnection;
-
 use crate::serialization::{
     deserializable_little_endian::DeserializableLittleEndian,
     error_serialization::ErrorSerialization, serializable_little_endian::SerializableLittleEndian,
@@ -12,7 +10,7 @@ use crate::configurations::{
 
 use std::{
     cmp::PartialEq,
-    convert::{Into, TryFrom},
+    convert::{From, TryFrom},
     str::FromStr,
 };
 
@@ -102,9 +100,9 @@ impl TryFrom<i32> for ProtocolVersionP2P {
     }
 }
 
-impl Into<i32> for ProtocolVersionP2P {
-    fn into(self) -> i32 {
-        match self {
+impl From<ProtocolVersionP2P> for i32 {
+    fn from(value: ProtocolVersionP2P) -> i32 {
+        match value {
             ProtocolVersionP2P::V70016 => 70016,
             ProtocolVersionP2P::V70015 => 70015,
             ProtocolVersionP2P::V70014 => 70014,

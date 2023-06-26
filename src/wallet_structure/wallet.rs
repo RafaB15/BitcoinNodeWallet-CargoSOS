@@ -36,7 +36,7 @@ impl Wallet {
     /// Removes an account from the wallet if it exists
     pub fn remove_account(&mut self, account: Account) {
         self.accounts.retain(|x| x != &account);
-        if let None = self.selected_account {
+        if self.selected_account.is_none() {
             self.selected_account = self.accounts.first().cloned();
         }
     }

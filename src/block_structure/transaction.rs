@@ -133,9 +133,8 @@ impl Transaction {
             time,
         };
 
-        if let Err(error) = unsigned_transaction.get_signed_by_account(account_from) {
-            return Err(error);
-        }
+        unsigned_transaction.get_signed_by_account(account_from)?;
+            
         Ok(unsigned_transaction)
     }
 

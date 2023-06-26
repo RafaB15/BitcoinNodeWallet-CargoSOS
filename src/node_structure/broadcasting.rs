@@ -67,7 +67,7 @@ where
                 sender.clone(),
                 receiver_transaction,
                 stop.clone(),
-                connection_config.magic_numbers.clone(),
+                connection_config.magic_numbers,
                 logger.clone(),
             );
 

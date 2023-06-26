@@ -24,7 +24,7 @@ pub fn select_option(logger: LoggerSender) -> Result<Timestamp, ErrorTUI> {
     loop {
         let _: Timestamp = match Timestamp::try_from(option.trim()) {
             Ok(result) => {
-                let _ = logger.log_wallet(format!("Valid option entered"));
+                let _ = logger.log_wallet("Valid option entered".to_string());
                 return Ok(result);
             }
             Err(error) => {
@@ -58,7 +58,7 @@ fn get_amount(logger: LoggerSender) -> Result<i64, ErrorTUI> {
     loop {
         match amount.trim().parse::<u32>() {
             Ok(result) => {
-                let _ = logger.log_wallet(format!("Valid amount entered"));
+                let _ = logger.log_wallet("Valid amount entered".to_string());
                 return Ok(result as i64);
             }
             Err(error) => {
@@ -92,7 +92,7 @@ fn get_fee(logger: LoggerSender) -> Result<i64, ErrorTUI> {
     loop {
         match fee.trim().parse::<u32>() {
             Ok(result) => {
-                let _ = logger.log_wallet(format!("Valid fee entered"));
+                let _ = logger.log_wallet("Valid fee entered".to_string());
                 return Ok(result as i64);
             }
             Err(error) => {
@@ -115,8 +115,8 @@ fn get_fee(logger: LoggerSender) -> Result<i64, ErrorTUI> {
 /// ### Error
 ///  * `ErrorTUI::TransactionWithoutSufficientFunds`: It will appear when the user does not have enough funds to make the transaction
 ///  * `ErrorTUI::TransactionCreationFail`: It will appear when the transaction fail to create the signature script
-pub fn create_transaction<'t>(
-    utxo_set: &MutexGuard<'t, UTXOSet>,
+pub fn create_transaction(
+    utxo_set: &MutexGuard<'_, UTXOSet>,
     account: &Account,
     logger: LoggerSender,
 ) -> Result<Transaction, ErrorTUI> {

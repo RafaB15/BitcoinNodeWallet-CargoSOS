@@ -27,7 +27,7 @@ type MutArc<T> = Arc<Mutex<T>>;
 ///
 /// ### Error
 ///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-fn get_reference<'t, T>(reference: &'t MutArc<T>) -> Result<MutexGuard<'t, T>, ErrorTUI> {
+fn get_reference<T>(reference: &MutArc<T>) -> Result<MutexGuard<'_, T>, ErrorTUI> {
     match reference.lock() {
         Ok(reference) => Ok(reference),
         Err(_) => Err(ErrorTUI::CannotUnwrapArc),
@@ -81,7 +81,7 @@ pub fn user_input(
 ///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 fn creating_accout(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(), ErrorTUI> {
     let mut wallet = get_reference(wallet)?;
-    let account = account::create_account(logger.clone())?;
+    let account = account::create_account(logger)?;
     wallet.add_account(account);
 
     Ok(())
@@ -94,7 +94,7 @@ fn creating_accout(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(), 
 ///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 fn changing_account(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(), ErrorTUI> {
     let mut wallet = get_reference(wallet)?;
-    let account = account::select_account(&wallet, logger.clone())?;
+    let account = account::select_account(&wallet, logger)?;
     wallet.change_account(account);
 
     Ok(())
@@ -107,7 +107,7 @@ fn changing_account(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(),
 ///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 fn removing_account(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(), ErrorTUI> {
     let mut wallet = get_reference(wallet)?;
-    let account = account::select_account(&wallet, logger.clone())?;
+    let account = account::select_account(&wallet, logger)?;
     wallet.remove_account(account);
 
     Ok(())
@@ -225,7 +225,7 @@ fn latest_transactions(
         "Selected timestamp: {selected_timestamp}, and it's corresponding timestamp: {timestamp}"
     ));
 
-    let block_chain = get_reference(&block_chain)?;
+    let block_chain = get_reference(block_chain)?;
     let blocks = block_chain.get_blocks_after_timestamp(timestamp as u32);
 
     for block in blocks {
@@ -286,12 +286,12 @@ fn receive_transaction(
     let mut transaction_own_by_account = false;
 
     {
-        if get_reference(&pending_transactions)?.contains(&transaction.clone()) {
+        if get_reference(&pending_transactions)?.contains(&transaction) {
             return Ok(());
         }
     }
 
-    for account in get_reference(&wallet)?.get_accounts() {
+    for account in get_reference(wallet)?.get_accounts() {
         if account.verify_transaction_ownership(&(transaction.clone())) {
             notify(
                 &format!("New transaction received own by {}", account.account_name),
@@ -331,16 +331,16 @@ fn receive_block(
                 &format!("The transaction: \n{transaction}\n has been added to the blockchain"),
                 logger.clone(),
             );
-            let _ = logger.log_wallet(format!(
-                "Removing transaction from list of transaction seen so far"
-            ));
+            let _ = logger.log_wallet(
+                "Removing transaction from list of transaction seen so far".to_string()
+            );
             return false;
         }
         true
     });
 
-    let mut utxo_set = get_reference(&utxo_set)?;
-    let mut block_chain = get_reference(&block_chain)?;
+    let mut utxo_set = get_reference(utxo_set)?;
+    let mut block_chain = get_reference(block_chain)?;
 
     utxo_set.update_utxo_with_block(&block);
 

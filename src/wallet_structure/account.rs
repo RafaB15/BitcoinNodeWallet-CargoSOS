@@ -105,7 +105,7 @@ impl Account {
         let outputs_to_spend: HashMap<Outpoint, TransactionOutput> =
             outputs_to_spend.into_iter().collect();
 
-        match Transaction::from_account_to_address(&self, &outputs_to_spend, &to, amount, fee) {
+        match Transaction::from_account_to_address(self, &outputs_to_spend, &to, amount, fee) {
             Ok(transaction) => Ok(transaction),
             Err(error) => Err(ErrorWallet::CannotCreateNewTransaction(format!(
                 "Error while trying to create a new transaction. Error: {:?}",

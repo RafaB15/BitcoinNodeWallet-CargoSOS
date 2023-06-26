@@ -63,7 +63,7 @@ impl TransactionInput {
             )));
         };
 
-        message.extend(SIGHASH_ALL_MESSAGE.clone());
+        message.extend(SIGHASH_ALL_MESSAGE);
 
         let hashed_message = match hash256d(&message) {
             Ok(hashed_message) => hashed_message,

@@ -44,11 +44,11 @@ pub enum ErrorExecution {
     /// It represents all posible errors that can occur in the process of connecting with a peer
     Process(ErrorProcess),
 
-    ///
-    GUI(ErrorGUI),
+    /// It represents all posible errors that can occur in the GUI
+    Gui(ErrorGUI),
 
     /// It represents all posible errors that can occur in the TUI
-    TUI(ErrorTUI),
+    Tui(ErrorTUI),
 
     /// It will appear when a thread panics and fails
     FailThread,
@@ -73,8 +73,8 @@ impl Debug for ErrorExecution {
             ErrorExecution::Node(error_node) => write!(f, "{:?}", error_node),
             ErrorExecution::Wallet(error_wallet) => write!(f, "{:?}", error_wallet),
             ErrorExecution::Process(error_process) => write!(f, "{:?}", error_process),
-            ErrorExecution::GUI(error_gui) => write!(f, "{:?}", error_gui),
-            ErrorExecution::TUI(error_tui) => write!(f, "{:?}", error_tui),
+            ErrorExecution::Gui(error_gui) => write!(f, "{:?}", error_gui),
+            ErrorExecution::Tui(error_tui) => write!(f, "{:?}", error_tui),
             ErrorExecution::FailThread => write!(f, "ErrorFailThread"),
             ErrorExecution::_ErrorBlock(error) => write!(f, "Error with block: {}", error),
         }
@@ -131,13 +131,13 @@ impl From<ErrorWallet> for ErrorExecution {
 
 impl From<ErrorGUI> for ErrorExecution {
     fn from(value: ErrorGUI) -> Self {
-        ErrorExecution::GUI(value)
+        ErrorExecution::Gui(value)
     }
 }
 
 impl From<ErrorTUI> for ErrorExecution {
     fn from(value: ErrorTUI) -> Self {
-        ErrorExecution::TUI(value)
+        ErrorExecution::Tui(value)
     }
 }
 

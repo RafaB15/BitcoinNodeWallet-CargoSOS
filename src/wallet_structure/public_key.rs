@@ -25,13 +25,13 @@ pub struct PublicKey {
 impl PublicKey {
     pub fn new(public_key_bytes: &PublicKeyType) -> PublicKey {
         PublicKey {
-            key: public_key_bytes.clone(),
+            key: *public_key_bytes,
         }
     }
 
     /// Returns the public key as a byte array
     pub fn as_bytes(&self) -> PublicKeyType {
-        self.key.clone()
+        self.key
     }
 
     pub fn get_hashed_160(&self) -> Result<[u8; 20], ErrorSerialization> {

@@ -121,7 +121,7 @@ pub fn deserialize_until_found<RW: Read + Write>(
     loop {
         let header = match MessageHeader::deserialize_header(stream) {
             Ok(header) => header,
-            Err(error) => return Err(error.into()),
+            Err(error) => return Err(error),
         };
 
         if header.command_name == search_name {

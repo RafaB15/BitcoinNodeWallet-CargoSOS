@@ -62,8 +62,8 @@ fn login_main_window(
         account_registration_window.set_visible(true);
     });
 
-    login_send_page(&builder, tx_to_back.clone())?;
-    login_block_notification_window(&builder)?;
+    login_send_page(builder, tx_to_back)?;
+    login_block_notification_window(builder)?;
     window.show_all();
     Ok(())
 }
@@ -349,7 +349,7 @@ fn login_send_page(
 
 /// Function that takes a timestamp and turns it into a string of the date
 fn from_timestamp_to_string(timestamp: &u32) -> Result<String, ErrorGUI> {
-    let naive = match NaiveDateTime::from_timestamp_opt(timestamp.clone() as i64, 0) {
+    let naive = match NaiveDateTime::from_timestamp_opt(*timestamp as i64, 0) {
         Some(naive) => naive,
         None => {
             return Err(ErrorGUI::ErrorReading(
@@ -512,7 +512,7 @@ fn build_ui(
 
     login_registration_window(&builder, application, tx_to_back.clone())?;
 
-    login_combo_box(&builder, tx_to_back.clone());
+    login_combo_box(&builder, tx_to_back);
 
     login_transaction_error_window(&builder)?;
     login_transaction_notification_window(&builder)?;

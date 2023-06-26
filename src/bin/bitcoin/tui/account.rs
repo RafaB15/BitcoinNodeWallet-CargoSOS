@@ -25,7 +25,7 @@ fn get_private_key(logger: LoggerSender) -> Result<PrivateKey, ErrorTUI> {
     loop {
         let _: PrivateKey = match PrivateKey::try_from(private_key.trim()) {
             Ok(result) => {
-                let _ = logger.log_wallet(format!("Valid private key entered"));
+                let _ = logger.log_wallet("Valid private key entered".to_string());
                 return Ok(result);
             }
             Err(error) => {
@@ -60,7 +60,7 @@ fn get_public_key(logger: LoggerSender) -> Result<PublicKey, ErrorTUI> {
     loop {
         let _: PublicKey = match PublicKey::try_from(public_key.trim().to_string()) {
             Ok(result) => {
-                let _ = logger.log_wallet(format!("Valid public key entered"));
+                let _ = logger.log_wallet("Valid public key entered".to_string());
                 return Ok(result);
             }
             Err(error) => {
@@ -96,7 +96,7 @@ pub(super) fn get_address(logger: LoggerSender) -> Result<Address, ErrorTUI> {
     loop {
         match Address::new(address.trim()) {
             Ok(result) => {
-                let _ = logger.log_wallet(format!("Valid address entered"));
+                let _ = logger.log_wallet("Valid address entered".to_string());
                 return Ok(result);
             }
             Err(error) => {
@@ -164,9 +164,9 @@ pub fn create_account(logger: LoggerSender) -> Result<Account, ErrorTUI> {
 }
 
 /// Get an account from the wallet with the corresponding name
-fn get_account_from_name<'t>(
+fn get_account_from_name(
     account_name: &str,
-    wallet: &MutexGuard<'t, Wallet>,
+    wallet: &MutexGuard<'_, Wallet>,
 ) -> Option<Account> {
     for account in wallet.get_accounts() {
         if account.account_name == account_name {
@@ -181,8 +181,8 @@ fn get_account_from_name<'t>(
 ///
 /// ### Error
 ///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
-pub fn select_account<'t>(
-    wallet: &MutexGuard<'t, Wallet>,
+pub fn select_account(
+    wallet: &MutexGuard<'_, Wallet>,
     logger: LoggerSender,
 ) -> Result<Account, ErrorTUI> {
     let _ = logger.log_wallet("Selecting an account".to_string());
@@ -200,11 +200,11 @@ pub fn select_account<'t>(
     loop {
         match get_account_from_name(account_name.trim(), wallet) {
             Some(account) => {
-                let _ = logger.log_wallet(format!("Valid account name entered"));
+                let _ = logger.log_wallet("Valid account name entered".to_string());
                 return Ok(account);
             }
             None => {
-                let _ = logger.log_wallet(format!("Invalid account name entered"));
+                let _ = logger.log_wallet("Invalid account name entered".to_string());
 
                 account_name.clear();
                 println!("Error, please enter a valid account name:");
@@ -218,7 +218,7 @@ pub fn select_account<'t>(
 }
 
 /// Show all accounts from the wallet
-pub fn show_accounts<'t>(wallet: &MutexGuard<'t, Wallet>, logger: LoggerSender) {
+pub fn show_accounts(wallet: &MutexGuard<'_, Wallet>, logger: LoggerSender) {
     let _ = logger.log_wallet("Showing accounts".to_string());
 
     let possible_selected_account = wallet.get_selected_account();

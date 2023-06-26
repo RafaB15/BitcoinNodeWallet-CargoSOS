@@ -43,7 +43,7 @@ type MutArc<T> = Arc<Mutex<T>>;
 ///
 /// ### Error
 ///  * `ErrorGUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-fn get_reference<'t, T>(reference: &'t MutArc<T>) -> Result<MutexGuard<'t, T>, ErrorGUI> {
+fn get_reference<T>(reference: &MutArc<T>) -> Result<MutexGuard<'_, T>, ErrorGUI> {
     match reference.lock() {
         Ok(reference) => Ok(reference),
         Err(_) => Err(ErrorGUI::CannotUnwrapArc),
@@ -114,7 +114,7 @@ fn get_block_chain(
 fn get_utxo_set(block_chain: &BlockChain, logger: LoggerSender) -> UTXOSet {
     let _ = logger.log_wallet("Creating the UTXO set".to_string());
 
-    let utxo_set = UTXOSet::from_blockchain(&block_chain);
+    let utxo_set = UTXOSet::from_blockchain(block_chain);
 
     let _ = logger.log_wallet("UTXO set finished successfully".to_string());
     utxo_set
@@ -146,7 +146,7 @@ fn receive_transaction(
 
     let mut receiving_account_name: String = "".to_string();
 
-    for account in get_reference(&wallet)?.get_accounts() {
+    for account in get_reference(wallet)?.get_accounts() {
         if account.verify_transaction_ownership(&(transaction.clone())) {
             let _ = logger.log_wallet(format!(
                 "Transaction {transaction} is owned by account {account}",
@@ -198,9 +198,9 @@ fn receive_block(
 ) -> Result<(), ErrorGUI> {
     get_reference(&pending_transactions)?.retain(|transaction| {
         if block.transactions.contains(transaction) {
-            let _ = logger.log_wallet(format!(
-                "Removing transaction from list of transaction seen so far"
-            ));
+            let _ = logger.log_wallet(
+                "Removing transaction from list of transaction seen so far".to_string()
+            );
             if tx_to_front
                 .send(SignalToFront::BlockWithUnconfirmedTransactionReceived)
                 .is_err()
@@ -212,7 +212,7 @@ fn receive_block(
         true
     });
 
-    let mut utxo_set = get_reference(&utxo_set)?;
+    let mut utxo_set = get_reference(utxo_set)?;
     utxo_set.update_utxo_with_block(&block);
     if tx_to_front.send(SignalToFront::Update).is_err() {
         return Err(ErrorGUI::FailedSignalToFront(
@@ -220,7 +220,7 @@ fn receive_block(
         ));
     }
 
-    let mut block_chain = get_reference(&block_chain)?;
+    let mut block_chain = get_reference(block_chain)?;
     match block_chain.append_block(block) {
         Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => Ok(()),
         _ => Err(ErrorGUI::ErrorWriting(
@@ -277,8 +277,8 @@ pub fn fron_tbtc_to_satoshi(tbtc: f64) -> i64 {
 ///
 /// ### Error
 ///  * `ErrorGUI::ErrorInTransaction`: It will appear when the user does not have enough funds to make the transaction or the transaction is not valid
-pub fn create_transaction<'t>(
-    utxo_set: &MutexGuard<'t, UTXOSet>,
+pub fn create_transaction(
+    utxo_set: &MutexGuard<'_, UTXOSet>,
     account: &Account,
     logger: LoggerSender,
     address: &Address,
@@ -447,7 +447,7 @@ pub fn create_account(
             let message = format!("Error creating address: {:?}", error);
             let _ = logger.log_wallet(message.to_string());
             if tx_to_front
-                .send(SignalToFront::ErrorInAccountCreation(message.to_string()))
+                .send(SignalToFront::ErrorInAccountCreation(message))
                 .is_err()
             {
                 return Err(ErrorGUI::FailedSignalToFront(
@@ -540,7 +540,7 @@ fn give_account_transactions(
         }
     };
 
-    let transactions = get_account_transactions_information(&account, &blockchain);
+    let transactions = get_account_transactions_information(account, &blockchain);
     if tx_to_front
         .send(SignalToFront::AccountTransactions(transactions))
         .is_err()
@@ -638,7 +638,7 @@ pub fn change_selected_account(
         None => return Err(ErrorGUI::ErrorReading("Account does not exist".to_string())),
     };
 
-    wallet_reference.change_account(account_to_select.clone());
+    wallet_reference.change_account(account_to_select);
 
     if tx_to_front.send(SignalToFront::Update).is_err() {
         return Err(ErrorGUI::FailedSignalToFront(
@@ -676,12 +676,12 @@ pub fn give_account_balance(
     let wallet_reference = get_reference(&wallet)?;
     let utxo_set_reference = get_reference(&utxo_set)?;
 
-    let account_to_check = match wallet_reference.get_selected_account().clone() {
+    let account_to_check = match wallet_reference.get_selected_account() {
         Some(account) => account,
         None => return Err(ErrorGUI::ErrorReading("No account selected".to_string())),
     };
     let balance = utxo_set_reference.get_balance_in_tbtc(&account_to_check.address);
-    let pending = get_pending_amount(pending_transactions, &account_to_check)?;
+    let pending = get_pending_amount(pending_transactions, account_to_check)?;
     if tx_to_front
         .send(SignalToFront::LoadAvailableBalance((balance, pending)))
         .is_err()
@@ -726,13 +726,13 @@ fn broadcasting(
 
     spawn_frontend_handler(
         rx_from_front,
-        tx_to_front.clone(),
+        tx_to_front,
         &mut broadcasting,
-        wallet.clone(),
+        wallet,
         utxo_set,
         pending_transactions,
-        block_chain.clone(),
-        logger.clone(),
+        block_chain,
+        logger,
     )?;
 
     broadcasting.destroy()?;
@@ -786,7 +786,7 @@ pub fn backend_execution(
 
     broadcasting(
         rx_from_front,
-        tx_to_front.clone(),
+        tx_to_front,
         peer_streams,
         wallet.clone(),
         utxo_set,

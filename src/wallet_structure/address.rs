@@ -104,8 +104,7 @@ impl Address {
 
     /// Extracts the hashed public key from the address
     fn extract_hashed_pk(&self) -> &[u8] {
-        let hashed_pk = &self.address_bytes[1..21];
-        hashed_pk
+        &self.address_bytes[1..21] as &[u8]
     }
 
     /// Generates the script pubkey for P2PKH from this address

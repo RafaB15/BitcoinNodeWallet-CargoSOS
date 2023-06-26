@@ -85,7 +85,7 @@ impl UTXOSet {
             };
 
             for (index_utxo, output) in transaction.tx_out.iter().enumerate() {
-                let outpoint = Outpoint::new(hashed_transaction.clone(), index_utxo as u32);
+                let outpoint = Outpoint::new(hashed_transaction, index_utxo as u32);
                 self.utxo.insert(outpoint, output.clone());
             }
         }

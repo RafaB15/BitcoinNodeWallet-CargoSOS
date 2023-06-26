@@ -129,7 +129,7 @@ fn _show_merkle_path(block_chain: &BlockChain, logger: LoggerSender) -> Result<(
 fn get_utxo_set(block_chain: &BlockChain, logger: LoggerSender) -> UTXOSet {
     let _ = logger.log_wallet("Creating the UTXO set".to_string());
 
-    let utxo_set = UTXOSet::from_blockchain(&block_chain);
+    let utxo_set = UTXOSet::from_blockchain(block_chain);
 
     let _ = logger.log_wallet("UTXO set finished successfully".to_string());
     utxo_set
@@ -194,11 +194,11 @@ fn broadcasting(
 
     user_input(
         &mut broadcasting,
-        wallet.clone(),
+        wallet,
         utxo_set,
-        block_chain.clone(),
+        block_chain,
         pending_transactions,
-        logger.clone(),
+        logger,
     )?;
 
     broadcasting.destroy()?;
