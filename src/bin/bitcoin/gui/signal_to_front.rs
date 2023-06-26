@@ -6,6 +6,6 @@ pub enum SignalToFront {
     ErrorInAccountCreation(String),
     TransactionOfAccountReceived(String),
     BlockWithUnconfirmedTransactionReceived,
-    AccountTransactions(Vec<(u32, [u8;32], i64)>),
+    AccountTransactions(Vec<(u32, [u8; 32], i64)>),
     Update,
 }

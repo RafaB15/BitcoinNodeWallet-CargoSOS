@@ -1,39 +1,25 @@
 use cargosos_bitcoin::{
-    logs::logger,
-    connections::{
-        p2p_protocol::ProtocolVersionP2P,
-        supported_services::SupportedServices,
-        ibd_methods::IBDMethod,
-        type_identifier::TypeIdentifier,
-    },
-    messages::{
-        compact_size::CompactSize,
-    },
     block_structure::{
-        block::Block,
-        block_header::BlockHeader,
-        block_chain::BlockChain,
-        transaction::Transaction,
-        transaction_input::TransactionInput,
+        block::Block, block_chain::BlockChain, block_header::BlockHeader,
+        block_version::BlockVersion, compact256::Compact256, hash::HashType, outpoint::Outpoint,
+        transaction::Transaction, transaction_input::TransactionInput,
         transaction_output::TransactionOutput,
-        outpoint::Outpoint,
-        block_version::BlockVersion,
-        compact256::Compact256,
-        hash::HashType,
     },
+    connections::{
+        ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P,
+        supported_services::SupportedServices, type_identifier::TypeIdentifier,
+    },
+    logs::logger,
+    messages::compact_size::CompactSize,
     node_structure::{
-        handshake::Handshake,
-        handshake_data::HandshakeData,
-        initial_headers_download::InitialHeaderDownload,
-        block_download::BlockDownload,
+        block_download::BlockDownload, handshake::Handshake, handshake_data::HandshakeData,
+        initial_headers_download::InitialHeaderDownload, message_response::MessageResponse,
         peer_manager::PeerManager,
-        message_response::MessageResponse,
     },
 };
 
 pub fn create_transaction(time: u32) -> Transaction {
-    let transaction_input =
-        TransactionInput::new(Outpoint::new([1; 32], 23), vec![1, 2, 3], 24);
+    let transaction_input = TransactionInput::new(Outpoint::new([1; 32], 23), vec![1, 2, 3], 24);
 
     let transaction_output = TransactionOutput {
         value: 10,

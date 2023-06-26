@@ -99,11 +99,8 @@ mod tests {
     use super::*;
 
     use crate::block_structure::{
-        block_version,
-        compact256::Compact256, 
-        outpoint::Outpoint, 
-        transaction_input::TransactionInput,
-        transaction_output::TransactionOutput,
+        block_version, compact256::Compact256, outpoint::Outpoint,
+        transaction_input::TransactionInput, transaction_output::TransactionOutput,
     };
 
     use crate::messages::compact_size::CompactSize;
@@ -120,14 +117,8 @@ mod tests {
             CompactSize::new(2),
         );
 
-        let transaction_input = TransactionInput::new(
-            Outpoint::new(
-                [1; 32],
-                23,
-        ),
-            vec![1, 2, 3],
-            24,
-        );
+        let transaction_input =
+            TransactionInput::new(Outpoint::new([1; 32], 23), vec![1, 2, 3], 24);
 
         let transaction_output = TransactionOutput {
             value: 10,
@@ -174,14 +165,8 @@ mod tests {
             CompactSize::new(2),
         );
 
-        let transaction_input = TransactionInput::new(
-            Outpoint::new(
-                [1; 32],
-                23,
-            ),
-            vec![1, 2, 3],
-            24,
-        );
+        let transaction_input =
+            TransactionInput::new(Outpoint::new([1; 32], 23), vec![1, 2, 3], 24);
 
         let transaction_output = TransactionOutput {
             value: 10,
@@ -224,14 +209,8 @@ mod tests {
             CompactSize::new(1),
         );
 
-        let transaction_input = TransactionInput::new(
-            Outpoint::new(
-                [1; 32],
-                23,
-            ),
-            vec![1, 2, 3],
-            24,
-        );
+        let transaction_input =
+            TransactionInput::new(Outpoint::new([1; 32], 23), vec![1, 2, 3], 24);
 
         let transaction_output = TransactionOutput {
             value: 10,
@@ -245,14 +224,8 @@ mod tests {
             time: 0,
         };
 
-        let transaction_input = TransactionInput::new(
-            Outpoint::new(
-                [2; 32],
-                26,
-            ),
-            vec![1, 2, 3],
-            24,
-        );
+        let transaction_input =
+            TransactionInput::new(Outpoint::new([2; 32], 26), vec![1, 2, 3], 24);
 
         let transaction_output = TransactionOutput {
             value: 10,
@@ -290,14 +263,8 @@ mod tests {
             CompactSize::new(1),
         );
 
-        let transaction_input = TransactionInput::new(
-            Outpoint::new(
-                [1; 32],
-                23,
-            ),
-            vec![1, 2, 3],
-            24,
-        );
+        let transaction_input =
+            TransactionInput::new(Outpoint::new([1; 32], 23), vec![1, 2, 3], 24);
 
         let transaction_output = TransactionOutput {
             value: 10,
@@ -323,5 +290,4 @@ mod tests {
         assert!(block.transactions.len() == 1);
         assert!(block.append_transaction(transaction_2).is_err());
     }
-
 }

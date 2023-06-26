@@ -11,9 +11,9 @@ use crate::configurations::{
 };
 
 use std::{
-    cmp::PartialEq, 
+    cmp::PartialEq,
+    convert::{Into, TryFrom},
     str::FromStr,
-    convert::{TryFrom, Into},
 };
 
 /// It's the representation of the P2P protocol version

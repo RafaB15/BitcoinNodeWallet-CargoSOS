@@ -60,7 +60,6 @@ where
         let mut peers: Vec<HandleSender<RW>> = Vec::new();
 
         for peer_stream in peers_streams {
-            
             let (sender_transaction, receiver_transaction) = mpsc::channel::<Transaction>();
 
             let peer_manager = PeerManager::new(

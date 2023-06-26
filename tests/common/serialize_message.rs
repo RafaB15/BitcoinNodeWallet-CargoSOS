@@ -1,19 +1,18 @@
 use super::stream::Stream;
 
 use cargosos_bitcoin::{
-    serialization::{
-        error_serialization::ErrorSerialization,
+    block_structure::{
+        block::Block, block_chain::BlockChain, block_header::BlockHeader, hash::HashType,
+        transaction::Transaction,
     },
     connections::{
-        p2p_protocol::ProtocolVersionP2P,
-        supported_services::SupportedServices,
-        ibd_methods::IBDMethod,
-        type_identifier::TypeIdentifier,
+        ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P,
+        supported_services::SupportedServices, type_identifier::TypeIdentifier,
     },
     messages::{
-        bitfield_services::BitfieldServices,
         addr_message::AddrMessage,
         alert_message::AlertMessage,
+        bitfield_services::BitfieldServices,
         block_message::BlockMessage,
         command_name::CommandName,
         fee_filter_message::FeeFilterMessage,
@@ -32,30 +31,20 @@ use cargosos_bitcoin::{
         verack_message::VerackMessage,
         version_message::VersionMessage,
     },
-    block_structure::{
-        block::Block,
-        block_header::BlockHeader,
-        block_chain::BlockChain,
-        transaction::Transaction,
-        hash::HashType,
-    },
     node_structure::{
-        handshake::Handshake,
-        handshake_data::HandshakeData,
-        initial_headers_download::InitialHeaderDownload,
-        block_download::BlockDownload,
-        peer_manager::PeerManager,
-        message_response::MessageResponse,
-        error_node::ErrorNode,
+        block_download::BlockDownload, error_node::ErrorNode, handshake::Handshake,
+        handshake_data::HandshakeData, initial_headers_download::InitialHeaderDownload,
+        message_response::MessageResponse, peer_manager::PeerManager,
     },
+    serialization::error_serialization::ErrorSerialization,
 };
 
 use std::{
     io::{Read, Write},
-    net::{Ipv4Addr, IpAddr, SocketAddr},
+    net::{IpAddr, Ipv4Addr, SocketAddr},
 };
 
-use chrono::{DateTime, NaiveDateTime, offset::Utc};
+use chrono::{offset::Utc, DateTime, NaiveDateTime};
 
 pub fn serialize_verack_message<RW: Read + Write>(
     stream: &mut RW,

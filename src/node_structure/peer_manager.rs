@@ -300,21 +300,31 @@ mod tests {
 
     use crate::{
         block_structure::{
-            block::Block, block_header::BlockHeader, block_version::BlockVersion,
-            compact256::Compact256, error_block::ErrorBlock, outpoint::Outpoint,
-            transaction::{Transaction, self}, transaction_input::TransactionInput,
+            block::Block,
+            block_header::BlockHeader,
+            block_version::BlockVersion,
+            compact256::Compact256,
+            error_block::ErrorBlock,
+            outpoint::Outpoint,
+            transaction::{self, Transaction},
+            transaction_input::TransactionInput,
             transaction_output::TransactionOutput,
         },
         connections::type_identifier::TypeIdentifier,
         logs::{logger, logger_sender::LoggerSender},
-        messages::{compact_size::CompactSize, inventory_vector::{InventoryVector, self}, tx_message, message, pong_message, inventory_message},
+        messages::{
+            compact_size::CompactSize,
+            inventory_message,
+            inventory_vector::{self, InventoryVector},
+            message, pong_message, tx_message,
+        },
         node_structure::initial_headers_download,
         serialization::error_serialization::ErrorSerialization,
     };
 
     use std::{
-        thread::{self, JoinHandle},
         sync::mpsc::channel,
+        thread::{self, JoinHandle},
     };
 
     struct Stream {
@@ -450,7 +460,7 @@ mod tests {
         let mut logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
         let peer_manager = PeerManager::new(
-            stream, 
+            stream,
             sender_message,
             receiver_transaction,
             Arc::new(Mutex::new(true)),
@@ -460,7 +470,10 @@ mod tests {
 
         let mut stream = peer_manager.connecting_to_peer();
 
-        assert_eq!(MessageResponse::Transaction(transaction), receiver_message.try_recv().unwrap());
+        assert_eq!(
+            MessageResponse::Transaction(transaction),
+            receiver_message.try_recv().unwrap()
+        );
     }
 
     #[test]
@@ -481,7 +494,7 @@ mod tests {
         let mut logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
         let peer_manager = PeerManager::new(
-            stream, 
+            stream,
             sender_message,
             receiver_transaction,
             Arc::new(Mutex::new(true)),
@@ -491,7 +504,10 @@ mod tests {
 
         let mut stream = peer_manager.connecting_to_peer();
 
-        assert_eq!(MessageResponse::Block(block), receiver_message.try_recv().unwrap());
+        assert_eq!(
+            MessageResponse::Block(block),
+            receiver_message.try_recv().unwrap()
+        );
     }
 
     #[test]
@@ -505,7 +521,11 @@ mod tests {
         let second_header = create_header(2);
         let second_header_hash = second_header.get_hash256d().unwrap();
 
-        serialize_headers_message(&mut stream, magic_numbers.clone(), vec![first_header.clone(), second_header.clone()]);
+        serialize_headers_message(
+            &mut stream,
+            magic_numbers.clone(),
+            vec![first_header.clone(), second_header.clone()],
+        );
 
         let (sender_message, receiver_message) = channel::<MessageResponse>();
         let (sender_transaction, receiver_transaction) = channel::<Transaction>();
@@ -513,7 +533,7 @@ mod tests {
         let mut logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
         let peer_manager = PeerManager::new(
-            stream, 
+            stream,
             sender_message,
             receiver_transaction,
             Arc::new(Mutex::new(true)),
@@ -534,7 +554,7 @@ mod tests {
             InventoryVector::new(TypeIdentifier::Block, second_header_hash),
         ];
 
-        assert_eq!(inventory_vectors, get_data_message.inventory_vectors);        
+        assert_eq!(inventory_vectors, get_data_message.inventory_vectors);
     }
 
     #[test]
@@ -548,10 +568,14 @@ mod tests {
         let transaction = create_transaction(0);
         let transaction_id = transaction.get_tx_id().unwrap();
 
-        serialize_inv_message(&mut stream, magic_numbers.clone(), vec![
-            InventoryVector::new(TypeIdentifier::Block, block_hash),
-            InventoryVector::new(TypeIdentifier::TransactionId, transaction_id),
-        ]);
+        serialize_inv_message(
+            &mut stream,
+            magic_numbers.clone(),
+            vec![
+                InventoryVector::new(TypeIdentifier::Block, block_hash),
+                InventoryVector::new(TypeIdentifier::TransactionId, transaction_id),
+            ],
+        );
 
         let (sender_message, receiver_message) = channel::<MessageResponse>();
         let (sender_transaction, receiver_transaction) = channel::<Transaction>();
@@ -559,7 +583,7 @@ mod tests {
         let mut logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
         let peer_manager = PeerManager::new(
-            stream, 
+            stream,
             sender_message,
             receiver_transaction,
             Arc::new(Mutex::new(true)),
@@ -580,7 +604,7 @@ mod tests {
             InventoryVector::new(TypeIdentifier::TransactionId, transaction_id),
         ];
 
-        assert_eq!(inventory_vectors, get_data_message.inventory_vectors);        
+        assert_eq!(inventory_vectors, get_data_message.inventory_vectors);
     }
 
     #[test]
@@ -598,7 +622,7 @@ mod tests {
         let mut logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
         let peer_manager = PeerManager::new(
-            stream, 
+            stream,
             sender_message,
             receiver_transaction,
             Arc::new(Mutex::new(true)),

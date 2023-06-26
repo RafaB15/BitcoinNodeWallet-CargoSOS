@@ -144,7 +144,6 @@ impl DeserializableInternalOrder for CommandName {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -168,7 +167,6 @@ mod tests {
 
     #[test]
     fn test_03_command_name_deserialize() {
-
         let command_name_alert: CommandName = CommandName::Alert;
         let mut vec = Vec::new();
         command_name_alert.io_serialize(&mut vec).unwrap();
@@ -176,9 +174,4 @@ mod tests {
 
         assert_eq!(deserialized_command, command_name_alert);
     }
-
 }
-
-
-
-

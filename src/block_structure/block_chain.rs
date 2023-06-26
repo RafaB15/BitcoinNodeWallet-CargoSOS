@@ -55,7 +55,9 @@ impl BlockChain {
         for header in headers.iter() {
             match self.append_header(*header) {
                 Ok(_) => added_headers += 1,
-                Err(ErrorBlock::ErrorWithProofOfWork) => return Err(ErrorBlock::ErrorWithProofOfWork),
+                Err(ErrorBlock::ErrorWithProofOfWork) => {
+                    return Err(ErrorBlock::ErrorWithProofOfWork)
+                }
                 _ => break,
             }
         }
