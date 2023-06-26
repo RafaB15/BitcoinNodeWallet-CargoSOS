@@ -233,6 +233,16 @@ mod tests {
 
         initial_headers_download.get_headers(&mut stream, &mut blockchain).unwrap();
 
-        assert_eq!(expected_blockchain, blockchain);        
+        assert_eq!(expected_blockchain, blockchain);
+
+        let header = message::deserialize_until_found(&mut stream, CommandName::GetHeaders).unwrap();
+
+        assert_eq!(header.command_name, CommandName::GetHeaders);
+
+        let get_headers_message = GetHeadersMessage::deserialize_message(&mut stream, header).unwrap();
+
+        assert_eq!(get_headers_message.header_locator_hashes.len(), 1);
+        assert_eq!(get_headers_message.version, ProtocolVersionP2P::V70016);
+        assert_eq!(get_headers_message.header_locator_hashes, vec![hash_of_first_block_header]);
     }
 }
