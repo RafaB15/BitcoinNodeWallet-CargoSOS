@@ -27,7 +27,7 @@ mod tests {
     use std::path::Path;
 
     #[test]
-    fn correct_log_creation() {
+    fn test01_correct_log_creation() {
         let mut vec: Vec<u8> = Vec::new();
         let (logger_sender, logger_receiver) = initialize_logger(&mut vec, false); // Pass vec as a mutable reference
 
@@ -48,9 +48,8 @@ mod tests {
     }
 
     #[test]
-    fn error_receiver_not_found() {
-        let log_file_path = Path::new("tests/common/logs/test_log.txt");
-        let log_file = File::create(log_file_path).expect("failed to create log file");
+    fn test02_error_receiver_not_found() {
+        let log_file: Vec<u8> = Vec::new();
         let (logger_sender, logger_receiver) = initialize_logger(log_file, false);
 
         std::mem::drop(logger_receiver);

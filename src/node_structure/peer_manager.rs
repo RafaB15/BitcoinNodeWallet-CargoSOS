@@ -34,7 +34,7 @@ use std::{
 };
 
 /// It represents how to manage the the peer, listening to the there messages and sending them transactions
-pub(super) struct PeerManager<RW>
+pub struct PeerManager<RW>
 where
     RW: Read + Write + Send + 'static,
 {
