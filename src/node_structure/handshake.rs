@@ -52,7 +52,7 @@ impl Handshake {
     ///
     /// ### Error
     ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
-    pub fn send_testnet_version_message<RW: Read + Write>(
+    fn send_version_message<RW: Read + Write>(
         &self,
         local_socket_addr: &SocketAddr,
         potential_peer: &SocketAddr,
@@ -88,7 +88,7 @@ impl Handshake {
     ///
     /// ### Error
     ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
-    pub fn send_verack_message<RW: Read + Write>(
+    fn send_verack_message<RW: Read + Write>(
         &self,
         peer_stream: &mut RW,
     ) -> Result<(), ErrorNode> {
@@ -101,7 +101,7 @@ impl Handshake {
     ///
     /// ### Error
     ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
-    pub fn send_sendheaders_message<RW: Read + Write>(
+    fn send_sendheaders_message<RW: Read + Write>(
         &self,
         peer_stream: &mut RW,
     ) -> Result<(), ErrorNode> {
@@ -127,7 +127,7 @@ impl Handshake {
         potential_peer: &SocketAddr,
     ) -> Result<(), ErrorNode> {
         if let Err(error) =
-            self.send_testnet_version_message(local_socket, potential_peer, peer_stream)
+            self.send_version_message(local_socket, potential_peer, peer_stream)
         {
             let _ = self.sender_log.log_connection(format!(
                 "Error while sending version message to peer {}: {:?}",
@@ -288,5 +288,133 @@ impl Handshake {
             ));
             Ok(())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::{logs::logger, messages::{verack_message, version_message}};
+
+    use std::net::{
+        SocketAddr,
+        IpAddr,
+        Ipv4Addr,
+    };
+
+    use chrono::{NaiveDateTime, DateTime};
+
+    #[derive(Debug)]
+    struct Stream {
+        stream: Vec<u8>,
+        pointer: usize,
+    }
+
+    impl Stream {
+        pub fn new() -> Stream {
+            Stream { stream: Vec::new(), pointer: 0 }
+        }
+    }
+
+    impl Read for Stream {
+        fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+            let mut i = 0;
+            while i < buf.len() && self.pointer < self.stream.len() {
+                buf[i] = self.stream[self.pointer];
+                self.pointer += 1;
+                i += 1;
+            }
+            Ok(i)
+        }
+    }
+
+    impl Write for Stream {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            let mut i = 0;
+            while i < buf.len() {
+                self.stream.push(buf[i]);
+                i += 1;
+            }
+            Ok(i)
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn test01_verack_exchange() -> Result<(), ErrorNode>{
+        let mut stream: Stream = Stream::new();
+        let magic_number = [11, 17, 9, 7];
+
+        VerackMessage::serialize_message(&mut stream, magic_number.clone(), &VerackMessage)?;
+
+        let mut logger_text: Vec<u8> = Vec::new();
+        let (sender, _) = logger::initialize_logger(logger_text, false);
+
+        let handshake = Handshake::new(
+            ProtocolVersionP2P::V70016,
+            BitfieldServices::new(vec![SupportedServices::Unname]),
+            0,
+            HandshakeData { nonce: 0, user_agent: "".to_string(), relay: false, magic_number },
+            sender,
+        );
+
+        let potential_peer = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 2)), 8333);
+
+        handshake.attempt_verack_message_exchange(&mut stream, &potential_peer)
+    }
+
+    #[test]
+    fn test02_version_exchange() {
+        let mut stream: Stream = Stream::new();
+        let magic_number = [11, 17, 9, 7];
+        
+        let local_ip = Ipv4Addr::new(127, 0, 0, 1);
+        let potencial_ip = Ipv4Addr::new(127, 0, 0, 2);
+
+        let naive = NaiveDateTime::from_timestamp_opt(1234 as i64, 0).unwrap();
+        let timestamp: DateTime<Utc> = DateTime::from_utc(naive, Utc);
+
+        let version_message = VersionMessage {
+            version: ProtocolVersionP2P::V70016,
+            services: BitfieldServices::new(vec![SupportedServices::Unname]),
+            timestamp,
+            recv_services: BitfieldServices::new(vec![SupportedServices::Unname]),
+            recv_addr: Ipv4Addr::to_ipv6_mapped(&local_ip),
+            recv_port: 8333,
+            trans_addr: Ipv4Addr::to_ipv6_mapped(&potencial_ip),
+            trans_port: 8333,
+            nonce: 0,
+            user_agent: "".to_string(),
+            start_height: 0,
+            relay: false,
+        };
+
+        VersionMessage::serialize_message(&mut stream, magic_number.clone(), &version_message).unwrap();
+        
+        println!("{:02X?}\n", stream);
+
+        let mut logger_text: Vec<u8> = Vec::new();
+        let (sender, _) = logger::initialize_logger(logger_text, false);
+
+        let handshake = Handshake::new(
+            ProtocolVersionP2P::V70016,
+            BitfieldServices::new(vec![SupportedServices::Unname]),
+            0,
+            HandshakeData { nonce: 0, user_agent: "".to_string(), relay: false, magic_number },
+            sender,
+        );
+
+        let local_socket = SocketAddr::new(IpAddr::V4(local_ip), 8333);
+        let potential_peer = SocketAddr::new(IpAddr::V4(potencial_ip), 8333);
+
+        let result_handshake = handshake.attempt_version_message_exchange(&mut stream, &local_socket, &potential_peer);
+
+        println!("{:02X?}", stream);
+
+        assert_eq!(Ok(()), result_handshake);
     }
 }
