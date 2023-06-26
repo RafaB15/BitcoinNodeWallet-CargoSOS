@@ -132,11 +132,9 @@ mod tests {
     use crate::{
         block_structure::{
             block::Block, block_version::BlockVersion, compact256::Compact256,
-            error_block::ErrorBlock,
         },
-        logs::{logger, logger_sender::LoggerSender},
+        logs::logger,
         messages::compact_size::CompactSize,
-        node_structure::initial_headers_download,
         serialization::error_serialization::ErrorSerialization,
     };
 
@@ -231,7 +229,7 @@ mod tests {
             .append_header(header_to_append.clone())
             .unwrap();
 
-        let mut logger_text: Vec<u8> = Vec::new();
+        let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
 
         let initial_headers_download =

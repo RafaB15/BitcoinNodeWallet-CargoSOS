@@ -7,31 +7,18 @@ mod test_integration {
 
     use cargosos_bitcoin::{
         block_structure::{
-            block::Block, block_chain::BlockChain, block_header::BlockHeader, hash::HashType,
+            block_chain::BlockChain, hash::HashType,
             transaction::Transaction,
         },
         connections::{
-            ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P,
-            supported_services::SupportedServices, type_identifier::TypeIdentifier,
-        },
+            p2p_protocol::ProtocolVersionP2P,
+            supported_services::SupportedServices},
         logs::logger,
         messages::{
-            addr_message::AddrMessage,
-            alert_message::AlertMessage,
             bitfield_services::BitfieldServices,
-            block_message::BlockMessage,
             command_name::CommandName,
-            fee_filter_message::FeeFilterMessage,
-            get_data_message::GetDataMessage,
             get_headers_message::GetHeadersMessage,
-            headers_message::HeadersMessage,
-            inventory_message::InventoryMessage,
-            inventory_vector::InventoryVector,
-            message::{self, ignore_message, Message},
-            message_header::MessageHeader,
-            ping_message::PingMessage,
-            pong_message::PongMessage,
-            send_cmpct_message::SendCmpctMessage,
+            message::{self, Message},
             send_headers_message::SendHeadersMessage,
             tx_message::TxMessage,
             verack_message::VerackMessage,
@@ -92,7 +79,7 @@ mod test_integration {
         serialize_message::serialize_verack_message(&mut stream, handshake_data.magic_number)
             .unwrap();
 
-        let mut first_block = creation::create_genesis_block();
+        let first_block = creation::create_genesis_block();
 
         let first_block_header_hash = first_block.header.get_hash256d().unwrap();
 
@@ -118,12 +105,12 @@ mod test_integration {
             &mut stream,
             magic_numbers.clone(),
             first_block.clone(),
-        );
+        ).unwrap();
         serialize_message::serialize_block_message(
             &mut stream,
             magic_numbers.clone(),
             block_to_append.clone(),
-        );
+        ).unwrap();
 
         let mut expected_blockchain = BlockChain::new(creation::create_genesis_block()).unwrap();
         expected_blockchain
@@ -136,7 +123,7 @@ mod test_integration {
             &mut stream,
             magic_numbers.clone(),
             new_transaction.clone(),
-        );
+        ).unwrap();
 
         let send_transaction = creation::create_transaction(4);
 

@@ -1,47 +1,31 @@
-use super::stream::Stream;
 
 use cargosos_bitcoin::{
     block_structure::{
-        block::Block, block_chain::BlockChain, block_header::BlockHeader, hash::HashType,
-        transaction::Transaction,
+        block::Block, block_header::BlockHeader, transaction::Transaction,
     },
     connections::{
-        ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P,
-        supported_services::SupportedServices, type_identifier::TypeIdentifier,
+        p2p_protocol::ProtocolVersionP2P,
+        supported_services::SupportedServices,
     },
     messages::{
-        addr_message::AddrMessage,
-        alert_message::AlertMessage,
         bitfield_services::BitfieldServices,
         block_message::BlockMessage,
-        command_name::CommandName,
-        fee_filter_message::FeeFilterMessage,
-        get_data_message::GetDataMessage,
-        get_headers_message::GetHeadersMessage,
         headers_message::HeadersMessage,
-        inventory_message::InventoryMessage,
-        inventory_vector::InventoryVector,
-        message::{ignore_message, Message},
-        message_header::MessageHeader,
-        ping_message::PingMessage,
-        pong_message::PongMessage,
-        send_cmpct_message::SendCmpctMessage,
-        send_headers_message::SendHeadersMessage,
+        message:: Message,
         tx_message::TxMessage,
         verack_message::VerackMessage,
         version_message::VersionMessage,
     },
     node_structure::{
-        block_download::BlockDownload, error_node::ErrorNode, handshake::Handshake,
-        handshake_data::HandshakeData, initial_headers_download::InitialHeaderDownload,
-        message_response::MessageResponse, peer_manager::PeerManager,
+        error_node::ErrorNode,
+        handshake_data::HandshakeData,
     },
     serialization::error_serialization::ErrorSerialization,
 };
 
 use std::{
     io::{Read, Write},
-    net::{IpAddr, Ipv4Addr, SocketAddr},
+    net:: Ipv4Addr,
 };
 
 use chrono::{offset::Utc, DateTime, NaiveDateTime};
@@ -113,19 +97,4 @@ pub fn serialize_tx_message<RW: Read + Write>(
     TxMessage::serialize_message(stream, magic_numbers, &tx_message)
 }
 
-pub fn serialize_inv_message<RW: Read + Write>(
-    stream: &mut RW,
-    magic_numbers: [u8; 4],
-    inventory_vectors: Vec<InventoryVector>,
-) -> Result<(), ErrorSerialization> {
-    let inventory_message = InventoryMessage::new(inventory_vectors);
-    InventoryMessage::serialize_message(stream, magic_numbers, &inventory_message)
-}
 
-pub fn serialize_ping_message<RW: Read + Write>(
-    stream: &mut RW,
-    magic_numbers: [u8; 4],
-) -> Result<(), ErrorSerialization> {
-    let ping_message = PingMessage { nonce: 1234 };
-    PingMessage::serialize_message(stream, magic_numbers, &ping_message)
-}

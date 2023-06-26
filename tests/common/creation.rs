@@ -1,21 +1,11 @@
 use cargosos_bitcoin::{
     block_structure::{
-        block::Block, block_chain::BlockChain, block_header::BlockHeader,
+        block::Block, block_header::BlockHeader,
         block_version::BlockVersion, compact256::Compact256, hash::HashType, outpoint::Outpoint,
         transaction::Transaction, transaction_input::TransactionInput,
         transaction_output::TransactionOutput,
     },
-    connections::{
-        ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P,
-        supported_services::SupportedServices, type_identifier::TypeIdentifier,
-    },
-    logs::logger,
     messages::compact_size::CompactSize,
-    node_structure::{
-        block_download::BlockDownload, handshake::Handshake, handshake_data::HandshakeData,
-        initial_headers_download::InitialHeaderDownload, message_response::MessageResponse,
-        peer_manager::PeerManager,
-    },
 };
 
 pub fn create_transaction(time: u32) -> Transaction {
@@ -34,18 +24,6 @@ pub fn create_transaction(time: u32) -> Transaction {
     }
 }
 
-pub fn create_empty_header(transaction_count: u64) -> BlockHeader {
-    BlockHeader::new(
-        BlockVersion::version(1),
-        [0; 32],
-        [0; 32],
-        0,
-        Compact256::from(u32::MAX),
-        0,
-        CompactSize::new(transaction_count),
-    )
-}
-
 pub fn create_header(previous_header: HashType, transaction_count: u64) -> BlockHeader {
     BlockHeader::new(
         BlockVersion::version(1),
@@ -60,10 +38,6 @@ pub fn create_header(previous_header: HashType, transaction_count: u64) -> Block
 
 pub fn create_genesis_block() -> Block {
     Block::new(BlockHeader::generate_genesis_block_header())
-}
-
-pub fn create_empty_block(transaction_count: u64) -> Block {
-    Block::new(create_empty_header(transaction_count))
 }
 
 pub fn create_block(previous_header: HashType, transaction_count: u64) -> Block {

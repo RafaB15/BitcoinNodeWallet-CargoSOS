@@ -51,8 +51,6 @@ mod tests {
 
     use crate::connections::type_identifier::TypeIdentifier;
 
-    use crate::block_structure::hash::{self, HashType};
-
     use super::*;
 
     #[test]
