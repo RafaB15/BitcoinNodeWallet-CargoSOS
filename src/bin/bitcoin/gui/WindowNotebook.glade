@@ -551,63 +551,6 @@ has been identified but is still unconfirmed</property>
                     <property name="y">9</property>
                   </packing>
                 </child>
-                <child>
-                  <object class="GtkFrame" id="RecentTransFrame">
-                    <property name="width-request">386</property>
-                    <property name="height-request">220</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="label-xalign">0</property>
-                    <property name="shadow-type">out</property>
-                    <child>
-                      <object class="GtkAlignment" id="RecentTransAlignment">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="left-padding">12</property>
-                        <child>
-                          <object class="GtkFixed" id="RecentTransGrid">
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
-                            <child>
-                              <object class="GtkLabel" id="RecentTransaction">
-                                <property name="width-request">89</property>
-                                <property name="height-request">9</property>
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Recent transactions</property>
-                              </object>
-                              <packing>
-                                <property name="y">10</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkListBox" id="RecentTransListBox">
-                                <property name="name">RecentTransactionsListBox</property>
-                                <property name="width-request">355</property>
-                                <property name="height-request">155</property>
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                              </object>
-                              <packing>
-                                <property name="y">34</property>
-                              </packing>
-                            </child>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                    <child type="label">
-                      <object class="GtkLabel" id="RecentTransFrameLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                      </object>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="x">387</property>
-                    <property name="y">9</property>
-                  </packing>
-                </child>
               </object>
             </child>
             <child type="tab">

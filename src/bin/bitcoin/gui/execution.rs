@@ -452,7 +452,7 @@ pub fn program_execution(
     });
     let vector: Vec<String> = Vec::new();
     application.run_with_args(&vector);
-
+    
     match backend_handler.join() {
         Ok(save_system) => save_system,
         Err(_) => Err(ErrorExecution::FailThread),
