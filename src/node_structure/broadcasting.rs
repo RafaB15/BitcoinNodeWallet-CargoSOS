@@ -60,24 +60,19 @@ where
         let mut peers: Vec<HandleSender<RW>> = Vec::new();
 
         for peer_stream in peers_streams {
-            let sender_clone = sender.clone();
+            
             let (sender_transaction, receiver_transaction) = mpsc::channel::<Transaction>();
-            let stop_clone = stop.clone();
-            let logger_clone = logger.clone();
-            let configuration_clone = connection_config.clone();
 
-            let handle = thread::spawn(move || {
-                let peer_manager = PeerManager::new(
-                    peer_stream,
-                    sender_clone,
-                    receiver_transaction,
-                    stop_clone,
-                    configuration_clone,
-                    logger_clone.clone(),
-                );
+            let peer_manager = PeerManager::new(
+                peer_stream,
+                sender.clone(),
+                receiver_transaction,
+                stop.clone(),
+                connection_config.magic_numbers.clone(),
+                logger.clone(),
+            );
 
-                peer_manager.connecting_to_peer(logger_clone)
-            });
+            let handle = thread::spawn(move || peer_manager.connecting_to_peer());
 
             peers.push((handle, sender_transaction));
         }

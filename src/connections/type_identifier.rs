@@ -90,7 +90,7 @@ mod tests {
     #[test]
     fn test01_serialize_correctly_type_identifier() -> Result<(), ErrorSerialization> {
         let expected_stream: Vec<u8> = vec![0x01, 0x00, 0x00, 0x40];
-        
+
         let mut stream: Vec<u8> = Vec::new();
         let type_identifier = TypeIdentifier::WitnessTransaction;
 
@@ -98,7 +98,7 @@ mod tests {
 
         assert_eq!(expected_stream, stream);
         Ok(())
-    } 
+    }
 
     #[test]
     fn test02_deserialize_correctly_type_identifier() -> Result<(), ErrorSerialization> {
@@ -114,5 +114,5 @@ mod tests {
         assert_eq!(type_identifier, type_identifier_deserialized);
 
         Ok(())
-    } 
+    }
 }

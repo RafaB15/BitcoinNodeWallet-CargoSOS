@@ -131,17 +131,12 @@ mod tests {
 
     use crate::{
         block_structure::{
-            block::Block, 
+            block::Block, block_version::BlockVersion, compact256::Compact256,
             error_block::ErrorBlock,
-            compact256::Compact256,
-            block_version::BlockVersion,
-        }, 
-        node_structure::initial_headers_download,
-        messages::compact_size::CompactSize,
-        logs::{
-            logger,
-            logger_sender::LoggerSender,
         },
+        logs::{logger, logger_sender::LoggerSender},
+        messages::compact_size::CompactSize,
+        node_structure::initial_headers_download,
         serialization::error_serialization::ErrorSerialization,
     };
 
@@ -152,7 +147,10 @@ mod tests {
 
     impl Stream {
         pub fn new() -> Stream {
-            Stream { stream: Vec::new(), pointer: 0 }
+            Stream {
+                stream: Vec::new(),
+                pointer: 0,
+            }
         }
     }
 
@@ -183,7 +181,11 @@ mod tests {
         }
     }
 
-    fn serialize_headers_message<RW: Read + Write>(stream: &mut RW, magic_numbers: [u8; 4], headers: Vec<BlockHeader>) -> Result<(), ErrorSerialization> {
+    fn serialize_headers_message<RW: Read + Write>(
+        stream: &mut RW,
+        magic_numbers: [u8; 4],
+        headers: Vec<BlockHeader>,
+    ) -> Result<(), ErrorSerialization> {
         let headers_message = HeadersMessage { headers };
         HeadersMessage::serialize_message(stream, magic_numbers, &headers_message)
     }
@@ -217,32 +219,43 @@ mod tests {
             CompactSize::new(0),
         );
 
-        serialize_headers_message(&mut stream, magic_numbers.clone(), vec![header_to_append.clone()]).unwrap();
+        serialize_headers_message(
+            &mut stream,
+            magic_numbers.clone(),
+            vec![header_to_append.clone()],
+        )
+        .unwrap();
 
         let mut expected_blockchain = blockchain.clone();
-        expected_blockchain.append_header(header_to_append.clone()).unwrap();
+        expected_blockchain
+            .append_header(header_to_append.clone())
+            .unwrap();
 
         let mut logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
 
-        let initial_headers_download = InitialHeaderDownload::new(
-            ProtocolVersionP2P::V70016,
-            magic_numbers,
-            sender,
-        );
+        let initial_headers_download =
+            InitialHeaderDownload::new(ProtocolVersionP2P::V70016, magic_numbers, sender);
 
-        initial_headers_download.get_headers(&mut stream, &mut blockchain).unwrap();
+        initial_headers_download
+            .get_headers(&mut stream, &mut blockchain)
+            .unwrap();
 
         assert_eq!(expected_blockchain, blockchain);
 
-        let header = message::deserialize_until_found(&mut stream, CommandName::GetHeaders).unwrap();
+        let header =
+            message::deserialize_until_found(&mut stream, CommandName::GetHeaders).unwrap();
 
         assert_eq!(header.command_name, CommandName::GetHeaders);
 
-        let get_headers_message = GetHeadersMessage::deserialize_message(&mut stream, header).unwrap();
+        let get_headers_message =
+            GetHeadersMessage::deserialize_message(&mut stream, header).unwrap();
 
         assert_eq!(get_headers_message.header_locator_hashes.len(), 1);
         assert_eq!(get_headers_message.version, ProtocolVersionP2P::V70016);
-        assert_eq!(get_headers_message.header_locator_hashes, vec![hash_of_first_block_header]);
+        assert_eq!(
+            get_headers_message.header_locator_hashes,
+            vec![hash_of_first_block_header]
+        );
     }
 }

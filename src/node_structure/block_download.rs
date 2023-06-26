@@ -122,23 +122,16 @@ mod tests {
 
     use crate::{
         block_structure::{
-            block::Block, 
-            block_header::BlockHeader,
-            error_block::ErrorBlock,
-            compact256::Compact256,
-            block_version::BlockVersion,
-            outpoint::Outpoint,
-            transaction_input::TransactionInput,
+            block::Block, block_header::BlockHeader, block_version::BlockVersion,
+            compact256::Compact256, error_block::ErrorBlock, outpoint::Outpoint,
+            transaction::Transaction, transaction_input::TransactionInput,
             transaction_output::TransactionOutput,
-            transaction::Transaction,
-        }, 
-        node_structure::initial_headers_download,
-        messages::{compact_size::CompactSize, inventory_vector::InventoryVector},
-        logs::{
-            logger,
-            logger_sender::LoggerSender,
         },
-        serialization::error_serialization::ErrorSerialization, connections::type_identifier::TypeIdentifier,
+        connections::type_identifier::TypeIdentifier,
+        logs::{logger, logger_sender::LoggerSender},
+        messages::{compact_size::CompactSize, inventory_vector::InventoryVector},
+        node_structure::initial_headers_download,
+        serialization::error_serialization::ErrorSerialization,
     };
 
     struct Stream {
@@ -148,7 +141,10 @@ mod tests {
 
     impl Stream {
         pub fn new() -> Stream {
-            Stream { stream: Vec::new(), pointer: 0 }
+            Stream {
+                stream: Vec::new(),
+                pointer: 0,
+            }
         }
     }
 
@@ -179,20 +175,18 @@ mod tests {
         }
     }
 
-    fn serialize_block_message<RW: Read + Write>(stream: &mut RW, magic_numbers: [u8; 4], block: Block) -> Result<(), ErrorSerialization> {
+    fn serialize_block_message<RW: Read + Write>(
+        stream: &mut RW,
+        magic_numbers: [u8; 4],
+        block: Block,
+    ) -> Result<(), ErrorSerialization> {
         let block_message = BlockMessage { block };
         BlockMessage::serialize_message(stream, magic_numbers, &block_message)
     }
 
     fn create_transaction(time: u32) -> Transaction {
-        let transaction_input = TransactionInput::new(
-            Outpoint::new( 
-                [1; 32],
-                23,
-            ),
-            vec![1, 2, 3],
-            24,
-        );
+        let transaction_input =
+            TransactionInput::new(Outpoint::new([1; 32], 23), vec![1, 2, 3], 24);
 
         let transaction_output = TransactionOutput {
             value: 10,
@@ -238,16 +232,28 @@ mod tests {
 
         let mut first_block = create_empty_block(3);
         let first_block_header_hash = first_block.header.get_hash256d().unwrap();
-        first_block.append_transaction(create_transaction(0)).unwrap();
-        first_block.append_transaction(create_transaction(1)).unwrap();
-        first_block.append_transaction(create_transaction(2)).unwrap();
+        first_block
+            .append_transaction(create_transaction(0))
+            .unwrap();
+        first_block
+            .append_transaction(create_transaction(1))
+            .unwrap();
+        first_block
+            .append_transaction(create_transaction(2))
+            .unwrap();
 
         let mut second_block = create_block(first_block_header_hash, 3);
         let second_block_header_hash = second_block.header.get_hash256d().unwrap();
-        second_block.append_transaction(create_transaction(1)).unwrap();
-        second_block.append_transaction(create_transaction(2)).unwrap();
-        second_block.append_transaction(create_transaction(3)).unwrap();
-        
+        second_block
+            .append_transaction(create_transaction(1))
+            .unwrap();
+        second_block
+            .append_transaction(create_transaction(2))
+            .unwrap();
+        second_block
+            .append_transaction(create_transaction(3))
+            .unwrap();
+
         serialize_block_message(&mut stream, magic_numbers.clone(), first_block.clone()).unwrap();
         serialize_block_message(&mut stream, magic_numbers.clone(), second_block.clone()).unwrap();
 
@@ -257,7 +263,9 @@ mod tests {
         let (sender, _) = logger::initialize_logger(logger_text, false);
         let block_download = BlockDownload::new(magic_numbers, sender);
 
-        let blocks = block_download.get_data(&mut stream, hashed_headers).unwrap();
+        let blocks = block_download
+            .get_data(&mut stream, hashed_headers)
+            .unwrap();
 
         assert_eq!(blocks, vec![first_block, second_block]);
 
@@ -272,6 +280,9 @@ mod tests {
             InventoryVector::new(TypeIdentifier::Block, second_block_header_hash),
         ];
 
-        assert_eq!(get_data_message.inventory_vectors, expected_inventory_vectors);
+        assert_eq!(
+            get_data_message.inventory_vectors,
+            expected_inventory_vectors
+        );
     }
 }
