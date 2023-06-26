@@ -164,10 +164,7 @@ pub fn create_account(logger: LoggerSender) -> Result<Account, ErrorTUI> {
 }
 
 /// Get an account from the wallet with the corresponding name
-fn get_account_from_name(
-    account_name: &str,
-    wallet: &MutexGuard<'_, Wallet>,
-) -> Option<Account> {
+fn get_account_from_name(account_name: &str, wallet: &MutexGuard<'_, Wallet>) -> Option<Account> {
     for account in wallet.get_accounts() {
         if account.account_name == account_name {
             return Some(account.clone());

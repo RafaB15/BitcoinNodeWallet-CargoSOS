@@ -4,10 +4,7 @@ use std::cmp::max;
 
 /// Notify the user in a clean way
 pub fn notify(title: &str, body: &str, logger: LoggerSender) {
-    let len_message = max(
-        calculate_body_len(title),
-        calculate_body_len(body),
-    );
+    let len_message = max(calculate_body_len(title), calculate_body_len(body));
     let border = "#".repeat(len_message + 4);
 
     let mut message = format!("{border}\n");

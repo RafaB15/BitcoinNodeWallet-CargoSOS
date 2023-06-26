@@ -332,7 +332,7 @@ fn receive_block(
                 logger.clone(),
             );
             let _ = logger.log_wallet(
-                "Removing transaction from list of transaction seen so far".to_string()
+                "Removing transaction from list of transaction seen so far".to_string(),
             );
             return false;
         }

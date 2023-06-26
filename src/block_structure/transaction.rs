@@ -134,7 +134,7 @@ impl Transaction {
         };
 
         unsigned_transaction.get_signed_by_account(account_from)?;
-            
+
         Ok(unsigned_transaction)
     }
 

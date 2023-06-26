@@ -199,7 +199,7 @@ fn receive_block(
     get_reference(&pending_transactions)?.retain(|transaction| {
         if block.transactions.contains(transaction) {
             let _ = logger.log_wallet(
-                "Removing transaction from list of transaction seen so far".to_string()
+                "Removing transaction from list of transaction seen so far".to_string(),
             );
             if tx_to_front
                 .send(SignalToFront::BlockWithUnconfirmedTransactionReceived)
@@ -325,7 +325,7 @@ fn sending_transaction(
     utxo_set: &MutArc<UTXOSet>,
     logger: LoggerSender,
     address_string: &str,
-    amount_fee: (f64,f64),
+    amount_fee: (f64, f64),
     tx_to_front: glib::Sender<SignalToFront>,
 ) -> Result<(), ErrorGUI> {
     let amount = amount_fee.0;
@@ -569,7 +569,12 @@ pub fn spawn_frontend_handler(
     rx_from_front: Receiver<SignalToBack>,
     tx_to_front: glib::Sender<SignalToFront>,
     broadcasting: &mut Broadcasting<TcpStream>,
-    data: (MutArc<Wallet>, MutArc<UTXOSet>, MutArc<Vec<Transaction>>, MutArc<BlockChain>),
+    data: (
+        MutArc<Wallet>,
+        MutArc<UTXOSet>,
+        MutArc<Vec<Transaction>>,
+        MutArc<BlockChain>,
+    ),
     logger: LoggerSender,
 ) -> Result<(), ErrorGUI> {
     let wallet: MutArc<Wallet> = data.0;
@@ -730,10 +735,7 @@ fn broadcasting(
         rx_from_front,
         tx_to_front,
         &mut broadcasting,
-        (wallet,
-        utxo_set,
-        pending_transactions,
-        block_chain),
+        (wallet, utxo_set, pending_transactions, block_chain),
         logger,
     )?;
 
@@ -790,9 +792,7 @@ pub fn backend_execution(
         rx_from_front,
         tx_to_front,
         peer_streams,
-        (wallet.clone(),
-        utxo_set,
-        block_chain.clone()),
+        (wallet.clone(), utxo_set, block_chain.clone()),
         connection_config,
         logger.clone(),
     )?;
