@@ -4,7 +4,7 @@ pub mod p2p_protocol;
 
 pub mod dns_seeder;
 
-pub mod suppored_services;
+pub mod supported_services;
 
 pub mod error_connection;
 

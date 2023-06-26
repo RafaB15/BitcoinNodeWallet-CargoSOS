@@ -80,7 +80,7 @@ impl Parsable for ConnectionConfig {
 mod tests {
     use super::*;
 
-    use crate::connections::suppored_services::SupportedServices;
+    use crate::connections::supported_services::SupportedServices;
 
     #[test]
     fn test01_accept_valid_input() {

@@ -117,7 +117,7 @@ impl DeserializableInternalOrder for VersionMessage {
 #[cfg(test)]
 mod tests {
     use crate::{
-        connections::{p2p_protocol::ProtocolVersionP2P, suppored_services::SupportedServices},
+        connections::{p2p_protocol::ProtocolVersionP2P, supported_services::SupportedServices},
         messages::{bitfield_services::BitfieldServices, compact_size::CompactSize},
         serialization::error_serialization::ErrorSerialization,
     };

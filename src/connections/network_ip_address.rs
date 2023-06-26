@@ -48,7 +48,7 @@ mod tests {
 
     use super::*;
     
-    use crate::connections::suppored_services::SupportedServices;
+    use crate::connections::supported_services::SupportedServices;
 
     #[test]
     fn test01_serialize_correctly_network_ip_address() -> Result<(), ErrorSerialization> {
