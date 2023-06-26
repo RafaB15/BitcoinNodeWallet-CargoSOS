@@ -325,10 +325,11 @@ fn sending_transaction(
     utxo_set: &MutArc<UTXOSet>,
     logger: LoggerSender,
     address_string: &str,
-    amount: f64,
-    fee: f64,
+    amount_fee: (f64,f64),
     tx_to_front: glib::Sender<SignalToFront>,
 ) -> Result<(), ErrorGUI> {
+    let amount = amount_fee.0;
+    let fee = amount_fee.1;
     let address = match Address::new(address_string) {
         Ok(address) => address,
         Err(_) => {
@@ -568,12 +569,13 @@ pub fn spawn_frontend_handler(
     rx_from_front: Receiver<SignalToBack>,
     tx_to_front: glib::Sender<SignalToFront>,
     broadcasting: &mut Broadcasting<TcpStream>,
-    wallet: MutArc<Wallet>,
-    utxo_set: MutArc<UTXOSet>,
-    pending_transactions: MutArc<Vec<Transaction>>,
-    block_chain: MutArc<BlockChain>,
+    data: (MutArc<Wallet>, MutArc<UTXOSet>, MutArc<Vec<Transaction>>, MutArc<BlockChain>),
     logger: LoggerSender,
 ) -> Result<(), ErrorGUI> {
+    let wallet: MutArc<Wallet> = data.0;
+    let utxo_set: MutArc<UTXOSet> = data.1;
+    let pending_transactions: MutArc<Vec<Transaction>> = data.2;
+    let block_chain: MutArc<BlockChain> = data.3;
     for rx in rx_from_front {
         match rx {
             SignalToBack::GetAccountBalance => {
@@ -594,8 +596,7 @@ pub fn spawn_frontend_handler(
                     &utxo_set,
                     logger.clone(),
                     &address_string,
-                    amount,
-                    fee,
+                    (amount, fee),
                     tx_to_front.clone(),
                 )?;
             }
@@ -698,12 +699,13 @@ fn broadcasting(
     rx_from_front: Receiver<SignalToBack>,
     tx_to_front: glib::Sender<SignalToFront>,
     peer_streams: Vec<TcpStream>,
-    wallet: Arc<Mutex<Wallet>>,
-    utxo_set: Arc<Mutex<UTXOSet>>,
-    block_chain: Arc<Mutex<BlockChain>>,
+    data: (MutArc<Wallet>, MutArc<UTXOSet>, MutArc<BlockChain>),
     connection_config: ConnectionConfig,
     logger: LoggerSender,
 ) -> Result<(), ErrorExecution> {
+    let wallet: Arc<Mutex<Wallet>> = data.0;
+    let utxo_set: Arc<Mutex<UTXOSet>> = data.1;
+    let block_chain: Arc<Mutex<BlockChain>> = data.2;
     let (sender_response, receiver_response) = mpsc::channel::<MessageResponse>();
     let pending_transactions = Arc::new(Mutex::new(Vec::<Transaction>::new()));
 
@@ -728,10 +730,10 @@ fn broadcasting(
         rx_from_front,
         tx_to_front,
         &mut broadcasting,
-        wallet,
+        (wallet,
         utxo_set,
         pending_transactions,
-        block_chain,
+        block_chain),
         logger,
     )?;
 
@@ -788,9 +790,9 @@ pub fn backend_execution(
         rx_from_front,
         tx_to_front,
         peer_streams,
-        wallet.clone(),
+        (wallet.clone(),
         utxo_set,
-        block_chain.clone(),
+        block_chain.clone()),
         connection_config,
         logger.clone(),
     )?;
