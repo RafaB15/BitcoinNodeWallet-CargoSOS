@@ -286,6 +286,7 @@ fn login_send_page(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) ->
     Ok(())
 }
 
+/// Function that takes a timestamp and turns it into a string of the date
 fn from_timestamp_to_string(timestamp: &u32) -> Result<String, ErrorGUI> {
     let naive = match NaiveDateTime::from_timestamp_opt(timestamp.clone() as i64, 0) {
         Some(naive) => naive,
@@ -295,6 +296,7 @@ fn from_timestamp_to_string(timestamp: &u32) -> Result<String, ErrorGUI> {
     Ok(datetime.format("%Y-%m-%d %H:%M:%S").to_string())
 }
 
+/// Function that takes a vector of u8 and turns it into a string
 fn from_vector_to_string(vector: &[u8; 32]) -> String{
     let mut string = String::new();
     for byte in vector.iter() {
@@ -303,6 +305,7 @@ fn from_vector_to_string(vector: &[u8; 32]) -> String{
     string
 }
 
+/// Function that updates the tree vies with the transactions of the current account
 fn show_transactions_in_tree_view(builder: &Builder, transaction_information: Vec<(u32, [u8;32], i64)>) -> Result<(), ErrorGUI> {
     let transactions_tree_store: TreeStore = match builder.object("TransactionTreeStore") {
         Some(list_store) => list_store,

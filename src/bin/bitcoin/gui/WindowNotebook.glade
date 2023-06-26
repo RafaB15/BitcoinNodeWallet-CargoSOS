@@ -215,7 +215,7 @@ it contains one unconfirmed transaction previously identified</property>
             <property name="height-request">80</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="label" translatable="yes">                       Cannot send transaction 
+            <property name="label" translatable="yes">                       
 There is an error in the information entered</property>
           </object>
           <packing>
@@ -912,7 +912,7 @@ has been identified but is still unconfirmed</property>
                             </child>
                             <child>
                               <object class="GtkTreeViewColumn" id="LabelColumn">
-                                <property name="fixed-width">470</property>
+                                <property name="fixed-width">449</property>
                                 <property name="title" translatable="yes">Label</property>
                                 <child>
                                   <object class="GtkCellRendererText" id="LabelRenderer"/>
@@ -925,7 +925,7 @@ has been identified but is still unconfirmed</property>
                             <child>
                               <object class="GtkTreeViewColumn" id="AmountColumn">
                                 <property name="spacing">13</property>
-                                <property name="fixed-width">8</property>
+                                <property name="fixed-width">16</property>
                                 <property name="title" translatable="yes">Amount (BTC)</property>
                                 <property name="alignment">1</property>
                                 <child>

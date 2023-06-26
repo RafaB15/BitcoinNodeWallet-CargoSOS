@@ -60,6 +60,10 @@ use std::sync::mpsc;
 
 type MutArc<T> = Arc<Mutex<T>>;
 
+/// Get a mutable guard to use the value inside the Arc<Mutex<T>>
+///
+/// ### Error
+///  * `ErrorGUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 fn get_reference<'t, T>(reference: &'t MutArc<T>) -> Result<MutexGuard<'t, T>, ErrorGUI> {
     match reference.lock() {
         Ok(reference) => Ok(reference),
@@ -70,8 +74,8 @@ fn get_reference<'t, T>(reference: &'t MutArc<T>) -> Result<MutexGuard<'t, T>, E
 /// Get the value of a mutable reference given by Arc<Mutex<T>>
 ///
 /// ### Error
-///  * `ErrorTUI::CannotGetInner`: It will appear when we try to get the inner value of a mutex
-///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
+///  * `ErrorGUI::CannotGetInner`: It will appear when we try to get the inner value of a mutex
+///  * `ErrorGUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 fn get_inner<T>(reference: Arc<Mutex<T>>) -> Result<T, ErrorGUI> {
     match Arc::try_unwrap(reference) {
         Ok(reference_unwrap) => match reference_unwrap.into_inner() {
@@ -82,6 +86,10 @@ fn get_inner<T>(reference: Arc<Mutex<T>>) -> Result<T, ErrorGUI> {
     }
 }
 
+/// Get the peers from the dns seeder
+///
+/// ### Error
+///  * `ErrorGUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
 fn get_potential_peers(
     connection_config: ConnectionConfig,
     logger: LoggerSender,
@@ -101,6 +109,7 @@ fn get_potential_peers(
     Ok(potential_peers)
 }
 
+/// Updates the blockchain with the new blocks and returns the TcpStreams that are still connected
 fn get_block_chain(
     peer_streams: Vec<TcpStream>,
     block_chain: &mut BlockChain,
@@ -147,6 +156,10 @@ fn get_broadcasting(
     Broadcasting::new(peer_streams, sender_response, connection_config, logger)
 }
 
+/// Manage receiving a transaction by updating the list of transactions seen so far if the transaction is from the selected account
+///
+/// ### Error
+///  * `ErrorGUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 fn receive_transaction(
     wallet: &MutArc<Wallet>,
     transaction: Transaction,
@@ -188,6 +201,11 @@ fn receive_transaction(
     Ok(())
 }
 
+/// Manage receiving a block by updating the block chain and the utxo set
+///
+/// ### Error
+///  * `ErrorGUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
+///  * `ErrorGUI::ErrorWriting`: It will appear when writing to the block chain
 fn receive_block(
     utxo_set: &MutArc<UTXOSet>,
     block_chain: &MutArc<BlockChain>,
@@ -224,6 +242,7 @@ fn receive_block(
     }
 }
 
+/// Crate a thread for handling the blocks and transactions received
 pub fn handle_peers(
     tx_to_front: glib::Sender<SignalToFront>,
     receiver_broadcasting: Receiver<MessageResponse>,
@@ -262,15 +281,15 @@ pub fn handle_peers(
     })
 }
 
+/// FUnction that converts testnet bitcoins to satoshis
 pub fn fron_tbtc_to_satoshi(tbtc: f64) -> i64 {
     (tbtc * 100_000_000.0) as i64
 }
 
-/// Creates a transaction via terminal given the user user_input
+/// Creates a transaction given the user user_input
 ///
 /// ### Error
-///  * `ErrorTUI::TransactionWithoutSufficientFunds`: It will appear when the user does not have enough funds to make the transaction
-///  * `ErrorTUI::TransactionCreationFail`: It will appear when the transaction fail to create the signature script
+///  * `ErrorGUI::ErrorInTransaction`: It will appear when the user does not have enough funds to make the transaction or the transaction is not valid
 pub fn create_transaction<'t>(
     utxo_set: &MutexGuard<'t, UTXOSet>,
     account: &Account,
@@ -301,6 +320,12 @@ pub fn create_transaction<'t>(
     }
 }
 
+/// Broadcast the transaction created by the user to the peers from the selected account in the wallet
+///
+/// ### Error
+///  * `ErrorGUI::FailedSignalToFront`: It will appear when the sender fails
+///  * `ErrorGUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
+///  * `ErrorGUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
 fn sending_transaction(
     broadcasting: &mut Broadcasting<TcpStream>,
     wallet: &MutArc<Wallet>,
@@ -364,6 +389,10 @@ fn sending_transaction(
     }
 }
 
+/// Creates a new account with the data entered by the user
+///
+/// ### Error
+///  * `ErrorGUI::FailedSignalToFront`: It will appear when the sender fails
 pub fn create_account(
     wallet: MutArc<Wallet>,
     account_name: &str,
@@ -434,6 +463,7 @@ pub fn create_account(
     Ok(())
 }
 
+/// Function that obtains and return the information of the transactions of an account
 pub fn get_account_transactions_information(account: &Account, blockchain: &BlockChain) -> Vec<(u32, [u8;32], i64)> {
     let mut transactions: Vec<Transaction> = Vec::new();
     let blocks = blockchain.get_all_blocks();
@@ -461,6 +491,8 @@ pub fn get_account_transactions_information(account: &Account, blockchain: &Bloc
     filtered_transactions
 }
 
+/// Function that gets the information of the transactions of the selected account
+/// and sends it to the front
 fn give_account_transactions(
     wallet: MutArc<Wallet>,
     blockchain: MutArc<BlockChain>,
@@ -499,6 +531,7 @@ fn give_account_transactions(
     Ok(())
 }
 
+/// Function that handles the signals from the front end
 pub fn spawn_frontend_handler(
     rx_from_front: Receiver<SignalToBack>,
     tx_to_front: glib::Sender<SignalToFront>,
@@ -534,6 +567,7 @@ pub fn spawn_frontend_handler(
     Ok(())
 }
 
+/// Function that changes the selected account of the address
 pub fn change_selected_account(
     account_name: String,
     wallet: MutArc<Wallet>,
@@ -561,6 +595,7 @@ pub fn change_selected_account(
     Ok(())
 }
 
+/// Function that obtains the pending balance of an account
 pub fn get_pending_amount(
     pending_transactions: MutArc<Vec<Transaction>>,
     account: &Account,
@@ -577,6 +612,7 @@ pub fn get_pending_amount(
     Ok(pending)
 }
 
+/// Function that obtains the balance of the selected account and sends it to the front
 pub fn give_account_balance(
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
@@ -604,6 +640,7 @@ pub fn give_account_balance(
     Ok(())
 }
 
+/// Broadcasting blocks and transactions from and to the given peers
 fn broadcasting(
     rx_from_front: Receiver<SignalToBack>,
     tx_to_front: glib::Sender<SignalToFront>,
@@ -653,7 +690,8 @@ fn broadcasting(
     }
 }
 
-pub fn backend_initialization(
+/// Function that performs the backend execution
+pub fn backend_execution(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
     load_system: LoadSystem,
@@ -711,6 +749,8 @@ pub fn backend_initialization(
     ))
 }
 
+
+/// Function that spawns the backend handler thread
 pub fn spawn_backend_handler(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
@@ -724,6 +764,6 @@ pub fn spawn_backend_handler(
             save_config.clone(),
             logger.clone(),
         );
-        backend_initialization(connection_config, download_config, load_system, logger, tx_to_front, rx_from_front)
+        backend_execution(connection_config, download_config, load_system, logger, tx_to_front, rx_from_front)
     })
 }
