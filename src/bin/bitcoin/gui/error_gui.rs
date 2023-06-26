@@ -1,6 +1,5 @@
 #[derive(Debug, Clone)]
 pub enum ErrorGUI {
-    FailedToInitializeGTK,
     FailedSignalToFront(String),
     ErrorWriting(String),
     ErrorReading(String),

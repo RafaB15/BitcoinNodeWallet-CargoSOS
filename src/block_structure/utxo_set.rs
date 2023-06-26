@@ -7,7 +7,6 @@ use crate::{
     serialization::serializable_internal_order::SerializableInternalOrder,
     wallet_structure::{
         address::Address,
-        account::Account,
     },
 };
 

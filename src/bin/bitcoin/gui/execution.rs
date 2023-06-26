@@ -5,7 +5,7 @@ use super::{
     gui_backend::spawn_backend_handler,
 };
 
-use gtk::{prelude::*, Button, Entry, Application, Builder, Window, ComboBoxText, Image, Label, SpinButton, TreeView, TreeStore};
+use gtk::{prelude::*, Button, Entry, Application, Builder, Window, ComboBoxText, Image, Label, SpinButton, TreeStore};
 use gtk::glib;
 
 use crate::{
@@ -20,7 +20,6 @@ use cargosos_bitcoin::configurations::{
 
 use cargosos_bitcoin::{
     logs::logger_sender::LoggerSender,
-    block_structure::transaction::Transaction,
 };
 
 use std::{
@@ -68,9 +67,7 @@ fn login_main_window(application: &gtk::Application, builder: &Builder, tx_to_ba
     });
 
     login_send_page(&builder, tx_to_back.clone())?;
-    
-    //login_transaction_page(&builder, tx_to_back.clone())?;
-
+    login_block_notification_window(&builder)?;
     window.show_all();
     Ok(())
 }
@@ -130,7 +127,7 @@ fn login_transaction_error_window(builder: &Builder) -> Result<(), ErrorGUI> {
     Ok(())
 }
 
-/// This function sets up the notification window
+/// This function sets up the notification window for transactions
 fn login_transaction_notification_window(builder: &Builder) -> Result<(), ErrorGUI> {
     let transaction_notification_window: Window = match builder.object("TransactionNotificationWindow") {
         Some(transaction_notification_window) => transaction_notification_window,
@@ -142,6 +139,22 @@ fn login_transaction_notification_window(builder: &Builder) -> Result<(), ErrorG
     };
     transaction_notification_button.connect_clicked(move |_| {
         transaction_notification_window.set_visible(false);
+    });
+    Ok(())
+}
+
+/// This function sets up the notification window for blocks
+fn login_block_notification_window(builder: &Builder) -> Result<(), ErrorGUI> {
+    let block_notification_window: Window = match builder.object("BlockNotificationWindow") {
+        Some(block_notification_window) => block_notification_window,
+        None => return Err(ErrorGUI::MissingElement("BlockNotificationWindow".to_string())),
+    };
+    let block_notification_button: Button = match builder.object("OkBlockNotificationButton") {
+        Some(block_notification_button) => block_notification_button,
+        None => return Err(ErrorGUI::MissingElement("OkBlockNotificationButton".to_string())),
+    };
+    block_notification_button.connect_clicked(move |_| {
+        block_notification_window.set_visible(false);
     });
     Ok(())
 }
@@ -175,19 +188,16 @@ fn show_new_transaction_notification(builder: &Builder, account_name: String) ->
     transaction_notification_window.set_visible(true);
     Ok(())
 }
-/* 
-fn register_transaction(tx_to_back: mpsc::Sender<SignalToBack> ,builder: &Builder) {
 
-    let send_button: Button = builder.object("SendButton").unwrap();
-    let cloned_builder: Builder = builder.clone();
-    send_button.connect_clicked(move |_| {
-        let adress_entry: Label = cloned_builder.object("AddressEntry").unwrap();
-        let amount_entry: Label = cloned_builder.object("AmountEntry").unwrap();
-
-        tx_to_back.send(SignalToBack::CreateTransaction(adress_entry.text().to_string(), amount_entry.text().to_string()));
-    });
+/// This function makes the notification window visible and sets the notification message
+fn show_new_block_notification(builder: &Builder) -> Result<(), ErrorGUI> {
+    let block_notification_window: Window = match builder.object("BlockNotificationWindow") {
+        Some(block_notification_window) => block_notification_window,
+        None => return Err(ErrorGUI::MissingElement("BlockNotificationWindow".to_string())),
+    };
+    block_notification_window.set_visible(true);
+    Ok(())
 }
-*/
 
 /// This function adds an account to the combo box
 fn add_account_to_combo_box(builder: &Builder, account_name: &str) -> Result<(), ErrorGUI> {
@@ -276,10 +286,6 @@ fn login_send_page(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) ->
     Ok(())
 }
 
-fn login_transaction_page(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) -> Result<(), ErrorGUI>{
-    Ok(())
-}
-
 fn from_timestamp_to_string(timestamp: &u32) -> Result<String, ErrorGUI> {
     let naive = match NaiveDateTime::from_timestamp_opt(timestamp.clone() as i64, 0) {
         Some(naive) => naive,
@@ -312,7 +318,6 @@ fn show_transactions_in_tree_view(builder: &Builder, transaction_information: Ve
         transactions_tree_store.set_value(&tree_iter, 2, &glib::Value::from(from_vector_to_string(label)));
         transactions_tree_store.set_value(&tree_iter, 3, &glib::Value::from(amount.to_string()));
     }
-    
     Ok(())
 }
 
@@ -341,29 +346,46 @@ fn spawn_local_handler(builder: &Builder, rx_from_back: glib::Receiver<SignalToF
                 total_label.set_text(&total_string);
             },
             SignalToFront::NotifyBlockchainIsReady => {
-                let signal_blockchain_not_ready: Image = cloned_builder.object("BlockchainNotReadySymbol").unwrap();
+                let signal_blockchain_not_ready: Image = match cloned_builder.object("BlockchainNotReadySymbol") {
+                    Some(image) => image,
+                    None => {
+                        println!("Error: Missing element BlockchainNotReadySymbol");
+                        Image::new()
+                    },
+                };
                 signal_blockchain_not_ready.set_visible(false);
             }
             SignalToFront::ErrorInTransaction(error) => {
-                let _ = show_window_with_error(&cloned_builder, error.as_str());
+                if let Err(error) = show_window_with_error(&cloned_builder, error.as_str()){
+                    println!("Error showing error window, with error {:?}", error);
+                };
             },
             SignalToFront::TransactionOfAccountReceived(account) => {
-                show_new_transaction_notification(&cloned_builder, account);
+                if let Err(error) = show_new_transaction_notification(&cloned_builder, account){
+                    println!("Error showing new transaction notification, with error {:?}", error);
+                };
+            },
+            SignalToFront::BlockWithUnconfirmedTransactionReceived => {
+                if let Err(error) = show_new_block_notification(&cloned_builder){
+                    println!("Error showing new block notification, with error {:?}", error);
+                };
             },
             SignalToFront::AccountTransactions(transaction_information) => {
-                show_transactions_in_tree_view(&cloned_builder, transaction_information);
+                if let Err(error) = show_transactions_in_tree_view(&cloned_builder, transaction_information){
+                    println!("Error showing transactions in tree view, with error {:?}", error);
+                };
             },
             SignalToFront::Update => {
                 if tx_to_back.send(SignalToBack::GetAccountBalance).is_err() || 
                    tx_to_back.send(SignalToBack::GetAccountTransactions).is_err() {
                     println!("Error sending signal to back");
                 };
+            },
+            SignalToFront::ErrorInAccountCreation(error) => {
+                if let Err(error) = show_window_with_error(&cloned_builder, error.as_str()){
+                    println!("Error showing error window, with error {:?}", error);
+                };
             }
-            _ => {}
-
-
-            //recibir la blockchain -> integrarla al load bar
-            //obtener transacciones de bloques ->  cargarlas al tree view
         }
         glib::Continue(true)
     });

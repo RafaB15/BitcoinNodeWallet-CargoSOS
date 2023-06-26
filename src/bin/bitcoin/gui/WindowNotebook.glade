@@ -130,6 +130,75 @@
     <property name="step-increment">0.0001</property>
     <property name="page-increment">10</property>
   </object>
+  <object class="GtkWindow" id="BlockNotificationWindow">
+    <property name="name">TransactionNotificationWindow</property>
+    <property name="can-focus">False</property>
+    <child>
+      <object class="GtkFixed" id="BlockNotificationFrame">
+        <property name="name">TransactionNotificationFrame</property>
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <child>
+          <object class="GtkImage" id="BlockNotificationImage">
+            <property name="name">NotificationImage</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="stock">gtk-info</property>
+            <property name="icon_size">6</property>
+          </object>
+          <packing>
+            <property name="x">197</property>
+            <property name="y">11</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="BlockNotificationExplanation">
+            <property name="name">TransactionNotificationExplanation</property>
+            <property name="width-request">446</property>
+            <property name="height-request">80</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="label" translatable="yes">A new block has been added to the blockchain and 
+it contains one unconfirmed transaction previously identified</property>
+            <property name="justify">center</property>
+          </object>
+          <packing>
+            <property name="x">4</property>
+            <property name="y">49</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="BlockNotificationLabel">
+            <property name="name">TransactionNotificationLabel</property>
+            <property name="width-request">400</property>
+            <property name="height-request">40</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="justify">center</property>
+          </object>
+          <packing>
+            <property name="x">23</property>
+            <property name="y">125</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="OkBlockNotificationButton">
+            <property name="label" translatable="yes">Ok</property>
+            <property name="name">OkNotificationButton</property>
+            <property name="width-request">100</property>
+            <property name="height-request">34</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+          </object>
+          <packing>
+            <property name="x">174</property>
+            <property name="y">182</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
   <object class="GtkWindow" id="TransactionErrorWindow">
     <property name="name">TransactionErrorWindow</property>
     <property name="height-request">275</property>
@@ -240,14 +309,14 @@ has been identified but is still unconfirmed</property>
         <child>
           <object class="GtkLabel" id="TransactionNotificationLabel">
             <property name="name">TransactionNotificationLabel</property>
-            <property name="width-request">200</property>
+            <property name="width-request">400</property>
             <property name="height-request">40</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="justify">center</property>
           </object>
           <packing>
-            <property name="x">123</property>
+            <property name="x">23</property>
             <property name="y">125</property>
           </packing>
         </child>
@@ -819,7 +888,7 @@ has been identified but is still unconfirmed</property>
                             </child>
                             <child>
                               <object class="GtkTreeViewColumn" id="DateColumn">
-                                <property name="fixed-width">117</property>
+                                <property name="fixed-width">118</property>
                                 <property name="title" translatable="yes">Date</property>
                                 <child>
                                   <object class="GtkCellRendererText" id="DateRenderer"/>
@@ -831,7 +900,7 @@ has been identified but is still unconfirmed</property>
                             </child>
                             <child>
                               <object class="GtkTreeViewColumn" id="TypeColumn">
-                                <property name="fixed-width">136</property>
+                                <property name="fixed-width">70</property>
                                 <property name="title" translatable="yes">Type</property>
                                 <child>
                                   <object class="GtkCellRendererText" id="TypeRenderer"/>
@@ -843,7 +912,7 @@ has been identified but is still unconfirmed</property>
                             </child>
                             <child>
                               <object class="GtkTreeViewColumn" id="LabelColumn">
-                                <property name="fixed-width">320</property>
+                                <property name="fixed-width">470</property>
                                 <property name="title" translatable="yes">Label</property>
                                 <child>
                                   <object class="GtkCellRendererText" id="LabelRenderer"/>
@@ -856,7 +925,7 @@ has been identified but is still unconfirmed</property>
                             <child>
                               <object class="GtkTreeViewColumn" id="AmountColumn">
                                 <property name="spacing">13</property>
-                                <property name="fixed-width">14</property>
+                                <property name="fixed-width">8</property>
                                 <property name="title" translatable="yes">Amount (BTC)</property>
                                 <property name="alignment">1</property>
                                 <child>

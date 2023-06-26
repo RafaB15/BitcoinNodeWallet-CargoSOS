@@ -12,14 +12,14 @@ use crate::{
         download, handshake,
         load_system::LoadSystem, 
         save_system::SaveSystem,
-    }
+    },
 };
 
 
-use cargosos_bitcoin::{configurations::{
+use cargosos_bitcoin::configurations::{
     connection_config::ConnectionConfig, download_config::DownloadConfig,
     save_config::SaveConfig,
-}, block_structure::utxo_set, wallet_structure::{address, public_key}};
+};
 
 use cargosos_bitcoin::{
     logs::logger_sender::LoggerSender,
@@ -201,6 +201,9 @@ fn receive_block(
             let _ = logger.log_wallet(format!(
                 "Removing transaction from list of transaction seen so far"
             ));
+            if tx_to_front.send(SignalToFront::BlockWithUnconfirmedTransactionReceived).is_err() {
+                println!("Error sending signal to front")
+            }
             return false;
         }
         true
@@ -483,7 +486,11 @@ fn give_account_transactions(
 
     let transactions = get_account_transactions_information(&account, &blockchain);
     if tx_to_front.send(SignalToFront::AccountTransactions(transactions)).is_err() {
-        tx_to_front.send(SignalToFront::ErrorInTransaction("Failed to send transactions to front".to_string()));
+        if tx_to_front.send(SignalToFront::ErrorInTransaction("Failed to send transactions to front".to_string())).is_err() {
+            return Err(ErrorGUI::FailedSignalToFront(
+                "Failed to send error signal to front".to_string(),
+            ));
+        };
         return Err(ErrorGUI::FailedSignalToFront(
             "Failed to send error signal to front".to_string(),
         ));
@@ -511,7 +518,7 @@ pub fn spawn_frontend_handler(
                 change_selected_account(account_name, wallet.clone(), tx_to_front.clone())?;
             },
             SignalToBack::CreateTransaction(address_string, amount, fee) => {
-                sending_transaction(broadcasting, &wallet, &utxo_set, logger.clone(), &address_string, amount, fee, tx_to_front.clone());
+                sending_transaction(broadcasting, &wallet, &utxo_set, logger.clone(), &address_string, amount, fee, tx_to_front.clone())?;
             }
             SignalToBack::CreateAccount(name, private_key, public_key) => {
                 create_account(wallet.clone(), &name, &private_key, &public_key, tx_to_front.clone(), logger.clone())?;
@@ -522,7 +529,6 @@ pub fn spawn_frontend_handler(
             SignalToBack::ExitProgram => {
                 break;
             },
-            _ => {}
         }
     }
     Ok(())
@@ -676,7 +682,7 @@ pub fn backend_initialization(
         logger.clone(),
     )?;
 
-    let mut wallet = load_system.get_wallet()?;
+    let wallet = load_system.get_wallet()?;
     for account in wallet.get_accounts().iter() {
         tx_to_front.send(SignalToFront::RegisterWallet(account.account_name.clone())).unwrap();
     }
