@@ -123,3 +123,139 @@ impl InitialHeaderDownload {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    use crate::{
+        block_structure::{
+            block::Block, block_version::BlockVersion, compact256::Compact256,
+            error_block::ErrorBlock,
+        },
+        logs::{logger, logger_sender::LoggerSender},
+        messages::compact_size::CompactSize,
+        node_structure::initial_headers_download,
+        serialization::error_serialization::ErrorSerialization,
+    };
+
+    struct Stream {
+        stream: Vec<u8>,
+        pointer: usize,
+    }
+
+    impl Stream {
+        pub fn new() -> Stream {
+            Stream {
+                stream: Vec::new(),
+                pointer: 0,
+            }
+        }
+    }
+
+    impl Read for Stream {
+        fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+            let mut i = 0;
+            while i < buf.len() && self.pointer < self.stream.len() {
+                buf[i] = self.stream[self.pointer];
+                self.pointer += 1;
+                i += 1;
+            }
+            Ok(i)
+        }
+    }
+
+    impl Write for Stream {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            let mut i = 0;
+            while i < buf.len() {
+                self.stream.push(buf[i]);
+                i += 1;
+            }
+            Ok(i)
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    fn serialize_headers_message<RW: Read + Write>(
+        stream: &mut RW,
+        magic_numbers: [u8; 4],
+        headers: Vec<BlockHeader>,
+    ) -> Result<(), ErrorSerialization> {
+        let headers_message = HeadersMessage { headers };
+        HeadersMessage::serialize_message(stream, magic_numbers, &headers_message)
+    }
+
+    #[test]
+    fn test01_initial_header_download_successfully() {
+        let mut stream = Stream::new();
+        let magic_numbers = [11, 17, 9, 7];
+
+        let block = Block::new(BlockHeader::new(
+            BlockVersion::version(1),
+            [0; 32],
+            [0; 32],
+            0,
+            Compact256::from(10),
+            0,
+            CompactSize::new(0),
+        ));
+
+        let hash_of_first_block_header = block.header.get_hash256d().unwrap();
+
+        let mut blockchain = BlockChain::new(block).unwrap();
+
+        let header_to_append = BlockHeader::new(
+            BlockVersion::version(1),
+            hash_of_first_block_header.clone(),
+            [3; 32],
+            5,
+            Compact256::from(u32::MAX),
+            21,
+            CompactSize::new(0),
+        );
+
+        serialize_headers_message(
+            &mut stream,
+            magic_numbers.clone(),
+            vec![header_to_append.clone()],
+        )
+        .unwrap();
+
+        let mut expected_blockchain = blockchain.clone();
+        expected_blockchain
+            .append_header(header_to_append.clone())
+            .unwrap();
+
+        let mut logger_text: Vec<u8> = Vec::new();
+        let (sender, _) = logger::initialize_logger(logger_text, false);
+
+        let initial_headers_download =
+            InitialHeaderDownload::new(ProtocolVersionP2P::V70016, magic_numbers, sender);
+
+        initial_headers_download
+            .get_headers(&mut stream, &mut blockchain)
+            .unwrap();
+
+        assert_eq!(expected_blockchain, blockchain);
+
+        let header =
+            message::deserialize_until_found(&mut stream, CommandName::GetHeaders).unwrap();
+
+        assert_eq!(header.command_name, CommandName::GetHeaders);
+
+        let get_headers_message =
+            GetHeadersMessage::deserialize_message(&mut stream, header).unwrap();
+
+        assert_eq!(get_headers_message.header_locator_hashes.len(), 1);
+        assert_eq!(get_headers_message.version, ProtocolVersionP2P::V70016);
+        assert_eq!(
+            get_headers_message.header_locator_hashes,
+            vec![hash_of_first_block_header]
+        );
+    }
+}

@@ -227,7 +227,7 @@ pub fn show_accounts<'t>(wallet: &MutexGuard<'t, Wallet>, logger: LoggerSender) 
         let mut selected = "";
         if let Some(selected_account) = possible_selected_account {
             if selected_account == account {
-                selected = "[★ ]";
+                selected = "[ ★ ]";
             }
         }
 
