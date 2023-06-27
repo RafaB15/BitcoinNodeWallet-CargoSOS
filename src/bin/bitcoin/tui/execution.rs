@@ -13,6 +13,7 @@ use cargosos_bitcoin::{
     configurations::{connection_config::ConnectionConfig, download_config::DownloadConfig},
     connections::ibd_methods::IBDMethod,
     logs::logger_sender::LoggerSender,
+    notifications::notification::Notification,
     node_structure::{broadcasting::Broadcasting, message_response::MessageResponse},
     wallet_structure::wallet::Wallet,
 };
@@ -216,10 +217,12 @@ pub fn program_execution(
     load_system: &mut LoadSystem,
     logger: LoggerSender,
 ) -> Result<SaveSystem, ErrorExecution> {
+    let (notification_sender, notification_receiver) = mpsc::channel::<Notification>();
+
     let potential_peers = get_potential_peers(connection_config.clone(), logger.clone())?;
 
     let peer_streams =
-        handshake::connect_to_peers(potential_peers, connection_config.clone(), logger.clone());
+        handshake::connect_to_peers(potential_peers, connection_config.clone(), logger.clone(), notification_sender.clone());
 
     let mut block_chain = load_system.get_block_chain()?;
 
