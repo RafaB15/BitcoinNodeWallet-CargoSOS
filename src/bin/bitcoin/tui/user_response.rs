@@ -135,7 +135,7 @@ fn sending_transaction(
             return Ok(());
         }
     };
-    let utxo_set = get_reference(utxo_set)?;
+    let mut utxo_set = get_reference(utxo_set)?;
 
     let transaction = match transaction::create_transaction(&utxo_set, account, logger.clone()) {
         Ok(transaction) => transaction,
@@ -148,6 +148,8 @@ fn sending_transaction(
         Err(error) => return Err(error),
     };
     let _ = logger.log_transaction("Sending transaction".to_string());
+
+    utxo_set.append_pending_transaction(transaction.clone());
 
     match broadcasting.send_transaction(transaction) {
         Ok(()) => Ok(()),
