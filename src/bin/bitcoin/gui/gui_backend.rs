@@ -138,47 +138,40 @@ fn get_broadcasting(
 fn receive_transaction(
     wallet: &MutArc<Wallet>,
     transaction: Transaction,
-    pending_transactions: MutArc<Vec<Transaction>>,
+    utxo_set: &MutArc<UTXOSet>,
     logger: LoggerSender,
     tx_to_front: glib::Sender<SignalToFront>,
 ) -> Result<(), ErrorGUI> {
-    let mut transaction_owned_by_account = false;
+    let mut utxo_set = get_reference(utxo_set)?;
 
-    let mut receiving_account_name: String = "".to_string();
+    if utxo_set.is_transaction_pending(&transaction) {
+        let _ = logger.log_wallet(format!(
+            "Transaction {transaction} is already in the list of transactions seen so far",
+        ));
+        return Ok(());
+    }
 
     for account in get_reference(wallet)?.get_accounts() {
         if account.verify_transaction_ownership(&(transaction.clone())) {
             let _ = logger.log_wallet(format!(
-                "Transaction {transaction} is owned by account {account}",
-                transaction = transaction,
-                account = account
+                "Transaction {transaction} is owned by account {account}"
             ));
-            receiving_account_name = account.account_name.clone();
-            transaction_owned_by_account = true;
+
+            if tx_to_front.send(SignalToFront::Update).is_err()
+                || tx_to_front
+                    .send(SignalToFront::TransactionOfAccountReceived(
+                        account.account_name.clone(),
+                    ))
+                    .is_err()
+            {
+                return Err(ErrorGUI::FailedSignalToFront(
+                    "TransactionReceived".to_string(),
+                ));
+            }
         }
     }
 
-    let mut pending_transaction_reference = get_reference(&pending_transactions)?;
-    if transaction_owned_by_account {
-        if pending_transaction_reference.contains(&transaction) {
-            let _ = logger.log_wallet(format!(
-                "Transaction {transaction} is already in the list of transactions seen so far",
-            ));
-            return Ok(());
-        }
-        pending_transaction_reference.push(transaction);
-        if tx_to_front.send(SignalToFront::Update).is_err()
-            || tx_to_front
-                .send(SignalToFront::TransactionOfAccountReceived(
-                    receiving_account_name,
-                ))
-                .is_err()
-        {
-            return Err(ErrorGUI::FailedSignalToFront(
-                "TransactionReceived".to_string(),
-            ));
-        }
-    }
+    utxo_set.append_pending_transaction(transaction);
 
     Ok(())
 }
@@ -192,11 +185,13 @@ fn receive_block(
     utxo_set: &MutArc<UTXOSet>,
     block_chain: &MutArc<BlockChain>,
     block: Block,
-    pending_transactions: MutArc<Vec<Transaction>>,
     logger: LoggerSender,
     tx_to_front: glib::Sender<SignalToFront>,
 ) -> Result<(), ErrorGUI> {
-    get_reference(&pending_transactions)?.retain(|transaction| {
+
+    let mut utxo_set = get_reference(utxo_set)?;
+
+    for transaction in utxo_set.pending_transactions() {
         if block.transactions.contains(transaction) {
             let _ = logger.log_wallet(
                 "Removing transaction from list of transaction seen so far".to_string(),
@@ -207,12 +202,9 @@ fn receive_block(
             {
                 println!("Error sending signal to front")
             }
-            return false;
         }
-        true
-    });
+    }
 
-    let mut utxo_set = get_reference(utxo_set)?;
     utxo_set.update_utxo_with_block(&block);
     if tx_to_front.send(SignalToFront::Update).is_err() {
         return Err(ErrorGUI::FailedSignalToFront(
@@ -220,8 +212,7 @@ fn receive_block(
         ));
     }
 
-    let mut block_chain = get_reference(block_chain)?;
-    match block_chain.append_block(block) {
+    match get_reference(block_chain)?.append_block(block) {
         Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => Ok(()),
         _ => Err(ErrorGUI::ErrorWriting(
             "Error appending block to blockchain".to_string(),
@@ -235,7 +226,6 @@ pub fn handle_peers(
     receiver_broadcasting: Receiver<MessageResponse>,
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
-    pending_transactions: MutArc<Vec<Transaction>>,
     block_chain: MutArc<BlockChain>,
     logger: LoggerSender,
 ) -> JoinHandle<Result<(), ErrorGUI>> {
@@ -247,7 +237,6 @@ pub fn handle_peers(
                         &utxo_set,
                         &block_chain,
                         block,
-                        pending_transactions.clone(),
                         logger.clone(),
                         tx_to_front.clone(),
                     )?;
@@ -256,7 +245,7 @@ pub fn handle_peers(
                     receive_transaction(
                         &wallet,
                         transaction,
-                        pending_transactions.clone(),
+                        &utxo_set,
                         logger.clone(),
                         tx_to_front.clone(),
                     )?;
@@ -574,22 +563,19 @@ pub fn spawn_frontend_handler(
     data: (
         MutArc<Wallet>,
         MutArc<UTXOSet>,
-        MutArc<Vec<Transaction>>,
         MutArc<BlockChain>,
     ),
     logger: LoggerSender,
 ) -> Result<(), ErrorGUI> {
     let wallet: MutArc<Wallet> = data.0;
     let utxo_set: MutArc<UTXOSet> = data.1;
-    let pending_transactions: MutArc<Vec<Transaction>> = data.2;
-    let block_chain: MutArc<BlockChain> = data.3;
+    let block_chain: MutArc<BlockChain> = data.2;
     for rx in rx_from_front {
         match rx {
             SignalToBack::GetAccountBalance => {
                 give_account_balance(
                     wallet.clone(),
                     utxo_set.clone(),
-                    pending_transactions.clone(),
                     tx_to_front.clone(),
                 )?;
             }
@@ -657,28 +643,10 @@ pub fn change_selected_account(
     Ok(())
 }
 
-/// Function that obtains the pending balance of an account
-pub fn get_pending_amount(
-    pending_transactions: MutArc<Vec<Transaction>>,
-    account: &Account,
-) -> Result<f64, ErrorGUI> {
-    let mut pending: f64 = 0.0;
-    for transaction in get_reference(&pending_transactions)?.iter() {
-        for transaction_output in transaction.tx_out.iter() {
-            if account.verify_transaction_output_ownership(transaction_output) {
-                pending += transaction_output.value as f64 / 100_000_000.0;
-            }
-        }
-    }
-
-    Ok(pending)
-}
-
 /// Function that obtains the balance of the selected account and sends it to the front
 pub fn give_account_balance(
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
-    pending_transactions: MutArc<Vec<Transaction>>,
     tx_to_front: glib::Sender<SignalToFront>,
 ) -> Result<(), ErrorGUI> {
     let wallet_reference = get_reference(&wallet)?;
@@ -689,7 +657,7 @@ pub fn give_account_balance(
         None => return Err(ErrorGUI::ErrorReading("No account selected".to_string())),
     };
     let balance = utxo_set_reference.get_balance_in_tbtc(&account_to_check.address);
-    let pending = get_pending_amount(pending_transactions, account_to_check)?;
+    let pending = utxo_set_reference.get_pending_in_tbtc(&account_to_check.address);
     if tx_to_front
         .send(SignalToFront::LoadAvailableBalance((balance, pending)))
         .is_err()
@@ -714,14 +682,12 @@ fn broadcasting(
     let utxo_set: Arc<Mutex<UTXOSet>> = data.1;
     let block_chain: Arc<Mutex<BlockChain>> = data.2;
     let (sender_response, receiver_response) = mpsc::channel::<MessageResponse>();
-    let pending_transactions = Arc::new(Mutex::new(Vec::<Transaction>::new()));
 
     let handle = handle_peers(
         tx_to_front.clone(),
         receiver_response,
         wallet.clone(),
         utxo_set.clone(),
-        pending_transactions.clone(),
         block_chain.clone(),
         logger.clone(),
     );
@@ -737,7 +703,7 @@ fn broadcasting(
         rx_from_front,
         tx_to_front,
         &mut broadcasting,
-        (wallet, utxo_set, pending_transactions, block_chain),
+        (wallet, utxo_set, block_chain),
         logger,
     )?;
 

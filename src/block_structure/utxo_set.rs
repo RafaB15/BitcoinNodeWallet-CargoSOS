@@ -110,7 +110,19 @@ impl UTXOSet {
 
     /// Add a new transaction to the pending transactions removing its influence in the balance
     pub fn append_pending_transaction(&mut self, transaction: Transaction) {
-        self.pending.push(transaction);
+        if !self.pending.contains(&transaction) {
+            self.pending.push(transaction);
+        }
+    }
+
+    /// Return true if the transaction is pending
+    pub fn is_transaction_pending(&self, transaction: &Transaction) -> bool {
+        self.pending.contains(transaction)
+    }
+
+    /// Returns all the pending transactions in the moment
+    pub fn pending_transactions(&self) -> &Vec<Transaction> {
+        &self.pending
     }
 
     /// Returns the balance of the UTXOSet in Satoshis.
@@ -126,6 +138,22 @@ impl UTXOSet {
     pub fn get_balance_in_tbtc(&self, address: &Address) -> f64 {
         self.get_balance_in_satoshis(address) as f64 / 100_000_000.0
     }
+
+    pub fn get_pending_in_satoshis(&self, address: &Address) -> i64 {
+        let mut pending: i64 = 0;
+        for transaction in self.pending.iter() {
+            for output in transaction.tx_out.iter() {
+                if address.verify_transaction_ownership(&output) {
+                    pending += output.value;
+                }
+            }
+        }
+        pending
+    }
+
+    pub fn get_pending_in_tbtc(&self, address: &Address) -> f64 {
+        self.get_pending_in_satoshis(address) as f64 / 100_000_000.0
+    }
 }
 
 #[cfg(test)]
@@ -138,7 +166,7 @@ mod tests {
         outpoint::Outpoint, transaction::Transaction, transaction_input::TransactionInput,
         transaction_output::TransactionOutput,
     };
-    
+
     use crate::messages::compact_size::CompactSize;
 
     #[test]
