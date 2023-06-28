@@ -31,7 +31,14 @@ pub fn connect_to_peers(
 
     potential_peers
         .iter()
-        .filter_map(|potential_peer| filters_peer(*potential_peer, &node, logger_sender.clone(), notifier.clone()))
+        .filter_map(|potential_peer| {
+            filters_peer(
+                *potential_peer,
+                &node,
+                logger_sender.clone(),
+                notifier.clone(),
+            )
+        })
         .collect()
 }
 
@@ -62,14 +69,20 @@ fn filters_peer(
         }
     };
 
-    let _ = notifier.send(Notification::AttemptingHandshakeWithPeer(potential_peer.clone()));
+    let _ = notifier.send(Notification::AttemptingHandshakeWithPeer(
+        potential_peer.clone(),
+    ));
     match node.connect_to_peer(&mut peer_stream, &local_socket, &potential_peer) {
         Ok(_) => {
-            let _ = notifier.send(Notification::SuccessfulHandshakeWithPeer(potential_peer.clone()));
+            let _ = notifier.send(Notification::SuccessfulHandshakeWithPeer(
+                potential_peer.clone(),
+            ));
             Some(peer_stream)
-        },
+        }
         Err(error) => {
-            let _ = notifier.send(Notification::FailedHandshakeWithPeer(potential_peer.clone()));
+            let _ = notifier.send(Notification::FailedHandshakeWithPeer(
+                potential_peer.clone(),
+            ));
             let _ = logger_sender.log_connection(format!(
                 "Error while connecting to addres: {:?}, it appear {:?}",
                 potential_peer, error

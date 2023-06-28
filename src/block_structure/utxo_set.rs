@@ -10,7 +10,7 @@ use crate::{
 
 use std::collections::HashMap;
 
-const FROM_SATOSHIS_TO_TBTC: f64 = 100_000_000.0; 
+const FROM_SATOSHIS_TO_TBTC: f64 = 100_000_000.0;
 
 #[derive(Debug, Clone)]
 pub struct UTXOSet {

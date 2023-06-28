@@ -117,7 +117,7 @@ fn login_combo_box(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) {
         )) {
             println!("Error sending change selected account signal: {}", error);
         }
-        if let Err(error) = tx_to_back.send(SignalToBack::GetAccountBalance){
+        if let Err(error) = tx_to_back.send(SignalToBack::GetAccountBalance) {
             println!("Error sending get account balance signal: {}", error);
         };
         if let Err(error) = tx_to_back.send(SignalToBack::GetAccountTransactions) {

@@ -13,8 +13,8 @@ use cargosos_bitcoin::{
     configurations::{connection_config::ConnectionConfig, download_config::DownloadConfig},
     connections::ibd_methods::IBDMethod,
     logs::logger_sender::LoggerSender,
-    notifications::notification::{Notification, NotificationSender},
     node_structure::{broadcasting::Broadcasting, message_response::MessageResponse},
+    notifications::notification::{Notification, NotificationSender},
     wallet_structure::wallet::Wallet,
 };
 
@@ -183,7 +183,7 @@ fn broadcasting(
         utxo_set.clone(),
         block_chain.clone(),
         logger.clone(),
-        notification_sender.clone()
+        notification_sender.clone(),
     );
 
     let mut broadcasting = get_broadcasting(
@@ -193,13 +193,7 @@ fn broadcasting(
         logger.clone(),
     );
 
-    user_input(
-        &mut broadcasting,
-        wallet,
-        utxo_set,
-        block_chain,
-        logger,
-    )?;
+    user_input(&mut broadcasting, wallet, utxo_set, block_chain, logger)?;
 
     broadcasting.destroy()?;
 
@@ -220,8 +214,12 @@ pub fn program_execution(
 
     let potential_peers = get_potential_peers(connection_config.clone(), logger.clone())?;
 
-    let peer_streams =
-        handshake::connect_to_peers(potential_peers, connection_config.clone(), logger.clone(), notification_sender.clone());
+    let peer_streams = handshake::connect_to_peers(
+        potential_peers,
+        connection_config.clone(),
+        logger.clone(),
+        notification_sender.clone(),
+    );
 
     let mut block_chain = load_system.get_block_chain()?;
 

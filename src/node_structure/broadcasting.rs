@@ -92,13 +92,10 @@ where
                 ))
             }
         };
-        
+
         let _ = self
             .logger
-            .log_transaction(format!(
-                "Broadcasting transaction: {:?}",
-                transaction_id
-            ));
+            .log_transaction(format!("Broadcasting transaction: {:?}", transaction_id));
         for (_, sender) in self.peers.iter() {
             if sender.send(transaction.clone()).is_err() {
                 let _ = self.logger.log_error(format!(

@@ -11,8 +11,8 @@ use cargosos_bitcoin::{
     node_structure::{
         broadcasting::Broadcasting, error_node::ErrorNode, message_response::MessageResponse,
     },
-    wallet_structure::wallet::Wallet,
     notifications::notification::{Notification, NotificationSender},
+    wallet_structure::wallet::Wallet,
 };
 
 use std::{
@@ -60,11 +60,7 @@ pub fn user_input(
                 let wallet_ref = get_reference(&wallet)?;
                 account::show_accounts(&wallet_ref, logger.clone());
             }
-            MenuOption::ShowBalance => showing_balance(
-                &wallet,
-                &utxo_set,
-                logger.clone(),
-            )?,
+            MenuOption::ShowBalance => showing_balance(&wallet, &utxo_set, logger.clone())?,
             MenuOption::LastTransactions => latest_transactions(&block_chain, logger.clone())?,
             MenuOption::Exit => break,
         }
@@ -265,7 +261,6 @@ fn receive_transaction(
     logger: LoggerSender,
     notifier: NotificationSender,
 ) -> Result<(), ErrorTUI> {
-    
     let mut utxo_set = get_reference(utxo_set)?;
 
     if utxo_set.is_transaction_pending(&transaction) {
@@ -288,8 +283,11 @@ fn receive_transaction(
             involved_accounts.push(account.clone());
         }
     }
-    if !involved_accounts.is_empty(){
-        let _ = notifier.send(Notification::TransactionOfAccountReceived(involved_accounts, transaction.clone()));
+    if !involved_accounts.is_empty() {
+        let _ = notifier.send(Notification::TransactionOfAccountReceived(
+            involved_accounts,
+            transaction.clone(),
+        ));
     }
     utxo_set.append_pending_transaction(transaction);
     Ok(())
@@ -307,7 +305,6 @@ fn receive_block(
     logger: LoggerSender,
     notifier: NotificationSender,
 ) -> Result<(), ErrorTUI> {
-
     let mut utxo_set = get_reference(utxo_set)?;
 
     for transaction in utxo_set.pending_transactions() {
@@ -317,13 +314,15 @@ fn receive_block(
                 &format!("The transaction: \n{transaction}\n has been added to the blockchain"),
                 logger.clone(),
             );
-            let _ = notifier.send(Notification::TransactionOfAccountInNewBlock(transaction.clone()));
+            let _ = notifier.send(Notification::TransactionOfAccountInNewBlock(
+                transaction.clone(),
+            ));
             let _ = logger.log_wallet(
                 "Removing transaction from list of transaction seen so far".to_string(),
             );
         }
     }
-    
+
     utxo_set.update_utxo_with_block(&block);
     let _ = notifier.send(Notification::NewBlockAddedToTheBlockchain(block.clone()));
     match get_reference(block_chain)?.append_block(block) {
