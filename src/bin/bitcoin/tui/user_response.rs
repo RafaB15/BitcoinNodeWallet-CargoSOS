@@ -1,4 +1,4 @@
-use super::{account, menu, menu_option::MenuOption, notify::notify, transaction};
+use super::{account, menu, menu_option::MenuOption, transaction};
 
 use crate::ui::error_ui::ErrorUI;
 
@@ -6,21 +6,18 @@ use crate::process::reference::{get_reference, MutArc};
 
 use cargosos_bitcoin::{
     block_structure::{
-        block::Block, block_chain::BlockChain, error_block::ErrorBlock, transaction::Transaction,
+        block_chain::BlockChain, 
         utxo_set::UTXOSet,
     },
     logs::logger_sender::LoggerSender,
     node_structure::{
-        broadcasting::Broadcasting, error_node::ErrorNode, message_response::MessageResponse,
+        broadcasting::Broadcasting, error_node::ErrorNode, 
     },
-    notifications::notification::{Notification, NotificationSender},
     wallet_structure::wallet::Wallet,
 };
 
 use std::{
     net::TcpStream,
-    sync::mpsc::Receiver,
-    thread::{self, JoinHandle},
 };
 
 /// It will responde to the user input
@@ -199,124 +196,4 @@ fn latest_transactions(
     }
 
     Ok(())
-}
-
-/// Crate a thread for handling the blocks and transactions received
-pub fn handle_peers(
-    receiver_broadcasting: Receiver<MessageResponse>,
-    wallet: MutArc<Wallet>,
-    utxo_set: MutArc<UTXOSet>,
-    block_chain: MutArc<BlockChain>,
-    logger: LoggerSender,
-    notifier: NotificationSender,
-) -> JoinHandle<Result<(), ErrorUI>> {
-    thread::spawn(move || {
-        for message in receiver_broadcasting {
-            match message {
-                MessageResponse::Block(block) => {
-                    receive_block(
-                        &utxo_set,
-                        &block_chain,
-                        block,
-                        logger.clone(),
-                        notifier.clone(),
-                    )?;
-                }
-                MessageResponse::Transaction(transaction) => {
-                    receive_transaction(
-                        &wallet,
-                        &utxo_set,
-                        transaction,
-                        logger.clone(),
-                        notifier.clone(),
-                    )?;
-                }
-            }
-        }
-
-        Ok(())
-    })
-}
-
-/// Manage receiving a transaction by updating the list of transactions seen so far if the transaction is from the selected account
-///
-/// ### Error
-///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-fn receive_transaction(
-    wallet: &MutArc<Wallet>,
-    utxo_set: &MutArc<UTXOSet>,
-    transaction: Transaction,
-    logger: LoggerSender,
-    notifier: NotificationSender,
-) -> Result<(), ErrorUI> {
-    let mut utxo_set = get_reference(utxo_set)?;
-
-    if utxo_set.is_transaction_pending(&transaction) {
-        let _ = logger.log_wallet(format!(
-            "Transaction {transaction} is already in the list of transactions seen so far",
-        ));
-        return Ok(());
-    }
-
-    let mut involved_accounts = Vec::new();
-    for account in get_reference(wallet)?.get_accounts() {
-        if account.verify_transaction_ownership(&transaction) {
-            notify(
-                &format!("New transaction received own by {}", account.account_name),
-                &format!(
-                    "The transaction: \n{transaction}\n has not been added to the blockchain yet"
-                ),
-                logger.clone(),
-            );
-            involved_accounts.push(account.clone());
-        }
-    }
-    if !involved_accounts.is_empty() {
-        let _ = notifier.send(Notification::TransactionOfAccountReceived(
-            involved_accounts,
-            transaction.clone(),
-        ));
-    }
-    utxo_set.append_pending_transaction(transaction);
-    Ok(())
-}
-
-/// Manage receiving a block by updating the block chain and the utxo set
-///
-/// ### Error
-///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-///  * `ErrorUI::ErrorWriting`: It will appear when writing to the block chain
-fn receive_block(
-    utxo_set: &MutArc<UTXOSet>,
-    block_chain: &MutArc<BlockChain>,
-    block: Block,
-    logger: LoggerSender,
-    notifier: NotificationSender,
-) -> Result<(), ErrorUI> {
-    let mut utxo_set = get_reference(utxo_set)?;
-
-    for transaction in utxo_set.pending_transactions() {
-        if block.transactions.contains(transaction) {
-            notify(
-                "Transaction added to blockchain",
-                &format!("The transaction: \n{transaction}\n has been added to the blockchain"),
-                logger.clone(),
-            );
-            let _ = notifier.send(Notification::TransactionOfAccountInNewBlock(
-                transaction.clone(),
-            ));
-            let _ = logger.log_wallet(
-                "Removing transaction from list of transaction seen so far".to_string(),
-            );
-        }
-    }
-
-    utxo_set.update_utxo_with_block(&block);
-    let _ = notifier.send(Notification::NewBlockAddedToTheBlockchain(block.clone()));
-    match get_reference(block_chain)?.append_block(block) {
-        Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => Ok(()),
-        _ => Err(ErrorUI::ErrorWriting(
-            "Error appending block to blockchain".to_string(),
-        )),
-    }
 }
