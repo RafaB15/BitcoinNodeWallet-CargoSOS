@@ -1,6 +1,6 @@
 use super::error_configuration::ErrorConfiguration;
 
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, str::FromStr, net::Ipv4Addr};
 
 pub type Key = String;
 pub type Value = String;
@@ -220,5 +220,18 @@ impl Parsable for bool {
 impl Parsable for String {
     fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
         value_from_map(name.to_string(), map)
+    }
+}
+
+impl Parsable for Ipv4Addr {
+    fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
+        let value = value_from_map(name.to_string(), map)?;
+        match value.parse::<Ipv4Addr>() {
+            Ok(parse_value) => Ok(parse_value),
+            _ => Err(ErrorConfiguration::ErrorCantParseValue(format!(
+                "Ipv4Addr of {:?}",
+                value
+            ))),
+        }
     }
 }
