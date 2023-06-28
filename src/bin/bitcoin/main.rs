@@ -119,6 +119,7 @@ fn main() -> Result<(), ErrorExecution> {
         Interface::Tui => {
             let mut load_system = LoadSystem::new(save_config.clone(), logger.clone());
             tui::execution::program_execution(
+                mode_config,
                 connection_config,
                 download_config,
                 &mut load_system,

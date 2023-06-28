@@ -10,7 +10,7 @@ use crate::{
 
 use cargosos_bitcoin::{
     block_structure::{block_chain::BlockChain, transaction::Transaction, utxo_set::UTXOSet},
-    configurations::{connection_config::ConnectionConfig, download_config::DownloadConfig},
+    configurations::{connection_config::ConnectionConfig, download_config::DownloadConfig, server_config::ServerConfig, mode_config::ModeConfig},
     connections::ibd_methods::IBDMethod,
     logs::logger_sender::LoggerSender,
     node_structure::{broadcasting::Broadcasting, message_response::MessageResponse},
@@ -28,12 +28,12 @@ use std::{
 /// ### Error
 ///  * `ErrorTUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
 fn get_potential_peers(
-    connection_config: ConnectionConfig,
+    server_config: ServerConfig,
     logger: LoggerSender,
 ) -> Result<Vec<SocketAddr>, ErrorTUI> {
     let _ = logger.log_connection("Getting potential peers with dns seeder".to_string());
 
-    let potential_peers = match connection_config.dns_seeder.discover_peers() {
+    let potential_peers = match server_config.dns_seeder.discover_peers() {
         Ok(potential_peers) => potential_peers,
         Err(_) => {
             return Err(ErrorTUI::ErrorFromPeer(
@@ -42,7 +42,7 @@ fn get_potential_peers(
         }
     };
 
-    let peer_count_max = std::cmp::min(connection_config.peer_count_max, potential_peers.len());
+    let peer_count_max = std::cmp::min(server_config.peer_count_max, potential_peers.len());
 
     let potential_peers = potential_peers[0..peer_count_max].to_vec();
 
@@ -211,12 +211,17 @@ fn broadcasting(
 
 /// The main function of the program for the terminal
 pub fn program_execution(
+    mode_config: ModeConfig,
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
     load_system: &mut LoadSystem,
     logger: LoggerSender,
 ) -> Result<SaveSystem, ErrorExecution> {
-    let potential_peers = get_potential_peers(connection_config.clone(), logger.clone())?;
+
+    let potential_peers = match mode_config {
+        ModeConfig::Server(server_config) => get_potential_peers(server_config.clone(), logger.clone())?,
+        ModeConfig::Client(client_config) => vec![],
+    };
 
     let peer_streams =
         handshake::connect_to_peers(potential_peers, connection_config.clone(), logger.clone());
