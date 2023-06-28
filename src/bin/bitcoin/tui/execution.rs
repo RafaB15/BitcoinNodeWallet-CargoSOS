@@ -10,7 +10,10 @@ use crate::{
 
 use cargosos_bitcoin::{
     block_structure::{block_chain::BlockChain, transaction::Transaction, utxo_set::UTXOSet},
-    configurations::{connection_config::ConnectionConfig, download_config::DownloadConfig, server_config::ServerConfig, mode_config::ModeConfig},
+    configurations::{
+        connection_config::ConnectionConfig, download_config::DownloadConfig,
+        mode_config::ModeConfig, server_config::ServerConfig,
+    },
     connections::ibd_methods::IBDMethod,
     logs::logger_sender::LoggerSender,
     node_structure::{broadcasting::Broadcasting, message_response::MessageResponse},
@@ -217,9 +220,8 @@ pub fn program_execution(
     load_system: &mut LoadSystem,
     logger: LoggerSender,
 ) -> Result<SaveSystem, ErrorExecution> {
-
     let potential_peers = match mode_config {
-        ModeConfig::Server(server_config) => get_potential_peers(server_config.clone(), logger.clone())?,
+        ModeConfig::Server(server_config) => get_potential_peers(server_config, logger.clone())?,
         ModeConfig::Client(_) => vec![],
     };
 

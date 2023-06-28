@@ -3,10 +3,7 @@ use super::{
     parsable::{parse_structure, value_from_map, KeyValueMap, Parsable},
 };
 
-use std::{
-    cmp::PartialEq,
-    net::Ipv4Addr,
-};
+use std::{cmp::PartialEq, net::Ipv4Addr};
 
 const PORT: &str = "port";
 const ADDRESS: &str = "address";
@@ -14,7 +11,6 @@ const ADDRESS: &str = "address";
 /// Configuration for the client process
 #[derive(Debug, PartialEq, Clone)]
 pub struct ClientConfig {
-
     /// It's the port number where the client will be connected to
     pub port: u16,
 

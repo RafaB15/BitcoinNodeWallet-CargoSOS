@@ -5,8 +5,8 @@ use super::{
 
 use crate::connections::dns_seeder::DNSSeeder;
 
-use std::net::Ipv4Addr;
 use std::cmp::PartialEq;
+use std::net::Ipv4Addr;
 
 const DNS_SEEDER: &str = "dns_seeder";
 const PEER_COUNT_MAX: &str = "peer_count_max";
@@ -172,4 +172,3 @@ mod tests {
         assert_eq!(Err(ErrorConfiguration::ValueNotFound), server_result);
     }
 }
-

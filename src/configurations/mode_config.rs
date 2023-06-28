@@ -1,7 +1,4 @@
-use super::{
-    server_config::ServerConfig,
-    client_config::ClientConfig,
-};
+use super::{client_config::ClientConfig, server_config::ServerConfig};
 
 use std::cmp::PartialEq;
 

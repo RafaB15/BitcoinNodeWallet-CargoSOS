@@ -1,14 +1,14 @@
 use cargosos_bitcoin::configurations::{
+    client_config::ClientConfig,
     connection_config::ConnectionConfig,
     download_config::DownloadConfig,
     error_configuration::ErrorConfiguration,
     log_config::LogConfig,
+    mode_config::ModeConfig,
     parsable::{parse_structure, Parsable},
     save_config::SaveConfig,
-    ui_config::UIConfig,
     server_config::ServerConfig,
-    client_config::ClientConfig,
-    mode_config::ModeConfig,
+    ui_config::UIConfig,
 };
 
 use std::io::Read;
@@ -38,7 +38,7 @@ pub struct Configuration {
     pub download_config: DownloadConfig,
     pub save_config: SaveConfig,
     pub ui_config: UIConfig,
-    pub mode_config: ModeConfig, 
+    pub mode_config: ModeConfig,
 }
 
 impl Configuration {
@@ -83,7 +83,7 @@ impl Configuration {
             self.download_config,
             self.save_config,
             self.ui_config,
-            self.mode_config
+            self.mode_config,
         )
     }
 }

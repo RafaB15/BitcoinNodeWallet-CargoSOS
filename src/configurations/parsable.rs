@@ -1,6 +1,6 @@
 use super::error_configuration::ErrorConfiguration;
 
-use std::{collections::HashMap, str::FromStr, net::Ipv4Addr};
+use std::{collections::HashMap, net::Ipv4Addr, str::FromStr};
 
 pub type Key = String;
 pub type Value = String;

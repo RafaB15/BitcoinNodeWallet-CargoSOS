@@ -12,7 +12,8 @@ use gtk::{
 use crate::{error_execution::ErrorExecution, process::save_system::SaveSystem};
 
 use cargosos_bitcoin::configurations::{
-    connection_config::ConnectionConfig, download_config::DownloadConfig, save_config::SaveConfig, mode_config::ModeConfig,
+    connection_config::ConnectionConfig, download_config::DownloadConfig, mode_config::ModeConfig,
+    save_config::SaveConfig,
 };
 
 use cargosos_bitcoin::logs::logger_sender::LoggerSender;

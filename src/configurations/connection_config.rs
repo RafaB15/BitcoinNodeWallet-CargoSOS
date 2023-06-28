@@ -3,9 +3,7 @@ use super::{
     parsable::{parse_structure, value_from_map, KeyValueMap, Parsable},
 };
 
-use crate::connections::{
-    ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P,
-};
+use crate::connections::{ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P};
 
 use crate::messages::{bitfield_services::BitfieldServices, message_header::MagicType};
 

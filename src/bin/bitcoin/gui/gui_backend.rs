@@ -9,7 +9,8 @@ use crate::{
 };
 
 use cargosos_bitcoin::configurations::{
-    connection_config::ConnectionConfig, download_config::DownloadConfig, save_config::SaveConfig, server_config::ServerConfig, mode_config::ModeConfig,
+    connection_config::ConnectionConfig, download_config::DownloadConfig, mode_config::ModeConfig,
+    save_config::SaveConfig, server_config::ServerConfig,
 };
 
 use cargosos_bitcoin::{
@@ -760,7 +761,7 @@ pub fn backend_execution(
     let mut load_system = load_system;
 
     let potential_peers = match mode_config {
-        ModeConfig::Server(server_config) => get_potential_peers(server_config.clone(), logger.clone())?,
+        ModeConfig::Server(server_config) => get_potential_peers(server_config, logger.clone())?,
         ModeConfig::Client(_) => vec![],
     };
 
