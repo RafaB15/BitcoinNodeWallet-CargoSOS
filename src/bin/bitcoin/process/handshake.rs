@@ -2,6 +2,7 @@ use cargosos_bitcoin::{
     configurations::connection_config::ConnectionConfig,
     logs::logger_sender::LoggerSender,
     node_structure::{handshake::Handshake, handshake_data::HandshakeData},
+    notifications::notification::{Notification, NotificationSender},
 };
 
 use std::net::{SocketAddr, TcpStream};
@@ -11,6 +12,7 @@ pub fn connect_to_peers(
     potential_peers: Vec<SocketAddr>,
     connection_config: ConnectionConfig,
     logger_sender: LoggerSender,
+    notifier: NotificationSender,
 ) -> Vec<TcpStream> {
     let _ = logger_sender.log_connection("Connecting to potential peers".to_string());
 
@@ -29,7 +31,14 @@ pub fn connect_to_peers(
 
     potential_peers
         .iter()
-        .filter_map(|potential_peer| filters_peer(*potential_peer, &node, logger_sender.clone()))
+        .filter_map(|potential_peer| {
+            filters_peer(
+                *potential_peer,
+                &node,
+                logger_sender.clone(),
+                notifier.clone(),
+            )
+        })
         .collect()
 }
 
@@ -38,6 +47,7 @@ fn filters_peer(
     potential_peer: SocketAddr,
     node: &Handshake,
     logger_sender: LoggerSender,
+    notifier: NotificationSender,
 ) -> Option<TcpStream> {
     let mut peer_stream = match TcpStream::connect(potential_peer) {
         Ok(stream) => stream,
@@ -59,9 +69,20 @@ fn filters_peer(
         }
     };
 
+    let _ = notifier.send(Notification::AttemptingHandshakeWithPeer(
+        potential_peer.clone(),
+    ));
     match node.connect_to_peer(&mut peer_stream, &local_socket, &potential_peer) {
-        Ok(_) => Some(peer_stream),
+        Ok(_) => {
+            let _ = notifier.send(Notification::SuccessfulHandshakeWithPeer(
+                potential_peer.clone(),
+            ));
+            Some(peer_stream)
+        }
         Err(error) => {
+            let _ = notifier.send(Notification::FailedHandshakeWithPeer(
+                potential_peer.clone(),
+            ));
             let _ = logger_sender.log_connection(format!(
                 "Error while connecting to addres: {:?}, it appear {:?}",
                 potential_peer, error

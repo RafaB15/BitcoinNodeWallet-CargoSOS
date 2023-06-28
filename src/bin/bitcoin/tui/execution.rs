@@ -17,6 +17,7 @@ use cargosos_bitcoin::{
     connections::ibd_methods::IBDMethod,
     logs::logger_sender::LoggerSender,
     node_structure::{broadcasting::Broadcasting, message_response::MessageResponse},
+    notifications::notification::{Notification, NotificationSender},
     wallet_structure::wallet::Wallet,
 };
 
@@ -175,6 +176,7 @@ fn broadcasting(
     block_chain: Arc<Mutex<BlockChain>>,
     connection_config: ConnectionConfig,
     logger: LoggerSender,
+    notification_sender: NotificationSender,
 ) -> Result<(), ErrorExecution> {
     let (sender_response, receiver_response) = mpsc::channel::<MessageResponse>();
 
@@ -184,6 +186,7 @@ fn broadcasting(
         utxo_set.clone(),
         block_chain.clone(),
         logger.clone(),
+        notification_sender.clone(),
     );
 
     let mut broadcasting = get_broadcasting(
@@ -193,13 +196,7 @@ fn broadcasting(
         logger.clone(),
     );
 
-    user_input(
-        &mut broadcasting,
-        wallet,
-        utxo_set,
-        block_chain,
-        logger,
-    )?;
+    user_input(&mut broadcasting, wallet, utxo_set, block_chain, logger)?;
 
     broadcasting.destroy()?;
 
@@ -217,6 +214,9 @@ pub fn program_execution(
     load_system: &mut LoadSystem,
     logger: LoggerSender,
 ) -> Result<SaveSystem, ErrorExecution> {
+
+    let (notification_sender, _notification_receiver) = mpsc::channel::<Notification>();
+
     let potential_peers = match mode_config {
         ModeConfig::Server(server_config) => get_potential_peers(server_config, logger.clone())?,
         ModeConfig::Client(client_config) => vec![SocketAddr::new(
@@ -225,8 +225,12 @@ pub fn program_execution(
         )],
     };
 
-    let peer_streams =
-        handshake::connect_to_peers(potential_peers, connection_config.clone(), logger.clone());
+    let peer_streams = handshake::connect_to_peers(
+        potential_peers,
+        connection_config.clone(),
+        logger.clone(),
+        notification_sender.clone(),
+    );
 
     let mut block_chain = load_system.get_block_chain()?;
 
@@ -249,6 +253,7 @@ pub fn program_execution(
         block_chain.clone(),
         connection_config,
         logger.clone(),
+        notification_sender.clone(),
     )?;
 
     Ok(SaveSystem::new(

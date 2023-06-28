@@ -23,6 +23,7 @@ use cargosos_bitcoin::{
     node_structure::{
         broadcasting::Broadcasting, error_node::ErrorNode, message_response::MessageResponse,
     },
+    notifications::notification::{Notification, NotificationSender},
     wallet_structure::{
         account::Account, address::Address, error_wallet::ErrorWallet, private_key::PrivateKey,
         public_key::PublicKey, wallet::Wallet,
@@ -141,7 +142,7 @@ fn receive_transaction(
     transaction: Transaction,
     utxo_set: &MutArc<UTXOSet>,
     logger: LoggerSender,
-    tx_to_front: glib::Sender<SignalToFront>,
+    notifier: NotificationSender,
 ) -> Result<(), ErrorGUI> {
     let mut utxo_set = get_reference(utxo_set)?;
 
@@ -152,28 +153,29 @@ fn receive_transaction(
         return Ok(());
     }
 
+    let mut involved_accounts = Vec::new();
     for account in get_reference(wallet)?.get_accounts() {
         if account.verify_transaction_ownership(&(transaction.clone())) {
             let _ = logger.log_wallet(format!(
                 "Transaction {transaction} is owned by account {account}"
             ));
-
-            if tx_to_front.send(SignalToFront::Update).is_err()
-                || tx_to_front
-                    .send(SignalToFront::TransactionOfAccountReceived(
-                        account.account_name.clone(),
-                    ))
-                    .is_err()
-            {
-                return Err(ErrorGUI::FailedSignalToFront(
-                    "TransactionReceived".to_string(),
-                ));
-            }
+            involved_accounts.push(account.clone());
         }
     }
 
-    utxo_set.append_pending_transaction(transaction);
+    if !involved_accounts.is_empty() {
+        if notifier
+            .send(Notification::TransactionOfAccountReceived(
+                involved_accounts,
+                transaction.clone(),
+            ))
+            .is_err()
+        {
+            let _ = logger.log_error("Error sending notification".to_string());
+        };
+    }
 
+    utxo_set.append_pending_transaction(transaction);
     Ok(())
 }
 
@@ -187,9 +189,8 @@ fn receive_block(
     block_chain: &MutArc<BlockChain>,
     block: Block,
     logger: LoggerSender,
-    tx_to_front: glib::Sender<SignalToFront>,
+    notifier: NotificationSender,
 ) -> Result<(), ErrorGUI> {
-
     let mut utxo_set = get_reference(utxo_set)?;
 
     for transaction in utxo_set.pending_transactions() {
@@ -197,21 +198,24 @@ fn receive_block(
             let _ = logger.log_wallet(
                 "Removing transaction from list of transaction seen so far".to_string(),
             );
-            if tx_to_front
-                .send(SignalToFront::BlockWithUnconfirmedTransactionReceived)
+            if notifier
+                .send(Notification::TransactionOfAccountInNewBlock(
+                    transaction.clone(),
+                ))
                 .is_err()
             {
-                println!("Error sending signal to front")
-            }
+                let _ = logger.log_error("Error sending notification".to_string());
+            };
         }
     }
 
     utxo_set.update_utxo_with_block(&block);
-    if tx_to_front.send(SignalToFront::Update).is_err() {
-        return Err(ErrorGUI::FailedSignalToFront(
-            "TransactionInBlock".to_string(),
-        ));
-    }
+    if notifier
+        .send(Notification::NewBlockAddedToTheBlockchain(block.clone()))
+        .is_err()
+    {
+        let _ = logger.log_error("Error sending notification".to_string());
+    };
 
     match get_reference(block_chain)?.append_block(block) {
         Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => Ok(()),
@@ -221,14 +225,14 @@ fn receive_block(
     }
 }
 
-/// Crate a thread for handling the blocks and transactions received
+/// Create a thread for handling the blocks and transactions received
 pub fn handle_peers(
-    tx_to_front: glib::Sender<SignalToFront>,
     receiver_broadcasting: Receiver<MessageResponse>,
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
     block_chain: MutArc<BlockChain>,
     logger: LoggerSender,
+    notifier: NotificationSender,
 ) -> JoinHandle<Result<(), ErrorGUI>> {
     thread::spawn(move || {
         for message in receiver_broadcasting {
@@ -239,7 +243,7 @@ pub fn handle_peers(
                         &block_chain,
                         block,
                         logger.clone(),
-                        tx_to_front.clone(),
+                        notifier.clone(),
                     )?;
                 }
                 MessageResponse::Transaction(transaction) => {
@@ -248,7 +252,7 @@ pub fn handle_peers(
                         transaction,
                         &utxo_set,
                         logger.clone(),
-                        tx_to_front.clone(),
+                        notifier.clone(),
                     )?;
                 }
             }
@@ -561,11 +565,7 @@ pub fn spawn_frontend_handler(
     rx_from_front: Receiver<SignalToBack>,
     tx_to_front: glib::Sender<SignalToFront>,
     broadcasting: &mut Broadcasting<TcpStream>,
-    data: (
-        MutArc<Wallet>,
-        MutArc<UTXOSet>,
-        MutArc<BlockChain>,
-    ),
+    data: (MutArc<Wallet>, MutArc<UTXOSet>, MutArc<BlockChain>),
     logger: LoggerSender,
 ) -> Result<(), ErrorGUI> {
     let wallet: MutArc<Wallet> = data.0;
@@ -574,11 +574,7 @@ pub fn spawn_frontend_handler(
     for rx in rx_from_front {
         match rx {
             SignalToBack::GetAccountBalance => {
-                give_account_balance(
-                    wallet.clone(),
-                    utxo_set.clone(),
-                    tx_to_front.clone(),
-                )?;
+                give_account_balance(wallet.clone(), utxo_set.clone(), tx_to_front.clone())?;
             }
             SignalToBack::ChangeSelectedAccount(account_name) => {
                 change_selected_account(account_name, wallet.clone(), tx_to_front.clone())?;
@@ -678,6 +674,7 @@ fn broadcasting(
     data: (MutArc<Wallet>, MutArc<UTXOSet>, MutArc<BlockChain>),
     connection_config: ConnectionConfig,
     logger: LoggerSender,
+    notifier: NotificationSender,
 ) -> Result<(), ErrorExecution> {
     let wallet: Arc<Mutex<Wallet>> = data.0;
     let utxo_set: Arc<Mutex<UTXOSet>> = data.1;
@@ -685,12 +682,12 @@ fn broadcasting(
     let (sender_response, receiver_response) = mpsc::channel::<MessageResponse>();
 
     let handle = handle_peers(
-        tx_to_front.clone(),
         receiver_response,
         wallet.clone(),
         utxo_set.clone(),
         block_chain.clone(),
         logger.clone(),
+        notifier.clone(),
     );
 
     let mut broadcasting = get_broadcasting(
@@ -716,6 +713,57 @@ fn broadcasting(
     }
 }
 
+/// Function that spawns the notification handler thread.
+/// It return the notification sender and a handle on the
+/// thread.
+pub fn spawn_notification_handler(
+    tx_to_front: glib::Sender<SignalToFront>,
+) -> (NotificationSender, thread::JoinHandle<()>) {
+    let (notification_sender, notification_receiver) = mpsc::channel::<Notification>();
+
+    let handle = thread::spawn(move || {
+        for notification in notification_receiver {
+            match notification {
+                Notification::AttemptingHandshakeWithPeer(peer) => {
+                    println!("Attempting handshake with peer {}", peer)
+                }
+                Notification::SuccessfulHandshakeWithPeer(peer) => {
+                    println!("Successful handshake with peer {}", peer)
+                }
+                Notification::FailedHandshakeWithPeer(peer) => {
+                    println!("Failed handshake with peer {}", peer)
+                }
+                Notification::TransactionOfAccountReceived(accounts, _transaction) => {
+                    if tx_to_front.send(SignalToFront::Update).is_err()
+                        || tx_to_front
+                            .send(SignalToFront::TransactionOfAccountReceived(
+                                accounts[0].account_name.clone(),
+                            ))
+                            .is_err()
+                    {
+                        println!("Failed to send update signal to front");
+                    }
+                }
+                Notification::TransactionOfAccountInNewBlock(_transaction) => {
+                    if tx_to_front
+                        .send(SignalToFront::BlockWithUnconfirmedTransactionReceived)
+                        .is_err()
+                    {
+                        println!("Error sending signal to front")
+                    }
+                }
+                Notification::NewBlockAddedToTheBlockchain(_block) => {
+                    if tx_to_front.send(SignalToFront::Update).is_err() {
+                        println!("Error sending signal to front");
+                    }
+                }
+            }
+        }
+    });
+
+    (notification_sender, handle)
+}
+
 /// Function that performs the backend execution
 pub fn backend_execution(
     mode_config: ModeConfig,
@@ -728,6 +776,9 @@ pub fn backend_execution(
 ) -> Result<SaveSystem, ErrorExecution> {
     let mut load_system = load_system;
 
+    let (notification_sender, _notification_handler) =
+        spawn_notification_handler(tx_to_front.clone());
+
     let potential_peers = match mode_config {
         ModeConfig::Server(server_config) => get_potential_peers(server_config, logger.clone())?,
         ModeConfig::Client(client_config) => vec![SocketAddr::new(
@@ -736,8 +787,12 @@ pub fn backend_execution(
         )],
     };
 
-    let peer_streams =
-        handshake::connect_to_peers(potential_peers, connection_config.clone(), logger.clone());
+    let peer_streams = handshake::connect_to_peers(
+        potential_peers,
+        connection_config.clone(),
+        logger.clone(),
+        notification_sender.clone(),
+    );
 
     let mut block_chain = load_system.get_block_chain()?;
 
@@ -771,6 +826,7 @@ pub fn backend_execution(
         (wallet.clone(), utxo_set, block_chain.clone()),
         connection_config,
         logger.clone(),
+        notification_sender,
     )?;
 
     Ok(SaveSystem::new(
