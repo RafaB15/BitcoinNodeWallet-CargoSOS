@@ -10,9 +10,12 @@ use crate::{
 
 use std::collections::HashMap;
 
+const FROM_SATOSHIS_TO_TBTC: f64 = 100_000_000.0; 
+
 #[derive(Debug, Clone)]
 pub struct UTXOSet {
     utxo: HashMap<Outpoint, TransactionOutput>,
+    pending: Vec<Transaction>,
 }
 
 impl UTXOSet {
@@ -20,6 +23,7 @@ impl UTXOSet {
     pub fn new(blocks: Vec<Block>) -> UTXOSet {
         let mut utxo_set = UTXOSet {
             utxo: HashMap::new(),
+            pending: Vec::new(),
         };
 
         blocks
@@ -35,19 +39,10 @@ impl UTXOSet {
     }
 
     /// Returns a list of the utxo that have not been spent yet
-    pub fn get_utxo_list(&self, possible_address: &Option<Address>) -> Vec<TransactionOutput> {
-        self.utxo
-            .values()
-            .filter_map(|output| {
-                if let Some(address) = possible_address {
-                    match address.verify_transaction_ownership(output) {
-                        true => Some(output.clone()),
-                        false => None,
-                    }
-                } else {
-                    Some(output.clone())
-                }
-            })
+    pub fn get_utxo_list(&self, possible_address: Option<&Address>) -> Vec<TransactionOutput> {
+        self.get_utxo_list_with_outpoints(possible_address)
+            .iter()
+            .map(|(_, transaction_output)| transaction_output.clone())
             .collect()
     }
 
@@ -56,7 +51,15 @@ impl UTXOSet {
         &self,
         possible_address: Option<&Address>,
     ) -> Vec<(Outpoint, TransactionOutput)> {
-        self.utxo
+        let mut utxo_without_pending = self.utxo.clone();
+
+        for transaction in self.pending.iter() {
+            for input in &transaction.tx_in {
+                utxo_without_pending.remove(&input.previous_output);
+            }
+        }
+
+        utxo_without_pending
             .iter()
             .filter_map(|(outpoint, output)| {
                 if let Some(address) = possible_address {
@@ -104,22 +107,54 @@ impl UTXOSet {
     pub fn update_utxo_with_block(&mut self, block: &Block) {
         self.update_utxo_with_transaction_output(&block.transactions);
         self.update_utxo_with_transaction_input(&block.transactions);
+        self.pending.clear();
+    }
+
+    /// Add a new transaction to the pending transactions removing its influence in the balance
+    pub fn append_pending_transaction(&mut self, transaction: Transaction) {
+        if !self.pending.contains(&transaction) {
+            self.pending.push(transaction);
+        }
+    }
+
+    /// Return true if the transaction is pending
+    pub fn is_transaction_pending(&self, transaction: &Transaction) -> bool {
+        self.pending.contains(transaction)
+    }
+
+    /// Returns all the pending transactions in the moment
+    pub fn pending_transactions(&self) -> &Vec<Transaction> {
+        &self.pending
     }
 
     /// Returns the balance of the UTXOSet in Satoshis.
     pub fn get_balance_in_satoshis(&self, address: &Address) -> i64 {
         let mut balance: i64 = 0;
-        self.utxo.values().for_each(|output| {
-            if address.verify_transaction_ownership(output) {
-                balance += output.value;
-            }
-        });
+        self.get_utxo_list(Some(address))
+            .iter()
+            .for_each(|output| balance += output.value);
         balance
     }
 
     /// Returns the balance of the UTXOSet in TBTC.
     pub fn get_balance_in_tbtc(&self, address: &Address) -> f64 {
-        self.get_balance_in_satoshis(address) as f64 / 100_000_000.0
+        self.get_balance_in_satoshis(address) as f64 / FROM_SATOSHIS_TO_TBTC
+    }
+
+    pub fn get_pending_in_satoshis(&self, address: &Address) -> i64 {
+        let mut pending: i64 = 0;
+        for transaction in self.pending.iter() {
+            for output in transaction.tx_out.iter() {
+                if address.verify_transaction_ownership(&output) {
+                    pending += output.value;
+                }
+            }
+        }
+        pending
+    }
+
+    pub fn get_pending_in_tbtc(&self, address: &Address) -> f64 {
+        self.get_pending_in_satoshis(address) as f64 / FROM_SATOSHIS_TO_TBTC
     }
 }
 
@@ -127,25 +162,16 @@ impl UTXOSet {
 
 mod tests {
     use super::*;
+
     use crate::block_structure::{
         block::Block, block_header::BlockHeader, block_version, compact256::Compact256,
         outpoint::Outpoint, transaction::Transaction, transaction_input::TransactionInput,
         transaction_output::TransactionOutput,
     };
+
     use crate::messages::compact_size::CompactSize;
 
-    #[test]
-    fn test_01_correct_utxo_set_creation_from_utxo_set_with_account_transactions() {
-        let mut block = Block::new(BlockHeader::new(
-            block_version::BlockVersion::version(1),
-            [0; 32],
-            [0; 32],
-            0,
-            Compact256::from(10),
-            0,
-            CompactSize::new(1),
-        ));
-
+    fn create_transaction(time: u32) -> Transaction {
         let transaction_input = TransactionInput::new(
             Outpoint::new([1; 32], 23),
             "Prueba in".as_bytes().to_vec(),
@@ -160,57 +186,43 @@ mod tests {
             ],
         };
 
-        let transaction = Transaction {
+        Transaction {
             version: 1,
             tx_in: vec![transaction_input.clone()],
             tx_out: vec![transaction_output.clone()],
-            time: 0,
-        };
+            time,
+        }
+    }
 
-        block.append_transaction(transaction).unwrap();
+    fn create_block(transaction_count: u64) -> Block {
+        Block::new(BlockHeader::new(
+            block_version::BlockVersion::version(1),
+            [0; 32],
+            [0; 32],
+            0,
+            Compact256::from(u32::MAX),
+            0,
+            CompactSize::new(transaction_count),
+        ))
+    }
+
+    #[test]
+    fn test_01_correct_utxo_set_creation_from_utxo_set_with_account_transactions() {
+        let mut block = create_block(1);
+        block.append_transaction(create_transaction(0)).unwrap();
 
         let blockchain = BlockChain::new(block).unwrap();
 
         let utxo_set_blockchain = UTXOSet::from_blockchain(&blockchain);
         let address = Address::new(&"mrhW6tcF2LDetj3kJvaDTvatrVxNK64NXk".to_string()).unwrap();
         assert_eq!(utxo_set_blockchain.utxo.len(), 1);
-        assert!(utxo_set_blockchain.get_balance_in_satoshis(&address) == 10);
+        assert_eq!(utxo_set_blockchain.get_balance_in_satoshis(&address), 10);
     }
 
     #[test]
     fn test_02_correct_utxo_set_creation_from_utxo_set_without_account_transactions() {
-        let mut block = Block::new(BlockHeader::new(
-            block_version::BlockVersion::version(1),
-            [0; 32],
-            [0; 32],
-            0,
-            Compact256::from(10),
-            0,
-            CompactSize::new(1),
-        ));
-
-        let transaction_input = TransactionInput::new(
-            Outpoint::new([1; 32], 23),
-            "Prueba in".as_bytes().to_vec(),
-            24,
-        );
-
-        let transaction_output = TransactionOutput {
-            value: 10,
-            pk_script: vec![
-                0x76, 0xa9, 0x14, 0x7a, 0xa8, 0x18, 0x46, 0x85, 0xca, 0x1f, 0x06, 0xf5, 0x43, 0xb6,
-                0x4a, 0x50, 0x2e, 0xb3, 0xb6, 0x13, 0x5d, 0x67, 0x20, 0x88, 0xac,
-            ],
-        };
-
-        let transaction = Transaction {
-            version: 1,
-            tx_in: vec![transaction_input.clone()],
-            tx_out: vec![transaction_output.clone()],
-            time: 0,
-        };
-
-        block.append_transaction(transaction).unwrap();
+        let mut block = create_block(1);
+        block.append_transaction(create_transaction(0)).unwrap();
 
         let blockchain = BlockChain::new(block).unwrap();
 
@@ -308,15 +320,22 @@ mod tests {
 
     #[test]
     fn test_04_correct_balance_calculation_in_tbtc() {
-        let mut block = Block::new(BlockHeader::new(
-            block_version::BlockVersion::version(1),
-            [0; 32],
-            [0; 32],
-            0,
-            Compact256::from(10),
-            0,
-            CompactSize::new(0),
-        ));
+        let mut block = create_block(1);
+        block.append_transaction(create_transaction(0)).unwrap();
+
+        let blockchain = BlockChain::new(block).unwrap();
+
+        let utxo_set_blockchain = UTXOSet::from_blockchain(&blockchain);
+        let address = Address::new(&"mrhW6tcF2LDetj3kJvaDTvatrVxNK64NXk".to_string()).unwrap();
+        assert_eq!(
+            utxo_set_blockchain.get_balance_in_tbtc(&address),
+            (10.0 / FROM_SATOSHIS_TO_TBTC)
+        );
+    }
+
+    #[test]
+    fn test_05_correct_pending_calculation_in_tbtc() {
+        let mut block = create_block(1);
 
         let transaction_input = TransactionInput::new(
             Outpoint::new([1; 32], 23),
@@ -339,15 +358,48 @@ mod tests {
             time: 0,
         };
 
-        block.append_transaction(transaction).unwrap();
+        block.append_transaction(transaction.clone()).unwrap();
 
         let blockchain = BlockChain::new(block).unwrap();
 
-        let utxo_set_blockchain = UTXOSet::from_blockchain(&blockchain);
+        let mut utxo_set_blockchain = UTXOSet::from_blockchain(&blockchain);
         let address = Address::new(&"mrhW6tcF2LDetj3kJvaDTvatrVxNK64NXk".to_string()).unwrap();
+
+        let mut transaction_id = vec![];
+        transaction.io_serialize(&mut transaction_id).unwrap();
+        let transaction_id = hash256d(&transaction_id).unwrap();
+
+        let transaction_input = TransactionInput::new(
+            Outpoint::new(transaction_id, 0),
+            "Prueba in".as_bytes().to_vec(),
+            24,
+        );
+
+        let transaction_output = TransactionOutput {
+            value: 5,
+            pk_script: vec![
+                0x76, 0xa9, 0x14, 0x7a, 0xa8, 0x18, 0x46, 0x85, 0xca, 0x1f, 0x06, 0xf5, 0x43, 0xb6,
+                0x4a, 0x50, 0x2e, 0xb3, 0xb6, 0x13, 0x5d, 0x67, 0x20, 0x88, 0xac,
+            ],
+        };
+
+        let new_transaction = Transaction {
+            version: 1,
+            tx_in: vec![transaction_input.clone()],
+            tx_out: vec![transaction_output.clone()],
+            time: 0,
+        };
+
+        utxo_set_blockchain.append_pending_transaction(new_transaction);
+
         assert_eq!(
             utxo_set_blockchain.get_balance_in_tbtc(&address),
-            (10 as f64 / 100_000_000 as f64)
+            (0.0 / FROM_SATOSHIS_TO_TBTC)
+        );
+
+        assert_eq!(
+            utxo_set_blockchain.get_pending_in_tbtc(&address),
+            (5.0 / FROM_SATOSHIS_TO_TBTC)
         );
     }
 }
