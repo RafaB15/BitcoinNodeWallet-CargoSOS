@@ -1,11 +1,18 @@
-use super::{error_gui::ErrorGUI, signal_to_back::SignalToBack, signal_to_front::SignalToFront};
+use super::{signal_to_back::SignalToBack, signal_to_front::SignalToFront};
 
 use gtk::glib;
 use std::thread;
 
 use crate::{
     error_execution::ErrorExecution,
-    process::{download, handshake, load_system::LoadSystem, save_system::SaveSystem, reference::{get_inner, get_reference, MutArc}},
+    process::{
+        broadcasting::{create_transaction, get_broadcasting, handle_peers},
+        download, handshake,
+        load_system::LoadSystem,
+        reference::{get_inner, get_reference, MutArc},
+        save_system::SaveSystem,
+    },
+    ui::error_ui::ErrorUI,
 };
 
 use cargosos_bitcoin::configurations::{
@@ -14,10 +21,7 @@ use cargosos_bitcoin::configurations::{
 };
 
 use cargosos_bitcoin::{
-    block_structure::{
-        block::Block, block_chain::BlockChain, error_block::ErrorBlock, transaction::Transaction,
-        utxo_set::UTXOSet,
-    },
+    block_structure::{block_chain::BlockChain, transaction::Transaction, utxo_set::UTXOSet},
     connections::ibd_methods::IBDMethod,
     logs::logger_sender::LoggerSender,
     node_structure::{
@@ -25,16 +29,15 @@ use cargosos_bitcoin::{
     },
     notifications::notification::{Notification, NotificationSender},
     wallet_structure::{
-        account::Account, address::Address, error_wallet::ErrorWallet, private_key::PrivateKey,
-        public_key::PublicKey, wallet::Wallet,
+        account::Account, address::Address, private_key::PrivateKey, public_key::PublicKey,
+        wallet::Wallet,
     },
 };
 
 use std::{
     net::{IpAddr, SocketAddr, TcpStream},
-    sync::mpsc::{Receiver, Sender},
-    sync::{Arc, Mutex, MutexGuard},
-    thread::JoinHandle,
+    sync::mpsc::Receiver,
+    sync::{Arc, Mutex},
 };
 
 use std::sync::mpsc;
@@ -42,7 +45,7 @@ use std::sync::mpsc;
 /// Get the peers from the dns seeder
 ///
 /// ### Error
-///  * `ErrorGUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
+///  * `ErrorUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
 fn get_potential_peers(
     server_config: ServerConfig,
     logger: LoggerSender,
@@ -94,197 +97,12 @@ fn get_utxo_set(block_chain: &BlockChain, logger: LoggerSender) -> UTXOSet {
     utxo_set
 }
 
-/// Creates the broadcasting
-fn get_broadcasting(
-    peer_streams: Vec<TcpStream>,
-    sender_response: Sender<MessageResponse>,
-    connection_config: ConnectionConfig,
-    logger: LoggerSender,
-) -> Broadcasting<TcpStream> {
-    let _ = logger.log_node("Broadcasting".to_string());
-    Broadcasting::new(peer_streams, sender_response, connection_config, logger)
-}
-
-/// Manage receiving a transaction by updating the list of transactions seen so far if the transaction is from the selected account
-///
-/// ### Error
-///  * `ErrorGUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-fn receive_transaction(
-    wallet: &MutArc<Wallet>,
-    transaction: Transaction,
-    utxo_set: &MutArc<UTXOSet>,
-    logger: LoggerSender,
-    notifier: NotificationSender,
-) -> Result<(), ErrorGUI> {
-    let mut utxo_set = get_reference(utxo_set)?;
-
-    if utxo_set.is_transaction_pending(&transaction) {
-        let _ = logger.log_wallet(format!(
-            "Transaction {transaction} is already in the list of transactions seen so far",
-        ));
-        return Ok(());
-    }
-
-    let mut involved_accounts = Vec::new();
-    for account in get_reference(wallet)?.get_accounts() {
-        if account.verify_transaction_ownership(&(transaction.clone())) {
-            let _ = logger.log_wallet(format!(
-                "Transaction {transaction} is owned by account {account}"
-            ));
-            involved_accounts.push(account.clone());
-        }
-    }
-
-    if !involved_accounts.is_empty() {
-        if notifier
-            .send(Notification::TransactionOfAccountReceived(
-                involved_accounts,
-                transaction.clone(),
-            ))
-            .is_err()
-        {
-            let _ = logger.log_error("Error sending notification".to_string());
-        };
-    }
-
-    utxo_set.append_pending_transaction(transaction);
-    Ok(())
-}
-
-/// Manage receiving a block by updating the block chain and the utxo set
-///
-/// ### Error
-///  * `ErrorGUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-///  * `ErrorGUI::ErrorWriting`: It will appear when writing to the block chain
-fn receive_block(
-    utxo_set: &MutArc<UTXOSet>,
-    block_chain: &MutArc<BlockChain>,
-    block: Block,
-    logger: LoggerSender,
-    notifier: NotificationSender,
-) -> Result<(), ErrorGUI> {
-    let mut utxo_set = get_reference(utxo_set)?;
-
-    for transaction in utxo_set.pending_transactions() {
-        if block.transactions.contains(transaction) {
-            let _ = logger.log_wallet(
-                "Removing transaction from list of transaction seen so far".to_string(),
-            );
-            if notifier
-                .send(Notification::TransactionOfAccountInNewBlock(
-                    transaction.clone(),
-                ))
-                .is_err()
-            {
-                let _ = logger.log_error("Error sending notification".to_string());
-            };
-        }
-    }
-
-    utxo_set.update_utxo_with_block(&block);
-    if notifier
-        .send(Notification::NewBlockAddedToTheBlockchain(block.clone()))
-        .is_err()
-    {
-        let _ = logger.log_error("Error sending notification".to_string());
-    };
-
-    match get_reference(block_chain)?.append_block(block) {
-        Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => Ok(()),
-        _ => Err(ErrorGUI::ErrorWriting(
-            "Error appending block to blockchain".to_string(),
-        )),
-    }
-}
-
-/// Create a thread for handling the blocks and transactions received
-pub fn handle_peers(
-    receiver_broadcasting: Receiver<MessageResponse>,
-    wallet: MutArc<Wallet>,
-    utxo_set: MutArc<UTXOSet>,
-    block_chain: MutArc<BlockChain>,
-    logger: LoggerSender,
-    notifier: NotificationSender,
-) -> JoinHandle<Result<(), ErrorGUI>> {
-    thread::spawn(move || {
-        for message in receiver_broadcasting {
-            match message {
-                MessageResponse::Block(block) => {
-                    receive_block(
-                        &utxo_set,
-                        &block_chain,
-                        block,
-                        logger.clone(),
-                        notifier.clone(),
-                    )?;
-                }
-                MessageResponse::Transaction(transaction) => {
-                    receive_transaction(
-                        &wallet,
-                        transaction,
-                        &utxo_set,
-                        logger.clone(),
-                        notifier.clone(),
-                    )?;
-                }
-            }
-        }
-
-        Ok(())
-    })
-}
-
-/// FUnction that converts testnet bitcoins to satoshis
-pub fn fron_tbtc_to_satoshi(tbtc: f64) -> i64 {
-    (tbtc * 100_000_000.0) as i64
-}
-
-/// Creates a transaction given the user user_input
-///
-/// ### Error
-///  * `ErrorGUI::ErrorInTransaction`: It will appear when the user does not have enough funds to make the transaction or the transaction is not valid
-pub fn create_transaction(
-    utxo_set: &MutexGuard<'_, UTXOSet>,
-    account: &Account,
-    logger: LoggerSender,
-    address: &Address,
-    amount: f64,
-    fee: f64,
-) -> Result<Transaction, ErrorGUI> {
-    let available_outputs = utxo_set.get_utxo_list_with_outpoints(Some(&account.address));
-
-    match account.create_transaction_with_available_outputs(
-        address.clone(),
-        fron_tbtc_to_satoshi(amount),
-        fron_tbtc_to_satoshi(fee),
-        available_outputs,
-    ) {
-        Ok(transaction) => Ok(transaction),
-        Err(ErrorWallet::NotEnoughFunds(error_string)) => {
-            let _ = logger.log_wallet(format!(
-                "Error creating transaction, with error: {:?}",
-                ErrorWallet::NotEnoughFunds(error_string)
-            ));
-            Err(ErrorGUI::ErrorInTransaction("Not enough funds".to_string()))
-        }
-        Err(error) => {
-            let _ = logger.log_wallet(format!(
-                "Error creating transaction, with error: {:?}",
-                error
-            ));
-            Err(ErrorGUI::ErrorInTransaction(
-                "Transaction creation failed".to_string(),
-            ))
-        }
-    }
-}
-
 /// Broadcast the transaction created by the user to the peers from the selected account in the wallet
 ///
 /// ### Error
-///  * `ErrorGUI::FailedSignalToFront`: It will appear when the sender fails
-///  * `ErrorGUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-///  * `ErrorGUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
+///  * `ErrorUI::FailedSignalToFront`: It will appear when the sender fails
+///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
+///  * `ErrorUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
 fn sending_transaction(
     broadcasting: &mut Broadcasting<TcpStream>,
     wallet: &MutArc<Wallet>,
@@ -293,7 +111,7 @@ fn sending_transaction(
     address_string: &str,
     amount_fee: (f64, f64),
     tx_to_front: glib::Sender<SignalToFront>,
-) -> Result<(), ErrorGUI> {
+) -> Result<(), ErrorUI> {
     let amount = amount_fee.0;
     let fee = amount_fee.1;
     let address = match Address::new(address_string) {
@@ -305,7 +123,7 @@ fn sending_transaction(
                 .send(SignalToFront::ErrorInTransaction(message.to_string()))
                 .is_err()
             {
-                return Err(ErrorGUI::FailedSignalToFront(
+                return Err(ErrorUI::FailedSignalToFront(
                     "Failed to send error signal to front".to_string(),
                 ));
             }
@@ -323,14 +141,13 @@ fn sending_transaction(
                 .send(SignalToFront::ErrorInTransaction(message.to_string()))
                 .is_err()
             {
-                return Err(ErrorGUI::FailedSignalToFront(
+                return Err(ErrorUI::FailedSignalToFront(
                     "Failed to send error signal to front".to_string(),
                 ));
             }
             return Ok(());
         }
     };
-    let mut utxo_set = get_reference(utxo_set)?;
 
     let transaction =
         match create_transaction(&utxo_set, account, logger.clone(), &address, amount, fee) {
@@ -342,21 +159,21 @@ fn sending_transaction(
                     ))
                     .is_err()
                 {
-                    return Err(ErrorGUI::FailedSignalToFront(
+                    return Err(ErrorUI::FailedSignalToFront(
                         "Failed to send error signal to front".to_string(),
                     ));
                 };
-                return Err(error);
+                return Err(error.into());
             }
         };
     let _ = logger.log_transaction("Sending transaction".to_string());
 
-    utxo_set.append_pending_transaction(transaction.clone());
+    get_reference(utxo_set)?.append_pending_transaction(transaction.clone());
 
     match broadcasting.send_transaction(transaction) {
         Ok(()) => Ok(()),
-        Err(ErrorNode::WhileSendingMessage(message)) => Err(ErrorGUI::ErrorFromPeer(message)),
-        _ => Err(ErrorGUI::ErrorFromPeer(
+        Err(ErrorNode::WhileSendingMessage(message)) => Err(ErrorUI::ErrorFromPeer(message)),
+        _ => Err(ErrorUI::ErrorFromPeer(
             "While sending transaction".to_string(),
         )),
     }
@@ -365,7 +182,7 @@ fn sending_transaction(
 /// Creates a new account with the data entered by the user
 ///
 /// ### Error
-///  * `ErrorGUI::FailedSignalToFront`: It will appear when the sender fails
+///  * `ErrorUI::FailedSignalToFront`: It will appear when the sender fails
 pub fn create_account(
     wallet: MutArc<Wallet>,
     account_name: &str,
@@ -373,7 +190,7 @@ pub fn create_account(
     public_key_string: &str,
     tx_to_front: glib::Sender<SignalToFront>,
     logger: LoggerSender,
-) -> Result<(), ErrorGUI> {
+) -> Result<(), ErrorUI> {
     let mut wallet = get_reference(&wallet)?;
 
     let private_key = match PrivateKey::try_from(private_key_string) {
@@ -385,7 +202,7 @@ pub fn create_account(
                 .send(SignalToFront::ErrorInAccountCreation(message.to_string()))
                 .is_err()
             {
-                return Err(ErrorGUI::FailedSignalToFront(
+                return Err(ErrorUI::FailedSignalToFront(
                     "Failed to send error signal to front".to_string(),
                 ));
             }
@@ -402,7 +219,7 @@ pub fn create_account(
                 .send(SignalToFront::ErrorInAccountCreation(message.to_string()))
                 .is_err()
             {
-                return Err(ErrorGUI::FailedSignalToFront(
+                return Err(ErrorUI::FailedSignalToFront(
                     "Failed to send error signal to front".to_string(),
                 ));
             }
@@ -419,7 +236,7 @@ pub fn create_account(
                 .send(SignalToFront::ErrorInAccountCreation(message))
                 .is_err()
             {
-                return Err(ErrorGUI::FailedSignalToFront(
+                return Err(ErrorUI::FailedSignalToFront(
                     "Failed to send error signal to front".to_string(),
                 ));
             }
@@ -439,7 +256,7 @@ pub fn create_account(
         .send(SignalToFront::RegisterWallet(account_name.to_string()))
         .is_err()
     {
-        return Err(ErrorGUI::FailedSignalToFront(
+        return Err(ErrorUI::FailedSignalToFront(
             "Failed to send account created signal to front".to_string(),
         ));
     }
@@ -488,7 +305,7 @@ fn give_account_transactions(
     blockchain: MutArc<BlockChain>,
     logger: LoggerSender,
     tx_to_front: glib::Sender<SignalToFront>,
-) -> Result<(), ErrorGUI> {
+) -> Result<(), ErrorUI> {
     let wallet = get_reference(&wallet).unwrap();
     let blockchain = get_reference(&blockchain).unwrap();
 
@@ -501,7 +318,7 @@ fn give_account_transactions(
                 .send(SignalToFront::ErrorInTransaction(message.to_string()))
                 .is_err()
             {
-                return Err(ErrorGUI::FailedSignalToFront(
+                return Err(ErrorUI::FailedSignalToFront(
                     "Failed to send error signal to front".to_string(),
                 ));
             }
@@ -520,11 +337,11 @@ fn give_account_transactions(
             ))
             .is_err()
         {
-            return Err(ErrorGUI::FailedSignalToFront(
+            return Err(ErrorUI::FailedSignalToFront(
                 "Failed to send error signal to front".to_string(),
             ));
         };
-        return Err(ErrorGUI::FailedSignalToFront(
+        return Err(ErrorUI::FailedSignalToFront(
             "Failed to send error signal to front".to_string(),
         ));
     }
@@ -539,7 +356,7 @@ pub fn spawn_frontend_handler(
     broadcasting: &mut Broadcasting<TcpStream>,
     data: (MutArc<Wallet>, MutArc<UTXOSet>, MutArc<BlockChain>),
     logger: LoggerSender,
-) -> Result<(), ErrorGUI> {
+) -> Result<(), ErrorUI> {
     let wallet: MutArc<Wallet> = data.0;
     let utxo_set: MutArc<UTXOSet> = data.1;
     let block_chain: MutArc<BlockChain> = data.2;
@@ -593,18 +410,18 @@ pub fn change_selected_account(
     account_name: String,
     wallet: MutArc<Wallet>,
     tx_to_front: glib::Sender<SignalToFront>,
-) -> Result<(), ErrorGUI> {
+) -> Result<(), ErrorUI> {
     let mut wallet_reference = get_reference(&wallet)?;
 
     let account_to_select = match wallet_reference.get_account_with_name(&account_name) {
         Some(account) => account.clone(),
-        None => return Err(ErrorGUI::ErrorReading("Account does not exist".to_string())),
+        None => return Err(ErrorUI::ErrorReading("Account does not exist".to_string())),
     };
 
     wallet_reference.change_account(account_to_select);
 
     if tx_to_front.send(SignalToFront::Update).is_err() {
-        return Err(ErrorGUI::FailedSignalToFront(
+        return Err(ErrorUI::FailedSignalToFront(
             "Failed to send update signal to front".to_string(),
         ));
     }
@@ -617,13 +434,13 @@ pub fn give_account_balance(
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
     tx_to_front: glib::Sender<SignalToFront>,
-) -> Result<(), ErrorGUI> {
+) -> Result<(), ErrorUI> {
     let wallet_reference = get_reference(&wallet)?;
     let utxo_set_reference = get_reference(&utxo_set)?;
 
     let account_to_check = match wallet_reference.get_selected_account() {
         Some(account) => account,
-        None => return Err(ErrorGUI::ErrorReading("No account selected".to_string())),
+        None => return Err(ErrorUI::ErrorReading("No account selected".to_string())),
     };
     let balance = utxo_set_reference.get_balance_in_tbtc(&account_to_check.address);
     let pending = utxo_set_reference.get_pending_in_tbtc(&account_to_check.address);
@@ -631,7 +448,7 @@ pub fn give_account_balance(
         .send(SignalToFront::LoadAvailableBalance((balance, pending)))
         .is_err()
     {
-        return Err(ErrorGUI::FailedSignalToFront(
+        return Err(ErrorUI::FailedSignalToFront(
             "Failed to send available balance to front".to_string(),
         ));
     }
@@ -681,7 +498,7 @@ fn broadcasting(
 
     match handle.join() {
         Ok(_) => Ok(()),
-        Err(_) => Err(ErrorGUI::ErrorFromPeer("Failed to remove notifications".to_string()).into()),
+        Err(_) => Err(ErrorUI::ErrorFromPeer("Failed to remove notifications".to_string()).into()),
     }
 }
 

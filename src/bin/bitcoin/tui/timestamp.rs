@@ -1,4 +1,4 @@
-use super::error_tui::ErrorTUI;
+use crate::ui::error_ui::ErrorUI;
 
 use chrono::Utc;
 
@@ -86,12 +86,12 @@ impl From<Timestamp> for char {
 }
 
 impl TryFrom<&str> for Timestamp {
-    type Error = ErrorTUI;
+    type Error = ErrorUI;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let value: char = match value.chars().next() {
             Some(value) => value,
-            _ => return Err(ErrorTUI::InvalidMenuOption),
+            _ => return Err(ErrorUI::InvalidMenuOption),
         };
 
         match value {
@@ -99,7 +99,7 @@ impl TryFrom<&str> for Timestamp {
             WEEK_OPTION => Ok(Timestamp::Week),
             MONTH_OPTION => Ok(Timestamp::Month),
             YEAR_OPTION => Ok(Timestamp::Year),
-            _ => Err(ErrorTUI::InvalidMenuOption),
+            _ => Err(ErrorUI::InvalidMenuOption),
         }
     }
 }

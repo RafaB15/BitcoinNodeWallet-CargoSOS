@@ -1,4 +1,6 @@
-use super::{account::get_address, error_tui::ErrorTUI, timestamp::Timestamp};
+use super::{account::get_address, timestamp::Timestamp};
+
+use crate::ui::error_ui::ErrorUI;
 
 use cargosos_bitcoin::{
     block_structure::{transaction::Transaction, utxo_set::UTXOSet},
@@ -11,14 +13,14 @@ use std::{io::stdin, sync::MutexGuard};
 /// Get the timestamp from the user via terminal
 ///
 /// ### Error
-///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
-pub fn select_option(logger: LoggerSender) -> Result<Timestamp, ErrorTUI> {
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+pub fn select_option(logger: LoggerSender) -> Result<Timestamp, ErrorUI> {
     println!("Select an option:");
     Timestamp::print_all();
 
     let mut option: String = String::new();
     if stdin().read_line(&mut option).is_err() {
-        return Err(ErrorTUI::TerminalReadFail);
+        return Err(ErrorUI::TerminalReadFail);
     }
 
     loop {
@@ -35,7 +37,7 @@ pub fn select_option(logger: LoggerSender) -> Result<Timestamp, ErrorTUI> {
                 println!("Error, please enter a valid option:");
                 Timestamp::print_all();
                 if stdin().read_line(&mut option).is_err() {
-                    return Err(ErrorTUI::TerminalReadFail);
+                    return Err(ErrorUI::TerminalReadFail);
                 }
                 continue;
             }
@@ -46,13 +48,13 @@ pub fn select_option(logger: LoggerSender) -> Result<Timestamp, ErrorTUI> {
 /// Get the amount for the transaction from the terminal
 ///
 /// ### Error
-///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
-fn get_amount(logger: LoggerSender) -> Result<i64, ErrorTUI> {
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+fn get_amount(logger: LoggerSender) -> Result<i64, ErrorUI> {
     let mut amount: String = String::new();
 
     println!("Enter an amount: ");
     if stdin().read_line(&mut amount).is_err() {
-        return Err(ErrorTUI::TerminalReadFail);
+        return Err(ErrorUI::TerminalReadFail);
     }
 
     loop {
@@ -68,7 +70,7 @@ fn get_amount(logger: LoggerSender) -> Result<i64, ErrorTUI> {
                 amount.clear();
                 println!("Error, please enter a valid amount:");
                 if stdin().read_line(&mut amount).is_err() {
-                    return Err(ErrorTUI::TerminalReadFail);
+                    return Err(ErrorUI::TerminalReadFail);
                 }
 
                 continue;
@@ -80,13 +82,13 @@ fn get_amount(logger: LoggerSender) -> Result<i64, ErrorTUI> {
 /// Get the fee for the transaction from the terminal
 ///
 /// ### Error
-///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
-fn get_fee(logger: LoggerSender) -> Result<i64, ErrorTUI> {
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+fn get_fee(logger: LoggerSender) -> Result<i64, ErrorUI> {
     let mut fee: String = String::new();
 
     println!("Enter a fee: ");
     if stdin().read_line(&mut fee).is_err() {
-        return Err(ErrorTUI::TerminalReadFail);
+        return Err(ErrorUI::TerminalReadFail);
     }
 
     loop {
@@ -101,7 +103,7 @@ fn get_fee(logger: LoggerSender) -> Result<i64, ErrorTUI> {
                 fee.clear();
                 println!("Error, please enter a valid fee:");
                 if stdin().read_line(&mut fee).is_err() {
-                    return Err(ErrorTUI::TerminalReadFail);
+                    return Err(ErrorUI::TerminalReadFail);
                 }
 
                 continue;
@@ -113,13 +115,13 @@ fn get_fee(logger: LoggerSender) -> Result<i64, ErrorTUI> {
 /// Creates a transaction via terminal given the user user_input
 ///
 /// ### Error
-///  * `ErrorTUI::TransactionWithoutSufficientFunds`: It will appear when the user does not have enough funds to make the transaction
-///  * `ErrorTUI::TransactionCreationFail`: It will appear when the transaction fail to create the signature script
+///  * `ErrorUI::TransactionWithoutSufficientFunds`: It will appear when the user does not have enough funds to make the transaction
+///  * `ErrorUI::TransactionCreationFail`: It will appear when the transaction fail to create the signature script
 pub fn create_transaction(
     utxo_set: &MutexGuard<'_, UTXOSet>,
     account: &Account,
     logger: LoggerSender,
-) -> Result<Transaction, ErrorTUI> {
+) -> Result<Transaction, ErrorUI> {
     let address = get_address(logger.clone())?;
     let amount = get_amount(logger.clone())?;
     let fee = get_fee(logger.clone())?;
@@ -129,13 +131,13 @@ pub fn create_transaction(
     match account.create_transaction_with_available_outputs(address, amount, fee, available_outputs)
     {
         Ok(transaction) => Ok(transaction),
-        Err(ErrorWallet::NotEnoughFunds(_)) => Err(ErrorTUI::TransactionWithoutSufficientFunds),
+        Err(ErrorWallet::NotEnoughFunds(_)) => Err(ErrorUI::TransactionWithoutSufficientFunds),
         Err(error) => {
             let _ = logger.log_wallet(format!(
                 "Error creating transaction, with error: {:?}",
                 error
             ));
-            Err(ErrorTUI::TransactionCreationFail)
+            Err(ErrorUI::TransactionCreationFail)
         }
     }
 }

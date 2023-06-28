@@ -1,4 +1,4 @@
-use super::error_tui::ErrorTUI;
+use crate::ui::error_ui::ErrorUI;
 
 use cargosos_bitcoin::{
     logs::logger_sender::LoggerSender,
@@ -13,13 +13,13 @@ use std::{io::stdin, sync::MutexGuard};
 /// Get the private key from the terminal
 ///
 /// ### Error
-///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
-fn get_private_key(logger: LoggerSender) -> Result<PrivateKey, ErrorTUI> {
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+fn get_private_key(logger: LoggerSender) -> Result<PrivateKey, ErrorUI> {
     let mut private_key: String = String::new();
 
     println!("Enter the private key: ");
     if stdin().read_line(&mut private_key).is_err() {
-        return Err(ErrorTUI::TerminalReadFail);
+        return Err(ErrorUI::TerminalReadFail);
     }
 
     loop {
@@ -37,7 +37,7 @@ fn get_private_key(logger: LoggerSender) -> Result<PrivateKey, ErrorTUI> {
                 private_key.clear();
                 println!("Error, please enter a valid private key:");
                 if stdin().read_line(&mut private_key).is_err() {
-                    return Err(ErrorTUI::TerminalReadFail);
+                    return Err(ErrorUI::TerminalReadFail);
                 }
                 continue;
             }
@@ -48,13 +48,13 @@ fn get_private_key(logger: LoggerSender) -> Result<PrivateKey, ErrorTUI> {
 /// Get the public key from the terminal
 ///
 /// ### Error
-///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
-fn get_public_key(logger: LoggerSender) -> Result<PublicKey, ErrorTUI> {
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+fn get_public_key(logger: LoggerSender) -> Result<PublicKey, ErrorUI> {
     let mut public_key: String = String::new();
 
     println!("Enter the public key: ");
     if stdin().read_line(&mut public_key).is_err() {
-        return Err(ErrorTUI::TerminalReadFail);
+        return Err(ErrorUI::TerminalReadFail);
     }
 
     loop {
@@ -72,7 +72,7 @@ fn get_public_key(logger: LoggerSender) -> Result<PublicKey, ErrorTUI> {
                 public_key.clear();
                 println!("Error, please enter a valid public key:");
                 if stdin().read_line(&mut public_key).is_err() {
-                    return Err(ErrorTUI::TerminalReadFail);
+                    return Err(ErrorUI::TerminalReadFail);
                 }
 
                 continue;
@@ -84,13 +84,13 @@ fn get_public_key(logger: LoggerSender) -> Result<PublicKey, ErrorTUI> {
 /// Get the address from the terminal
 ///
 /// ### Error
-///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
-pub(super) fn get_address(logger: LoggerSender) -> Result<Address, ErrorTUI> {
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+pub(super) fn get_address(logger: LoggerSender) -> Result<Address, ErrorUI> {
     let mut address: String = String::new();
 
     println!("Enter the address: ");
     if stdin().read_line(&mut address).is_err() {
-        return Err(ErrorTUI::TerminalReadFail);
+        return Err(ErrorUI::TerminalReadFail);
     }
 
     loop {
@@ -108,7 +108,7 @@ pub(super) fn get_address(logger: LoggerSender) -> Result<Address, ErrorTUI> {
                 address.clear();
                 println!("Error, please enter a valid address:");
                 if stdin().read_line(&mut address).is_err() {
-                    return Err(ErrorTUI::TerminalReadFail);
+                    return Err(ErrorUI::TerminalReadFail);
                 }
                 continue;
             }
@@ -119,22 +119,22 @@ pub(super) fn get_address(logger: LoggerSender) -> Result<Address, ErrorTUI> {
 /// Get the account name from the terminal
 ///
 /// ### Error
-///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
-fn get_account_name() -> Result<String, ErrorTUI> {
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+fn get_account_name() -> Result<String, ErrorUI> {
     let mut name: String = String::new();
 
     println!("Enter the name: ");
     match stdin().read_line(&mut name) {
         Ok(_) => Ok(name.trim().to_string()),
-        Err(_) => Err(ErrorTUI::TerminalReadFail),
+        Err(_) => Err(ErrorUI::TerminalReadFail),
     }
 }
 
 /// Creates a new account with the data entered by the user
 ///
 /// ### Error
-///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
-pub fn create_account(logger: LoggerSender) -> Result<Account, ErrorTUI> {
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+pub fn create_account(logger: LoggerSender) -> Result<Account, ErrorUI> {
     let _ = logger.log_wallet("Creating a new account".to_string());
 
     let private_key = get_private_key(logger.clone())?;
@@ -146,7 +146,7 @@ pub fn create_account(logger: LoggerSender) -> Result<Account, ErrorTUI> {
                 "Error creating the address from the public key, with error: {:?}",
                 error
             ));
-            return Err(ErrorTUI::TerminalReadFail);
+            return Err(ErrorUI::TerminalReadFail);
         }
     };
     let account_name = get_account_name()?;
@@ -177,11 +177,11 @@ fn get_account_from_name(account_name: &str, wallet: &MutexGuard<'_, Wallet>) ->
 /// Select an account from the wallet
 ///
 /// ### Error
-///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
 pub fn select_account(
     wallet: &MutexGuard<'_, Wallet>,
     logger: LoggerSender,
-) -> Result<Account, ErrorTUI> {
+) -> Result<Account, ErrorUI> {
     let _ = logger.log_wallet("Selecting an account".to_string());
 
     println!("Possible accounts: ");
@@ -191,7 +191,7 @@ pub fn select_account(
 
     println!("Enter the address: ");
     if stdin().read_line(&mut account_name).is_err() {
-        return Err(ErrorTUI::TerminalReadFail);
+        return Err(ErrorUI::TerminalReadFail);
     }
 
     loop {
@@ -206,7 +206,7 @@ pub fn select_account(
                 account_name.clear();
                 println!("Error, please enter a valid account name:");
                 if stdin().read_line(&mut account_name).is_err() {
-                    return Err(ErrorTUI::TerminalReadFail);
+                    return Err(ErrorUI::TerminalReadFail);
                 }
                 continue;
             }

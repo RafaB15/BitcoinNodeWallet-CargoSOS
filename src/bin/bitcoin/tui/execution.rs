@@ -1,11 +1,9 @@
-use super::{
-    error_tui::ErrorTUI,
-    user_response::{handle_peers, user_input},
-};
+use super::user_response::{handle_peers, user_input};
 
 use crate::{
     error_execution::ErrorExecution,
-    process::{download, handshake, load_system::LoadSystem, save_system::SaveSystem, reference},
+    process::{download, handshake, load_system::LoadSystem, reference, save_system::SaveSystem},
+    ui::error_ui::ErrorUI,
 };
 
 use cargosos_bitcoin::{
@@ -30,17 +28,17 @@ use std::{
 /// Get the peers from the dns seeder
 ///
 /// ### Error
-///  * `ErrorTUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
+///  * `ErrorUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
 fn get_potential_peers(
     server_config: ServerConfig,
     logger: LoggerSender,
-) -> Result<Vec<SocketAddr>, ErrorTUI> {
+) -> Result<Vec<SocketAddr>, ErrorUI> {
     let _ = logger.log_connection("Getting potential peers with dns seeder".to_string());
 
     let potential_peers = match server_config.dns_seeder.discover_peers() {
         Ok(potential_peers) => potential_peers,
         Err(_) => {
-            return Err(ErrorTUI::ErrorFromPeer(
+            return Err(ErrorUI::ErrorFromPeer(
                 "Fail to getting potencial peers".to_string(),
             ))
         }
@@ -71,7 +69,7 @@ fn update_block_chain(
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
     logger: LoggerSender,
-) -> Result<Vec<TcpStream>, ErrorTUI> {
+) -> Result<Vec<TcpStream>, ErrorUI> {
     let _ = logger.log_connection("Getting block chain".to_string());
 
     Ok(match connection_config.ibd_method {
@@ -187,7 +185,7 @@ fn broadcasting(
 
     match handle.join() {
         Ok(_) => Ok(()),
-        Err(_) => Err(ErrorTUI::ErrorFromPeer("Fail to remove notifications".to_string()).into()),
+        Err(_) => Err(ErrorUI::ErrorFromPeer("Fail to remove notifications".to_string()).into()),
     }
 }
 
@@ -199,7 +197,6 @@ pub fn program_execution(
     load_system: &mut LoadSystem,
     logger: LoggerSender,
 ) -> Result<SaveSystem, ErrorExecution> {
-
     let (notification_sender, _notification_receiver) = mpsc::channel::<Notification>();
 
     let potential_peers = match mode_config {

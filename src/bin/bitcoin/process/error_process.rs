@@ -28,6 +28,12 @@ pub enum ErrorProcess {
 
     /// It will appear when we try to get the inner value of a mutex
     CannotGetInner,
+
+    /// It will appear when trying to create a transaction of an amount and fee greater than the balance
+    TransactionWithoutSufficientFunds,
+
+    /// It will appear when trying to create a transaction and fails to create the signature script for it
+    TransactionCreationFail,
 }
 
 impl From<ErrorSerialization> for ErrorProcess {

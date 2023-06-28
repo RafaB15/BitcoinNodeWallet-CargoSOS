@@ -1,4 +1,4 @@
-use super::error_tui::ErrorTUI;
+use crate::ui::error_ui::ErrorUI;
 
 use std::{
     convert::{From, TryFrom},
@@ -80,12 +80,12 @@ impl From<MenuOption> for char {
 }
 
 impl TryFrom<&str> for MenuOption {
-    type Error = ErrorTUI;
+    type Error = ErrorUI;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let value: char = match value.chars().next() {
             Some(value) => value,
-            _ => return Err(ErrorTUI::InvalidMenuOption),
+            _ => return Err(ErrorUI::InvalidMenuOption),
         };
 
         match value {
@@ -96,7 +96,7 @@ impl TryFrom<&str> for MenuOption {
             SHOW_BALANCE => Ok(MenuOption::ShowBalance),
             LAST_TRANSACTIONS => Ok(MenuOption::LastTransactions),
             EXIT => Ok(MenuOption::Exit),
-            _ => Err(ErrorTUI::InvalidMenuOption),
+            _ => Err(ErrorUI::InvalidMenuOption),
         }
     }
 }

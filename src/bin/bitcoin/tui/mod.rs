@@ -7,5 +7,3 @@ pub mod menu;
 pub mod menu_option;
 pub mod notify;
 pub mod timestamp;
-
-pub mod error_tui;

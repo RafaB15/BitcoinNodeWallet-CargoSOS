@@ -1,6 +1,6 @@
-use super::{
-    account, error_tui::ErrorTUI, menu, menu_option::MenuOption, notify::notify, transaction,
-};
+use super::{account, menu, menu_option::MenuOption, notify::notify, transaction};
+
+use crate::ui::error_ui::ErrorUI;
 
 use crate::process::reference::{get_reference, MutArc};
 
@@ -26,16 +26,16 @@ use std::{
 /// It will responde to the user input
 ///
 /// ### Error
-///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
-///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-///  * `ErrorTUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
+///  * `ErrorUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
 pub fn user_input(
     broadcasting: &mut Broadcasting<TcpStream>,
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
     block_chain: MutArc<BlockChain>,
     logger: LoggerSender,
-) -> Result<(), ErrorTUI> {
+) -> Result<(), ErrorUI> {
     loop {
         match menu::select_option(logger.clone())? {
             MenuOption::CreateAccount => creating_accout(&wallet, logger.clone())?,
@@ -60,9 +60,9 @@ pub fn user_input(
 /// Appends an new account to the wallet created by the user
 ///
 /// ### Error
-///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
-///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-fn creating_accout(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(), ErrorTUI> {
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
+fn creating_accout(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(), ErrorUI> {
     let mut wallet = get_reference(wallet)?;
     let account = account::create_account(logger)?;
     wallet.add_account(account);
@@ -73,9 +73,9 @@ fn creating_accout(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(), 
 /// Change the selected account to the one selected by the user
 ///
 /// ### Error
-///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
-///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-fn changing_account(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(), ErrorTUI> {
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
+fn changing_account(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(), ErrorUI> {
     let mut wallet = get_reference(wallet)?;
     let account = account::select_account(&wallet, logger)?;
     wallet.change_account(account);
@@ -86,9 +86,9 @@ fn changing_account(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(),
 /// Delete the selected account selected by the user
 ///
 /// ### Error
-///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
-///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-fn removing_account(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(), ErrorTUI> {
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
+fn removing_account(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(), ErrorUI> {
     let mut wallet = get_reference(wallet)?;
     let account = account::select_account(&wallet, logger)?;
     wallet.remove_account(account);
@@ -99,15 +99,15 @@ fn removing_account(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(),
 /// Broadcast the transaction created by the user to the peers from the selected account in the wallet
 ///
 /// ### Error
-///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
-///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-///  * `ErrorTUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
+///  * `ErrorUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
 fn sending_transaction(
     broadcasting: &mut Broadcasting<TcpStream>,
     wallet: &MutArc<Wallet>,
     utxo_set: &MutArc<UTXOSet>,
     logger: LoggerSender,
-) -> Result<(), ErrorTUI> {
+) -> Result<(), ErrorUI> {
     let wallet = get_reference(wallet)?;
     let account = match wallet.get_selected_account() {
         Some(account) => account,
@@ -122,7 +122,7 @@ fn sending_transaction(
 
     let transaction = match transaction::create_transaction(&utxo_set, account, logger.clone()) {
         Ok(transaction) => transaction,
-        Err(ErrorTUI::TransactionWithoutSufficientFunds) => {
+        Err(ErrorUI::TransactionWithoutSufficientFunds) => {
             let message = "Transaction without sufficient funds";
             println!("{message}");
             let _ = logger.log_transaction(message.to_string());
@@ -136,10 +136,10 @@ fn sending_transaction(
 
     match broadcasting.send_transaction(transaction) {
         Ok(()) => Ok(()),
-        Err(ErrorNode::WhileSendingMessage(message)) => Err(ErrorTUI::ErrorFromPeer(format!(
+        Err(ErrorNode::WhileSendingMessage(message)) => Err(ErrorUI::ErrorFromPeer(format!(
             "While sending message {message}"
         ))),
-        _ => Err(ErrorTUI::ErrorFromPeer(
+        _ => Err(ErrorUI::ErrorFromPeer(
             "While sending transaction".to_string(),
         )),
     }
@@ -148,12 +148,12 @@ fn sending_transaction(
 /// Show the balance of the selected account in the wallet
 ///
 /// ### Error
-///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
+///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 fn showing_balance(
     wallet: &MutArc<Wallet>,
     utxo_set: &MutArc<UTXOSet>,
     logger: LoggerSender,
-) -> Result<(), ErrorTUI> {
+) -> Result<(), ErrorUI> {
     let wallet = get_reference(wallet)?;
 
     for account in wallet.get_accounts() {
@@ -176,12 +176,12 @@ fn showing_balance(
 /// Show the lastest transactions given by the timestamp selected by the user
 ///
 /// ### Error
-///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
-///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 fn latest_transactions(
     block_chain: &MutArc<BlockChain>,
     logger: LoggerSender,
-) -> Result<(), ErrorTUI> {
+) -> Result<(), ErrorUI> {
     let selected_timestamp = transaction::select_option(logger.clone())?;
     let timestamp = selected_timestamp.get_timestamps_from_now();
 
@@ -209,7 +209,7 @@ pub fn handle_peers(
     block_chain: MutArc<BlockChain>,
     logger: LoggerSender,
     notifier: NotificationSender,
-) -> JoinHandle<Result<(), ErrorTUI>> {
+) -> JoinHandle<Result<(), ErrorUI>> {
     thread::spawn(move || {
         for message in receiver_broadcasting {
             match message {
@@ -241,14 +241,14 @@ pub fn handle_peers(
 /// Manage receiving a transaction by updating the list of transactions seen so far if the transaction is from the selected account
 ///
 /// ### Error
-///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
+///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 fn receive_transaction(
     wallet: &MutArc<Wallet>,
     utxo_set: &MutArc<UTXOSet>,
     transaction: Transaction,
     logger: LoggerSender,
     notifier: NotificationSender,
-) -> Result<(), ErrorTUI> {
+) -> Result<(), ErrorUI> {
     let mut utxo_set = get_reference(utxo_set)?;
 
     if utxo_set.is_transaction_pending(&transaction) {
@@ -284,15 +284,15 @@ fn receive_transaction(
 /// Manage receiving a block by updating the block chain and the utxo set
 ///
 /// ### Error
-///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-///  * `ErrorTUI::ErrorWriting`: It will appear when writing to the block chain
+///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
+///  * `ErrorUI::ErrorWriting`: It will appear when writing to the block chain
 fn receive_block(
     utxo_set: &MutArc<UTXOSet>,
     block_chain: &MutArc<BlockChain>,
     block: Block,
     logger: LoggerSender,
     notifier: NotificationSender,
-) -> Result<(), ErrorTUI> {
+) -> Result<(), ErrorUI> {
     let mut utxo_set = get_reference(utxo_set)?;
 
     for transaction in utxo_set.pending_transactions() {
@@ -315,7 +315,7 @@ fn receive_block(
     let _ = notifier.send(Notification::NewBlockAddedToTheBlockchain(block.clone()));
     match get_reference(block_chain)?.append_block(block) {
         Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => Ok(()),
-        _ => Err(ErrorTUI::ErrorWriting(
+        _ => Err(ErrorUI::ErrorWriting(
             "Error appending block to blockchain".to_string(),
         )),
     }
