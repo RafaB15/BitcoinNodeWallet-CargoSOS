@@ -11,7 +11,7 @@ use std::cmp::PartialEq;
 const DNS_SEEDER: &str = "dns_seeder";
 const PEER_COUNT_MAX: &str = "peer_count_max";
 const CLIENT_COUNT_MAX: &str = "client_count_max";
-const PORT: &str = "port";
+const PORT: &str = "own_port";
 const ADDRESS: &str = "address";
 
 /// Configuration for the server process
