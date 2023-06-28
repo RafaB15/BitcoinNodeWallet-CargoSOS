@@ -30,7 +30,7 @@ use cargosos_bitcoin::{
 };
 
 use std::{
-    net::{SocketAddr, TcpStream},
+    net::{IpAddr, SocketAddr, TcpStream},
     sync::mpsc::{Receiver, Sender},
     sync::{Arc, Mutex, MutexGuard},
     thread::JoinHandle,
@@ -762,7 +762,10 @@ pub fn backend_execution(
 
     let potential_peers = match mode_config {
         ModeConfig::Server(server_config) => get_potential_peers(server_config, logger.clone())?,
-        ModeConfig::Client(_) => vec![],
+        ModeConfig::Client(client_config) => vec![SocketAddr::new(
+            IpAddr::V4(client_config.address),
+            client_config.port,
+        )],
     };
 
     let peer_streams =
