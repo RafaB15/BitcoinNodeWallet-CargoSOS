@@ -16,6 +16,7 @@ type Configurations = (
     DownloadConfig,
     SaveConfig,
     UIConfig,
+    ModeConfig,
 );
 
 const CONNECTION_CONFIG: &str = "Connection";
@@ -35,7 +36,6 @@ pub struct Configuration {
     pub save_config: SaveConfig,
     pub ui_config: UIConfig,
     pub mode_config: ModeConfig, 
-
 }
 
 impl Configuration {
@@ -52,13 +52,23 @@ impl Configuration {
         }
 
         let map = parse_structure(value)?;
+
+        let possible_server_config = Option::<ServerConfig>::parse(UI_SERVER, &map)?;
+        let possible_client_config = Option::<ClientConfig>::parse(UI_CLIENT, &map)?;
+
+        let mode_config = match (possible_server_config, possible_client_config) {
+            (None, Some(client_config)) => ModeConfig::Client(client_config),
+            (Some(server_config), _) => ModeConfig::Server(server_config),
+            _ => return Err(ErrorConfiguration::ErrorIncompleteConfiguration),
+        };
+
         Ok(Configuration {
             log_config: LogConfig::parse(LOGS_CONFIG, &map)?,
             connection_config: ConnectionConfig::parse(CONNECTION_CONFIG, &map)?,
             download_config: DownloadConfig::parse(DOWNLOAD_CONFIG, &map)?,
             save_config: SaveConfig::parse(SAVE_CONFIG, &map)?,
             ui_config: UIConfig::parse(UI_CONFIG, &map)?,
-            mode_config: ModeConfig::parse(UI_CONFIG, &map)?,
+            mode_config,
         })
     }
 
@@ -70,6 +80,7 @@ impl Configuration {
             self.download_config,
             self.save_config,
             self.ui_config,
+            self.mode_config
         )
     }
 }
