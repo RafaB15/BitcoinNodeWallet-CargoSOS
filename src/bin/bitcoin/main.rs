@@ -127,6 +127,7 @@ fn main() -> Result<(), ErrorExecution> {
             )?
         }
         Interface::Gui => gui::execution::program_execution(
+            mode_config,
             connection_config,
             download_config,
             save_config.clone(),

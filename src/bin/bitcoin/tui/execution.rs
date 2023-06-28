@@ -220,7 +220,7 @@ pub fn program_execution(
 
     let potential_peers = match mode_config {
         ModeConfig::Server(server_config) => get_potential_peers(server_config.clone(), logger.clone())?,
-        ModeConfig::Client(client_config) => vec![],
+        ModeConfig::Client(_) => vec![],
     };
 
     let peer_streams =

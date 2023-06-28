@@ -12,7 +12,7 @@ use gtk::{
 use crate::{error_execution::ErrorExecution, process::save_system::SaveSystem};
 
 use cargosos_bitcoin::configurations::{
-    connection_config::ConnectionConfig, download_config::DownloadConfig, save_config::SaveConfig,
+    connection_config::ConnectionConfig, download_config::DownloadConfig, save_config::SaveConfig, mode_config::ModeConfig,
 };
 
 use cargosos_bitcoin::logs::logger_sender::LoggerSender;
@@ -522,6 +522,7 @@ fn build_ui(
 
 /// The main function of the program for the graphical interface.
 pub fn program_execution(
+    mode_config: ModeConfig,
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
     save_config: SaveConfig,
@@ -532,6 +533,7 @@ pub fn program_execution(
         glib::MainContext::channel::<SignalToFront>(glib::PRIORITY_DEFAULT);
 
     let backend_handler = spawn_backend_handler(
+        mode_config,
         connection_config,
         download_config,
         save_config,
