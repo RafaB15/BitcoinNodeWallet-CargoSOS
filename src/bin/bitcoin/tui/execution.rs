@@ -216,7 +216,7 @@ pub fn program_execution(
     load_system: &mut LoadSystem,
     logger: LoggerSender,
 ) -> Result<SaveSystem, ErrorExecution> {
-    let (notification_sender, notification_receiver) = mpsc::channel::<Notification>();
+    let (notification_sender, _notification_receiver) = mpsc::channel::<Notification>();
 
     let potential_peers = get_potential_peers(connection_config.clone(), logger.clone())?;
 

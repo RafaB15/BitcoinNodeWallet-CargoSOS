@@ -112,11 +112,17 @@ fn login_combo_box(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) {
     combo_box.connect_changed(move |_| {
         let combo_box_cloned: ComboBoxText = cloned_builder.object("WalletsComboBox").unwrap();
         let selected_wallet = combo_box_cloned.active_text().unwrap();
-        let _ = tx_to_back.send(SignalToBack::ChangeSelectedAccount(
+        if let Err(error) = tx_to_back.send(SignalToBack::ChangeSelectedAccount(
             selected_wallet.to_string(),
-        ));
-        let _ = tx_to_back.send(SignalToBack::GetAccountBalance);
-        let _ = tx_to_back.send(SignalToBack::GetAccountTransactions);
+        )) {
+            println!("Error sending change selected account signal: {}", error);
+        }
+        if let Err(error) = tx_to_back.send(SignalToBack::GetAccountBalance){
+            println!("Error sending get account balance signal: {}", error);
+        };
+        if let Err(error) = tx_to_back.send(SignalToBack::GetAccountTransactions) {
+            println!("Error sending get account transactions signal: {}", error);
+        };
     });
 }
 

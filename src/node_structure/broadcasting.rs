@@ -101,8 +101,9 @@ where
             ));
         for (_, sender) in self.peers.iter() {
             if sender.send(transaction.clone()).is_err() {
-                return Err(ErrorNode::WhileSendingMessage(
-                    "Sending transaction message to peer".to_string(),
+                let _ = self.logger.log_error(format!(
+                    "Error while sending transaction: {:?}",
+                    transaction_id
                 ));
             }
         }

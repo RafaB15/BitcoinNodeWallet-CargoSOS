@@ -141,7 +141,6 @@ fn receive_transaction(
     transaction: Transaction,
     utxo_set: &MutArc<UTXOSet>,
     logger: LoggerSender,
-    tx_to_front: glib::Sender<SignalToFront>,
     notifier: NotificationSender,
 ) -> Result<(), ErrorGUI> {
     let mut utxo_set = get_reference(utxo_set)?;
@@ -160,22 +159,15 @@ fn receive_transaction(
                 "Transaction {transaction} is owned by account {account}"
             ));
             involved_accounts.push(account.clone());
-            if tx_to_front.send(SignalToFront::Update).is_err()
-                || tx_to_front
-                    .send(SignalToFront::TransactionOfAccountReceived(
-                        account.account_name.clone(),
-                    ))
-                    .is_err()
-            {
-                return Err(ErrorGUI::FailedSignalToFront(
-                    "TransactionReceived".to_string(),
-                ));
-            }
         }
     }
+    
     if !involved_accounts.is_empty(){
-        let _ = notifier.send(Notification::TransactionOfAccountReceived(involved_accounts, transaction.clone()));
+        if notifier.send(Notification::TransactionOfAccountReceived(involved_accounts, transaction.clone())).is_err() {
+            let _ = logger.log_error("Error sending notification".to_string());
+        };
     }
+    
     utxo_set.append_pending_transaction(transaction);
     Ok(())
 }
@@ -190,7 +182,6 @@ fn receive_block(
     block_chain: &MutArc<BlockChain>,
     block: Block,
     logger: LoggerSender,
-    tx_to_front: glib::Sender<SignalToFront>,
     notifier: NotificationSender,
 ) -> Result<(), ErrorGUI> {
 
@@ -201,23 +192,16 @@ fn receive_block(
             let _ = logger.log_wallet(
                 "Removing transaction from list of transaction seen so far".to_string(),
             );
-            if tx_to_front
-                .send(SignalToFront::BlockWithUnconfirmedTransactionReceived)
-                .is_err()
-            {
-                println!("Error sending signal to front")
-            }
-            let _ = notifier.send(Notification::TransactionOfAccountInNewBlock(transaction.clone()));
+            if notifier.send(Notification::TransactionOfAccountInNewBlock(transaction.clone())).is_err(){
+                let _ = logger.log_error("Error sending notification".to_string());
+            };
         }
     }
 
     utxo_set.update_utxo_with_block(&block);
-    let _ = notifier.send(Notification::NewBlockAddedToTheBlockchain(block.clone()));
-    if tx_to_front.send(SignalToFront::Update).is_err() {
-        return Err(ErrorGUI::FailedSignalToFront(
-            "TransactionInBlock".to_string(),
-        ));
-    }
+    if notifier.send(Notification::NewBlockAddedToTheBlockchain(block.clone())).is_err(){
+        let _ = logger.log_error("Error sending notification".to_string());
+    };
 
     match get_reference(block_chain)?.append_block(block) {
         Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => Ok(()),
@@ -227,9 +211,8 @@ fn receive_block(
     }
 }
 
-/// Crate a thread for handling the blocks and transactions received
+/// Create a thread for handling the blocks and transactions received
 pub fn handle_peers(
-    tx_to_front: glib::Sender<SignalToFront>,
     receiver_broadcasting: Receiver<MessageResponse>,
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
@@ -246,7 +229,6 @@ pub fn handle_peers(
                         &block_chain,
                         block,
                         logger.clone(),
-                        tx_to_front.clone(),
                         notifier.clone(),
                     )?;
                 }
@@ -256,7 +238,6 @@ pub fn handle_peers(
                         transaction,
                         &utxo_set,
                         logger.clone(),
-                        tx_to_front.clone(),
                         notifier.clone(),
                     )?;
                 }
@@ -695,7 +676,6 @@ fn broadcasting(
     let (sender_response, receiver_response) = mpsc::channel::<MessageResponse>();
 
     let handle = handle_peers(
-        tx_to_front.clone(),
         receiver_response,
         wallet.clone(),
         utxo_set.clone(),
