@@ -11,7 +11,10 @@ use cargosos_bitcoin::{
     configurations::connection_config::ConnectionConfig,
     logs::logger_sender::LoggerSender,
     node_structure::{broadcasting::Broadcasting, message_response::MessageResponse},
-    notifications::notification::{Notification, NotificationSender},
+    notifications::{
+        notification::{Notification},
+        notifier::Notifier,
+    },
     wallet_structure::{
         account::Account, address::Address, error_wallet::ErrorWallet, wallet::Wallet,
     },
@@ -40,13 +43,13 @@ fn fron_tbtc_to_satoshi(tbtc: f64) -> i64 {
 }
 
 /// Create a thread for handling the blocks and transactions received
-pub fn handle_peers(
+pub fn handle_peers<N : Notifier>(
     receiver_broadcasting: Receiver<MessageResponse>,
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
     block_chain: MutArc<BlockChain>,
+    notifier: N,
     logger: LoggerSender,
-    notifier: NotificationSender,
 ) -> JoinHandle<Result<(), ErrorProcess>> {
     thread::spawn(move || {
         for message in receiver_broadcasting {
@@ -80,12 +83,12 @@ pub fn handle_peers(
 ///
 /// ### Error
 ///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-fn receive_transaction(
+fn receive_transaction<N : Notifier>(
     wallet: &MutArc<Wallet>,
     transaction: Transaction,
     utxo_set: &MutArc<UTXOSet>,
     logger: LoggerSender,
-    notifier: NotificationSender,
+    notifier: N,
 ) -> Result<(), ErrorProcess> {
     let mut utxo_set = get_reference(utxo_set)?;
 
@@ -107,15 +110,10 @@ fn receive_transaction(
     }
 
     if !involved_accounts.is_empty() {
-        if notifier
-            .send(Notification::TransactionOfAccountReceived(
-                involved_accounts,
-                transaction.clone(),
-            ))
-            .is_err()
-        {
-            let _ = logger.log_error("Error sending notification".to_string());
-        };
+        notifier.notify(Notification::TransactionOfAccountReceived(
+            involved_accounts,
+            transaction.clone(),
+        ));
     }
 
     utxo_set.append_pending_transaction(transaction);
@@ -127,12 +125,12 @@ fn receive_transaction(
 /// ### Error
 ///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 ///  * `ErrorUI::ErrorWriting`: It will appear when writing to the block chain
-fn receive_block(
+fn receive_block<N : Notifier>(
     utxo_set: &MutArc<UTXOSet>,
     block_chain: &MutArc<BlockChain>,
     block: Block,
     logger: LoggerSender,
-    notifier: NotificationSender,
+    notifier: N,
 ) -> Result<(), ErrorProcess> {
     let mut utxo_set = get_reference(utxo_set)?;
 
@@ -141,24 +139,14 @@ fn receive_block(
             let _ = logger.log_wallet(
                 "Removing transaction from list of transaction seen so far".to_string(),
             );
-            if notifier
-                .send(Notification::TransactionOfAccountInNewBlock(
-                    transaction.clone(),
-                ))
-                .is_err()
-            {
-                let _ = logger.log_error("Error sending notification".to_string());
-            };
+
+            notifier.notify(Notification::TransactionOfAccountInNewBlock(transaction.clone()));
         }
     }
 
     utxo_set.update_utxo_with_block(&block);
-    if notifier
-        .send(Notification::NewBlockAddedToTheBlockchain(block.clone()))
-        .is_err()
-    {
-        let _ = logger.log_error("Error sending notification".to_string());
-    };
+
+    notifier.notify(Notification::NewBlockAddedToTheBlockchain(block.clone()));
 
     match get_reference(block_chain)?.append_block(block) {
         Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => Ok(()),
@@ -179,13 +167,12 @@ pub fn create_transaction(
     fee: f64,
 ) -> Result<Transaction, ErrorProcess> {
     let utxo_set = get_reference(utxo_set)?;
-    let available_outputs = utxo_set.get_utxo_list_with_outpoints(Some(&account.address));
 
-    match account.create_transaction_with_available_outputs(
+    match account.create_transaction(
         address.clone(),
         fron_tbtc_to_satoshi(amount),
         fron_tbtc_to_satoshi(fee),
-        available_outputs,
+        &utxo_set,
     ) {
         Ok(transaction) => Ok(transaction),
         Err(ErrorWallet::NotEnoughFunds(error_string)) => {

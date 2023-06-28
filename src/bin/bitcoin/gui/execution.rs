@@ -1,6 +1,6 @@
 use super::{
     gui_backend::spawn_backend_handler, signal_to_back::SignalToBack,
-    signal_to_front::SignalToFront,
+    signal_to_front::SignalToFront, notifierGUI::NotifierGUI,
 };
 
 use gtk::glib;
@@ -533,14 +533,19 @@ pub fn program_execution(
     let (tx_to_front, rx_from_back) =
         glib::MainContext::channel::<SignalToFront>(glib::PRIORITY_DEFAULT);
 
+    let notifier = NotifierGUI {
+        tx_to_front,
+        logger: logger.clone(),
+    };
+
     let backend_handler = spawn_backend_handler(
         mode_config,
         connection_config,
         download_config,
         save_config,
-        logger,
-        tx_to_front,
         rx_from_front,
+        notifier,
+        logger,
     );
 
     let glade_src = include_str!("WindowNotebook.glade");

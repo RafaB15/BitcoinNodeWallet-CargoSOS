@@ -5,11 +5,6 @@ use crate::{
     wallet_structure::account::Account,
 };
 
-use std::sync::mpsc::{Receiver, Sender};
-
-pub type NotificationSender = Sender<Notification>;
-pub type NotificationReceiver = Receiver<Notification>;
-
 pub enum Notification {
     AttemptingHandshakeWithPeer(SocketAddr),
     SuccessfulHandshakeWithPeer(SocketAddr),
@@ -17,4 +12,15 @@ pub enum Notification {
     TransactionOfAccountReceived(Vec<Account>, Transaction),
     TransactionOfAccountInNewBlock(Transaction),
     NewBlockAddedToTheBlockchain(Block),
+    UpdatedSelectedAccount(Account),
+    RegisterWalletAccount(Account),
+    NotifyBlockchainIsReady,
+    LoadAvailableBalance((f64, f64)),
+    AccountNotSelected,
+    AccountTransactions((Account, Vec<Transaction>)),
+    InvalidAddressEnter,
+    InvalidPublicKeyEnter,
+    InvalidPrivateKeyEnter,
+    AccountCreationFail,
+    NotEnoughFunds,
 }

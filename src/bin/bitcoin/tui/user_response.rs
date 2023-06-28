@@ -1,8 +1,11 @@
-use super::{account, menu, menu_option::MenuOption, transaction};
+use super::{account::{self, get_address}, menu, menu_option::MenuOption, timestamp::Timestamp};
 
 use crate::ui::error_ui::ErrorUI;
 
-use crate::process::reference::{get_reference, MutArc};
+use crate::process::{
+    reference::{get_reference, MutArc},
+    broadcasting::create_transaction,
+};
 
 use cargosos_bitcoin::{
     block_structure::{
@@ -18,6 +21,7 @@ use cargosos_bitcoin::{
 
 use std::{
     net::TcpStream,
+    io::stdin,
 };
 
 /// It will responde to the user input
@@ -93,6 +97,108 @@ fn removing_account(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(),
     Ok(())
 }
 
+/// Get the timestamp from the user via terminal
+///
+/// ### Error
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+pub fn select_option(logger: LoggerSender) -> Result<Timestamp, ErrorUI> {
+    println!("Select an option:");
+    Timestamp::print_all();
+
+    let mut option: String = String::new();
+    if stdin().read_line(&mut option).is_err() {
+        return Err(ErrorUI::TerminalReadFail);
+    }
+
+    loop {
+        let _: Timestamp = match Timestamp::try_from(option.trim()) {
+            Ok(result) => {
+                let _ = logger.log_wallet("Valid option entered".to_string());
+                return Ok(result);
+            }
+            Err(error) => {
+                let _ =
+                    logger.log_wallet(format!("Invalid option entered, with error: {:?}", error));
+
+                option.clear();
+                println!("Error, please enter a valid option:");
+                Timestamp::print_all();
+                if stdin().read_line(&mut option).is_err() {
+                    return Err(ErrorUI::TerminalReadFail);
+                }
+                continue;
+            }
+        };
+    }
+}
+
+/// Get the amount for the transaction from the terminal
+///
+/// ### Error
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+fn get_amount(logger: LoggerSender) -> Result<i64, ErrorUI> {
+    let mut amount: String = String::new();
+
+    println!("Enter an amount: ");
+    if stdin().read_line(&mut amount).is_err() {
+        return Err(ErrorUI::TerminalReadFail);
+    }
+
+    loop {
+        match amount.trim().parse::<u32>() {
+            Ok(result) => {
+                let _ = logger.log_wallet("Valid amount entered".to_string());
+                return Ok(result as i64);
+            }
+            Err(error) => {
+                let _ =
+                    logger.log_wallet(format!("Invalid amount entered, with error: {:?}", error));
+
+                amount.clear();
+                println!("Error, please enter a valid amount:");
+                if stdin().read_line(&mut amount).is_err() {
+                    return Err(ErrorUI::TerminalReadFail);
+                }
+
+                continue;
+            }
+        };
+    }
+}
+
+/// Get the fee for the transaction from the terminal
+///
+/// ### Error
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+fn get_fee(logger: LoggerSender) -> Result<i64, ErrorUI> {
+    let mut fee: String = String::new();
+
+    println!("Enter a fee: ");
+    if stdin().read_line(&mut fee).is_err() {
+        return Err(ErrorUI::TerminalReadFail);
+    }
+
+    loop {
+        match fee.trim().parse::<u32>() {
+            Ok(result) => {
+                let _ = logger.log_wallet("Valid fee entered".to_string());
+                return Ok(result as i64);
+            }
+            Err(error) => {
+                let _ = logger.log_wallet(format!("Invalid fee entered, with error: {:?}", error));
+
+                fee.clear();
+                println!("Error, please enter a valid fee:");
+                if stdin().read_line(&mut fee).is_err() {
+                    return Err(ErrorUI::TerminalReadFail);
+                }
+
+                continue;
+            }
+        };
+    }
+}
+
 /// Broadcast the transaction created by the user to the peers from the selected account in the wallet
 ///
 /// ### Error
@@ -117,7 +223,14 @@ fn sending_transaction(
     };
     let mut utxo_set = get_reference(utxo_set)?;
 
-    let transaction = match transaction::create_transaction(&utxo_set, account, logger.clone()) {
+    let address = get_address(logger.clone())?;
+    let amount = get_amount(logger.clone())?;
+    let fee = get_fee(logger.clone())?;
+
+    let transaction = match create_transaction(
+        &utxo_set, 
+        account, 
+        logger.clone()) {
         Ok(transaction) => transaction,
         Err(ErrorUI::TransactionWithoutSufficientFunds) => {
             let message = "Transaction without sufficient funds";
