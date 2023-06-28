@@ -9,7 +9,8 @@ use crate::{
 };
 
 use cargosos_bitcoin::configurations::{
-    connection_config::ConnectionConfig, download_config::DownloadConfig, save_config::SaveConfig,
+    connection_config::ConnectionConfig, download_config::DownloadConfig, mode_config::ModeConfig,
+    save_config::SaveConfig, server_config::ServerConfig,
 };
 
 use cargosos_bitcoin::{
@@ -29,7 +30,7 @@ use cargosos_bitcoin::{
 };
 
 use std::{
-    net::{SocketAddr, TcpStream},
+    net::{IpAddr, SocketAddr, TcpStream},
     sync::mpsc::{Receiver, Sender},
     sync::{Arc, Mutex, MutexGuard},
     thread::JoinHandle,
@@ -70,14 +71,14 @@ fn get_inner<T>(reference: Arc<Mutex<T>>) -> Result<T, ErrorGUI> {
 /// ### Error
 ///  * `ErrorGUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
 fn get_potential_peers(
-    connection_config: ConnectionConfig,
+    server_config: ServerConfig,
     logger: LoggerSender,
 ) -> Result<Vec<SocketAddr>, ErrorExecution> {
     logger.log_connection("Getting potential peers with dns seeder".to_string())?;
 
-    let potential_peers = connection_config.dns_seeder.discover_peers()?;
+    let potential_peers = server_config.dns_seeder.discover_peers()?;
 
-    let peer_count_max = std::cmp::min(connection_config.peer_count_max, potential_peers.len());
+    let peer_count_max = std::cmp::min(server_config.peer_count_max, potential_peers.len());
 
     let potential_peers = potential_peers[0..peer_count_max].to_vec();
 
@@ -717,6 +718,7 @@ fn broadcasting(
 
 /// Function that performs the backend execution
 pub fn backend_execution(
+    mode_config: ModeConfig,
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
     load_system: LoadSystem,
@@ -726,7 +728,13 @@ pub fn backend_execution(
 ) -> Result<SaveSystem, ErrorExecution> {
     let mut load_system = load_system;
 
-    let potential_peers = get_potential_peers(connection_config.clone(), logger.clone())?;
+    let potential_peers = match mode_config {
+        ModeConfig::Server(server_config) => get_potential_peers(server_config, logger.clone())?,
+        ModeConfig::Client(client_config) => vec![SocketAddr::new(
+            IpAddr::V4(client_config.address),
+            client_config.port,
+        )],
+    };
 
     let peer_streams =
         handshake::connect_to_peers(potential_peers, connection_config.clone(), logger.clone());
@@ -774,6 +782,7 @@ pub fn backend_execution(
 
 /// Function that spawns the backend handler thread
 pub fn spawn_backend_handler(
+    mode_config: ModeConfig,
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
     save_config: SaveConfig,
@@ -784,6 +793,7 @@ pub fn spawn_backend_handler(
     thread::spawn(move || {
         let load_system = LoadSystem::new(save_config.clone(), logger.clone());
         backend_execution(
+            mode_config,
             connection_config,
             download_config,
             load_system,
