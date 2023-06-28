@@ -6,6 +6,9 @@ use cargosos_bitcoin::configurations::{
     parsable::{parse_structure, Parsable},
     save_config::SaveConfig,
     ui_config::UIConfig,
+    server_config::ServerConfig,
+    client_config::ClientConfig,
+    mode_config::ModeConfig,
 };
 
 use std::io::Read;

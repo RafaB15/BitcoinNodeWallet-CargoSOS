@@ -3,10 +3,10 @@ use super::{
     parsable::{parse_structure, value_from_map, KeyValueMap, Parsable},
 };
 
-use crate::connections::dns_seeder::DNSSeeder;
-
-use std::net::ipv4;
-use std::cmp::PartialEq;
+use std::{
+    cmp::PartialEq,
+    net::Ipv4Addr,
+};
 
 const PORT: &str = "port";
 const ADDRESS: &str = "address";
@@ -19,7 +19,7 @@ pub struct ClientConfig {
     pub port: u16,
 
     /// It's the address where the client will be connected to
-    pub address: ipv4::Ipv4Addr,
+    pub address: Ipv4Addr,
 }
 
 impl Parsable for ClientConfig {
@@ -29,7 +29,7 @@ impl Parsable for ClientConfig {
 
         Ok(ClientConfig {
             port: u16::parse(PORT, &map)?,
-            address: ipv4::Ipv4Addr::parse(ADDRESS, &map)?,
+            address: Ipv4Addr::parse(ADDRESS, &map)?,
         })
     }
 }
@@ -52,7 +52,7 @@ mod tests {
 
         let config_client = ClientConfig {
             port: 18333,
-            address: ipv4::Ipv4Addr::new(127, 0, 0, 1),
+            address: Ipv4Addr::new(127, 0, 0, 1),
         };
 
         assert_eq!(Ok(config_client), client_result);
@@ -60,19 +60,19 @@ mod tests {
 
     #[test]
     fn test02_accepts_input_with_empty_spaces() {
-        let configuration = "client {
+        let client = "client {
                     port = 18333
             address =                                       127.0.0.1
         }";
 
         let name = "client";
-        let map = parse_structure(server.to_string()).unwrap();
+        let map = parse_structure(client.to_string()).unwrap();
 
-        let client_result = Client::parse(name, &map);
+        let client_result = ClientConfig::parse(name, &map);
 
         let client_config = ClientConfig {
             port: 18333,
-            address: ipv4::Ipv4Addr::new(127, 0, 0, 1),
+            address: Ipv4Addr::new(127, 0, 0, 1),
         };
 
         assert_eq!(Ok(client_config), client_result);
@@ -107,7 +107,7 @@ mod tests {
 
         let client_config = ClientConfig {
             port: 18333,
-            address: ipv4::Ipv4Addr::new(127, 0, 0, 1),
+            address: Ipv4Addr::new(127, 0, 0, 1),
         };
 
         assert_eq!(Ok(client_config), client_result);

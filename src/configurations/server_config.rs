@@ -5,7 +5,7 @@ use super::{
 
 use crate::connections::dns_seeder::DNSSeeder;
 
-use std::net::ipv4;
+use std::net::Ipv4Addr;
 use std::cmp::PartialEq;
 
 const DNS_SEEDER: &str = "dns_seeder";
@@ -30,7 +30,7 @@ pub struct ServerConfig {
     pub own_port: u16,
 
     /// It's the address where the server will be listening
-    pub address: ipv4::Ipv4Addr,
+    pub address: Ipv4Addr,
 }
 
 impl Parsable for ServerConfig {
@@ -43,7 +43,7 @@ impl Parsable for ServerConfig {
             peer_count_max: usize::parse(PEER_COUNT_MAX, &map)?,
             client_count_max: usize::parse(CLIENT_COUNT_MAX, &map)?,
             own_port: u16::parse(PORT, &map)?,
-            address: ipv4::Ipv4Addr::parse(ADDRESS, &map)?,
+            address: Ipv4Addr::parse(ADDRESS, &map)?,
         })
     }
 }
@@ -75,15 +75,15 @@ mod tests {
             peer_count_max: 8,
             client_count_max: 8,
             own_port: 18333,
-            address: ipv4::Ipv4Addr::new(127, 0, 0, 1),
+            address: Ipv4Addr::new(127, 0, 0, 1),
         };
 
-        assert_eq!(Ok(server_connection), server_result);
+        assert_eq!(Ok(config_server), server_result);
     }
 
     #[test]
     fn test02_accepts_input_with_empty_spaces() {
-        let configuration = "server {
+        let server = "server {
             dns_seeder {
                 seed = seed.testnet.bitcoin.sprovoost.nl
                              port = 18333
@@ -99,12 +99,12 @@ mod tests {
 
         let server_result = ServerConfig::parse(name, &map);
 
-        let server_config = ConnectionConfig {
+        let server_config = ServerConfig {
             dns_seeder: DNSSeeder::new("seed.testnet.bitcoin.sprovoost.nl", 18333),
             peer_count_max: 8,
             client_count_max: 8,
             own_port: 18333,
-            address: ipv4::Ipv4Addr::new(127, 0, 0, 1),
+            address: Ipv4Addr::new(127, 0, 0, 1),
         };
 
         assert_eq!(Ok(server_config), server_result);
@@ -149,11 +149,12 @@ mod tests {
 
         let server_result = ServerConfig::parse(name, &map);
 
-        let server_config = ConnectionConfig {
+        let server_config = ServerConfig {
             dns_seeder: DNSSeeder::new("seed.testnet.bitcoin.sprovoost.nl", 18333),
             peer_count_max: 8,
             client_count_max: 8,
-            address: ipv4::Ipv4Addr::new(127, 0, 0, 1),
+            own_port: 18333,
+            address: Ipv4Addr::new(127, 0, 0, 1),
         };
 
         assert_eq!(Ok(server_config), server_result);

@@ -4,7 +4,7 @@ use super::{
 };
 
 use crate::connections::{
-    dns_seeder::DNSSeeder, ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P,
+    ibd_methods::IBDMethod, p2p_protocol::ProtocolVersionP2P,
 };
 
 use crate::messages::{bitfield_services::BitfieldServices, message_header::MagicType};
