@@ -26,6 +26,7 @@ use cargosos_bitcoin::{
         account::Account, address::Address, error_wallet::ErrorWallet, private_key::PrivateKey,
         public_key::PublicKey, wallet::Wallet,
     },
+    notifications::notification::{Notification, NotificationSender},
 };
 
 use std::{
@@ -141,6 +142,7 @@ fn receive_transaction(
     pending_transactions: MutArc<Vec<Transaction>>,
     logger: LoggerSender,
     tx_to_front: glib::Sender<SignalToFront>,
+    notifier: NotificationSender,
 ) -> Result<(), ErrorGUI> {
     let mut transaction_owned_by_account = false;
 
@@ -195,6 +197,7 @@ fn receive_block(
     pending_transactions: MutArc<Vec<Transaction>>,
     logger: LoggerSender,
     tx_to_front: glib::Sender<SignalToFront>,
+    notifier: NotificationSender,
 ) -> Result<(), ErrorGUI> {
     get_reference(&pending_transactions)?.retain(|transaction| {
         if block.transactions.contains(transaction) {
@@ -207,6 +210,7 @@ fn receive_block(
             {
                 println!("Error sending signal to front")
             }
+            let _ = notifier.send(Notification::TransactionOfAccountInNewBlock(transaction.clone()));
             return false;
         }
         true
@@ -238,6 +242,7 @@ pub fn handle_peers(
     pending_transactions: MutArc<Vec<Transaction>>,
     block_chain: MutArc<BlockChain>,
     logger: LoggerSender,
+    notifier: NotificationSender,
 ) -> JoinHandle<Result<(), ErrorGUI>> {
     thread::spawn(move || {
         for message in receiver_broadcasting {
@@ -250,6 +255,7 @@ pub fn handle_peers(
                         pending_transactions.clone(),
                         logger.clone(),
                         tx_to_front.clone(),
+                        notifier.clone(),
                     )?;
                 }
                 MessageResponse::Transaction(transaction) => {
@@ -259,6 +265,7 @@ pub fn handle_peers(
                         pending_transactions.clone(),
                         logger.clone(),
                         tx_to_front.clone(),
+                        notifier.clone(),
                     )?;
                 }
             }
@@ -707,6 +714,7 @@ fn broadcasting(
     data: (MutArc<Wallet>, MutArc<UTXOSet>, MutArc<BlockChain>),
     connection_config: ConnectionConfig,
     logger: LoggerSender,
+    notifier: NotificationSender,
 ) -> Result<(), ErrorExecution> {
     let wallet: Arc<Mutex<Wallet>> = data.0;
     let utxo_set: Arc<Mutex<UTXOSet>> = data.1;
@@ -722,6 +730,7 @@ fn broadcasting(
         pending_transactions.clone(),
         block_chain.clone(),
         logger.clone(),
+        notifier.clone(),
     );
 
     let mut broadcasting = get_broadcasting(
@@ -747,6 +756,8 @@ fn broadcasting(
     }
 }
 
+
+
 /// Function that performs the backend execution
 pub fn backend_execution(
     connection_config: ConnectionConfig,
@@ -758,10 +769,12 @@ pub fn backend_execution(
 ) -> Result<SaveSystem, ErrorExecution> {
     let mut load_system = load_system;
 
+    let (notification_sender, notification_receiver) = mpsc::channel::<Notification>();
+
     let potential_peers = get_potential_peers(connection_config.clone(), logger.clone())?;
 
     let peer_streams =
-        handshake::connect_to_peers(potential_peers, connection_config.clone(), logger.clone());
+        handshake::connect_to_peers(potential_peers, connection_config.clone(), logger.clone(), notification_sender.clone());
 
     let mut block_chain = load_system.get_block_chain()?;
 
@@ -795,6 +808,7 @@ pub fn backend_execution(
         (wallet.clone(), utxo_set, block_chain.clone()),
         connection_config,
         logger.clone(),
+        notification_sender,
     )?;
 
     Ok(SaveSystem::new(

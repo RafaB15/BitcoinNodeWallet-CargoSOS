@@ -355,9 +355,11 @@ fn receive_block(
     let mut block_chain = get_reference(block_chain)?;
 
     utxo_set.update_utxo_with_block(&block);
-
+    let _ = notifier.send(Notification::NewBlockAddedToTheBlockchain(block.clone()));
     match block_chain.append_block(block) {
-        Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => Ok(()),
+        Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => {
+            Ok(())
+        },
         _ => Err(ErrorTUI::ErrorWriting(
             "Error appending block to blockchain".to_string(),
         )),

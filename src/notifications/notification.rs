@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use crate::{
-    block_structure::transaction::Transaction,
+    block_structure::{transaction::Transaction, block::Block},
     wallet_structure::account::Account,
 };
 
@@ -14,4 +14,5 @@ pub enum Notification {
     FailedHandshakeWithPeer(SocketAddr),
     TransactionOfAccountReceived(Vec<Account>, Transaction),
     TransactionOfAccountInNewBlock(Transaction),
+    NewBlockAddedToTheBlockchain(Block)
 }
