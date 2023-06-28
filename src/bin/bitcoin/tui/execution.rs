@@ -13,7 +13,7 @@ use cargosos_bitcoin::{
     configurations::{connection_config::ConnectionConfig, download_config::DownloadConfig},
     connections::ibd_methods::IBDMethod,
     logs::logger_sender::LoggerSender,
-    notifications::notification::Notification,
+    notifications::notification::{Notification, NotificationSender},
     node_structure::{broadcasting::Broadcasting, message_response::MessageResponse},
     wallet_structure::wallet::Wallet,
 };
@@ -173,6 +173,7 @@ fn broadcasting(
     block_chain: Arc<Mutex<BlockChain>>,
     connection_config: ConnectionConfig,
     logger: LoggerSender,
+    notification_sender: NotificationSender,
 ) -> Result<(), ErrorExecution> {
     let (sender_response, receiver_response) = mpsc::channel::<MessageResponse>();
     let pending_transactions = Arc::new(Mutex::new(Vec::<Transaction>::new()));
@@ -184,6 +185,7 @@ fn broadcasting(
         pending_transactions.clone(),
         block_chain.clone(),
         logger.clone(),
+        notification_sender.clone()
     );
 
     let mut broadcasting = get_broadcasting(
@@ -245,6 +247,7 @@ pub fn program_execution(
         block_chain.clone(),
         connection_config,
         logger.clone(),
+        notification_sender.clone(),
     )?;
 
     Ok(SaveSystem::new(

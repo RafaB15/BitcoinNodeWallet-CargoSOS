@@ -12,6 +12,7 @@ use cargosos_bitcoin::{
         broadcasting::Broadcasting, error_node::ErrorNode, message_response::MessageResponse,
     },
     wallet_structure::{account::Account, wallet::Wallet},
+    notifications::notification::{Notification, NotificationSender},
 };
 
 use std::{
@@ -245,6 +246,7 @@ pub fn handle_peers(
     pending_transactions: MutArc<Vec<Transaction>>,
     block_chain: MutArc<BlockChain>,
     logger: LoggerSender,
+    notifier: NotificationSender,
 ) -> JoinHandle<Result<(), ErrorTUI>> {
     thread::spawn(move || {
         for message in receiver_broadcasting {
@@ -256,6 +258,7 @@ pub fn handle_peers(
                         block,
                         pending_transactions.clone(),
                         logger.clone(),
+                        notifier.clone(),
                     )?;
                 }
                 MessageResponse::Transaction(transaction) => {
@@ -264,6 +267,7 @@ pub fn handle_peers(
                         transaction,
                         pending_transactions.clone(),
                         logger.clone(),
+                        notifier.clone(),
                     )?;
                 }
             }
@@ -282,6 +286,7 @@ fn receive_transaction(
     transaction: Transaction,
     pending_transactions: MutArc<Vec<Transaction>>,
     logger: LoggerSender,
+    notifier: NotificationSender,
 ) -> Result<(), ErrorTUI> {
     let mut transaction_own_by_account = false;
 
@@ -291,6 +296,7 @@ fn receive_transaction(
         }
     }
 
+    let mut involved_accounts = Vec::new();
     for account in get_reference(wallet)?.get_accounts() {
         if account.verify_transaction_ownership(&(transaction.clone())) {
             notify(
@@ -300,9 +306,13 @@ fn receive_transaction(
                 ),
                 logger.clone(),
             );
-
             transaction_own_by_account = true;
+            involved_accounts.push(account.clone());
         }
+    }
+
+    if !involved_accounts.is_empty(){
+        let _ = notifier.send(Notification::TransactionOfAccountReceived(involved_accounts, transaction.clone()));
     }
 
     if transaction_own_by_account {
@@ -323,6 +333,7 @@ fn receive_block(
     block: Block,
     pending_transactions: MutArc<Vec<Transaction>>,
     logger: LoggerSender,
+    notifier: NotificationSender,
 ) -> Result<(), ErrorTUI> {
     get_reference(&pending_transactions)?.retain(|transaction| {
         if block.transactions.contains(transaction) {
@@ -331,6 +342,7 @@ fn receive_block(
                 &format!("The transaction: \n{transaction}\n has been added to the blockchain"),
                 logger.clone(),
             );
+            let _ = notifier.send(Notification::TransactionOfAccountInNewBlock(transaction.clone()));
             let _ = logger.log_wallet(
                 "Removing transaction from list of transaction seen so far".to_string(),
             );
