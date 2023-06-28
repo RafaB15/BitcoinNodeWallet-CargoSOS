@@ -5,7 +5,7 @@ use std::thread;
 
 use crate::{
     error_execution::ErrorExecution,
-    process::{download, handshake, load_system::LoadSystem, save_system::SaveSystem},
+    process::{download, handshake, load_system::LoadSystem, save_system::SaveSystem, reference::{get_inner, get_reference, MutArc}},
 };
 
 use cargosos_bitcoin::configurations::{
@@ -38,34 +38,6 @@ use std::{
 };
 
 use std::sync::mpsc;
-
-type MutArc<T> = Arc<Mutex<T>>;
-
-/// Get a mutable guard to use the value inside the Arc<Mutex<T>>
-///
-/// ### Error
-///  * `ErrorGUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-fn get_reference<T>(reference: &MutArc<T>) -> Result<MutexGuard<'_, T>, ErrorGUI> {
-    match reference.lock() {
-        Ok(reference) => Ok(reference),
-        Err(_) => Err(ErrorGUI::CannotUnwrapArc),
-    }
-}
-
-/// Get the value of a mutable reference given by Arc<Mutex<T>>
-///
-/// ### Error
-///  * `ErrorGUI::CannotGetInner`: It will appear when we try to get the inner value of a mutex
-///  * `ErrorGUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-fn get_inner<T>(reference: Arc<Mutex<T>>) -> Result<T, ErrorGUI> {
-    match Arc::try_unwrap(reference) {
-        Ok(reference_unwrap) => match reference_unwrap.into_inner() {
-            Ok(reference) => Ok(reference),
-            Err(_) => Err(ErrorGUI::CannotGetInner),
-        },
-        Err(_) => Err(ErrorGUI::CannotUnwrapArc),
-    }
-}
 
 /// Get the peers from the dns seeder
 ///

@@ -11,12 +11,6 @@ pub enum ErrorTUI {
     /// It will appear when the terminal read fails
     TerminalReadFail,
 
-    /// It will appear when we try to unwrap an Arc
-    CannotUnwrapArc,
-
-    /// It will appear when we try to get the inner value of a mutex
-    CannotGetInner,
-
     /// It will appear when trying to create a transaction of an amount and fee greater than the balance
     TransactionWithoutSufficientFunds,
 
@@ -40,6 +34,12 @@ pub enum ErrorTUI {
 
     /// It will appear when try to get a value that is already loaded
     AlreadyLoaded,
+
+    /// It will appear when we try to unwrap an Arc
+    CannotUnwrapArc,
+
+    /// It will appear when we try to get the inner value of a mutex
+    CannotGetInner,
 }
 
 impl From<ErrorProcess> for ErrorTUI {
@@ -55,6 +55,8 @@ impl From<ErrorProcess> for ErrorTUI {
             ErrorProcess::ErrorFromPeer(message) => ErrorTUI::ErrorFromPeer(message),
             ErrorProcess::CannotCreateDefault => ErrorTUI::CannotCreateDefault,
             ErrorProcess::AlreadyLoaded => ErrorTUI::AlreadyLoaded,
+            ErrorProcess::CannotGetInner => ErrorTUI::CannotGetInner,
+            ErrorProcess::CannotUnwrapArc => ErrorTUI::CannotUnwrapArc,
         }
     }
 }

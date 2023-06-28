@@ -3,6 +3,7 @@ mod error_initialization;
 mod gui;
 mod process;
 mod tui;
+mod ui;
 
 use std::{
     fs::{File, OpenOptions},

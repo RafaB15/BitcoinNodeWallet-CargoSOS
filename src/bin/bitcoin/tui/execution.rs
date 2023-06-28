@@ -5,11 +5,11 @@ use super::{
 
 use crate::{
     error_execution::ErrorExecution,
-    process::{download, handshake, load_system::LoadSystem, save_system::SaveSystem},
+    process::{download, handshake, load_system::LoadSystem, save_system::SaveSystem, reference},
 };
 
 use cargosos_bitcoin::{
-    block_structure::{block_chain::BlockChain, transaction::Transaction, utxo_set::UTXOSet},
+    block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
     configurations::{
         connection_config::ConnectionConfig, download_config::DownloadConfig,
         mode_config::ModeConfig, server_config::ServerConfig,
@@ -150,21 +150,6 @@ fn get_broadcasting(
     Broadcasting::new(peer_streams, sender_response, connection_config, logger)
 }
 
-/// Get the value of a mutable reference given by Arc<Mutex<T>>
-///
-/// ### Error
-///  * `ErrorTUI::CannotGetInner`: It will appear when we try to get the inner value of a mutex
-///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-fn get_inner<T>(reference: Arc<Mutex<T>>) -> Result<T, ErrorTUI> {
-    match Arc::try_unwrap(reference) {
-        Ok(reference_unwrap) => match reference_unwrap.into_inner() {
-            Ok(reference) => Ok(reference),
-            Err(_) => Err(ErrorTUI::CannotGetInner),
-        },
-        Err(_) => Err(ErrorTUI::CannotUnwrapArc),
-    }
-}
-
 /// Broadcasting blocks and transactions from and to the given peers
 ///
 /// ### Error
@@ -257,8 +242,8 @@ pub fn program_execution(
     )?;
 
     Ok(SaveSystem::new(
-        get_inner(block_chain)?,
-        get_inner(wallet)?,
+        reference::get_inner(block_chain)?,
+        reference::get_inner(wallet)?,
         logger,
     ))
 }

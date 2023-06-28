@@ -22,6 +22,12 @@ pub enum ErrorProcess {
 
     /// It will appear when try to get a value that is already loaded
     AlreadyLoaded,
+
+    /// It will appear when we try to unwrap an Arc
+    CannotUnwrapArc,
+
+    /// It will appear when we try to get the inner value of a mutex
+    CannotGetInner,
 }
 
 impl From<ErrorSerialization> for ErrorProcess {

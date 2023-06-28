@@ -2,6 +2,8 @@ use super::{
     account, error_tui::ErrorTUI, menu, menu_option::MenuOption, notify::notify, transaction,
 };
 
+use crate::process::reference::{get_reference, MutArc};
+
 use cargosos_bitcoin::{
     block_structure::{
         block::Block, block_chain::BlockChain, error_block::ErrorBlock, transaction::Transaction,
@@ -18,22 +20,8 @@ use cargosos_bitcoin::{
 use std::{
     net::TcpStream,
     sync::mpsc::Receiver,
-    sync::{Arc, Mutex, MutexGuard},
     thread::{self, JoinHandle},
 };
-
-type MutArc<T> = Arc<Mutex<T>>;
-
-/// Get a mutable guard to use the value inside the Arc<Mutex<T>>
-///
-/// ### Error
-///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-fn get_reference<T>(reference: &MutArc<T>) -> Result<MutexGuard<'_, T>, ErrorTUI> {
-    match reference.lock() {
-        Ok(reference) => Ok(reference),
-        Err(_) => Err(ErrorTUI::CannotUnwrapArc),
-    }
-}
 
 /// It will responde to the user input
 ///
