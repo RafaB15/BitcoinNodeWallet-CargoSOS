@@ -177,13 +177,11 @@ fn broadcasting(
     logger: LoggerSender,
 ) -> Result<(), ErrorExecution> {
     let (sender_response, receiver_response) = mpsc::channel::<MessageResponse>();
-    let pending_transactions = Arc::new(Mutex::new(Vec::<Transaction>::new()));
 
     let handle = handle_peers(
         receiver_response,
         wallet.clone(),
         utxo_set.clone(),
-        pending_transactions.clone(),
         block_chain.clone(),
         logger.clone(),
     );
@@ -200,7 +198,6 @@ fn broadcasting(
         wallet,
         utxo_set,
         block_chain,
-        pending_transactions,
         logger,
     )?;
 

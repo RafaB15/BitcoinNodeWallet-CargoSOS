@@ -11,7 +11,7 @@ use cargosos_bitcoin::{
     node_structure::{
         broadcasting::Broadcasting, error_node::ErrorNode, message_response::MessageResponse,
     },
-    wallet_structure::{account::Account, wallet::Wallet},
+    wallet_structure::{wallet::Wallet},
 };
 
 use std::{
@@ -45,7 +45,6 @@ pub fn user_input(
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
     block_chain: MutArc<BlockChain>,
-    pending_transactions: MutArc<Vec<Transaction>>,
     logger: LoggerSender,
 ) -> Result<(), ErrorTUI> {
     loop {
@@ -63,7 +62,6 @@ pub fn user_input(
             MenuOption::ShowBalance => showing_balance(
                 &wallet,
                 &utxo_set,
-                pending_transactions.clone(),
                 logger.clone(),
             )?,
             MenuOption::LastTransactions => latest_transactions(&block_chain, logger.clone())?,
@@ -135,7 +133,7 @@ fn sending_transaction(
             return Ok(());
         }
     };
-    let utxo_set = get_reference(utxo_set)?;
+    let mut utxo_set = get_reference(utxo_set)?;
 
     let transaction = match transaction::create_transaction(&utxo_set, account, logger.clone()) {
         Ok(transaction) => transaction,
@@ -148,6 +146,8 @@ fn sending_transaction(
         Err(error) => return Err(error),
     };
     let _ = logger.log_transaction("Sending transaction".to_string());
+
+    utxo_set.append_pending_transaction(transaction.clone());
 
     match broadcasting.send_transaction(transaction) {
         Ok(()) => Ok(()),
@@ -167,7 +167,6 @@ fn sending_transaction(
 fn showing_balance(
     wallet: &MutArc<Wallet>,
     utxo_set: &MutArc<UTXOSet>,
-    pending_transactions: MutArc<Vec<Transaction>>,
     logger: LoggerSender,
 ) -> Result<(), ErrorTUI> {
     let wallet = get_reference(wallet)?;
@@ -175,7 +174,7 @@ fn showing_balance(
     for account in wallet.get_accounts() {
         let utxo_set = get_reference(utxo_set)?;
         let balance = utxo_set.get_balance_in_satoshis(&account.address);
-        let pending = calculate_pending_balance(account, pending_transactions.clone())?;
+        let pending = utxo_set.get_pending_in_satoshis(&account.address);
         let total = balance + pending;
 
         println!(
@@ -187,26 +186,6 @@ fn showing_balance(
     }
 
     Ok(())
-}
-
-/// Calculates the pending balance of an account
-///
-/// ### Error
-///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-fn calculate_pending_balance(
-    account: &Account,
-    pending_transactions: MutArc<Vec<Transaction>>,
-) -> Result<i64, ErrorTUI> {
-    let mut pending = 0;
-    for transaction in get_reference(&pending_transactions)?.iter() {
-        for transaction_output in transaction.tx_out.iter() {
-            if account.verify_transaction_output_ownership(transaction_output) {
-                pending += transaction_output.value;
-            }
-        }
-    }
-
-    Ok(pending)
 }
 
 /// Show the lastest transactions given by the timestamp selected by the user
@@ -242,7 +221,6 @@ pub fn handle_peers(
     receiver_broadcasting: Receiver<MessageResponse>,
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
-    pending_transactions: MutArc<Vec<Transaction>>,
     block_chain: MutArc<BlockChain>,
     logger: LoggerSender,
 ) -> JoinHandle<Result<(), ErrorTUI>> {
@@ -254,15 +232,14 @@ pub fn handle_peers(
                         &utxo_set,
                         &block_chain,
                         block,
-                        pending_transactions.clone(),
                         logger.clone(),
                     )?;
                 }
                 MessageResponse::Transaction(transaction) => {
                     receive_transaction(
                         &wallet,
+                        &utxo_set,
                         transaction,
-                        pending_transactions.clone(),
                         logger.clone(),
                     )?;
                 }
@@ -279,20 +256,22 @@ pub fn handle_peers(
 ///  * `ErrorTUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 fn receive_transaction(
     wallet: &MutArc<Wallet>,
+    utxo_set: &MutArc<UTXOSet>,
     transaction: Transaction,
-    pending_transactions: MutArc<Vec<Transaction>>,
     logger: LoggerSender,
 ) -> Result<(), ErrorTUI> {
-    let mut transaction_own_by_account = false;
+    
+    let mut utxo_set = get_reference(utxo_set)?;
 
-    {
-        if get_reference(&pending_transactions)?.contains(&transaction) {
-            return Ok(());
-        }
+    if utxo_set.is_transaction_pending(&transaction) {
+        let _ = logger.log_wallet(format!(
+            "Transaction {transaction} is already in the list of transactions seen so far",
+        ));
+        return Ok(());
     }
 
     for account in get_reference(wallet)?.get_accounts() {
-        if account.verify_transaction_ownership(&(transaction.clone())) {
+        if account.verify_transaction_ownership(&transaction) {
             notify(
                 &format!("New transaction received own by {}", account.account_name),
                 &format!(
@@ -300,14 +279,10 @@ fn receive_transaction(
                 ),
                 logger.clone(),
             );
-
-            transaction_own_by_account = true;
         }
     }
 
-    if transaction_own_by_account {
-        get_reference(&pending_transactions)?.push(transaction);
-    }
+    utxo_set.append_pending_transaction(transaction);
 
     Ok(())
 }
@@ -321,30 +296,24 @@ fn receive_block(
     utxo_set: &MutArc<UTXOSet>,
     block_chain: &MutArc<BlockChain>,
     block: Block,
-    pending_transactions: MutArc<Vec<Transaction>>,
     logger: LoggerSender,
 ) -> Result<(), ErrorTUI> {
-    get_reference(&pending_transactions)?.retain(|transaction| {
+
+    let mut utxo_set = get_reference(utxo_set)?;
+
+    for transaction in utxo_set.pending_transactions() {
         if block.transactions.contains(transaction) {
             notify(
                 "Transaction added to blockchain",
                 &format!("The transaction: \n{transaction}\n has been added to the blockchain"),
                 logger.clone(),
             );
-            let _ = logger.log_wallet(
-                "Removing transaction from list of transaction seen so far".to_string(),
-            );
-            return false;
         }
-        true
-    });
-
-    let mut utxo_set = get_reference(utxo_set)?;
-    let mut block_chain = get_reference(block_chain)?;
-
+    }
+    
     utxo_set.update_utxo_with_block(&block);
-
-    match block_chain.append_block(block) {
+    
+    match get_reference(block_chain)?.append_block(block) {
         Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => Ok(()),
         _ => Err(ErrorTUI::ErrorWriting(
             "Error appending block to blockchain".to_string(),
