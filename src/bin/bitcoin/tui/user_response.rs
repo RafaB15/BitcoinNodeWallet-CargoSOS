@@ -11,7 +11,7 @@ use cargosos_bitcoin::{
     node_structure::{
         broadcasting::Broadcasting, error_node::ErrorNode, message_response::MessageResponse,
     },
-    wallet_structure::{account::Account, wallet::Wallet},
+    wallet_structure::wallet::Wallet,
     notifications::notification::{Notification, NotificationSender},
 };
 

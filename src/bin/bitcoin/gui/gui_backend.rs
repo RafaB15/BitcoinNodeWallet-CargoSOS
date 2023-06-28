@@ -153,12 +153,13 @@ fn receive_transaction(
         return Ok(());
     }
 
+    let mut involved_accounts = Vec::new();
     for account in get_reference(wallet)?.get_accounts() {
         if account.verify_transaction_ownership(&(transaction.clone())) {
             let _ = logger.log_wallet(format!(
                 "Transaction {transaction} is owned by account {account}"
             ));
-
+            involved_accounts.push(account.clone());
             if tx_to_front.send(SignalToFront::Update).is_err()
                 || tx_to_front
                     .send(SignalToFront::TransactionOfAccountReceived(
@@ -172,9 +173,10 @@ fn receive_transaction(
             }
         }
     }
-
+    if !involved_accounts.is_empty(){
+        let _ = notifier.send(Notification::TransactionOfAccountReceived(involved_accounts, transaction.clone()));
+    }
     utxo_set.append_pending_transaction(transaction);
-
     Ok(())
 }
 
@@ -210,6 +212,7 @@ fn receive_block(
     }
 
     utxo_set.update_utxo_with_block(&block);
+    let _ = notifier.send(Notification::NewBlockAddedToTheBlockchain(block.clone()));
     if tx_to_front.send(SignalToFront::Update).is_err() {
         return Err(ErrorGUI::FailedSignalToFront(
             "TransactionInBlock".to_string(),
@@ -725,6 +728,54 @@ fn broadcasting(
 }
 
 
+/// Function that spawns the notification handler thread.
+/// It return the notification sender and a handle on the
+/// thread.
+pub fn spawn_notification_handler(tx_to_front: glib::Sender<SignalToFront>) -> (NotificationSender, thread::JoinHandle<()>) {
+    let (notification_sender, notification_receiver) = mpsc::channel::<Notification>();
+
+    let handle = thread::spawn(move || {
+        for notification in notification_receiver {
+            match notification {
+                Notification::AttemptingHandshakeWithPeer(peer) => {
+                    println!("Attempting handshake with peer {}", peer)
+                },
+                Notification::SuccessfulHandshakeWithPeer(peer) => {
+                    println!("Successful handshake with peer {}", peer)
+                },
+                Notification::FailedHandshakeWithPeer(peer) => {
+                    println!("Failed handshake with peer {}", peer)
+                },
+                Notification::TransactionOfAccountReceived(accounts, _transaction) => {
+                    if tx_to_front.send(SignalToFront::Update).is_err()
+                    || tx_to_front.send(SignalToFront::TransactionOfAccountReceived(
+                        accounts[0].account_name.clone(),
+                        ))
+                        .is_err()
+                        {
+                            println!("Failed to send update signal to front");
+                        }
+                },
+                Notification::TransactionOfAccountInNewBlock(_transaction) => {
+                    if tx_to_front
+                        .send(SignalToFront::BlockWithUnconfirmedTransactionReceived)
+                        .is_err()
+                    {
+                        println!("Error sending signal to front")
+                    }
+                },
+                Notification::NewBlockAddedToTheBlockchain(_block) => {
+                    if tx_to_front.send(SignalToFront::Update).is_err() {
+                        println!("Error sending signal to front");
+                    }
+                }
+            }
+        }
+    });
+
+    (notification_sender, handle)
+
+}
 
 /// Function that performs the backend execution
 pub fn backend_execution(
@@ -737,7 +788,7 @@ pub fn backend_execution(
 ) -> Result<SaveSystem, ErrorExecution> {
     let mut load_system = load_system;
 
-    let (notification_sender, notification_receiver) = mpsc::channel::<Notification>();
+    let (notification_sender, _notification_handler) = spawn_notification_handler(tx_to_front.clone());
 
     let potential_peers = get_potential_peers(connection_config.clone(), logger.clone())?;
 
