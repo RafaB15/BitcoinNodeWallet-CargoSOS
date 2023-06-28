@@ -34,7 +34,7 @@ use std::{
 };
 
 /// It represents how to manage the server clients, listening to the there messages and sending them transactions
-pub struct ServerManager<RW>
+pub struct ClientManager<RW>
 where
     RW: Read + Write + Send + 'static,
 {
@@ -46,7 +46,13 @@ where
     logger: LoggerSender,
 }
 
-impl<RW> ServerManager<RW>
+pub enum Work {
+    MessageFromPeer(MessageHeader),
+    SendTransaction(Transaction),
+    Stop,
+}
+
+impl<RW> ClientManager<RW>
 where
     RW: Read + Write + Send + 'static,
 {
@@ -58,7 +64,7 @@ where
         magic_numbers: [u8; 4],
         logger: LoggerSender,
     ) -> Self {
-        ServerManager {
+        ClientManager {
             peer: client,
             sender,
             receiver,
@@ -74,12 +80,27 @@ where
     ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
     ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
     ///  * `ErrorNode::NodeNotResponding`: It will appear when the node is not responding to the messages
-    pub fn connecting_to_peer(mut self) -> Result<RW, ErrorNode> {
-        while let Ok(header) = MessageHeader::deserialize_header(&mut self.peer) {
-            self.manage_message(header)?;
+    pub fn connecting_to_client(mut self) -> Result<RW, ErrorNode> {
+
+        loop {
+            match self.receive_information()? {
+                Work::MessageFromPeer(header) => self.manage_message(header)?,
+                Work::SendTransaction(transaction) => self.send_transaction(transaction)?,
+                Work::Stop => break,
+            }
+        }
+
+        Ok(self.peer)
+    }
+
+    fn receive_information(&mut self) -> Result<Work, ErrorNode> {
+        loop {
+            if let Ok(header) = MessageHeader::deserialize_header(&mut self.peer) {
+                return Ok(Work::MessageFromPeer(header));
+            }
 
             if let Ok(transaction) = self.receiver.try_recv() {
-                self.send_transaction(transaction)?;
+                return Ok(Work::SendTransaction(transaction));
             }
 
             match self.stop.lock() {
@@ -88,7 +109,7 @@ where
                         let _ = self
                             .logger
                             .log_configuration("Closing this peer".to_string());
-                        break;
+                        return Ok(Work::Stop);
                     }
                 }
                 Err(_) => {
@@ -98,8 +119,6 @@ where
                 }
             }
         }
-
-        Ok(self.peer)
     }
 
     /// Receives the message from the peer and manages it by sending to the peer or others threads via the sender

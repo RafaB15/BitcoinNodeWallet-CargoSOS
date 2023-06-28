@@ -3,9 +3,10 @@ pub mod handshake;
 pub mod initial_headers_download;
 
 pub mod broadcasting;
+pub mod server;
 pub mod message_response;
 pub mod peer_manager;
-pub mod server_manager;
+pub mod client_manager;
 
 pub mod handshake_data;
 
