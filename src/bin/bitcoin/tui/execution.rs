@@ -9,7 +9,7 @@ use crate::{
 };
 
 use cargosos_bitcoin::{
-    block_structure::{block_chain::BlockChain, transaction::Transaction, utxo_set::UTXOSet},
+    block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
     configurations::{connection_config::ConnectionConfig, download_config::DownloadConfig},
     connections::ibd_methods::IBDMethod,
     logs::logger_sender::LoggerSender,
@@ -176,13 +176,11 @@ fn broadcasting(
     notification_sender: NotificationSender,
 ) -> Result<(), ErrorExecution> {
     let (sender_response, receiver_response) = mpsc::channel::<MessageResponse>();
-    let pending_transactions = Arc::new(Mutex::new(Vec::<Transaction>::new()));
 
     let handle = handle_peers(
         receiver_response,
         wallet.clone(),
         utxo_set.clone(),
-        pending_transactions.clone(),
         block_chain.clone(),
         logger.clone(),
         notification_sender.clone()
@@ -200,7 +198,6 @@ fn broadcasting(
         wallet,
         utxo_set,
         block_chain,
-        pending_transactions,
         logger,
     )?;
 

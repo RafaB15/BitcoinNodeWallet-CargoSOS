@@ -84,9 +84,21 @@ where
     /// ### Error
     ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to a peer
     pub fn send_transaction(&mut self, transaction: Transaction) -> Result<(), ErrorNode> {
+        let transaction_id = match transaction.get_tx_id() {
+            Ok(id) => id,
+            Err(_) => {
+                return Err(ErrorNode::WhileSendingMessage(
+                    "Getting transaction id".to_string(),
+                ))
+            }
+        };
+        
         let _ = self
             .logger
-            .log_transaction("Broadcasting transaction".to_string());
+            .log_transaction(format!(
+                "Broadcasting transaction: {:?}",
+                transaction_id
+            ));
         for (_, sender) in self.peers.iter() {
             if sender.send(transaction.clone()).is_err() {
                 return Err(ErrorNode::WhileSendingMessage(
