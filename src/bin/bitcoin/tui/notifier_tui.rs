@@ -45,11 +45,13 @@ impl Notifier for NotifierTUI {
                 &format!("The transaction {transaction} was added to a block"),
                 &self.logger,
             ),
-            Notification::NewBlockAddedToTheBlockchain(block) => show_notification(
-                "New block added",
-                &format!("The block {block}\n    was added to the blockchain"),
-                &self.logger,
-            ),
+            Notification::NewBlockAddedToTheBlockchain(block) => {
+                show_notification(
+                    "New block added",
+                    &format!("The block {block}\n    was added to the blockchain"),
+                    &self.logger,
+                );
+            }
             Notification::UpdatedSelectedAccount(account) => {
                 let message = format!("Account selected: {account}");
                 println!("{message}");
@@ -86,7 +88,6 @@ impl Notifier for NotifierTUI {
                 for transaction in transactions {
                     message_transaction.push_str(&format!("{transaction}\n"));
                 }
-
                 show_notification(
                     &format!("In the account: {account}", account = account.account_name),
                     &message_transaction,

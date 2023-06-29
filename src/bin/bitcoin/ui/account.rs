@@ -10,11 +10,7 @@ use cargosos_bitcoin::{
 };
 
 /// Function that obtains the balance of the selected account and sends it to the front
-pub fn give_account_balance<N: Notifier>(
-    wallet: &Wallet,
-    utxo_set: &UTXOSet,
-    notifier: N,
-) {
+pub fn give_account_balance<N: Notifier>(wallet: &Wallet, utxo_set: &UTXOSet, notifier: N) {
     let account_to_check = match wallet.get_selected_account() {
         Some(account) => account,
         None => return notifier.notify(Notification::AccountNotSelected),

@@ -186,7 +186,12 @@ pub fn change_account<N: Notifier>(
         return Err(ErrorUI::TerminalReadFail);
     }
 
-    while account::change_selected_account(account_name.trim().to_string(), wallet, notifier.clone()).is_err()
+    while account::change_selected_account(
+        account_name.trim().to_string(),
+        wallet,
+        notifier.clone(),
+    )
+    .is_err()
     {
         let _ = logger.log_wallet("Invalid account name entered".to_string());
 
@@ -376,39 +381,53 @@ pub fn user_input<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
     logger: LoggerSender,
 ) -> Result<(), ErrorUI> {
     loop {
-        let mut wallet_reference = get_reference(&wallet)?;
-        let mut utxo_set_reference = get_reference(&utxo_set)?;
-        let blockchain_reference = get_reference(&block_chain)?;
-
         match menu::select_option(logger.clone())? {
             MenuOption::CreateAccount => {
+                let mut wallet_reference = get_reference(&wallet)?;
                 create_account(&mut wallet_reference, notifier.clone(), logger.clone())?
             }
             MenuOption::ChangeAccount => {
+                let mut wallet_reference = get_reference(&wallet)?;
                 change_account(&mut wallet_reference, notifier.clone(), logger.clone())?
             }
-            MenuOption::RemoveAccount => remove_account(&mut wallet_reference, logger.clone())?,
-            MenuOption::SendTransaction => sending_transaction(
-                broadcasting,
-                &wallet_reference,
-                &mut utxo_set_reference,
-                notifier.clone(),
-                logger.clone(),
-            )?,
+            MenuOption::RemoveAccount => {
+                let mut wallet_reference = get_reference(&wallet)?;
+                remove_account(&mut wallet_reference, logger.clone())?
+            }
+            MenuOption::SendTransaction => {
+                let wallet_reference = get_reference(&wallet)?;
+                let mut utxo_set_reference = get_reference(&utxo_set)?;
+                sending_transaction(
+                    broadcasting,
+                    &wallet_reference,
+                    &mut utxo_set_reference,
+                    notifier.clone(),
+                    logger.clone(),
+                )?
+            }
             MenuOption::ShowAccounts => {
+                let wallet_reference = get_reference(&wallet)?;
                 show_accounts(&wallet_reference, logger.clone());
             }
-            MenuOption::ShowBalance => account::give_account_balance(
-                &wallet_reference,
-                &utxo_set_reference,
-                notifier.clone(),
-            ),
-            MenuOption::LastTransactions => account::give_account_transactions(
-                &wallet_reference,
-                &blockchain_reference,
-                notifier.clone(),
-                logger.clone(),
-            )?,
+            MenuOption::ShowBalance => {
+                let wallet_reference = get_reference(&wallet)?;
+                let utxo_set_reference = get_reference(&utxo_set)?;
+                account::give_account_balance(
+                    &wallet_reference,
+                    &utxo_set_reference,
+                    notifier.clone(),
+                )
+            }
+            MenuOption::LastTransactions => {
+                let wallet_reference = get_reference(&wallet)?;
+                let blockchain_reference = get_reference(&block_chain)?;
+                account::give_account_transactions(
+                    &wallet_reference,
+                    &blockchain_reference,
+                    notifier.clone(),
+                    logger.clone(),
+                )?
+            }
             MenuOption::Exit => break,
         }
     }

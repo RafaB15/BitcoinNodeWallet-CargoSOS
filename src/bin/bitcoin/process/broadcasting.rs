@@ -45,13 +45,7 @@ pub fn handle_peers<N: Notifier + 'static>(
         for message in receiver_broadcasting {
             match message {
                 MessageResponse::Block(block) => {
-                    receive_block(
-                        &utxo_set,
-                        &block_chain,
-                        block,
-                        logger.clone(),
-                        notifier.clone(),
-                    )?;
+                    receive_block(&utxo_set, &wallet, &block_chain, block, notifier.clone())?;
                 }
                 MessageResponse::Transaction(transaction) => {
                     receive_transaction(
@@ -117,19 +111,21 @@ fn receive_transaction<N: Notifier>(
 ///  * `ErrorUI::ErrorWriting`: It will appear when writing to the block chain
 fn receive_block<N: Notifier>(
     utxo_set: &MutArc<UTXOSet>,
+    wallet: &MutArc<Wallet>,
     block_chain: &MutArc<BlockChain>,
     block: Block,
-    logger: LoggerSender,
     notifier: N,
 ) -> Result<(), ErrorProcess> {
     let mut utxo_set = get_reference(utxo_set)?;
+    let wallet = get_reference(wallet)?;
 
     for transaction in utxo_set.pending_transactions() {
-        if block.transactions.contains(transaction) {
-            let _ = logger.log_wallet(
-                "Removing transaction from list of transaction seen so far".to_string(),
-            );
-
+        if block.transactions.contains(transaction)
+            && wallet
+                .get_accounts()
+                .iter()
+                .any(|account| account.verify_transaction_ownership(transaction))
+        {
             notifier.notify(Notification::TransactionOfAccountInNewBlock(
                 transaction.clone(),
             ));

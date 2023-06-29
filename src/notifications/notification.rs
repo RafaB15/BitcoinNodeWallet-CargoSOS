@@ -13,9 +13,9 @@ pub enum Notification {
     FailedHandshakeWithPeer(SocketAddr),
 
     TransactionOfAccountReceived(Vec<Account>, Transaction),
-    
+
     TransactionOfAccountInNewBlock(Transaction),
-    
+
     NewBlockAddedToTheBlockchain(Block),
 
     UpdatedSelectedAccount(Account),
@@ -37,6 +37,6 @@ pub enum Notification {
     InvalidPrivateKeyEnter,
 
     AccountCreationFail,
-    
+
     NotEnoughFunds,
 }
