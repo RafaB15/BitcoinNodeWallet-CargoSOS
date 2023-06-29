@@ -16,6 +16,10 @@ pub enum Notification {
 
     TransactionOfAccountInNewBlock(Transaction),
 
+    SuccessfullySentTransaction(Transaction),
+
+    ProgressDownloadingBlocks(u32, u32),
+
     NewBlockAddedToTheBlockchain(Block),
 
     UpdatedSelectedAccount(Account),

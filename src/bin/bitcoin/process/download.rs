@@ -9,6 +9,7 @@ use cargosos_bitcoin::{
         block_download::BlockDownload, error_node::ErrorNode,
         initial_headers_download::InitialHeaderDownload,
     },
+    notifications::{notification::Notification, notifier::Notifier},
 };
 
 use std::{
@@ -26,11 +27,12 @@ use std::{
 ///  * `ErrorNode::WhileValidating`: It will appear when
 ///  * `ErrorBlock::CouldNotUpdate`: It will appear when the block is not in the blockchain.
 ///  * `ErrorProcess::FailThread`: It will appear when the thread fails
-fn headers_first<RW: Read + Write + Send + Debug + 'static>(
+fn headers_first<N: Notifier, RW: Read + Write + Send + Debug + 'static>(
     peer_streams: Vec<RW>,
     block_chain: &mut BlockChain,
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
+    notifier: N,
     logger: LoggerSender,
 ) -> Result<Vec<RW>, ErrorProcess> {
     let header_download = InitialHeaderDownload::new(
@@ -72,6 +74,7 @@ fn headers_first<RW: Read + Write + Send + Debug + 'static>(
         peer_stream.push(updating_block_chain(
             block_chain,
             peer_download_handle,
+            notifier.clone(),
             logger.clone(),
         )?);
     }
@@ -145,11 +148,12 @@ fn get_blocks<RW: Read + Write + Send + 'static>(
 }
 
 /// Updates the blockchain with the new blocks and returns the TcpStreams that are still connected
-pub fn update_block_chain<RW: Read + Write + Send + Debug + 'static>(
+pub fn update_block_chain<N: Notifier, RW: Read + Write + Send + Debug + 'static>(
     peer_streams: Vec<RW>,
     block_chain: &mut BlockChain,
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
+    notifier: N,
     logger: LoggerSender,
 ) -> Result<Vec<RW>, ErrorProcess> {
     let _ = logger.log_connection("Getting block chain".to_string());
@@ -160,6 +164,7 @@ pub fn update_block_chain<RW: Read + Write + Send + Debug + 'static>(
             block_chain,
             connection_config,
             download_config,
+            notifier,
             logger,
         )?,
         IBDMethod::BlocksFirst => blocks_first::<RW>(),
@@ -181,16 +186,17 @@ pub fn get_utxo_set(block_chain: &BlockChain, logger: LoggerSender) -> UTXOSet {
 /// ### Error
 ///  * `ErrorBlock::CouldNotUpdate`: It will appear when the block is not in the blockchain.
 ///  * `ErrorExecution::FailThread`: It will appear when the thread fails
-fn updating_block_chain<RW: Read + Write + Send>(
+fn updating_block_chain<N: Notifier, RW: Read + Write + Send>(
     block_chain: &mut BlockChain,
     peer_download_handle: JoinHandle<(Vec<Block>, RW)>,
+    notifier: N,
     logger: LoggerSender,
 ) -> Result<RW, ErrorProcess> {
     let _ = logger.log_connection("Finish downloading, loading to blockchain".to_string());
     match peer_download_handle.join() {
         Ok((blocks, peer_stream)) => {
-            let _ =
-                logger.log_connection(format!("Loading {} blocks to blockchain", blocks.len(),));
+            let total_blocks = blocks.len();
+            let _ = logger.log_connection(format!("Loading {total_blocks} blocks to blockchain"));
 
             for (i, block) in blocks.iter().enumerate() {
                 if block_chain.update_block(block.clone()).is_err() {
@@ -199,6 +205,10 @@ fn updating_block_chain<RW: Read + Write + Send>(
 
                 if i % 50 == 0 {
                     let _ = logger.log_connection(format!("Loading [{i}] blocks to blockchain",));
+                    notifier.notify(Notification::ProgressDownloadingBlocks(
+                        i as u32,
+                        total_blocks as u32,
+                    ));
                 }
             }
 

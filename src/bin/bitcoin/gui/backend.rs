@@ -228,6 +228,7 @@ pub fn backend_execution<N: Notifier + 'static>(
         &mut block_chain,
         connection_config.clone(),
         download_config,
+        notifier.clone(),
         logger.clone(),
     )?;
 

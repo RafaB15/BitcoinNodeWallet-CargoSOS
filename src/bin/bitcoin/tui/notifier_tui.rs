@@ -119,6 +119,22 @@ impl Notifier for NotifierTUI {
                 println!("{message}");
                 let _ = self.logger.log_transaction(message);
             }
+            Notification::SuccessfullySentTransaction(transaction) => {
+                show_notification(
+                    "Transaction sent",
+                    &format!("The transaction {transaction} was sent"),
+                    &self.logger,
+                );
+            }
+            Notification::ProgressDownloadingBlocks(blocks_downloaded, total_blocks) => {
+                let percentage_downloaded =
+                    (blocks_downloaded as f32 / total_blocks as f32) * 100.0;
+                let message = format!(
+                    "Finished downloading {percentage}% of the blockchain",
+                    percentage = percentage_downloaded
+                );
+                println!("{message}");
+            }
         }
     }
 }

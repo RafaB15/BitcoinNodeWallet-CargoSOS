@@ -198,6 +198,18 @@ impl Notifier for NotifierGUI {
                     );
                 }
             }
+            Notification::SuccessfullySentTransaction(transaction) => {
+                println!("Transaction sent: {transaction}", transaction = transaction);
+            }
+            Notification::ProgressDownloadingBlocks(blocks_downloaded, total_blocks) => {
+                let percentage_downloaded =
+                    (blocks_downloaded as f32 / total_blocks as f32) * 100.0;
+                let message = format!(
+                    "Finished downloading {percentage}% of the blockchain",
+                    percentage = percentage_downloaded
+                );
+                println!("{message}");
+            }
         }
     }
 }

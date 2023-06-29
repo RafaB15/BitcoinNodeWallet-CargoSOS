@@ -152,6 +152,7 @@ pub fn program_execution(
         &mut block_chain,
         connection_config.clone(),
         download_config,
+        notifier.clone(),
         logger.clone(),
     )?;
 
