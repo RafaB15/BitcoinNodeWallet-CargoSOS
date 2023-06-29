@@ -10,6 +10,12 @@ pub struct NotifierTUI {
     logger: LoggerSender,
 }
 
+impl NotifierTUI {
+    pub fn new(logger: LoggerSender) -> Self {
+        Self { logger }
+    }
+}
+
 impl Notifier for NotifierTUI {
     fn notify(&self, notification: Notification) {
         match notification {

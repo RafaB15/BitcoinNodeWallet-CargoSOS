@@ -15,6 +15,15 @@ pub struct NotifierGUI {
     logger: LoggerSender,
 }
 
+impl NotifierGUI {
+    pub fn new(tx_to_front: Sender<SignalToFront>, logger: LoggerSender) -> Self {
+        Self {
+            tx_to_front,
+            logger,
+        }
+    }
+}
+
 impl Notifier for NotifierGUI {
     fn notify(&self, notification: Notification) {
         match notification {
@@ -125,7 +134,7 @@ impl Notifier for NotifierGUI {
             }
             Notification::InvalidAddressEnter => {
                 let message = "Invalid address".to_string();
-                let _ = self.logger.log_error(message);
+                let _ = self.logger.log_error(message.clone());
                 if self
                     .tx_to_front
                     .send(SignalToFront::ErrorInTransaction(message))
@@ -151,7 +160,7 @@ impl Notifier for NotifierGUI {
             }
             Notification::InvalidPublicKeyEnter => {
                 let message = "Invalid public key".to_string();
-                let _ = self.logger.log_error(message);
+                let _ = self.logger.log_error(message.clone());
                 if self
                     .tx_to_front
                     .send(SignalToFront::ErrorInAccountCreation(message))
@@ -164,7 +173,7 @@ impl Notifier for NotifierGUI {
             }
             Notification::InvalidPrivateKeyEnter => {
                 let message = "Invalid private key".to_string();
-                let _ = self.logger.log_error(message);
+                let _ = self.logger.log_error(message.clone());
                 if self
                     .tx_to_front
                     .send(SignalToFront::ErrorInAccountCreation(message))
@@ -177,7 +186,7 @@ impl Notifier for NotifierGUI {
             }
             Notification::AccountCreationFail => {
                 let message = "Error in account creation".to_string();
-                let _ = self.logger.log_error(message);
+                let _ = self.logger.log_error(message.clone());
                 if self
                     .tx_to_front
                     .send(SignalToFront::ErrorInAccountCreation(message))

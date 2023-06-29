@@ -46,7 +46,6 @@ pub fn create_account<N: Notifier>(
     private_key_string: &str,
     public_key_string: &str,
     notifier: N,
-    logger: LoggerSender,
 ) -> Result<(), ErrorUI> {
     let private_key = match PrivateKey::try_from(private_key_string) {
         Ok(private_key) => private_key,
@@ -64,9 +63,9 @@ pub fn create_account<N: Notifier>(
         }
     };
 
-    let wallet = reference::get_reference(&wallet)?;
+    let mut wallet = reference::get_reference(&wallet)?;
     account::create_account(
-        &wallet,
+        &mut wallet,
         account_name,
         private_key,
         public_key,
@@ -86,8 +85,8 @@ pub fn spawn_frontend_handler<N: Notifier>(
     let utxo_set: MutArc<UTXOSet> = data.1;
     let block_chain: MutArc<BlockChain> = data.2;
     for rx in rx_from_front {
-        let wallet_reference = get_reference(&wallet)?;
-        let utxo_set_reference = get_reference(&utxo_set)?;
+        let mut wallet_reference = get_reference(&wallet)?;
+        let mut utxo_set_reference = get_reference(&utxo_set)?;
         let block_chain_reference = get_reference(&block_chain)?;
 
         match rx {
@@ -101,7 +100,7 @@ pub fn spawn_frontend_handler<N: Notifier>(
             SignalToBack::ChangeSelectedAccount(account_name) => {
                 account::change_selected_account(
                     account_name,
-                    &wallet_reference,
+                    &mut wallet_reference,
                     notifier.clone(),
                 )?;
             }
@@ -117,7 +116,7 @@ pub fn spawn_frontend_handler<N: Notifier>(
                 transaction::sending_transaction(
                     broadcasting,
                     &wallet_reference,
-                    &utxo_set_reference,
+                    &mut utxo_set_reference,
                     address,
                     (amount, fee),
                     notifier.clone(),
@@ -131,7 +130,6 @@ pub fn spawn_frontend_handler<N: Notifier>(
                     &private_key,
                     &public_key,
                     notifier.clone(),
-                    logger.clone(),
                 )?;
             }
             SignalToBack::GetAccountTransactions => {
@@ -151,7 +149,7 @@ pub fn spawn_frontend_handler<N: Notifier>(
 }
 
 /// Broadcasting blocks and transactions from and to the given peers
-fn broadcasting<N: Notifier>(
+fn broadcasting<N: Notifier + 'static>(
     rx_from_front: Receiver<SignalToBack>,
     peer_streams: Vec<TcpStream>,
     data: (MutArc<Wallet>, MutArc<UTXOSet>, MutArc<BlockChain>),
@@ -197,7 +195,7 @@ fn broadcasting<N: Notifier>(
 }
 
 /// Function that performs the backend execution
-pub fn backend_execution<N: Notifier>(
+pub fn backend_execution<N: Notifier + 'static>(
     mode_config: ModeConfig,
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
@@ -219,8 +217,8 @@ pub fn backend_execution<N: Notifier>(
     let peer_streams = handshake::connect_to_peers(
         potential_peers,
         connection_config.clone(),
-        logger.clone(),
         notifier.clone(),
+        logger.clone(),
     );
 
     let mut block_chain = load_system.get_block_chain()?;
@@ -264,7 +262,7 @@ pub fn backend_execution<N: Notifier>(
 }
 
 /// Function that spawns the backend handler thread
-pub fn spawn_backend_handler<N: Notifier>(
+pub fn spawn_backend_handler<N: Notifier + 'static>(
     mode_config: ModeConfig,
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,

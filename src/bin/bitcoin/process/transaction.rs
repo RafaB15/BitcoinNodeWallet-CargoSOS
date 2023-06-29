@@ -64,7 +64,7 @@ fn create_transaction(
 pub fn sending_transaction<N: Notifier, RW: Read + Write + Send + 'static>(
     broadcasting: &mut Broadcasting<RW>,
     wallet: &Wallet,
-    utxo_set: &UTXOSet,
+    utxo_set: &mut UTXOSet,
     address: Address,
     amount_fee: (f64, f64),
     notifier: N,

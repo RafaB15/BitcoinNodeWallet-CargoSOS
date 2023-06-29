@@ -24,7 +24,7 @@ pub fn give_account_balance<N: Notifier>(
     let pending = utxo_set.get_pending_in_tbtc(&account_to_check.address);
 
     notifier.notify(Notification::LoadAvailableBalance((
-        *account_to_check,
+        account_to_check.clone(),
         balance,
         pending,
     )));
@@ -49,7 +49,7 @@ fn get_account_transactions(account: &Account, blockchain: &BlockChain) -> Vec<T
 /// Function that changes the selected account of the address
 pub fn change_selected_account<N: Notifier>(
     account_name: String,
-    wallet: &Wallet,
+    wallet: &mut Wallet,
     notifier: N,
 ) -> Result<(), ErrorUI> {
     let account_to_select = match wallet.get_account_with_name(&account_name) {
@@ -65,7 +65,7 @@ pub fn change_selected_account<N: Notifier>(
 }
 
 pub fn create_account<N: Notifier>(
-    wallet: &Wallet,
+    wallet: &mut Wallet,
     account_name: &str,
     private_key: PrivateKey,
     public_key: PublicKey,
@@ -94,7 +94,7 @@ pub fn give_account_transactions<N: Notifier>(
     logger: LoggerSender,
 ) -> Result<(), ErrorUI> {
     let account = match wallet.get_selected_account() {
-        Some(account) => *account,
+        Some(account) => account.clone(),
         None => {
             let _ = logger.log_wallet("No account selected cannot get transactions".to_string());
             notifier.notify(Notification::AccountNotSelected);

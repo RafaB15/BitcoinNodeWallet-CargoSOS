@@ -1,4 +1,4 @@
-use super::{backend::user_input, notifierTUI::NotifierTUI};
+use super::{backend::user_input, notifier_tui::NotifierTUI};
 
 use crate::{
     error_execution::ErrorExecution,
@@ -74,7 +74,7 @@ fn _show_merkle_path(block_chain: &BlockChain, logger: LoggerSender) -> Result<(
 ///
 /// ### Error
 ///  *
-fn broadcasting<N: Notifier>(
+fn broadcasting<N: Notifier + 'static>(
     peer_streams: Vec<TcpStream>,
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
@@ -136,9 +136,7 @@ pub fn program_execution(
         )],
     };
 
-    let notifier = NotifierTUI {
-        logger: logger.clone(),
-    };
+    let notifier = NotifierTUI::new(logger.clone());
 
     let peer_streams = handshake::connect_to_peers(
         potential_peers,

@@ -1,5 +1,5 @@
 use super::{
-    backend::spawn_backend_handler, notifierGUI::NotifierGUI, signal_to_back::SignalToBack,
+    backend::spawn_backend_handler, notifier_gui::NotifierGUI, signal_to_back::SignalToBack,
     signal_to_front::SignalToFront,
 };
 
@@ -533,10 +533,7 @@ pub fn program_execution(
     let (tx_to_front, rx_from_back) =
         glib::MainContext::channel::<SignalToFront>(glib::PRIORITY_DEFAULT);
 
-    let notifier = NotifierGUI {
-        tx_to_front,
-        logger: logger.clone(),
-    };
+    let notifier = NotifierGUI::new(tx_to_front, logger.clone());
 
     let backend_handler = spawn_backend_handler(
         mode_config,

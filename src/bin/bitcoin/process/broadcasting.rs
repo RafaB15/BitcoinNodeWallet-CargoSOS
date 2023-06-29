@@ -33,7 +33,7 @@ pub fn get_broadcasting<RW: Read + Write + Send + 'static>(
 }
 
 /// Create a thread for handling the blocks and transactions received
-pub fn handle_peers<N: Notifier>(
+pub fn handle_peers<N: Notifier + 'static>(
     receiver_broadcasting: Receiver<MessageResponse>,
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,

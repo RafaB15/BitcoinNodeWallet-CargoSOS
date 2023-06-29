@@ -145,7 +145,7 @@ fn get_account_name() -> Result<String, ErrorUI> {
 /// ### Error
 ///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
 pub fn create_account<N: Notifier>(
-    wallet: &Wallet,
+    wallet: &mut Wallet,
     notifier: N,
     logger: LoggerSender,
 ) -> Result<(), ErrorUI> {
@@ -163,7 +163,7 @@ pub fn create_account<N: Notifier>(
 /// ### Error
 ///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
 ///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-pub fn remove_account(wallet: &Wallet, logger: LoggerSender) -> Result<(), ErrorUI> {
+pub fn remove_account(wallet: &mut Wallet, logger: LoggerSender) -> Result<(), ErrorUI> {
     let account = select_account(&wallet, logger)?;
     wallet.remove_account(account);
 
@@ -176,7 +176,7 @@ pub fn remove_account(wallet: &Wallet, logger: LoggerSender) -> Result<(), Error
 ///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
 ///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 pub fn change_account<N: Notifier>(
-    wallet: &Wallet,
+    wallet: &mut Wallet,
     notifier: N,
     logger: LoggerSender,
 ) -> Result<(), ErrorUI> {
@@ -192,7 +192,8 @@ pub fn change_account<N: Notifier>(
         return Err(ErrorUI::TerminalReadFail);
     }
 
-    while account::change_selected_account(account_name, wallet, notifier).is_err() {
+    while account::change_selected_account(account_name.clone(), wallet, notifier.clone()).is_err()
+    {
         let _ = logger.log_wallet("Invalid account name entered".to_string());
 
         account_name.clear();
@@ -347,7 +348,7 @@ fn get_fee(logger: LoggerSender) -> Result<f64, ErrorUI> {
 pub fn sending_transaction<N: Notifier, RW: Read + Write + Send + 'static>(
     broadcasting: &mut Broadcasting<RW>,
     wallet: &Wallet,
-    utxo_set: &UTXOSet,
+    utxo_set: &mut UTXOSet,
     notifier: N,
     logger: LoggerSender,
 ) -> Result<(), ErrorUI> {
@@ -372,7 +373,7 @@ pub fn sending_transaction<N: Notifier, RW: Read + Write + Send + 'static>(
 ///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
 ///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 ///  * `ErrorUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
-pub fn user_input<N: Notifier, RW: Read + Write + Send + 'static>(
+pub fn user_input<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
     broadcasting: &mut Broadcasting<RW>,
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
@@ -381,38 +382,40 @@ pub fn user_input<N: Notifier, RW: Read + Write + Send + 'static>(
     logger: LoggerSender,
 ) -> Result<(), ErrorUI> {
     loop {
-        let wallet_reference = get_reference(&wallet)?;
-        let utxo_set_reference = get_reference(&utxo_set)?;
+        let mut wallet_reference = get_reference(&wallet)?;
+        let mut utxo_set_reference = get_reference(&utxo_set)?;
         let blockchain_reference = get_reference(&block_chain)?;
 
         match menu::select_option(logger.clone())? {
             MenuOption::CreateAccount => {
-                backend::create_account(&wallet_reference, notifier, logger.clone())?
+                backend::create_account(&mut wallet_reference, notifier.clone(), logger.clone())?
             }
             MenuOption::ChangeAccount => {
-                backend::change_account(&wallet_reference, notifier, logger.clone())?
+                backend::change_account(&mut wallet_reference, notifier.clone(), logger.clone())?
             }
             MenuOption::RemoveAccount => {
-                backend::remove_account(&wallet_reference, logger.clone())?
+                backend::remove_account(&mut wallet_reference, logger.clone())?
             }
             MenuOption::SendTransaction => backend::sending_transaction(
                 broadcasting,
                 &wallet_reference,
-                &utxo_set_reference,
-                notifier,
+                &mut utxo_set_reference,
+                notifier.clone(),
                 logger.clone(),
             )?,
             MenuOption::ShowAccounts => {
                 backend::show_accounts(&wallet_reference, logger.clone());
             }
-            MenuOption::ShowBalance => {
-                account::give_account_balance(&wallet_reference, &utxo_set_reference, notifier)?
-            }
+            MenuOption::ShowBalance => account::give_account_balance(
+                &wallet_reference,
+                &utxo_set_reference,
+                notifier.clone(),
+            )?,
             MenuOption::LastTransactions => account::give_account_transactions(
                 &wallet_reference,
                 &blockchain_reference,
-                notifier,
-                logger,
+                notifier.clone(),
+                logger.clone(),
             )?,
             MenuOption::Exit => break,
         }
