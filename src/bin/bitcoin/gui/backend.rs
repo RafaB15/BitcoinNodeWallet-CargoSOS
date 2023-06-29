@@ -7,7 +7,7 @@ use crate::{
         broadcasting::{get_broadcasting, handle_peers},
         download, handshake,
         load_system::LoadSystem,
-        reference::{get_inner, get_reference, MutArc},
+        reference::{get_inner, MutArc},
         save_system::SaveSystem,
         connection::get_potential_peers,
         transaction,
@@ -34,8 +34,8 @@ use cargosos_bitcoin::{
         notifier::Notifier,
     },
     wallet_structure::{
-        account::Account, private_key::PrivateKey, public_key::PublicKey,
-        wallet::Wallet,
+        private_key::PrivateKey, public_key::PublicKey,
+        wallet::Wallet, address::Address,
     },
 };
 
@@ -58,8 +58,6 @@ pub fn create_account<N : Notifier>(
     notifier: N,
     logger: LoggerSender,
 ) -> Result<(), ErrorUI> {
-    let mut wallet = get_reference(&wallet)?;
-
     let private_key = match PrivateKey::try_from(private_key_string) {
         Ok(private_key) => private_key,
         Err(_) => {
@@ -76,22 +74,13 @@ pub fn create_account<N : Notifier>(
         }
     };
 
-    let account = match Account::from_keys(
+    account::create_account(
+        wallet.clone(),
         account_name,
         private_key,
         public_key,
-    ) {
-        Ok(account) => account,
-        _ => {
-            notifier.notify(Notification::AccountCreationFail);
-            return Ok(());
-        }
-    };
-
-    wallet.add_account(account.clone());
-    notifier.notify(Notification::RegisterWalletAccount(account));
-
-    Ok(())
+        notifier.clone(),
+    )
 }
 
 /// Function that handles the signals from the front end
@@ -114,14 +103,22 @@ pub fn spawn_frontend_handler<N : Notifier>(
                 account::change_selected_account(account_name, wallet.clone(), notifier.clone())?;
             }
             SignalToBack::CreateTransaction(address_string, amount, fee) => {
+                let address = match Address::new(&address_string) {
+                    Ok(address) => address,
+                    Err(_) => {
+                        notifier.notify(Notification::InvalidAddressEnter);
+                        return Ok(());
+                    }
+                };
+                
                 transaction::sending_transaction(
                     broadcasting,
                     &wallet,
                     &utxo_set,
-                    logger.clone(),
-                    &address_string,
+                    address,
                     (amount, fee),
                     notifier.clone(),
+                    logger.clone(),
                 )?;
             }
             SignalToBack::CreateAccount(name, private_key, public_key) => {

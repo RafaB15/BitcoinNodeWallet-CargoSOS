@@ -1,5 +1,5 @@
 use super::{
-    gui_backend::spawn_backend_handler, signal_to_back::SignalToBack,
+    backend::spawn_backend_handler, signal_to_back::SignalToBack,
     signal_to_front::SignalToFront, notifierGUI::NotifierGUI,
 };
 

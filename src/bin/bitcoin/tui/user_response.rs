@@ -1,11 +1,15 @@
-use super::{account::{self, get_address}, menu, menu_option::MenuOption, timestamp::Timestamp};
+use super::{backend, menu, menu_option::MenuOption, timestamp::Timestamp};
 
-use crate::ui::error_ui::ErrorUI;
-
-use crate::process::{
-    reference::{get_reference, MutArc},
-    broadcasting::create_transaction,
+use crate::{
+    ui::{
+        error_ui::ErrorUI,
+    }, 
+    process::{
+        reference::{get_reference, MutArc},
+        transaction,
+    },
 };
+
 
 use cargosos_bitcoin::{
     block_structure::{
@@ -14,14 +18,14 @@ use cargosos_bitcoin::{
     },
     logs::logger_sender::LoggerSender,
     node_structure::{
-        broadcasting::Broadcasting, error_node::ErrorNode, 
+        broadcasting::Broadcasting,  
     },
-    wallet_structure::wallet::Wallet,
+    wallet_structure::wallet::Wallet, notifications::notifier::Notifier,
 };
 
 use std::{
     net::TcpStream,
-    io::stdin,
+    io::{stdin, Read, Write},
 };
 
 /// It will responde to the user input
@@ -30,24 +34,27 @@ use std::{
 ///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
 ///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 ///  * `ErrorUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
-pub fn user_input(
+pub fn user_input<N : Notifier>(
     broadcasting: &mut Broadcasting<TcpStream>,
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
     block_chain: MutArc<BlockChain>,
+    notifier: N,
     logger: LoggerSender,
 ) -> Result<(), ErrorUI> {
     loop {
+        let wallet_reference = get_reference(&wallet)?;
+        let utxo_set_reference = get_reference(&utxo_set)?;
+
         match menu::select_option(logger.clone())? {
-            MenuOption::CreateAccount => creating_accout(&wallet, logger.clone())?,
-            MenuOption::ChangeAccount => changing_account(&wallet, logger.clone())?,
-            MenuOption::RemoveAccount => removing_account(&wallet, logger.clone())?,
+            MenuOption::CreateAccount => backend::create_account(&wallet_reference, notifier, logger.clone())?,
+            MenuOption::ChangeAccount => backend::change_account(&wallet_reference, notifier, logger.clone())?,
+            MenuOption::RemoveAccount => backend::remove_account(&wallet_reference, logger.clone())?,
             MenuOption::SendTransaction => {
-                sending_transaction(broadcasting, &wallet, &utxo_set, logger.clone())?
+                backend::sending_transaction(broadcasting, &wallet_reference, &utxo_set_reference, notifier, logger.clone())?
             }
             MenuOption::ShowAccounts => {
-                let wallet_ref = get_reference(&wallet)?;
-                account::show_accounts(&wallet_ref, logger.clone());
+                backend::show_accounts(&wallet_reference, logger.clone());
             }
             MenuOption::ShowBalance => showing_balance(&wallet, &utxo_set, logger.clone())?,
             MenuOption::LastTransactions => latest_transactions(&block_chain, logger.clone())?,
@@ -58,44 +65,6 @@ pub fn user_input(
     Ok(())
 }
 
-/// Appends an new account to the wallet created by the user
-///
-/// ### Error
-///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
-///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-fn creating_accout(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(), ErrorUI> {
-    let mut wallet = get_reference(wallet)?;
-    let account = account::create_account(logger)?;
-    wallet.add_account(account);
-
-    Ok(())
-}
-
-/// Change the selected account to the one selected by the user
-///
-/// ### Error
-///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
-///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-fn changing_account(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(), ErrorUI> {
-    let mut wallet = get_reference(wallet)?;
-    let account = account::select_account(&wallet, logger)?;
-    wallet.change_account(account);
-
-    Ok(())
-}
-
-/// Delete the selected account selected by the user
-///
-/// ### Error
-///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
-///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-fn removing_account(wallet: &MutArc<Wallet>, logger: LoggerSender) -> Result<(), ErrorUI> {
-    let mut wallet = get_reference(wallet)?;
-    let account = account::select_account(&wallet, logger)?;
-    wallet.remove_account(account);
-
-    Ok(())
-}
 
 /// Get the timestamp from the user via terminal
 ///
@@ -129,129 +98,6 @@ pub fn select_option(logger: LoggerSender) -> Result<Timestamp, ErrorUI> {
                 continue;
             }
         };
-    }
-}
-
-/// Get the amount for the transaction from the terminal
-///
-/// ### Error
-///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
-fn get_amount(logger: LoggerSender) -> Result<i64, ErrorUI> {
-    let mut amount: String = String::new();
-
-    println!("Enter an amount: ");
-    if stdin().read_line(&mut amount).is_err() {
-        return Err(ErrorUI::TerminalReadFail);
-    }
-
-    loop {
-        match amount.trim().parse::<u32>() {
-            Ok(result) => {
-                let _ = logger.log_wallet("Valid amount entered".to_string());
-                return Ok(result as i64);
-            }
-            Err(error) => {
-                let _ =
-                    logger.log_wallet(format!("Invalid amount entered, with error: {:?}", error));
-
-                amount.clear();
-                println!("Error, please enter a valid amount:");
-                if stdin().read_line(&mut amount).is_err() {
-                    return Err(ErrorUI::TerminalReadFail);
-                }
-
-                continue;
-            }
-        };
-    }
-}
-
-/// Get the fee for the transaction from the terminal
-///
-/// ### Error
-///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
-fn get_fee(logger: LoggerSender) -> Result<i64, ErrorUI> {
-    let mut fee: String = String::new();
-
-    println!("Enter a fee: ");
-    if stdin().read_line(&mut fee).is_err() {
-        return Err(ErrorUI::TerminalReadFail);
-    }
-
-    loop {
-        match fee.trim().parse::<u32>() {
-            Ok(result) => {
-                let _ = logger.log_wallet("Valid fee entered".to_string());
-                return Ok(result as i64);
-            }
-            Err(error) => {
-                let _ = logger.log_wallet(format!("Invalid fee entered, with error: {:?}", error));
-
-                fee.clear();
-                println!("Error, please enter a valid fee:");
-                if stdin().read_line(&mut fee).is_err() {
-                    return Err(ErrorUI::TerminalReadFail);
-                }
-
-                continue;
-            }
-        };
-    }
-}
-
-/// Broadcast the transaction created by the user to the peers from the selected account in the wallet
-///
-/// ### Error
-///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
-///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-///  * `ErrorUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
-fn sending_transaction(
-    broadcasting: &mut Broadcasting<TcpStream>,
-    wallet: &MutArc<Wallet>,
-    utxo_set: &MutArc<UTXOSet>,
-    logger: LoggerSender,
-) -> Result<(), ErrorUI> {
-    let wallet = get_reference(wallet)?;
-    let account = match wallet.get_selected_account() {
-        Some(account) => account,
-        None => {
-            let message = "No account selected can't send transaction";
-            println!("{message}");
-            let _ = logger.log_wallet(message.to_string());
-            return Ok(());
-        }
-    };
-    let mut utxo_set = get_reference(utxo_set)?;
-
-    let address = get_address(logger.clone())?;
-    let amount = get_amount(logger.clone())?;
-    let fee = get_fee(logger.clone())?;
-
-    let transaction = match create_transaction(
-        &utxo_set, 
-        account, 
-        logger.clone()) {
-        Ok(transaction) => transaction,
-        Err(ErrorUI::TransactionWithoutSufficientFunds) => {
-            let message = "Transaction without sufficient funds";
-            println!("{message}");
-            let _ = logger.log_transaction(message.to_string());
-            return Ok(());
-        }
-        Err(error) => return Err(error),
-    };
-    let _ = logger.log_transaction("Sending transaction".to_string());
-
-    utxo_set.append_pending_transaction(transaction.clone());
-
-    match broadcasting.send_transaction(transaction) {
-        Ok(()) => Ok(()),
-        Err(ErrorNode::WhileSendingMessage(message)) => Err(ErrorUI::ErrorFromPeer(format!(
-            "While sending message {message}"
-        ))),
-        _ => Err(ErrorUI::ErrorFromPeer(
-            "While sending transaction".to_string(),
-        )),
     }
 }
 

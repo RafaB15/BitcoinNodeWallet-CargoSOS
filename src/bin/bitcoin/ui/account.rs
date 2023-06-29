@@ -1,11 +1,9 @@
 use super::error_ui::ErrorUI;
 
-use crate::process::reference::{MutArc, get_reference};
-
 use cargosos_bitcoin::{
     wallet_structure::{
         account::Account,
-        wallet::Wallet,
+        wallet::Wallet, private_key::PrivateKey, public_key::PublicKey,
     },
     block_structure::{
         block_chain::BlockChain,
@@ -21,19 +19,16 @@ use cargosos_bitcoin::{
 
 /// Function that obtains the balance of the selected account and sends it to the front
 pub fn give_account_balance<N : Notifier>(
-    wallet: MutArc<Wallet>,
-    utxo_set: MutArc<UTXOSet>,
+    wallet: &Wallet,
+    utxo_set: &UTXOSet,
     notifier: N,
 ) -> Result<(), ErrorUI> {
-    let wallet_reference = get_reference(&wallet)?;
-    let utxo_set_reference = get_reference(&utxo_set)?;
-
-    let account_to_check = match wallet_reference.get_selected_account() {
+    let account_to_check = match wallet.get_selected_account() {
         Some(account) => account,
         None => return Err(ErrorUI::ErrorReading("No account selected".to_string())),
     };
-    let balance = utxo_set_reference.get_balance_in_tbtc(&account_to_check.address);
-    let pending = utxo_set_reference.get_pending_in_tbtc(&account_to_check.address);
+    let balance = utxo_set.get_balance_in_tbtc(&account_to_check.address);
+    let pending = utxo_set.get_pending_in_tbtc(&account_to_check.address);
 
     notifier.notify(Notification::LoadAvailableBalance((balance, pending)));    
 
@@ -60,19 +55,42 @@ fn get_account_transactions(
 /// Function that changes the selected account of the address
 pub fn change_selected_account<N : Notifier>(
     account_name: String,
-    wallet: MutArc<Wallet>,
+    wallet: &Wallet,
     notifier: N,
 ) -> Result<(), ErrorUI> {
-    let mut wallet_reference = get_reference(&wallet)?;
-
-    let account_to_select = match wallet_reference.get_account_with_name(&account_name) {
+    let account_to_select = match wallet.get_account_with_name(&account_name) {
         Some(account) => account.clone(),
         None => return Err(ErrorUI::ErrorReading("Account does not exist".to_string())),
     };
 
-    wallet_reference.change_account(account_to_select.clone());
+    wallet.change_account(account_to_select.clone());
 
     notifier.notify(Notification::UpdatedSelectedAccount(account_to_select));
+
+    Ok(())
+}
+
+pub fn create_account<N : Notifier>(
+    wallet: &Wallet,
+    account_name: &str,
+    private_key: PrivateKey,
+    public_key: PublicKey,
+    notifier: N,
+) -> Result<(), ErrorUI> {
+    let account = match Account::from_keys(
+        account_name,
+        private_key,
+        public_key,
+    ) {
+        Ok(account) => account,
+        _ => {
+            notifier.notify(Notification::AccountCreationFail);
+            return Ok(());
+        }
+    };
+
+    wallet.add_account(account.clone());
+    notifier.notify(Notification::RegisterWalletAccount(account));
 
     Ok(())
 }
@@ -80,14 +98,11 @@ pub fn change_selected_account<N : Notifier>(
 /// Function that gets the information of the transactions of the selected account
 /// and sends it to the front
 pub fn give_account_transactions<N : Notifier>(
-    wallet: MutArc<Wallet>,
-    blockchain: MutArc<BlockChain>,
+    wallet: &Wallet,
+    blockchain: &BlockChain,
     logger: LoggerSender,
     notifier: N,
 ) -> Result<(), ErrorUI> {
-    let wallet = get_reference(&wallet).unwrap();
-    let blockchain = get_reference(&blockchain).unwrap();
-
     let account = match wallet.get_selected_account() {
         Some(account) => *account,
         None => {

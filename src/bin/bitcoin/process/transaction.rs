@@ -1,7 +1,4 @@
-use super::{
-    reference::{get_reference, MutArc},
-    error_process::ErrorProcess,
-};
+use super::error_process::ErrorProcess;
 
 use crate::ui::error_ui::ErrorUI;
 
@@ -30,7 +27,7 @@ use cargosos_bitcoin::{
 use std::io::{Read, Write};
 
 /// FUnction that converts testnet bitcoins to satoshis
-fn fron_tbtc_to_satoshi(tbtc: f64) -> i64 {
+pub fn fron_tbtc_to_satoshi(tbtc: f64) -> i64 {
     (tbtc * 100_000_000.0) as i64
 }
 
@@ -39,14 +36,13 @@ fn fron_tbtc_to_satoshi(tbtc: f64) -> i64 {
 /// ### Error
 ///  * `ErrorUI::ErrorInTransaction`: It will appear when the user does not have enough funds to make the transaction or the transaction is not valid
 fn create_transaction(
-    utxo_set: &MutArc<UTXOSet>,
+    utxo_set: &UTXOSet,
     account: &Account,
     logger: LoggerSender,
     address: &Address,
     amount: f64,
     fee: f64,
 ) -> Result<Transaction, ErrorProcess> {
-    let utxo_set = get_reference(utxo_set)?;
 
     match account.create_transaction(
         address.clone(),
@@ -80,24 +76,16 @@ fn create_transaction(
 ///  * `ErrorUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
 pub fn sending_transaction<N : Notifier, RW: Read + Write + Send + 'static>(
     broadcasting: &mut Broadcasting<RW>,
-    wallet: &MutArc<Wallet>,
-    utxo_set: &MutArc<UTXOSet>,
-    logger: LoggerSender,
-    address_string: &str,
+    wallet: &Wallet,
+    utxo_set: &UTXOSet,
+    address: Address,
     amount_fee: (f64, f64),
     notifier: N,
+    logger: LoggerSender,
 ) -> Result<(), ErrorUI> {
     let amount = amount_fee.0;
     let fee = amount_fee.1;
-    let address = match Address::new(address_string) {
-        Ok(address) => address,
-        Err(_) => {
-            notifier.notify(Notification::InvalidAddressEnter);
-            return Ok(());
-        }
-    };
 
-    let wallet = get_reference(wallet)?;
     let account = match wallet.get_selected_account() {
         Some(account) => account,
         None => {
@@ -117,7 +105,7 @@ pub fn sending_transaction<N : Notifier, RW: Read + Write + Send + 'static>(
         };
 
     let _ = logger.log_transaction("Sending transaction".to_string());
-    get_reference(utxo_set)?.append_pending_transaction(transaction.clone());
+    utxo_set.append_pending_transaction(transaction.clone());
 
     match broadcasting.send_transaction(transaction) {
         Ok(()) => Ok(()),
