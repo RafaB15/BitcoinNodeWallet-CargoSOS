@@ -95,7 +95,7 @@ pub fn spawn_frontend_handler<N: Notifier>(
                     &wallet_reference,
                     &utxo_set_reference,
                     notifier.clone(),
-                )?;
+                );
             }
             SignalToBack::ChangeSelectedAccount(account_name) => {
                 account::change_selected_account(

@@ -97,7 +97,7 @@ impl Notifier for NotifierGUI {
                         .log_error("Failed to signal finish block chain loading".to_string());
                 }
             }
-            Notification::LoadAvailableBalance((_, balance, pending)) => {
+            Notification::LoadAvailableBalance(_, balance, pending) => {
                 if self
                     .tx_to_front
                     .send(SignalToFront::LoadAvailableBalance((balance, pending)))
@@ -120,7 +120,7 @@ impl Notifier for NotifierGUI {
                         .log_error("Failed to send error signal to front".to_string());
                 }
             }
-            Notification::AccountTransactions((account, transactions)) => {
+            Notification::AccountTransactions(account, transactions) => {
                 let transactions = get_account_transactions_information(&account, transactions);
                 if self
                     .tx_to_front

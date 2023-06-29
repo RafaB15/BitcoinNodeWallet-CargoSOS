@@ -43,7 +43,7 @@ impl MenuOption {
         let mut message = "".to_string();
         for option in options {
             let option_id: char = (*option).into();
-            message.push_str(&format!("{option} [{option_id}]\n"));
+            message.push_str(&format!("\n{option} [{option_id}]"));
         }
         println!("{message}")
     }
@@ -91,6 +91,7 @@ impl TryFrom<&str> for MenuOption {
         match value {
             CREATE_ACCOUNT => Ok(MenuOption::CreateAccount),
             CHANGE_ACCOUNT => Ok(MenuOption::ChangeAccount),
+            REMOVE_ACCOUNT => Ok(MenuOption::RemoveAccount),
             SEND_TRANSACTION => Ok(MenuOption::SendTransaction),
             SHOW_ACCOUNTS => Ok(MenuOption::ShowAccounts),
             SHOW_BALANCE => Ok(MenuOption::ShowBalance),

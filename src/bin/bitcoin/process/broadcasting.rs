@@ -100,6 +100,7 @@ fn receive_transaction<N: Notifier>(
     }
 
     if !involved_accounts.is_empty() {
+        println!("Notifying");
         notifier.notify(Notification::TransactionOfAccountReceived(
             involved_accounts,
             transaction.clone(),
@@ -138,6 +139,7 @@ fn receive_block<N: Notifier>(
 
     utxo_set.update_utxo_with_block(&block);
 
+    println!("Notifying");
     notifier.notify(Notification::NewBlockAddedToTheBlockchain(block.clone()));
 
     match get_reference(block_chain)?.append_block(block) {

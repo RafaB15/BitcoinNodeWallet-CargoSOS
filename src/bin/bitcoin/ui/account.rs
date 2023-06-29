@@ -14,22 +14,20 @@ pub fn give_account_balance<N: Notifier>(
     wallet: &Wallet,
     utxo_set: &UTXOSet,
     notifier: N,
-) -> Result<(), ErrorUI> {
+) {
     let account_to_check = match wallet.get_selected_account() {
         Some(account) => account,
-        None => return Err(ErrorUI::ErrorReading("No account selected".to_string())),
+        None => return notifier.notify(Notification::AccountNotSelected),
     };
 
     let balance = utxo_set.get_balance_in_tbtc(&account_to_check.address);
     let pending = utxo_set.get_pending_in_tbtc(&account_to_check.address);
 
-    notifier.notify(Notification::LoadAvailableBalance((
+    notifier.notify(Notification::LoadAvailableBalance(
         account_to_check.clone(),
         balance,
         pending,
-    )));
-
-    Ok(())
+    ));
 }
 
 /// Function that obtains and return the transactions of an account
@@ -103,7 +101,7 @@ pub fn give_account_transactions<N: Notifier>(
     };
 
     let transactions = get_account_transactions(&account, &blockchain);
-    notifier.notify(Notification::AccountTransactions((account, transactions)));
+    notifier.notify(Notification::AccountTransactions(account, transactions));
 
     Ok(())
 }

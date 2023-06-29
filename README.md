@@ -4,19 +4,19 @@
 
 Para ejecutar el proyecto se usará el siguiente comando
 ``` bash
-cargo run --bin bitcoin path/to/nodo.conf
+cargo run --bin bitcoin path/to/node.conf
 ```
 
 #### Ejecutar como servidor
 
 ``` bash
-cargo run --bin bitcoin src/bin/bitcoin/nodo_server.conf
+cargo run --bin bitcoin src/bin/bitcoin/node_server.conf
 ```
 
 #### Ejecutar como cliente
 
 ``` bash
-cargo run --bin bitcoin src/bin/bitcoin/nodo_client.conf
+cargo run --bin bitcoin src/bin/bitcoin/node_client.conf
 ```
 
 ### Entrega intermedia

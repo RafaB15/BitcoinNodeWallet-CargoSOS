@@ -7,20 +7,36 @@ use crate::{
 
 pub enum Notification {
     AttemptingHandshakeWithPeer(SocketAddr),
+
     SuccessfulHandshakeWithPeer(SocketAddr),
+
     FailedHandshakeWithPeer(SocketAddr),
+
     TransactionOfAccountReceived(Vec<Account>, Transaction),
+    
     TransactionOfAccountInNewBlock(Transaction),
+    
     NewBlockAddedToTheBlockchain(Block),
+
     UpdatedSelectedAccount(Account),
+
     RegisterWalletAccount(Account),
+
     NotifyBlockchainIsReady,
-    LoadAvailableBalance((Account, f64, f64)),
+
+    LoadAvailableBalance(Account, f64, f64),
+
     AccountNotSelected,
-    AccountTransactions((Account, Vec<Transaction>)),
+
+    AccountTransactions(Account, Vec<Transaction>),
+
     InvalidAddressEnter,
+
     InvalidPublicKeyEnter,
+
     InvalidPrivateKeyEnter,
+
     AccountCreationFail,
+    
     NotEnoughFunds,
 }

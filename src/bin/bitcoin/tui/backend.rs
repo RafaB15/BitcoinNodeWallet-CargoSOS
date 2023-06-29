@@ -1,4 +1,4 @@
-use super::{backend, menu, menu_option::MenuOption};
+use super::{menu, menu_option::MenuOption};
 
 use crate::ui::{account, error_ui::ErrorUI};
 
@@ -11,7 +11,7 @@ use cargosos_bitcoin::{
     block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
     logs::logger_sender::LoggerSender,
     node_structure::broadcasting::Broadcasting,
-    notifications::notifier::Notifier,
+    notifications::{notification::Notification, notifier::Notifier},
     wallet_structure::{
         account::Account, address::Address, private_key::PrivateKey, public_key::PublicKey,
         wallet::Wallet,
@@ -24,7 +24,7 @@ use std::io::{stdin, Read, Write};
 ///
 /// ### Error
 ///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
-fn get_private_key(logger: LoggerSender) -> Result<PrivateKey, ErrorUI> {
+fn get_private_key<N: Notifier>(notifier: N, logger: LoggerSender) -> Result<PrivateKey, ErrorUI> {
     let mut private_key: String = String::new();
 
     println!("Enter the private key: ");
@@ -38,14 +38,11 @@ fn get_private_key(logger: LoggerSender) -> Result<PrivateKey, ErrorUI> {
                 let _ = logger.log_wallet("Valid private key entered".to_string());
                 return Ok(result);
             }
-            Err(error) => {
-                let _ = logger.log_wallet(format!(
-                    "Invalid private key entered, with error: {:?}",
-                    error
-                ));
+            _ => {
+                notifier.notify(Notification::InvalidPrivateKeyEnter);
 
                 private_key.clear();
-                println!("Error, please enter a valid private key:");
+                println!("Please enter a valid private key:");
                 if stdin().read_line(&mut private_key).is_err() {
                     return Err(ErrorUI::TerminalReadFail);
                 }
@@ -59,7 +56,7 @@ fn get_private_key(logger: LoggerSender) -> Result<PrivateKey, ErrorUI> {
 ///
 /// ### Error
 ///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
-fn get_public_key(logger: LoggerSender) -> Result<PublicKey, ErrorUI> {
+fn get_public_key<N: Notifier>(notifier: N, logger: LoggerSender) -> Result<PublicKey, ErrorUI> {
     let mut public_key: String = String::new();
 
     println!("Enter the public key: ");
@@ -73,14 +70,11 @@ fn get_public_key(logger: LoggerSender) -> Result<PublicKey, ErrorUI> {
                 let _ = logger.log_wallet("Valid public key entered".to_string());
                 return Ok(result);
             }
-            Err(error) => {
-                let _ = logger.log_wallet(format!(
-                    "Invalid public key entered, with error: {:?}",
-                    error
-                ));
+            _ => {
+                notifier.notify(Notification::InvalidPublicKeyEnter);
 
                 public_key.clear();
-                println!("Error, please enter a valid public key:");
+                println!("Please enter a valid public key:");
                 if stdin().read_line(&mut public_key).is_err() {
                     return Err(ErrorUI::TerminalReadFail);
                 }
@@ -95,7 +89,10 @@ fn get_public_key(logger: LoggerSender) -> Result<PublicKey, ErrorUI> {
 ///
 /// ### Error
 ///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
-pub(super) fn get_address(logger: LoggerSender) -> Result<Address, ErrorUI> {
+pub(super) fn get_address<N: Notifier>(
+    notifier: N,
+    logger: LoggerSender,
+) -> Result<Address, ErrorUI> {
     let mut address: String = String::new();
 
     println!("Enter the address: ");
@@ -109,11 +106,8 @@ pub(super) fn get_address(logger: LoggerSender) -> Result<Address, ErrorUI> {
                 let _ = logger.log_wallet("Valid address entered".to_string());
                 return Ok(result);
             }
-            Err(error) => {
-                let _ = logger.log_wallet(format!(
-                    "Put an invalid public key, with error: {:?}",
-                    error
-                ));
+            _ => {
+                notifier.notify(Notification::InvalidAddressEnter);
 
                 address.clear();
                 println!("Error, please enter a valid address:");
@@ -151,8 +145,8 @@ pub fn create_account<N: Notifier>(
 ) -> Result<(), ErrorUI> {
     let _ = logger.log_wallet("Creating a new account".to_string());
 
-    let private_key = get_private_key(logger.clone())?;
-    let public_key = get_public_key(logger.clone())?;
+    let private_key = get_private_key(notifier.clone(), logger.clone())?;
+    let public_key = get_public_key(notifier.clone(), logger.clone())?;
     let account_name = get_account_name()?;
 
     account::create_account(wallet, &account_name, private_key, public_key, notifier)
@@ -187,12 +181,12 @@ pub fn change_account<N: Notifier>(
 
     let mut account_name: String = String::new();
 
-    println!("Enter the address: ");
+    println!("Enter the name: ");
     if stdin().read_line(&mut account_name).is_err() {
         return Err(ErrorUI::TerminalReadFail);
     }
 
-    while account::change_selected_account(account_name.clone(), wallet, notifier.clone()).is_err()
+    while account::change_selected_account(account_name.trim().to_string(), wallet, notifier.clone()).is_err()
     {
         let _ = logger.log_wallet("Invalid account name entered".to_string());
 
@@ -229,7 +223,7 @@ pub fn select_account(wallet: &Wallet, logger: LoggerSender) -> Result<Account, 
 
     let mut account_name: String = String::new();
 
-    println!("Enter the address: ");
+    println!("Enter the name: ");
     if stdin().read_line(&mut account_name).is_err() {
         return Err(ErrorUI::TerminalReadFail);
     }
@@ -352,7 +346,7 @@ pub fn sending_transaction<N: Notifier, RW: Read + Write + Send + 'static>(
     notifier: N,
     logger: LoggerSender,
 ) -> Result<(), ErrorUI> {
-    let address = get_address(logger.clone())?;
+    let address = get_address(notifier.clone(), logger.clone())?;
     let amount = get_amount(logger.clone())?;
     let fee = get_fee(logger.clone())?;
 
@@ -388,15 +382,13 @@ pub fn user_input<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
 
         match menu::select_option(logger.clone())? {
             MenuOption::CreateAccount => {
-                backend::create_account(&mut wallet_reference, notifier.clone(), logger.clone())?
+                create_account(&mut wallet_reference, notifier.clone(), logger.clone())?
             }
             MenuOption::ChangeAccount => {
-                backend::change_account(&mut wallet_reference, notifier.clone(), logger.clone())?
+                change_account(&mut wallet_reference, notifier.clone(), logger.clone())?
             }
-            MenuOption::RemoveAccount => {
-                backend::remove_account(&mut wallet_reference, logger.clone())?
-            }
-            MenuOption::SendTransaction => backend::sending_transaction(
+            MenuOption::RemoveAccount => remove_account(&mut wallet_reference, logger.clone())?,
+            MenuOption::SendTransaction => sending_transaction(
                 broadcasting,
                 &wallet_reference,
                 &mut utxo_set_reference,
@@ -404,13 +396,13 @@ pub fn user_input<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
                 logger.clone(),
             )?,
             MenuOption::ShowAccounts => {
-                backend::show_accounts(&wallet_reference, logger.clone());
+                show_accounts(&wallet_reference, logger.clone());
             }
             MenuOption::ShowBalance => account::give_account_balance(
                 &wallet_reference,
                 &utxo_set_reference,
                 notifier.clone(),
-            )?,
+            ),
             MenuOption::LastTransactions => account::give_account_transactions(
                 &wallet_reference,
                 &blockchain_reference,
