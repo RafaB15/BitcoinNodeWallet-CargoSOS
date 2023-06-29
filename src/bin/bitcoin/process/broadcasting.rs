@@ -15,9 +15,7 @@ use cargosos_bitcoin::{
         notification::{Notification},
         notifier::Notifier,
     },
-    wallet_structure::{
-        account::Account, address::Address, error_wallet::ErrorWallet, wallet::Wallet,
-    },
+    wallet_structure::wallet::Wallet,
 };
 
 use std::{
@@ -35,11 +33,6 @@ pub fn get_broadcasting<RW: Read + Write + Send + 'static>(
 ) -> Broadcasting<RW> {
     let _ = logger.log_node("Broadcasting".to_string());
     Broadcasting::<RW>::new(peer_streams, sender_response, connection_config, logger)
-}
-
-/// FUnction that converts testnet bitcoins to satoshis
-fn fron_tbtc_to_satoshi(tbtc: f64) -> i64 {
-    (tbtc * 100_000_000.0) as i64
 }
 
 /// Create a thread for handling the blocks and transactions received
@@ -151,43 +144,5 @@ fn receive_block<N : Notifier>(
     match get_reference(block_chain)?.append_block(block) {
         Ok(_) | Err(ErrorBlock::TransactionAlreadyInBlock) => Ok(()),
         _ => Err(ErrorProcess::ErrorWriting),
-    }
-}
-
-/// Creates a transaction given the user user_input
-///
-/// ### Error
-///  * `ErrorUI::ErrorInTransaction`: It will appear when the user does not have enough funds to make the transaction or the transaction is not valid
-pub fn create_transaction(
-    utxo_set: &MutArc<UTXOSet>,
-    account: &Account,
-    logger: LoggerSender,
-    address: &Address,
-    amount: f64,
-    fee: f64,
-) -> Result<Transaction, ErrorProcess> {
-    let utxo_set = get_reference(utxo_set)?;
-
-    match account.create_transaction(
-        address.clone(),
-        fron_tbtc_to_satoshi(amount),
-        fron_tbtc_to_satoshi(fee),
-        &utxo_set,
-    ) {
-        Ok(transaction) => Ok(transaction),
-        Err(ErrorWallet::NotEnoughFunds(error_string)) => {
-            let _ = logger.log_wallet(format!(
-                "Error creating transaction, with error: {:?}",
-                ErrorWallet::NotEnoughFunds(error_string)
-            ));
-            Err(ErrorProcess::TransactionWithoutSufficientFunds)
-        }
-        Err(error) => {
-            let _ = logger.log_wallet(format!(
-                "Error creating transaction, with error: {:?}",
-                error
-            ));
-            Err(ErrorProcess::TransactionCreationFail)
-        }
     }
 }

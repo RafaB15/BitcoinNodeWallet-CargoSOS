@@ -1,13 +1,14 @@
 use super::error_process::ErrorProcess;
 
 use cargosos_bitcoin::{
-    block_structure::{block::Block, block_chain::BlockChain, hash::HashType},
+    block_structure::{block::Block, block_chain::BlockChain, hash::HashType, utxo_set::UTXOSet},
     configurations::{connection_config::ConnectionConfig, download_config::DownloadConfig},
     logs::logger_sender::LoggerSender,
     node_structure::{
         block_download::BlockDownload, error_node::ErrorNode,
         initial_headers_download::InitialHeaderDownload,
     },
+    connections::ibd_methods::IBDMethod,
 };
 
 use std::{
@@ -25,7 +26,7 @@ use std::{
 ///  * `ErrorNode::WhileValidating`: It will appear when
 ///  * `ErrorBlock::CouldNotUpdate`: It will appear when the block is not in the blockchain.
 ///  * `ErrorProcess::FailThread`: It will appear when the thread fails
-pub fn headers_first<RW: Read + Write + Send + Debug + 'static>(
+fn headers_first<RW: Read + Write + Send + Debug + 'static>(
     peer_streams: Vec<RW>,
     block_chain: &mut BlockChain,
     connection_config: ConnectionConfig,
@@ -143,6 +144,38 @@ fn get_blocks<RW: Read + Write + Send + 'static>(
     })
 }
 
+/// Updates the blockchain with the new blocks and returns the TcpStreams that are still connected
+pub fn get_block_chain<RW : Read + Write + Send + Debug + 'static>(
+    peer_streams: Vec<RW>,
+    block_chain: &mut BlockChain,
+    connection_config: ConnectionConfig,
+    download_config: DownloadConfig,
+    logger: LoggerSender,
+) -> Result<Vec<RW>, ErrorProcess> {
+    let _ = logger.log_connection("Getting block chain".to_string());
+
+    Ok(match connection_config.ibd_method {
+        IBDMethod::HeaderFirst => headers_first(
+            peer_streams,
+            block_chain,
+            connection_config,
+            download_config,
+            logger,
+        )?,
+        IBDMethod::BlocksFirst => blocks_first::<RW>(),
+    })
+}
+
+/// Creates the UTXO set from the given block chain
+pub fn get_utxo_set(block_chain: &BlockChain, logger: LoggerSender) -> UTXOSet {
+    let _ = logger.log_wallet("Creating the UTXO set".to_string());
+
+    let utxo_set = UTXOSet::from_blockchain(block_chain);
+
+    let _ = logger.log_wallet("UTXO set finished successfully".to_string());
+    utxo_set
+}
+
 /// Updates the blockchain of the thread of a peer
 ///
 /// ### Error
@@ -180,6 +213,6 @@ fn updating_block_chain<RW: Read + Write + Send>(
 
 /// Given the peers connection, updates the blockchain with the new blocks of the respected peers.
 /// The approch is to get the entire block.
-pub fn blocks_first<RW: Read + Write + Send>() -> Vec<RW> {
+fn blocks_first<RW: Read + Write + Send>() -> Vec<RW> {
     todo!()
 }

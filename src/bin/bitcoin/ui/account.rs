@@ -57,6 +57,26 @@ fn get_account_transactions(
     transactions
 }
 
+/// Function that changes the selected account of the address
+pub fn change_selected_account<N : Notifier>(
+    account_name: String,
+    wallet: MutArc<Wallet>,
+    notifier: N,
+) -> Result<(), ErrorUI> {
+    let mut wallet_reference = get_reference(&wallet)?;
+
+    let account_to_select = match wallet_reference.get_account_with_name(&account_name) {
+        Some(account) => account.clone(),
+        None => return Err(ErrorUI::ErrorReading("Account does not exist".to_string())),
+    };
+
+    wallet_reference.change_account(account_to_select.clone());
+
+    notifier.notify(Notification::UpdatedSelectedAccount(account_to_select));
+
+    Ok(())
+}
+
 /// Function that gets the information of the transactions of the selected account
 /// and sends it to the front
 pub fn give_account_transactions<N : Notifier>(

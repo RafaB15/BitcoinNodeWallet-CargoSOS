@@ -4,36 +4,37 @@ use super::{signal_to_back::SignalToBack};
 use crate::{
     error_execution::ErrorExecution,
     process::{
-        broadcasting::{create_transaction, get_broadcasting, handle_peers},
+        broadcasting::{get_broadcasting, handle_peers},
         download, handshake,
         load_system::LoadSystem,
         reference::{get_inner, get_reference, MutArc},
         save_system::SaveSystem,
+        connection::get_potential_peers,
+        transaction,
     },
     ui::{
-        account::{give_account_balance, give_account_transactions},
+        account,
         error_ui::ErrorUI,
     }, 
 };
 
 use cargosos_bitcoin::configurations::{
     connection_config::ConnectionConfig, download_config::DownloadConfig, mode_config::ModeConfig,
-    save_config::SaveConfig, server_config::ServerConfig,
+    save_config::SaveConfig,
 };
 
 use cargosos_bitcoin::{
     block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
-    connections::ibd_methods::IBDMethod,
     logs::logger_sender::LoggerSender,
     node_structure::{
-        broadcasting::Broadcasting, error_node::ErrorNode, message_response::MessageResponse,
+        broadcasting::Broadcasting, message_response::MessageResponse,
     },
     notifications::{
         notification::Notification,
         notifier::Notifier,
     },
     wallet_structure::{
-        account::Account, address::Address, private_key::PrivateKey, public_key::PublicKey,
+        account::Account, private_key::PrivateKey, public_key::PublicKey,
         wallet::Wallet,
     },
 };
@@ -44,117 +45,6 @@ use std::{
     sync::{Arc, Mutex},
     thread,
 };
-
-/// Get the peers from the dns seeder
-///
-/// ### Error
-///  * `ErrorUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
-fn get_potential_peers(
-    server_config: ServerConfig,
-    logger: LoggerSender,
-) -> Result<Vec<SocketAddr>, ErrorExecution> {
-    logger.log_connection("Getting potential peers with dns seeder".to_string())?;
-
-    let potential_peers = server_config.dns_seeder.discover_peers()?;
-
-    let peer_count_max = std::cmp::min(server_config.peer_count_max, potential_peers.len());
-
-    let potential_peers = potential_peers[0..peer_count_max].to_vec();
-
-    for potential_peer in &potential_peers {
-        logger.log_connection(format!("Potential peer: {:?}", potential_peer))?;
-    }
-
-    Ok(potential_peers)
-}
-
-/// Updates the blockchain with the new blocks and returns the TcpStreams that are still connected
-fn get_block_chain(
-    peer_streams: Vec<TcpStream>,
-    block_chain: &mut BlockChain,
-    connection_config: ConnectionConfig,
-    download_config: DownloadConfig,
-    logger: LoggerSender,
-) -> Result<Vec<TcpStream>, ErrorExecution> {
-    logger.log_connection("Getting block chain".to_string())?;
-
-    Ok(match connection_config.ibd_method {
-        IBDMethod::HeaderFirst => download::headers_first(
-            peer_streams,
-            block_chain,
-            connection_config,
-            download_config,
-            logger,
-        )?,
-        IBDMethod::BlocksFirst => download::blocks_first::<TcpStream>(),
-    })
-}
-
-/// Creates the UTXO set from the given block chain
-fn get_utxo_set(block_chain: &BlockChain, logger: LoggerSender) -> UTXOSet {
-    let _ = logger.log_wallet("Creating the UTXO set".to_string());
-
-    let utxo_set = UTXOSet::from_blockchain(block_chain);
-
-    let _ = logger.log_wallet("UTXO set finished successfully".to_string());
-    utxo_set
-}
-
-/// Broadcast the transaction created by the user to the peers from the selected account in the wallet
-///
-/// ### Error
-///  * `ErrorUI::FailedSignalToFront`: It will appear when the sender fails
-///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-///  * `ErrorUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
-fn sending_transaction<N : Notifier>(
-    broadcasting: &mut Broadcasting<TcpStream>,
-    wallet: &MutArc<Wallet>,
-    utxo_set: &MutArc<UTXOSet>,
-    logger: LoggerSender,
-    address_string: &str,
-    amount_fee: (f64, f64),
-    notifier: N,
-) -> Result<(), ErrorUI> {
-    let amount = amount_fee.0;
-    let fee = amount_fee.1;
-    let address = match Address::new(address_string) {
-        Ok(address) => address,
-        Err(_) => {
-            notifier.notify(Notification::InvalidAddressEnter);
-            return Ok(());
-        }
-    };
-
-    let wallet = get_reference(wallet)?;
-    let account = match wallet.get_selected_account() {
-        Some(account) => account,
-        None => {
-            let _ = logger.log_wallet("No account selected cannot send transaction".to_string());
-            notifier.notify(Notification::AccountNotSelected);
-            return Ok(());
-        }
-    };
-
-    let transaction =
-        match create_transaction(&utxo_set, account, logger.clone(), &address, amount, fee) {
-            Ok(transaction) => transaction,
-            Err(error) => {
-                notifier.notify(Notification::NotEnoughFunds);
-                return Err(error.into());
-            }
-        };
-
-    let _ = logger.log_transaction("Sending transaction".to_string());
-    get_reference(utxo_set)?.append_pending_transaction(transaction.clone());
-
-    match broadcasting.send_transaction(transaction) {
-        Ok(()) => Ok(()),
-        Err(ErrorNode::WhileSendingMessage(message)) => Err(ErrorUI::ErrorFromPeer(message)),
-        _ => Err(ErrorUI::ErrorFromPeer(
-            "While sending transaction".to_string(),
-        )),
-    }
-}
 
 /// Creates a new account with the data entered by the user
 ///
@@ -218,13 +108,13 @@ pub fn spawn_frontend_handler<N : Notifier>(
     for rx in rx_from_front {
         match rx {
             SignalToBack::GetAccountBalance => {
-                give_account_balance(wallet.clone(), utxo_set.clone(), notifier.clone())?;
+                account::give_account_balance(wallet.clone(), utxo_set.clone(), notifier.clone())?;
             }
             SignalToBack::ChangeSelectedAccount(account_name) => {
-                change_selected_account(account_name, wallet.clone(), notifier.clone())?;
+                account::change_selected_account(account_name, wallet.clone(), notifier.clone())?;
             }
             SignalToBack::CreateTransaction(address_string, amount, fee) => {
-                sending_transaction(
+                transaction::sending_transaction(
                     broadcasting,
                     &wallet,
                     &utxo_set,
@@ -245,7 +135,7 @@ pub fn spawn_frontend_handler<N : Notifier>(
                 )?;
             }
             SignalToBack::GetAccountTransactions => {
-                give_account_transactions(
+                account::give_account_transactions(
                     wallet.clone(),
                     block_chain.clone(),
                     logger.clone(),
@@ -257,26 +147,6 @@ pub fn spawn_frontend_handler<N : Notifier>(
             }
         }
     }
-    Ok(())
-}
-
-/// Function that changes the selected account of the address
-pub fn change_selected_account<N : Notifier>(
-    account_name: String,
-    wallet: MutArc<Wallet>,
-    notifier: N,
-) -> Result<(), ErrorUI> {
-    let mut wallet_reference = get_reference(&wallet)?;
-
-    let account_to_select = match wallet_reference.get_account_with_name(&account_name) {
-        Some(account) => account.clone(),
-        None => return Err(ErrorUI::ErrorReading("Account does not exist".to_string())),
-    };
-
-    wallet_reference.change_account(account_to_select.clone());
-
-    notifier.notify(Notification::UpdatedSelectedAccount(account_to_select));
-
     Ok(())
 }
 
@@ -355,7 +225,7 @@ pub fn backend_execution<N : Notifier>(
 
     let mut block_chain = load_system.get_block_chain()?;
 
-    let peer_streams = get_block_chain(
+    let peer_streams = download::get_block_chain(
         peer_streams,
         &mut block_chain,
         connection_config.clone(),
@@ -371,7 +241,7 @@ pub fn backend_execution<N : Notifier>(
     notifier.notify(Notification::NotifyBlockchainIsReady);
 
     let wallet = Arc::new(Mutex::new(wallet));
-    let utxo_set = Arc::new(Mutex::new(get_utxo_set(&block_chain, logger.clone())));
+    let utxo_set = Arc::new(Mutex::new(download::get_utxo_set(&block_chain, logger.clone())));
     let block_chain = Arc::new(Mutex::new(block_chain));
 
     broadcasting(
