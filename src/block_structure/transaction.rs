@@ -159,7 +159,11 @@ impl Transaction {
 
 impl Display for Transaction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Transaction: to do")
+        let transaction_id = match self.get_tx_id() {
+            Ok(transaction_id) => transaction_id,
+            Err(_) => return write!(f, "Transaction fail"),
+        };
+        write!(f, "{:?}", transaction_id)
     }
 }
 
