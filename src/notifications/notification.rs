@@ -43,4 +43,6 @@ pub enum Notification {
     AccountCreationFail,
 
     NotEnoughFunds,
+
+    ClosingPeers,
 }

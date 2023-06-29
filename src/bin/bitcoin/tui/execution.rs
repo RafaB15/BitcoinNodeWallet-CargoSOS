@@ -106,11 +106,11 @@ fn broadcasting<N: Notifier + 'static>(
         wallet,
         utxo_set,
         block_chain,
-        notifier,
+        notifier.clone(),
         logger,
     )?;
 
-    broadcasting.destroy()?;
+    broadcasting.destroy(notifier)?;
 
     match handle.join() {
         Ok(_) => Ok(()),

@@ -135,6 +135,7 @@ impl Notifier for NotifierTUI {
                 );
                 println!("{message}");
             }
+            Notification::ClosingPeers => println!("Closing peers"),
         }
     }
 }

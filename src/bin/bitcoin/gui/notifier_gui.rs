@@ -210,6 +210,7 @@ impl Notifier for NotifierGUI {
                 );
                 println!("{message}");
             }
+            Notification::ClosingPeers => println!("Closing peers"),
         }
     }
 }

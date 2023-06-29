@@ -1,8 +1,10 @@
 use super::{error_node::ErrorNode, message_response::MessageResponse, peer_manager::PeerManager};
 
 use crate::{
-    block_structure::transaction::Transaction, configurations::connection_config::ConnectionConfig,
+    block_structure::transaction::Transaction,
+    configurations::connection_config::ConnectionConfig,
     logs::logger_sender::LoggerSender,
+    notifications::{notification::Notification, notifier::Notifier},
 };
 
 use std::{
@@ -112,8 +114,9 @@ where
     ///
     /// ### Error
     ///  * `ErrorNode::NodeNotResponding`: It will appear when a thread could not finish
-    pub fn destroy(self) -> Result<Vec<RW>, ErrorNode> {
+    pub fn destroy<N: Notifier>(self, notifier: N) -> Result<Vec<RW>, ErrorNode> {
         let _ = self.logger.log_configuration("Closing peers".to_string());
+        notifier.notify(Notification::ClosingPeers);
         match self.stop.lock() {
             Ok(mut stop) => *stop = true,
             Err(_) => {
