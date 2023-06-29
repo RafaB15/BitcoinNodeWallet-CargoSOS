@@ -2,17 +2,17 @@ use cargosos_bitcoin::{
     configurations::connection_config::ConnectionConfig,
     logs::logger_sender::LoggerSender,
     node_structure::{handshake::Handshake, handshake_data::HandshakeData},
-    notifications::{notification::{Notification}, notifier::Notifier},
+    notifications::{notification::Notification, notifier::Notifier},
 };
 
 use std::net::{SocketAddr, TcpStream};
 
 /// Creates a connection with the peers and if stablish then is return it's TCP stream
-pub fn connect_to_peers<N : Notifier>(
+pub fn connect_to_peers<N: Notifier>(
     potential_peers: Vec<SocketAddr>,
     connection_config: ConnectionConfig,
-    logger_sender: LoggerSender,
     notifier: N,
+    logger_sender: LoggerSender,
 ) -> Vec<TcpStream> {
     let _ = logger_sender.log_connection("Connecting to potential peers".to_string());
 
@@ -43,7 +43,7 @@ pub fn connect_to_peers<N : Notifier>(
 }
 
 /// Creates a connection with a specific peer and if stablish then is return it's TCP stream
-fn filters_peer<N : Notifier>(
+fn filters_peer<N: Notifier>(
     potential_peer: SocketAddr,
     node: &Handshake,
     logger_sender: LoggerSender,
@@ -69,7 +69,9 @@ fn filters_peer<N : Notifier>(
         }
     };
 
-    notifier.notify(Notification::AttemptingHandshakeWithPeer(potential_peer.clone()));
+    notifier.notify(Notification::AttemptingHandshakeWithPeer(
+        potential_peer.clone(),
+    ));
 
     match node.connect_to_peer(&mut peer_stream, &local_socket, &potential_peer) {
         Ok(_) => {

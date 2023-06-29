@@ -58,7 +58,7 @@ impl Account {
         name: &str,
         private_key: PrivateKey,
         public_key: PublicKey,
-    ) -> Result<Account, ErrorWallet>  {
+    ) -> Result<Account, ErrorWallet> {
         let account_name = name.to_string();
         let address = Address::from_public_key(&public_key)?;
 

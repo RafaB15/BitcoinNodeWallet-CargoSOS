@@ -1,24 +1,16 @@
 use super::error_ui::ErrorUI;
 
 use cargosos_bitcoin::{
-    wallet_structure::{
-        account::Account,
-        wallet::Wallet, private_key::PrivateKey, public_key::PublicKey,
-    },
-    block_structure::{
-        block_chain::BlockChain,
-        transaction::Transaction,
-        utxo_set::UTXOSet,
-    },
-    notifications::{
-        notification::Notification,
-        notifier::Notifier,
-    },
+    block_structure::{block_chain::BlockChain, transaction::Transaction, utxo_set::UTXOSet},
     logs::logger_sender::LoggerSender,
+    notifications::{notification::Notification, notifier::Notifier},
+    wallet_structure::{
+        account::Account, private_key::PrivateKey, public_key::PublicKey, wallet::Wallet,
+    },
 };
 
 /// Function that obtains the balance of the selected account and sends it to the front
-pub fn give_account_balance<N : Notifier>(
+pub fn give_account_balance<N: Notifier>(
     wallet: &Wallet,
     utxo_set: &UTXOSet,
     notifier: N,
@@ -27,19 +19,21 @@ pub fn give_account_balance<N : Notifier>(
         Some(account) => account,
         None => return Err(ErrorUI::ErrorReading("No account selected".to_string())),
     };
+
     let balance = utxo_set.get_balance_in_tbtc(&account_to_check.address);
     let pending = utxo_set.get_pending_in_tbtc(&account_to_check.address);
 
-    notifier.notify(Notification::LoadAvailableBalance((balance, pending)));    
+    notifier.notify(Notification::LoadAvailableBalance((
+        *account_to_check,
+        balance,
+        pending,
+    )));
 
     Ok(())
 }
 
 /// Function that obtains and return the transactions of an account
-fn get_account_transactions(
-    account: &Account,
-    blockchain: &BlockChain,
-) -> Vec<Transaction> {
+fn get_account_transactions(account: &Account, blockchain: &BlockChain) -> Vec<Transaction> {
     let mut transactions: Vec<Transaction> = Vec::new();
     let blocks = blockchain.get_all_blocks();
     for block in blocks {
@@ -53,7 +47,7 @@ fn get_account_transactions(
 }
 
 /// Function that changes the selected account of the address
-pub fn change_selected_account<N : Notifier>(
+pub fn change_selected_account<N: Notifier>(
     account_name: String,
     wallet: &Wallet,
     notifier: N,
@@ -70,18 +64,14 @@ pub fn change_selected_account<N : Notifier>(
     Ok(())
 }
 
-pub fn create_account<N : Notifier>(
+pub fn create_account<N: Notifier>(
     wallet: &Wallet,
     account_name: &str,
     private_key: PrivateKey,
     public_key: PublicKey,
     notifier: N,
 ) -> Result<(), ErrorUI> {
-    let account = match Account::from_keys(
-        account_name,
-        private_key,
-        public_key,
-    ) {
+    let account = match Account::from_keys(account_name, private_key, public_key) {
         Ok(account) => account,
         _ => {
             notifier.notify(Notification::AccountCreationFail);
@@ -97,11 +87,11 @@ pub fn create_account<N : Notifier>(
 
 /// Function that gets the information of the transactions of the selected account
 /// and sends it to the front
-pub fn give_account_transactions<N : Notifier>(
+pub fn give_account_transactions<N: Notifier>(
     wallet: &Wallet,
     blockchain: &BlockChain,
-    logger: LoggerSender,
     notifier: N,
+    logger: LoggerSender,
 ) -> Result<(), ErrorUI> {
     let account = match wallet.get_selected_account() {
         Some(account) => *account,

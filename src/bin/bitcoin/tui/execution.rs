@@ -1,8 +1,11 @@
-use super::user_response::{user_input};
+use super::{backend::user_input, notifierTUI::NotifierTUI};
 
 use crate::{
     error_execution::ErrorExecution,
-    process::{download, handshake, load_system::LoadSystem, reference, save_system::SaveSystem, broadcasting::handle_peers},
+    process::{
+        broadcasting, connection, download, handshake, load_system::LoadSystem, reference,
+        reference::MutArc, save_system::SaveSystem,
+    },
     ui::error_ui::ErrorUI,
 };
 
@@ -10,79 +13,19 @@ use cargosos_bitcoin::{
     block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
     configurations::{
         connection_config::ConnectionConfig, download_config::DownloadConfig,
-        mode_config::ModeConfig, server_config::ServerConfig,
+        mode_config::ModeConfig,
     },
-    connections::ibd_methods::IBDMethod,
     logs::logger_sender::LoggerSender,
-    node_structure::{broadcasting::Broadcasting, message_response::MessageResponse},
-    notifications::notification::{Notification, NotificationSender},
+    node_structure::message_response::MessageResponse,
+    notifications::notifier::Notifier,
     wallet_structure::wallet::Wallet,
 };
 
 use std::{
     net::{IpAddr, SocketAddr, TcpStream},
-    sync::mpsc::{self, Sender},
+    sync::mpsc,
     sync::{Arc, Mutex},
 };
-
-/// Get the peers from the dns seeder
-///
-/// ### Error
-///  * `ErrorUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
-fn get_potential_peers(
-    server_config: ServerConfig,
-    logger: LoggerSender,
-) -> Result<Vec<SocketAddr>, ErrorUI> {
-    let _ = logger.log_connection("Getting potential peers with dns seeder".to_string());
-
-    let potential_peers = match server_config.dns_seeder.discover_peers() {
-        Ok(potential_peers) => potential_peers,
-        Err(_) => {
-            return Err(ErrorUI::ErrorFromPeer(
-                "Fail to getting potencial peers".to_string(),
-            ))
-        }
-    };
-
-    let peer_count_max = std::cmp::min(server_config.peer_count_max, potential_peers.len());
-
-    let potential_peers = potential_peers[0..peer_count_max].to_vec();
-
-    for potential_peer in &potential_peers {
-        let _ = logger.log_connection(format!("Potential peer: {:?}", potential_peer));
-    }
-
-    Ok(potential_peers)
-}
-
-/// Update the block chain given a downloading method and a list of peers
-///
-/// ### Error
-///  * `ErrorMessage::InSerialization`: It will appear when the serialization of the message fails or the SHA(SHA(header)) fails
-///  * `ErrorNode::NodeNotResponding`: It will appear when
-///  * `ErrorNode::WhileValidating`: It will appear when
-///  * `ErrorBlock::CouldNotUpdate`: It will appear when the block is not in the blockchain.
-///  * `ErrorProcess::FailThread`: It will appear when a thread panics and fails
-fn update_block_chain(
-    peer_streams: Vec<TcpStream>,
-    block_chain: &mut BlockChain,
-    connection_config: ConnectionConfig,
-    download_config: DownloadConfig,
-    logger: LoggerSender,
-) -> Result<Vec<TcpStream>, ErrorUI> {
-    let _ = logger.log_connection("Getting block chain".to_string());
-
-    Ok(match connection_config.ibd_method {
-        IBDMethod::HeaderFirst => download::headers_first(
-            peer_streams,
-            block_chain,
-            connection_config,
-            download_config,
-            logger,
-        )?,
-        IBDMethod::BlocksFirst => download::blocks_first(),
-    })
-}
 
 fn _show_merkle_path(block_chain: &BlockChain, logger: LoggerSender) -> Result<(), ErrorExecution> {
     let latest = block_chain.latest();
@@ -127,59 +70,45 @@ fn _show_merkle_path(block_chain: &BlockChain, logger: LoggerSender) -> Result<(
     Ok(())
 }
 
-/// Creates the UTXO set from the given block chain
-fn get_utxo_set(block_chain: &BlockChain, logger: LoggerSender) -> UTXOSet {
-    let _ = logger.log_wallet("Creating the UTXO set".to_string());
-
-    let utxo_set = UTXOSet::from_blockchain(block_chain);
-
-    let _ = logger.log_wallet("UTXO set finished successfully".to_string());
-    utxo_set
-}
-
-/// Creates the broadcasting
-fn get_broadcasting(
-    peer_streams: Vec<TcpStream>,
-    sender_response: Sender<MessageResponse>,
-    connection_config: ConnectionConfig,
-    logger: LoggerSender,
-) -> Broadcasting<TcpStream> {
-    let _ = logger.log_node("Broadcasting".to_string());
-    Broadcasting::new(peer_streams, sender_response, connection_config, logger)
-}
-
 /// Broadcasting blocks and transactions from and to the given peers
 ///
 /// ### Error
 ///  *
-fn broadcasting(
+fn broadcasting<N: Notifier>(
     peer_streams: Vec<TcpStream>,
-    wallet: Arc<Mutex<Wallet>>,
-    utxo_set: Arc<Mutex<UTXOSet>>,
-    block_chain: Arc<Mutex<BlockChain>>,
+    wallet: MutArc<Wallet>,
+    utxo_set: MutArc<UTXOSet>,
+    block_chain: MutArc<BlockChain>,
     connection_config: ConnectionConfig,
+    notifier: N,
     logger: LoggerSender,
-    notification_sender: NotificationSender,
 ) -> Result<(), ErrorExecution> {
     let (sender_response, receiver_response) = mpsc::channel::<MessageResponse>();
 
-    let handle = handle_peers(
+    let handle = broadcasting::handle_peers(
         receiver_response,
         wallet.clone(),
         utxo_set.clone(),
         block_chain.clone(),
+        notifier.clone(),
         logger.clone(),
-        notification_sender.clone(),
     );
 
-    let mut broadcasting = get_broadcasting(
+    let mut broadcasting = broadcasting::get_broadcasting(
         peer_streams,
         sender_response,
         connection_config,
         logger.clone(),
     );
 
-    user_input(&mut broadcasting, wallet, utxo_set, block_chain, logger)?;
+    user_input(
+        &mut broadcasting,
+        wallet,
+        utxo_set,
+        block_chain,
+        notifier,
+        logger,
+    )?;
 
     broadcasting.destroy()?;
 
@@ -197,26 +126,30 @@ pub fn program_execution(
     load_system: &mut LoadSystem,
     logger: LoggerSender,
 ) -> Result<SaveSystem, ErrorExecution> {
-    let (notification_sender, _notification_receiver) = mpsc::channel::<Notification>();
-
     let potential_peers = match mode_config {
-        ModeConfig::Server(server_config) => get_potential_peers(server_config, logger.clone())?,
+        ModeConfig::Server(server_config) => {
+            connection::get_potential_peers(server_config, logger.clone())?
+        }
         ModeConfig::Client(client_config) => vec![SocketAddr::new(
             IpAddr::V4(client_config.address),
             client_config.port,
         )],
     };
 
+    let notifier = NotifierTUI {
+        logger: logger.clone(),
+    };
+
     let peer_streams = handshake::connect_to_peers(
         potential_peers,
         connection_config.clone(),
+        notifier.clone(),
         logger.clone(),
-        notification_sender.clone(),
     );
 
     let mut block_chain = load_system.get_block_chain()?;
 
-    let peer_streams = update_block_chain(
+    let peer_streams = download::update_block_chain(
         peer_streams,
         &mut block_chain,
         connection_config.clone(),
@@ -225,7 +158,10 @@ pub fn program_execution(
     )?;
 
     let wallet = Arc::new(Mutex::new(load_system.get_wallet()?));
-    let utxo_set = Arc::new(Mutex::new(get_utxo_set(&block_chain, logger.clone())));
+    let utxo_set = Arc::new(Mutex::new(download::get_utxo_set(
+        &block_chain,
+        logger.clone(),
+    )));
     let block_chain = Arc::new(Mutex::new(block_chain));
 
     broadcasting(
@@ -234,8 +170,8 @@ pub fn program_execution(
         utxo_set,
         block_chain.clone(),
         connection_config,
+        notifier.clone(),
         logger.clone(),
-        notification_sender.clone(),
     )?;
 
     Ok(SaveSystem::new(

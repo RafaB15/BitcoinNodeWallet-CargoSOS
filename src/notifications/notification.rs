@@ -15,7 +15,7 @@ pub enum Notification {
     UpdatedSelectedAccount(Account),
     RegisterWalletAccount(Account),
     NotifyBlockchainIsReady,
-    LoadAvailableBalance((f64, f64)),
+    LoadAvailableBalance((Account, f64, f64)),
     AccountNotSelected,
     AccountTransactions((Account, Vec<Transaction>)),
     InvalidAddressEnter,

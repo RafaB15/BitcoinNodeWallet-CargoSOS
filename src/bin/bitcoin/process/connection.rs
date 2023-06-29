@@ -1,7 +1,6 @@
 use cargosos_bitcoin::{
-    configurations::server_config::ServerConfig,
+    configurations::server_config::ServerConfig, connections::error_connection::ErrorConnection,
     logs::logger_sender::LoggerSender,
-    connections::error_connection::ErrorConnection,
 };
 
 use std::net::SocketAddr;

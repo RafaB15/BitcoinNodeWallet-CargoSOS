@@ -3,12 +3,12 @@ use super::error_process::ErrorProcess;
 use cargosos_bitcoin::{
     block_structure::{block::Block, block_chain::BlockChain, hash::HashType, utxo_set::UTXOSet},
     configurations::{connection_config::ConnectionConfig, download_config::DownloadConfig},
+    connections::ibd_methods::IBDMethod,
     logs::logger_sender::LoggerSender,
     node_structure::{
         block_download::BlockDownload, error_node::ErrorNode,
         initial_headers_download::InitialHeaderDownload,
     },
-    connections::ibd_methods::IBDMethod,
 };
 
 use std::{
@@ -145,7 +145,7 @@ fn get_blocks<RW: Read + Write + Send + 'static>(
 }
 
 /// Updates the blockchain with the new blocks and returns the TcpStreams that are still connected
-pub fn get_block_chain<RW : Read + Write + Send + Debug + 'static>(
+pub fn update_block_chain<RW: Read + Write + Send + Debug + 'static>(
     peer_streams: Vec<RW>,
     block_chain: &mut BlockChain,
     connection_config: ConnectionConfig,

@@ -1,13 +1,10 @@
 use super::signal_to_front::SignalToFront;
 
 use cargosos_bitcoin::{
-    wallet_structure::account::Account,
     block_structure::transaction::Transaction,
-    notifications::{
-        notification::Notification,
-        notifier::Notifier,
-    },
     logs::logger_sender::LoggerSender,
+    notifications::{notification::Notification, notifier::Notifier},
+    wallet_structure::account::Account,
 };
 
 use gtk::glib::Sender;
@@ -31,77 +28,93 @@ impl Notifier for NotifierGUI {
                 println!("Failed handshake with peer {}", peer)
             }
             Notification::TransactionOfAccountReceived(accounts, _) => {
-                if self.tx_to_front.send(SignalToFront::Update).is_err() ||
-                    self.tx_to_front
-                    .send(SignalToFront::TransactionOfAccountReceived(
-                        accounts[0].account_name.clone(),
-                    ))
-                    .is_err()
+                if self.tx_to_front.send(SignalToFront::Update).is_err()
+                    || self
+                        .tx_to_front
+                        .send(SignalToFront::TransactionOfAccountReceived(
+                            accounts[0].account_name.clone(),
+                        ))
+                        .is_err()
                 {
-                    let _ = self.logger.log_error("Error sending notification".to_string());
+                    let _ = self
+                        .logger
+                        .log_error("Error sending notification".to_string());
                 }
-            },
+            }
             Notification::TransactionOfAccountInNewBlock(_) => {
-                if self.tx_to_front
+                if self
+                    .tx_to_front
                     .send(SignalToFront::BlockWithUnconfirmedTransactionReceived)
                     .is_err()
                 {
-                    let _ = self.logger.log_error("Error sending notification".to_string());
+                    let _ = self
+                        .logger
+                        .log_error("Error sending notification".to_string());
                 }
-            },
+            }
             Notification::NewBlockAddedToTheBlockchain(_) => {
                 if self.tx_to_front.send(SignalToFront::Update).is_err() {
-                    let _ = self.logger
+                    let _ = self
+                        .logger
                         .log_error("Failed to send update of new block added".to_string());
                 }
-            },
+            }
             Notification::UpdatedSelectedAccount(_) => {
                 if self.tx_to_front.send(SignalToFront::Update).is_err() {
-                    let _ = self.logger
+                    let _ = self
+                        .logger
                         .log_error("Failed to send update selected account".to_string());
                 }
-            },
+            }
             Notification::RegisterWalletAccount(account) => {
-                if self.tx_to_front
+                if self
+                    .tx_to_front
                     .send(SignalToFront::RegisterWallet(account.account_name.clone()))
-                    .is_err() 
+                    .is_err()
                 {
-                    let _ = self.logger
+                    let _ = self
+                        .logger
                         .log_error("Failed to send register wallet account".to_string());
                 }
-            },
+            }
             Notification::NotifyBlockchainIsReady => {
-                if self.tx_to_front
-                .send(SignalToFront::NotifyBlockchainIsReady)
-                .is_err() {
-                    let _ = self.logger
+                if self
+                    .tx_to_front
+                    .send(SignalToFront::NotifyBlockchainIsReady)
+                    .is_err()
+                {
+                    let _ = self
+                        .logger
                         .log_error("Failed to signal finish block chain loading".to_string());
                 }
-            },
-            Notification::LoadAvailableBalance((balance, pending)) => {
-                if self.tx_to_front
+            }
+            Notification::LoadAvailableBalance((_, balance, pending)) => {
+                if self
+                    .tx_to_front
                     .send(SignalToFront::LoadAvailableBalance((balance, pending)))
                     .is_err()
                 {
-                    let _ = self.logger.log_error(
-                        "Failed to send available balance to front".to_string(),
-                    );
+                    let _ = self
+                        .logger
+                        .log_error("Failed to send available balance to front".to_string());
                 }
-            },
+            }
             Notification::AccountNotSelected => {
                 let message = "No account selected cannot get transactions";
-                if self.tx_to_front
+                if self
+                    .tx_to_front
                     .send(SignalToFront::ErrorInTransaction(message.to_string()))
                     .is_err()
                 {
-                    let _ = self.logger.log_error(
-                        "Failed to send error signal to front".to_string(),
-                    );
+                    let _ = self
+                        .logger
+                        .log_error("Failed to send error signal to front".to_string());
                 }
-            },
+            }
             Notification::AccountTransactions((account, transactions)) => {
                 let transactions = get_account_transactions_information(&account, transactions);
-                if self.tx_to_front
+                if self
+                    .tx_to_front
                     .send(SignalToFront::AccountTransactions(transactions))
                     .is_err()
                 {
@@ -109,35 +122,38 @@ impl Notifier for NotifierGUI {
                         "Failed to send error signal of transactions from account".to_string(),
                     );
                 }
-            },
+            }
             Notification::InvalidAddressEnter => {
                 let message = "Invalid address".to_string();
                 let _ = self.logger.log_error(message);
-                if self.tx_to_front
+                if self
+                    .tx_to_front
                     .send(SignalToFront::ErrorInTransaction(message))
                     .is_err()
                 {
-                    let _ = self.logger.log_error(
-                        "Failed to send error signal to front".to_string(),
-                    );
+                    let _ = self
+                        .logger
+                        .log_error("Failed to send error signal to front".to_string());
                 }
-            },
+            }
             Notification::NotEnoughFunds => {
-                if self.tx_to_front
+                if self
+                    .tx_to_front
                     .send(SignalToFront::ErrorInTransaction(
                         "Error creating the transaction".to_string(),
                     ))
                     .is_err()
                 {
-                    let _ = self.logger.log_error(
-                        "Failed to send error signal to front".to_string(),
-                    );
+                    let _ = self
+                        .logger
+                        .log_error("Failed to send error signal to front".to_string());
                 };
-            },
+            }
             Notification::InvalidPublicKeyEnter => {
                 let message = "Invalid public key".to_string();
                 let _ = self.logger.log_error(message);
-                if self.tx_to_front
+                if self
+                    .tx_to_front
                     .send(SignalToFront::ErrorInAccountCreation(message))
                     .is_err()
                 {
@@ -145,11 +161,12 @@ impl Notifier for NotifierGUI {
                         "Failed to send error signal for an invalid public key".to_string(),
                     );
                 }
-            },
+            }
             Notification::InvalidPrivateKeyEnter => {
                 let message = "Invalid private key".to_string();
                 let _ = self.logger.log_error(message);
-                if self.tx_to_front
+                if self
+                    .tx_to_front
                     .send(SignalToFront::ErrorInAccountCreation(message))
                     .is_err()
                 {
@@ -157,19 +174,21 @@ impl Notifier for NotifierGUI {
                         "Failed to send error signal for an invalid private key".to_string(),
                     );
                 }
-            },
+            }
             Notification::AccountCreationFail => {
                 let message = "Error in account creation".to_string();
                 let _ = self.logger.log_error(message);
-                if self.tx_to_front
+                if self
+                    .tx_to_front
                     .send(SignalToFront::ErrorInAccountCreation(message))
                     .is_err()
                 {
                     let _ = self.logger.log_error(
-                        "Failed to send error signal for an error in creation of an account".to_string(),
+                        "Failed to send error signal for an error in creation of an account"
+                            .to_string(),
                     );
                 }
-            },
+            }
         }
     }
 }
@@ -177,7 +196,7 @@ impl Notifier for NotifierGUI {
 /// Return the information of the transactions of an account
 fn get_account_transactions_information(
     account: &Account,
-    transactions: Vec<Transaction>
+    transactions: Vec<Transaction>,
 ) -> Vec<(u32, [u8; 32], i64)> {
     transactions
         .iter()

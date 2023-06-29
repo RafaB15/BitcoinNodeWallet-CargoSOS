@@ -1,6 +1,6 @@
 use super::{
-    backend::spawn_backend_handler, signal_to_back::SignalToBack,
-    signal_to_front::SignalToFront, notifierGUI::NotifierGUI,
+    backend::spawn_backend_handler, notifierGUI::NotifierGUI, signal_to_back::SignalToBack,
+    signal_to_front::SignalToFront,
 };
 
 use gtk::glib;

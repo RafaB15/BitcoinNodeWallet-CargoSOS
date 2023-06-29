@@ -3,25 +3,13 @@ use super::error_process::ErrorProcess;
 use crate::ui::error_ui::ErrorUI;
 
 use cargosos_bitcoin::{
-    notifications::{
-        notification::Notification,
-        notifier::Notifier,
-    },
-    wallet_structure::{
-        wallet::Wallet,
-        address::Address,
-        account::Account,
-        error_wallet::ErrorWallet,
-    },
-    block_structure::{
-        transaction::Transaction,
-        utxo_set::UTXOSet,
-    },
-    node_structure::{
-        broadcasting::Broadcasting,
-        error_node::ErrorNode,
-    },
+    block_structure::{transaction::Transaction, utxo_set::UTXOSet},
     logs::logger_sender::LoggerSender,
+    node_structure::{broadcasting::Broadcasting, error_node::ErrorNode},
+    notifications::{notification::Notification, notifier::Notifier},
+    wallet_structure::{
+        account::Account, address::Address, error_wallet::ErrorWallet, wallet::Wallet,
+    },
 };
 
 use std::io::{Read, Write};
@@ -43,7 +31,6 @@ fn create_transaction(
     amount: f64,
     fee: f64,
 ) -> Result<Transaction, ErrorProcess> {
-
     match account.create_transaction(
         address.clone(),
         fron_tbtc_to_satoshi(amount),
@@ -74,7 +61,7 @@ fn create_transaction(
 ///  * `ErrorUI::FailedSignalToFront`: It will appear when the sender fails
 ///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 ///  * `ErrorUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
-pub fn sending_transaction<N : Notifier, RW: Read + Write + Send + 'static>(
+pub fn sending_transaction<N: Notifier, RW: Read + Write + Send + 'static>(
     broadcasting: &mut Broadcasting<RW>,
     wallet: &Wallet,
     utxo_set: &UTXOSet,

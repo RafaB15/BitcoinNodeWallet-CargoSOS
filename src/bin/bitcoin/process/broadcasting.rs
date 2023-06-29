@@ -11,10 +11,7 @@ use cargosos_bitcoin::{
     configurations::connection_config::ConnectionConfig,
     logs::logger_sender::LoggerSender,
     node_structure::{broadcasting::Broadcasting, message_response::MessageResponse},
-    notifications::{
-        notification::{Notification},
-        notifier::Notifier,
-    },
+    notifications::{notification::Notification, notifier::Notifier},
     wallet_structure::wallet::Wallet,
 };
 
@@ -36,7 +33,7 @@ pub fn get_broadcasting<RW: Read + Write + Send + 'static>(
 }
 
 /// Create a thread for handling the blocks and transactions received
-pub fn handle_peers<N : Notifier>(
+pub fn handle_peers<N: Notifier>(
     receiver_broadcasting: Receiver<MessageResponse>,
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
@@ -76,7 +73,7 @@ pub fn handle_peers<N : Notifier>(
 ///
 /// ### Error
 ///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-fn receive_transaction<N : Notifier>(
+fn receive_transaction<N: Notifier>(
     wallet: &MutArc<Wallet>,
     transaction: Transaction,
     utxo_set: &MutArc<UTXOSet>,
@@ -118,7 +115,7 @@ fn receive_transaction<N : Notifier>(
 /// ### Error
 ///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 ///  * `ErrorUI::ErrorWriting`: It will appear when writing to the block chain
-fn receive_block<N : Notifier>(
+fn receive_block<N: Notifier>(
     utxo_set: &MutArc<UTXOSet>,
     block_chain: &MutArc<BlockChain>,
     block: Block,
@@ -133,7 +130,9 @@ fn receive_block<N : Notifier>(
                 "Removing transaction from list of transaction seen so far".to_string(),
             );
 
-            notifier.notify(Notification::TransactionOfAccountInNewBlock(transaction.clone()));
+            notifier.notify(Notification::TransactionOfAccountInNewBlock(
+                transaction.clone(),
+            ));
         }
     }
 

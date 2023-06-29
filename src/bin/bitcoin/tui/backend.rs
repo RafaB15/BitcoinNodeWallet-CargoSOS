@@ -1,23 +1,24 @@
-use crate::ui::{error_ui::ErrorUI, account};
+use super::{backend, menu, menu_option::MenuOption};
 
-use crate::process::transaction;
+use crate::ui::{account, error_ui::ErrorUI};
+
+use crate::process::{
+    reference::{get_reference, MutArc},
+    transaction,
+};
 
 use cargosos_bitcoin::{
+    block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
     logs::logger_sender::LoggerSender,
     node_structure::broadcasting::Broadcasting,
-    block_structure::utxo_set::UTXOSet,
+    notifications::notifier::Notifier,
     wallet_structure::{
         account::Account, address::Address, private_key::PrivateKey, public_key::PublicKey,
         wallet::Wallet,
-    }, 
-    notifications::notifier::Notifier,
+    },
 };
 
-use std::io::{
-    stdin,
-    Write,
-    Read,
-};
+use std::io::{stdin, Read, Write};
 
 /// Get the private key from the terminal
 ///
@@ -143,10 +144,10 @@ fn get_account_name() -> Result<String, ErrorUI> {
 ///
 /// ### Error
 ///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
-pub fn create_account<N : Notifier>(
+pub fn create_account<N: Notifier>(
     wallet: &Wallet,
     notifier: N,
-    logger: LoggerSender
+    logger: LoggerSender,
 ) -> Result<(), ErrorUI> {
     let _ = logger.log_wallet("Creating a new account".to_string());
 
@@ -154,13 +155,7 @@ pub fn create_account<N : Notifier>(
     let public_key = get_public_key(logger.clone())?;
     let account_name = get_account_name()?;
 
-    account::create_account(
-        wallet,
-        &account_name,
-        private_key,
-        public_key,
-        notifier,
-    )
+    account::create_account(wallet, &account_name, private_key, public_key, notifier)
 }
 
 /// Delete the selected account selected by the user
@@ -168,10 +163,7 @@ pub fn create_account<N : Notifier>(
 /// ### Error
 ///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
 ///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-pub fn remove_account(
-    wallet: &Wallet, 
-    logger: LoggerSender
-) -> Result<(), ErrorUI> {
+pub fn remove_account(wallet: &Wallet, logger: LoggerSender) -> Result<(), ErrorUI> {
     let account = select_account(&wallet, logger)?;
     wallet.remove_account(account);
 
@@ -183,12 +175,11 @@ pub fn remove_account(
 /// ### Error
 ///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
 ///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-pub fn change_account<N : Notifier>(
-    wallet: &Wallet, 
+pub fn change_account<N: Notifier>(
+    wallet: &Wallet,
     notifier: N,
-    logger: LoggerSender
+    logger: LoggerSender,
 ) -> Result<(), ErrorUI> {
-
     let _ = logger.log_wallet("Selecting an account".to_string());
 
     println!("Possible accounts: ");
@@ -229,10 +220,7 @@ fn get_account_from_name(account_name: &str, wallet: &Wallet) -> Option<Account>
 ///
 /// ### Error
 ///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
-pub fn select_account(
-    wallet: &Wallet,
-    logger: LoggerSender,
-) -> Result<Account, ErrorUI> {
+pub fn select_account(wallet: &Wallet, logger: LoggerSender) -> Result<Account, ErrorUI> {
     let _ = logger.log_wallet("Selecting an account".to_string());
 
     println!("Possible accounts: ");
@@ -356,7 +344,7 @@ fn get_fee(logger: LoggerSender) -> Result<f64, ErrorUI> {
 ///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
 ///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 ///  * `ErrorUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
-pub fn sending_transaction<N : Notifier, RW: Read + Write + Send + 'static>(
+pub fn sending_transaction<N: Notifier, RW: Read + Write + Send + 'static>(
     broadcasting: &mut Broadcasting<RW>,
     wallet: &Wallet,
     utxo_set: &UTXOSet,
@@ -376,4 +364,59 @@ pub fn sending_transaction<N : Notifier, RW: Read + Write + Send + 'static>(
         notifier,
         logger,
     )
+}
+
+/// It will responde to the user input
+///
+/// ### Error
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
+///  * `ErrorUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
+pub fn user_input<N: Notifier, RW: Read + Write + Send + 'static>(
+    broadcasting: &mut Broadcasting<RW>,
+    wallet: MutArc<Wallet>,
+    utxo_set: MutArc<UTXOSet>,
+    block_chain: MutArc<BlockChain>,
+    notifier: N,
+    logger: LoggerSender,
+) -> Result<(), ErrorUI> {
+    loop {
+        let wallet_reference = get_reference(&wallet)?;
+        let utxo_set_reference = get_reference(&utxo_set)?;
+        let blockchain_reference = get_reference(&block_chain)?;
+
+        match menu::select_option(logger.clone())? {
+            MenuOption::CreateAccount => {
+                backend::create_account(&wallet_reference, notifier, logger.clone())?
+            }
+            MenuOption::ChangeAccount => {
+                backend::change_account(&wallet_reference, notifier, logger.clone())?
+            }
+            MenuOption::RemoveAccount => {
+                backend::remove_account(&wallet_reference, logger.clone())?
+            }
+            MenuOption::SendTransaction => backend::sending_transaction(
+                broadcasting,
+                &wallet_reference,
+                &utxo_set_reference,
+                notifier,
+                logger.clone(),
+            )?,
+            MenuOption::ShowAccounts => {
+                backend::show_accounts(&wallet_reference, logger.clone());
+            }
+            MenuOption::ShowBalance => {
+                account::give_account_balance(&wallet_reference, &utxo_set_reference, notifier)?
+            }
+            MenuOption::LastTransactions => account::give_account_transactions(
+                &wallet_reference,
+                &blockchain_reference,
+                notifier,
+                logger,
+            )?,
+            MenuOption::Exit => break,
+        }
+    }
+
+    Ok(())
 }
