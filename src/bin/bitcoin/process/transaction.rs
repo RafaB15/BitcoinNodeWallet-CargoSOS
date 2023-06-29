@@ -93,9 +93,12 @@ pub fn sending_transaction<N: Notifier, RW: Read + Write + Send + 'static>(
 
     let _ = logger.log_transaction("Sending transaction".to_string());
     utxo_set.append_pending_transaction(transaction.clone());
-
-    match broadcasting.send_transaction(transaction) {
-        Ok(()) => Ok(()),
+    
+    match broadcasting.send_transaction(transaction.clone()) {
+        Ok(()) => {
+            notifier.notify(Notification::SuccessfullySentTransaction(transaction));
+            Ok(())
+        },
         Err(ErrorNode::WhileSendingMessage(message)) => Err(ErrorUI::ErrorFromPeer(message)),
         _ => Err(ErrorUI::ErrorFromPeer(
             "While sending transaction".to_string(),
