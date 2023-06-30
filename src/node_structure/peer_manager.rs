@@ -350,6 +350,12 @@ mod tests {
                 self.pointer += 1;
                 i += 1;
             }
+            if i == 0 {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::WouldBlock,
+                    "Error reading the stream",
+                ))
+            }
             Ok(i)
         }
     }
@@ -599,7 +605,7 @@ mod tests {
         let stream = Stream::new(stream);
 
         let (sender_message, _) = channel::<MessageResponse>();
-        let (_, receiver_transaction) = channel::<MessageToPeer>();
+        let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
         let notifier = NotificationMock {};
 
         let logger_text: Vec<u8> = Vec::new();
@@ -613,6 +619,7 @@ mod tests {
             sender,
         );
 
+        sender_transaction.send(MessageToPeer::Stop).unwrap();
         let stream = peer_manager.connecting_to_peer().unwrap();
         let mut stream = stream.get_write_stream();
 

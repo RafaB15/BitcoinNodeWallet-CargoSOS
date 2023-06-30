@@ -32,6 +32,12 @@ impl Read for Stream {
             self.pointer += 1;
             i += 1;
         }
+        if i == 0 {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::WouldBlock,
+                "Error reading the stream",
+            ))
+        }
         Ok(i)
     }
 }
