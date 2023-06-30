@@ -135,6 +135,9 @@ impl Notifier for NotifierTUI {
                 );
                 println!("{message}");
             }
+            Notification::HeadersReceived(headers) => {
+                println!("Received {headers} headers");
+            }
             Notification::ClosingPeers => println!("Closing peers"),
             Notification::ClosingPeer => println!("Closing this peer"),
             Notification::ReceivedMessage(message) => {

@@ -52,7 +52,13 @@ fn headers_first<N: Notifier, RW: Read + Write + Send + Debug + 'static>(
 
         let _ = logger.log_connection(format!("Connecting to peer: {:?}", peer_stream));
 
-        get_peer_header(&mut peer_stream, &header_download, block_chain, &logger)?;
+        get_peer_header(
+            &mut peer_stream,
+            &header_download,
+            block_chain,
+            notifier.clone(),
+            &logger,
+        )?;
 
         let mut list_of_blocks: Vec<Block> = Vec::new();
         for block in block_chain.get_blocks_after_timestamp(download_config.timestamp) {
@@ -87,10 +93,11 @@ fn headers_first<N: Notifier, RW: Read + Write + Send + Debug + 'static>(
 ///  * `ErrorMessage::InSerialization`: It will appear when the serialization of the message fails or the SHA(SHA(header)) fails
 ///  * `ErrorNode::NodeNotResponding`: It will appear when no message is received from the node
 ///  * `ErrorNode::WhileValidating`: It will appear when a given header does not pass the proof of work to be added to the blockchain
-fn get_peer_header<RW: Read + Write>(
+fn get_peer_header<N: Notifier, RW: Read + Write>(
     peer_stream: &mut RW,
     header_download: &InitialHeaderDownload,
     block_chain: &mut BlockChain,
+    notifier: N,
     logger: &LoggerSender,
 ) -> Result<(), ErrorProcess> {
     loop {
@@ -109,6 +116,7 @@ fn get_peer_header<RW: Read + Write>(
         };
 
         let _ = logger.log_connection(format!("We get: {}", header_count));
+        notifier.notify(Notification::HeadersReceived(header_count));
 
         if header_count == 0 {
             break;

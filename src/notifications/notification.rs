@@ -19,6 +19,8 @@ pub enum Notification {
 
     SuccessfullySentTransaction(Transaction),
 
+    HeadersReceived(u32),
+
     ProgressDownloadingBlocks(u32, u32),
 
     NewBlockAddedToTheBlockchain(Block),

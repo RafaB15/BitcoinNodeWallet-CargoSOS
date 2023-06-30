@@ -201,6 +201,9 @@ impl Notifier for NotifierGUI {
             Notification::SuccessfullySentTransaction(transaction) => {
                 println!("Transaction sent: {transaction}", transaction = transaction);
             }
+            Notification::HeadersReceived(headers) => {
+                println!("Received {headers} headers");
+            }
             Notification::ProgressDownloadingBlocks(blocks_downloaded, total_blocks) => {
                 let percentage_downloaded =
                     (blocks_downloaded as f32 / total_blocks as f32) * 100.0;
