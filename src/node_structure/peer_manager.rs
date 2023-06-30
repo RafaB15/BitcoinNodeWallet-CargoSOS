@@ -1,9 +1,13 @@
-use super::{error_node::ErrorNode, message_response::MessageResponse};
+use super::{
+    error_node::ErrorNode, message_response::MessageResponse, 
+    message_to_peer::MessageToPeer, 
+};
 
 use crate::{
     block_structure::{hash::HashType, transaction::Transaction},
     connections::type_identifier::TypeIdentifier,
     logs::logger_sender::LoggerSender,
+    concurrency::work::Work,
     messages::{
         addr_message::AddrMessage,
         alert_message::AlertMessage,
@@ -30,7 +34,6 @@ use crate::{
 use std::{
     io::{Read, Write},
     sync::mpsc::{Receiver, Sender},
-    sync::{Arc, Mutex},
 };
 
 /// It represents how to manage the peer, listening to the there messages and sending them transactions
@@ -40,8 +43,7 @@ where
 {
     peer: RW,
     sender: Sender<MessageResponse>,
-    receiver: Receiver<Transaction>,
-    stop: Arc<Mutex<bool>>,
+    receiver: Receiver<MessageToPeer>,
     magic_numbers: [u8; 4],
     logger: LoggerSender,
 }
@@ -53,8 +55,7 @@ where
     pub fn new(
         peer: RW,
         sender: Sender<MessageResponse>,
-        receiver: Receiver<Transaction>,
-        stop: Arc<Mutex<bool>>,
+        receiver: Receiver<MessageToPeer>,
         magic_numbers: [u8; 4],
         logger: LoggerSender,
     ) -> Self {
@@ -62,7 +63,6 @@ where
             peer,
             sender,
             receiver,
-            stop,
             magic_numbers,
             logger,
         }
@@ -75,27 +75,12 @@ where
     ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
     ///  * `ErrorNode::NodeNotResponding`: It will appear when the node is not responding to the messages
     pub fn connecting_to_peer(mut self) -> Result<RW, ErrorNode> {
-        while let Ok(header) = MessageHeader::deserialize_header(&mut self.peer) {
-            self.manage_message(header)?;
 
-            if let Ok(transaction) = self.receiver.try_recv() {
-                self.send_transaction(transaction)?;
-            }
-
-            match self.stop.lock() {
-                Ok(stop) => {
-                    if *stop {
-                        let _ = self
-                            .logger
-                            .log_configuration("Closing this peer".to_string());
-                        break;
-                    }
-                }
-                Err(_) => {
-                    return Err(ErrorNode::NodeNotResponding(
-                        "Could not determine if to stop".to_string(),
-                    ))
-                }
+        loop {
+            match Work::listen(&mut self.peer, &self.receiver) {
+                Work::Message(header) => self.manage_message(header)?,
+                Work::SendTransaction(transaction) => self.send_transaction(transaction)?,
+                Work::Stop => break,   
             }
         }
 
@@ -313,14 +298,24 @@ mod tests {
     use std::sync::mpsc::channel;
 
     struct Stream {
-        stream: Vec<u8>,
+        write_stream: Vec<u8>,
+        read_stream: Vec<u8>,
         pointer: usize,
     }
 
     impl Stream {
-        pub fn new() -> Stream {
+        pub fn new(read_stream: Vec<u8>) -> Stream {
             Stream {
-                stream: Vec::new(),
+                read_stream,
+                write_stream: Vec::new(),
+                pointer: 0,
+            }
+        }
+
+        pub fn get_write_stream(&self) -> Stream {
+            Stream {
+                read_stream: self.write_stream.clone(),
+                write_stream: Vec::new(),
                 pointer: 0,
             }
         }
@@ -329,8 +324,8 @@ mod tests {
     impl Read for Stream {
         fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
             let mut i = 0;
-            while i < buf.len() && self.pointer < self.stream.len() {
-                buf[i] = self.stream[self.pointer];
+            while i < buf.len() && self.pointer < self.read_stream.len() {
+                buf[i] = self.read_stream[self.pointer];
                 self.pointer += 1;
                 i += 1;
             }
@@ -342,7 +337,7 @@ mod tests {
         fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
             let mut i = 0;
             while i < buf.len() {
-                self.stream.push(buf[i]);
+                self.write_stream.push(buf[i]);
                 i += 1;
             }
             Ok(i)
@@ -353,8 +348,8 @@ mod tests {
         }
     }
 
-    fn serialize_headers_message<RW: Read + Write>(
-        stream: &mut RW,
+    fn serialize_headers_message<W: Write>(
+        stream: &mut W,
         magic_numbers: [u8; 4],
         headers: Vec<BlockHeader>,
     ) -> Result<(), ErrorSerialization> {
@@ -362,8 +357,8 @@ mod tests {
         HeadersMessage::serialize_message(stream, magic_numbers, &headers_message)
     }
 
-    fn serialize_block_message<RW: Read + Write>(
-        stream: &mut RW,
+    fn serialize_block_message<W: Write>(
+        stream: &mut W,
         magic_numbers: [u8; 4],
         block: Block,
     ) -> Result<(), ErrorSerialization> {
@@ -371,8 +366,8 @@ mod tests {
         BlockMessage::serialize_message(stream, magic_numbers, &block_message)
     }
 
-    fn serialize_tx_message<RW: Read + Write>(
-        stream: &mut RW,
+    fn serialize_tx_message<W: Write>(
+        stream: &mut W,
         magic_numbers: [u8; 4],
         transaction: Transaction,
     ) -> Result<(), ErrorSerialization> {
@@ -380,8 +375,8 @@ mod tests {
         TxMessage::serialize_message(stream, magic_numbers, &tx_message)
     }
 
-    fn serialize_inv_message<RW: Read + Write>(
-        stream: &mut RW,
+    fn serialize_inv_message<W: Write>(
+        stream: &mut W,
         magic_numbers: [u8; 4],
         inventory_vectors: Vec<InventoryVector>,
     ) -> Result<(), ErrorSerialization> {
@@ -389,8 +384,8 @@ mod tests {
         InventoryMessage::serialize_message(stream, magic_numbers, &inventory_message)
     }
 
-    fn serialize_ping_message<RW: Read + Write>(
-        stream: &mut RW,
+    fn serialize_ping_message<W: Write>(
+        stream: &mut W,
         magic_numbers: [u8; 4],
     ) -> Result<(), ErrorSerialization> {
         let ping_message = PingMessage { nonce: 1234 };
@@ -432,15 +427,17 @@ mod tests {
 
     #[test]
     fn test01_peer_manager_receives_transaction_successfully() {
-        let mut stream = Stream::new();
+        let mut stream: Vec<u8> = Vec::new();
         let magic_numbers = [11, 17, 9, 7];
 
         let transaction = create_transaction(0);
 
         serialize_tx_message(&mut stream, magic_numbers.clone(), transaction.clone()).unwrap();
 
+        let stream = Stream::new(stream);
+
         let (sender_message, receiver_message) = channel::<MessageResponse>();
-        let (_, receiver_transaction) = channel::<Transaction>();
+        let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
 
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
@@ -448,11 +445,12 @@ mod tests {
             stream,
             sender_message,
             receiver_transaction,
-            Arc::new(Mutex::new(true)),
             magic_numbers,
             sender,
         );
 
+        sender_transaction.send(MessageToPeer::Stop).unwrap();
+        
         let _ = peer_manager.connecting_to_peer().unwrap();
 
         assert_eq!(
@@ -463,7 +461,7 @@ mod tests {
 
     #[test]
     fn test02_peer_manager_receives_block_successfully() {
-        let mut stream = Stream::new();
+        let mut stream = Vec::new();
         let magic_numbers = [11, 17, 9, 7];
 
         let mut block = create_empty_block(3);
@@ -473,8 +471,10 @@ mod tests {
 
         serialize_block_message(&mut stream, magic_numbers.clone(), block.clone()).unwrap();
 
+        let stream = Stream::new(stream);
+
         let (sender_message, receiver_message) = channel::<MessageResponse>();
-        let (_, receiver_transaction) = channel::<Transaction>();
+        let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
 
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
@@ -482,12 +482,14 @@ mod tests {
             stream,
             sender_message,
             receiver_transaction,
-            Arc::new(Mutex::new(true)),
             magic_numbers,
             sender,
         );
 
+        sender_transaction.send(MessageToPeer::Stop).unwrap();
+
         let _ = peer_manager.connecting_to_peer().unwrap();
+
 
         assert_eq!(
             MessageResponse::Block(block),
@@ -497,7 +499,7 @@ mod tests {
 
     #[test]
     fn test03_peer_manager_receives_headers_successfully() {
-        let mut stream = Stream::new();
+        let mut stream = Vec::new();
         let magic_numbers = [11, 17, 9, 7];
 
         let first_header = create_header(4);
@@ -513,8 +515,10 @@ mod tests {
         )
         .unwrap();
 
+        let stream = Stream::new(stream);
+
         let (sender_message, _) = channel::<MessageResponse>();
-        let (_, receiver_transaction) = channel::<Transaction>();
+        let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
 
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
@@ -522,12 +526,14 @@ mod tests {
             stream,
             sender_message,
             receiver_transaction,
-            Arc::new(Mutex::new(true)),
             magic_numbers,
             sender,
         );
 
-        let mut stream = peer_manager.connecting_to_peer().unwrap();
+        sender_transaction.send(MessageToPeer::Stop).unwrap();
+
+        let stream = peer_manager.connecting_to_peer().unwrap();
+        let mut stream = stream.get_write_stream();
 
         let header = message::deserialize_until_found(&mut stream, CommandName::GetData).unwrap();
 
@@ -545,7 +551,7 @@ mod tests {
 
     #[test]
     fn test04_peer_manager_receives_inventory_message_successfully() {
-        let mut stream = Stream::new();
+        let mut stream = Vec::new();
         let magic_numbers = [11, 17, 9, 7];
 
         let block = create_empty_block(4);
@@ -564,8 +570,10 @@ mod tests {
         )
         .unwrap();
 
+        let stream = Stream::new(stream);
+
         let (sender_message, _) = channel::<MessageResponse>();
-        let (_, receiver_transaction) = channel::<Transaction>();
+        let (_, receiver_transaction) = channel::<MessageToPeer>();
 
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
@@ -573,12 +581,12 @@ mod tests {
             stream,
             sender_message,
             receiver_transaction,
-            Arc::new(Mutex::new(true)),
             magic_numbers,
             sender,
         );
 
-        let mut stream = peer_manager.connecting_to_peer().unwrap();
+        let stream = peer_manager.connecting_to_peer().unwrap();
+        let mut stream = stream.get_write_stream();
 
         let header = message::deserialize_until_found(&mut stream, CommandName::GetData).unwrap();
 
@@ -596,15 +604,17 @@ mod tests {
 
     #[test]
     fn test05_peer_manager_sends_transaction_successfully() {
-        let mut stream = Stream::new();
+        let mut stream = Vec::new();
         let magic_numbers = [11, 17, 9, 7];
 
         let transaction = create_transaction(0);
 
         serialize_ping_message(&mut stream, magic_numbers.clone()).unwrap();
 
+        let stream = Stream::new(stream);
+
         let (sender_message, _) = channel::<MessageResponse>();
-        let (sender_transaction, receiver_transaction) = channel::<Transaction>();
+        let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
 
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
@@ -612,14 +622,15 @@ mod tests {
             stream,
             sender_message,
             receiver_transaction,
-            Arc::new(Mutex::new(true)),
             magic_numbers,
             sender,
         );
 
-        sender_transaction.send(transaction.clone()).unwrap();
+        sender_transaction.send(MessageToPeer::SendTransaction(transaction.clone())).unwrap();
+        sender_transaction.send(MessageToPeer::Stop).unwrap();
 
-        let mut stream = peer_manager.connecting_to_peer().unwrap();
+        let stream = peer_manager.connecting_to_peer().unwrap();
+        let mut stream = stream.get_write_stream();
 
         let header = message::deserialize_until_found(&mut stream, CommandName::Pong).unwrap();
 

@@ -11,22 +11,22 @@ use cargosos_bitcoin::{
 };
 
 use std::{
-    io::{Read, Write},
+    io::Write,
     net::Ipv4Addr,
 };
 
 use chrono::{offset::Utc, DateTime, NaiveDateTime};
 
-pub fn serialize_verack_message<RW: Read + Write>(
-    stream: &mut RW,
+pub fn serialize_verack_message<W: Write>(
+    stream: &mut W,
     magic_number: [u8; 4],
 ) -> Result<(), ErrorNode> {
     VerackMessage::serialize_message(stream, magic_number, &VerackMessage)?;
     Ok(())
 }
 
-pub fn serialize_version_message<RW: Read + Write>(
-    stream: &mut RW,
+pub fn serialize_version_message<W: Write>(
+    stream: &mut W,
     protocol_version: ProtocolVersionP2P,
     services: BitfieldServices,
     block_height: i32,
@@ -57,8 +57,8 @@ pub fn serialize_version_message<RW: Read + Write>(
     Ok(())
 }
 
-pub fn serialize_headers_message<RW: Read + Write>(
-    stream: &mut RW,
+pub fn serialize_headers_message<W: Write>(
+    stream: &mut W,
     magic_numbers: [u8; 4],
     headers: Vec<BlockHeader>,
 ) -> Result<(), ErrorSerialization> {
@@ -66,8 +66,8 @@ pub fn serialize_headers_message<RW: Read + Write>(
     HeadersMessage::serialize_message(stream, magic_numbers, &headers_message)
 }
 
-pub fn serialize_block_message<RW: Read + Write>(
-    stream: &mut RW,
+pub fn serialize_block_message<W: Write>(
+    stream: &mut W,
     magic_numbers: [u8; 4],
     block: Block,
 ) -> Result<(), ErrorSerialization> {
@@ -75,8 +75,8 @@ pub fn serialize_block_message<RW: Read + Write>(
     BlockMessage::serialize_message(stream, magic_numbers, &block_message)
 }
 
-pub fn serialize_tx_message<RW: Read + Write>(
-    stream: &mut RW,
+pub fn serialize_tx_message<W: Write>(
+    stream: &mut W,
     magic_numbers: [u8; 4],
     transaction: Transaction,
 ) -> Result<(), ErrorSerialization> {

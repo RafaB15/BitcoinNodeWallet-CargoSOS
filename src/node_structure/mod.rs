@@ -7,6 +7,7 @@ pub mod server;
 pub mod message_response;
 pub mod peer_manager;
 pub mod client_manager;
+pub mod message_to_peer;
 
 pub mod handshake_data;
 

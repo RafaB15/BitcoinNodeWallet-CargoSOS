@@ -6,7 +6,7 @@ mod test_integration {
     use super::common::{creation, serialize_message, stream::Stream};
 
     use cargosos_bitcoin::{
-        block_structure::{block_chain::BlockChain, hash::HashType, transaction::Transaction},
+        block_structure::{block_chain::BlockChain, hash::HashType},
         connections::{p2p_protocol::ProtocolVersionP2P, supported_services::SupportedServices},
         logs::logger,
         messages::{
@@ -22,14 +22,13 @@ mod test_integration {
         node_structure::{
             block_download::BlockDownload, handshake::Handshake, handshake_data::HandshakeData,
             initial_headers_download::InitialHeaderDownload, message_response::MessageResponse,
-            peer_manager::PeerManager,
+            peer_manager::PeerManager, message_to_peer::MessageToPeer,
         },
     };
 
     use std::{
         net::{IpAddr, Ipv4Addr, SocketAddr},
         sync::mpsc::channel,
-        sync::{Arc, Mutex},
     };
 
     fn read_message<M: Message>(stream: &mut Stream, message_type: CommandName) -> M {
@@ -40,7 +39,7 @@ mod test_integration {
 
     #[test]
     fn test01_program_run_correctly() {
-        let mut stream: Stream = Stream::new();
+        let mut stream = Vec::new();
         let magic_numbers = [11, 17, 9, 7];
 
         let handshake_data = HandshakeData {
@@ -125,6 +124,8 @@ mod test_integration {
 
         let send_transaction = creation::create_transaction(4);
 
+        let mut stream = Stream::new(stream);
+
         // program
 
         let logger_text: Vec<u8> = Vec::new();
@@ -163,20 +164,21 @@ mod test_integration {
         assert_eq!(blocks, vec![first_block, block_to_append]);
 
         let (sender_message, receiver_message) = channel::<MessageResponse>();
-        let (sender_transaction, receiver_transaction) = channel::<Transaction>();
+        let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
 
         let peer_manager = PeerManager::new(
             stream,
             sender_message,
             receiver_transaction,
-            Arc::new(Mutex::new(true)),
             magic_numbers,
             sender,
         );
 
-        sender_transaction.send(send_transaction.clone()).unwrap();
+        sender_transaction.send(MessageToPeer::SendTransaction(send_transaction.clone())).unwrap();
+        sender_transaction.send(MessageToPeer::Stop).unwrap();
 
-        let mut stream = peer_manager.connecting_to_peer().unwrap();
+        let stream = peer_manager.connecting_to_peer().unwrap();
+        let mut stream = stream.get_write_stream();
 
         assert_eq!(
             MessageResponse::Transaction(new_transaction),

@@ -21,7 +21,7 @@ const HEADER_SIZE: usize = MAGIC_BYTES_SIZE + MASSAGE_TYPE_SIZE + PAYLOAD_SIZE +
 
 pub type MagicType = [u8; 4];
 
-/// It;s the header of any message
+/// It's the header of any message
 #[derive(Debug, std::cmp::PartialEq)]
 pub struct MessageHeader {
     pub magic_numbers: MagicType,

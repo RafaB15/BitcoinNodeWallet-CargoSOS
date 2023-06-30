@@ -1,14 +1,24 @@
 use std::io::{Read, Write};
 
 pub struct Stream {
-    stream: Vec<u8>,
+    write_stream: Vec<u8>,
+    read_stream: Vec<u8>,
     pointer: usize,
 }
 
 impl Stream {
-    pub fn new() -> Stream {
+    pub fn new(read_stream: Vec<u8>) -> Stream {
         Stream {
-            stream: Vec::new(),
+            read_stream,
+            write_stream: Vec::new(),
+            pointer: 0,
+        }
+    }
+
+    pub fn get_write_stream(&self) -> Stream {
+        Stream {
+            read_stream: self.write_stream.clone(),
+            write_stream: Vec::new(),
             pointer: 0,
         }
     }
@@ -17,8 +27,8 @@ impl Stream {
 impl Read for Stream {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         let mut i = 0;
-        while i < buf.len() && self.pointer < self.stream.len() {
-            buf[i] = self.stream[self.pointer];
+        while i < buf.len() && self.pointer < self.read_stream.len() {
+            buf[i] = self.read_stream[self.pointer];
             self.pointer += 1;
             i += 1;
         }
@@ -30,7 +40,7 @@ impl Write for Stream {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         let mut i = 0;
         while i < buf.len() {
-            self.stream.push(buf[i]);
+            self.write_stream.push(buf[i]);
             i += 1;
         }
         Ok(i)
