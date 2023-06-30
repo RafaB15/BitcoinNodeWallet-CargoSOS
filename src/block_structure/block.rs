@@ -31,6 +31,9 @@ impl Block {
 
     /// Verifies that the merkle root hash is correct
     pub fn proof_of_inclusion(&self) -> bool {
+        if self.transactions.is_empty() {
+            return true;
+        }
         self.header.proof_of_inclusion(&self.transactions)
     }
 

@@ -17,6 +17,7 @@ impl MerkleTree {
     ///  * `ErrorBlock::CouldNotWriteTxId`: It will appear when the transaction id could not be written
     ///  * `ErrorBlock::CouldNotGetVecTxIds`: It will appear when the transaction id could not be created
     pub fn new(transactions: &[Transaction]) -> Result<MerkleTree, ErrorBlock> {
+
         let mut current_level: Vec<HashType> = Transaction::get_vec_txids(transactions)?;
         MerkleTree::make_valid_level(&mut current_level);
 
