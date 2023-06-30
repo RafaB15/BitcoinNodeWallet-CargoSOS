@@ -2,6 +2,7 @@ use super::connection_type::ConnectionType;
 
 use std::{cmp::PartialEq, fmt::Display, net::SocketAddr};
 
+/// The identifier of a connection given by the address and the type of connection
 #[derive(Debug, Clone, Copy)]
 pub struct ConnectionId {
     connection_type: ConnectionType,

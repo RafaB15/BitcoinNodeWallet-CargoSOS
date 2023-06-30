@@ -2,6 +2,7 @@ use crate::{block_structure::transaction::Transaction, concurrency::work::Work};
 
 use std::convert::From;
 
+/// Messages to send to the peer
 #[derive(Debug)]
 pub enum MessageToPeer {
     SendTransaction(Transaction),

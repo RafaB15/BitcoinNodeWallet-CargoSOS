@@ -38,6 +38,7 @@ where
         }
     }
 
+    /// It adds a connection to a peer to the broadcasting
     pub fn add_connection<N: Notifier>(
         &mut self,
         peer_manager: PeerManager<RW, N>,

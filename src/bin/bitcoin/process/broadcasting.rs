@@ -23,6 +23,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 
+/// Gives the broadcasting the peers to broadcast the blocks and transactions
 pub fn add_peers<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
     broadcasting: &mut Broadcasting<RW>,
     connections: Vec<(RW, ConnectionId)>,
@@ -46,6 +47,7 @@ pub fn add_peers<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
     }
 }
 
+/// Creates a peer manager to manege the message of this peer
 fn create_peer_manager<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
     connection: (RW, ConnectionId),
     sender_response: Sender<MessageResponse>,
