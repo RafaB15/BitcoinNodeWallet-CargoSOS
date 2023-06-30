@@ -30,7 +30,11 @@ impl Wallet {
 
     /// Appends an account to the wallet
     pub fn add_account(&mut self, account: Account) {
-        self.accounts.push(account);
+        self.accounts.push(account.clone());
+
+        if self.selected_account.is_none() {
+            self.selected_account = Some(account);
+        }
     }
 
     /// Removes an account from the wallet if it exists
@@ -38,6 +42,10 @@ impl Wallet {
         self.accounts.retain(|x| x != &account);
         if self.selected_account.is_none() {
             self.selected_account = self.accounts.first().cloned();
+        }
+
+        if self.accounts.is_empty() {
+            self.selected_account = None;
         }
     }
 

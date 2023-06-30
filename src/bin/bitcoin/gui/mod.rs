@@ -1,8 +1,7 @@
 pub mod execution;
 
-pub mod error_gui;
-
+pub mod notifier_gui;
 pub mod signal_to_back;
 pub mod signal_to_front;
 
-pub mod gui_backend;
+pub mod backend;

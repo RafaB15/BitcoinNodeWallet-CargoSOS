@@ -1,6 +1,6 @@
 use super::{
-    error_initialization::ErrorInitialization, gui::error_gui::ErrorGUI,
-    process::error_process::ErrorProcess, tui::error_tui::ErrorTUI,
+    error_initialization::ErrorInitialization, process::error_process::ErrorProcess,
+    ui::error_ui::ErrorUI,
 };
 
 use cargosos_bitcoin::{
@@ -44,11 +44,8 @@ pub enum ErrorExecution {
     /// It represents all posible errors that can occur in the process of connecting with a peer
     Process(ErrorProcess),
 
-    /// It represents all posible errors that can occur in the GUI
-    Gui(ErrorGUI),
-
-    /// It represents all posible errors that can occur in the TUI
-    Tui(ErrorTUI),
+    /// It represents all posible errors that can occur in the UI
+    Ui(ErrorUI),
 
     /// It will appear when a thread panics and fails
     FailThread,
@@ -73,8 +70,7 @@ impl Debug for ErrorExecution {
             ErrorExecution::Node(error_node) => write!(f, "{:?}", error_node),
             ErrorExecution::Wallet(error_wallet) => write!(f, "{:?}", error_wallet),
             ErrorExecution::Process(error_process) => write!(f, "{:?}", error_process),
-            ErrorExecution::Gui(error_gui) => write!(f, "{:?}", error_gui),
-            ErrorExecution::Tui(error_tui) => write!(f, "{:?}", error_tui),
+            ErrorExecution::Ui(error_ui) => write!(f, "{:?}", error_ui),
             ErrorExecution::FailThread => write!(f, "ErrorFailThread"),
             ErrorExecution::_ErrorBlock(error) => write!(f, "Error with block: {}", error),
         }
@@ -129,15 +125,9 @@ impl From<ErrorWallet> for ErrorExecution {
     }
 }
 
-impl From<ErrorGUI> for ErrorExecution {
-    fn from(value: ErrorGUI) -> Self {
-        ErrorExecution::Gui(value)
-    }
-}
-
-impl From<ErrorTUI> for ErrorExecution {
-    fn from(value: ErrorTUI) -> Self {
-        ErrorExecution::Tui(value)
+impl From<ErrorUI> for ErrorExecution {
+    fn from(value: ErrorUI) -> Self {
+        ErrorExecution::Ui(value)
     }
 }
 

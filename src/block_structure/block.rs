@@ -9,7 +9,10 @@ use crate::serialization::{
     serializable_internal_order::SerializableInternalOrder,
 };
 
-use std::io::{Read, Write};
+use std::{
+    fmt::Display,
+    io::{Read, Write},
+};
 
 /// It's the representation of a block in the block chain
 #[derive(Debug, Clone, PartialEq)]
@@ -60,6 +63,12 @@ impl Block {
             };
 
         Ok(path)
+    }
+}
+
+impl Display for Block {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Block: todo!()")
     }
 }
 

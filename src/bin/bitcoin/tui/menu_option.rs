@@ -1,4 +1,4 @@
-use super::error_tui::ErrorTUI;
+use crate::ui::error_ui::ErrorUI;
 
 use std::{
     convert::{From, TryFrom},
@@ -43,7 +43,7 @@ impl MenuOption {
         let mut message = "".to_string();
         for option in options {
             let option_id: char = (*option).into();
-            message.push_str(&format!("{option} [{option_id}]\n"));
+            message.push_str(&format!("\n{option} [{option_id}]"));
         }
         println!("{message}")
     }
@@ -80,23 +80,24 @@ impl From<MenuOption> for char {
 }
 
 impl TryFrom<&str> for MenuOption {
-    type Error = ErrorTUI;
+    type Error = ErrorUI;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let value: char = match value.chars().next() {
             Some(value) => value,
-            _ => return Err(ErrorTUI::InvalidMenuOption),
+            _ => return Err(ErrorUI::InvalidMenuOption),
         };
 
         match value {
             CREATE_ACCOUNT => Ok(MenuOption::CreateAccount),
             CHANGE_ACCOUNT => Ok(MenuOption::ChangeAccount),
+            REMOVE_ACCOUNT => Ok(MenuOption::RemoveAccount),
             SEND_TRANSACTION => Ok(MenuOption::SendTransaction),
             SHOW_ACCOUNTS => Ok(MenuOption::ShowAccounts),
             SHOW_BALANCE => Ok(MenuOption::ShowBalance),
             LAST_TRANSACTIONS => Ok(MenuOption::LastTransactions),
             EXIT => Ok(MenuOption::Exit),
-            _ => Err(ErrorTUI::InvalidMenuOption),
+            _ => Err(ErrorUI::InvalidMenuOption),
         }
     }
 }

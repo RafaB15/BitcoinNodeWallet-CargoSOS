@@ -1,4 +1,6 @@
-use super::{error_tui::ErrorTUI, menu_option::MenuOption};
+use super::menu_option::MenuOption;
+
+use crate::ui::error_ui::ErrorUI;
 
 use cargosos_bitcoin::logs::logger_sender::LoggerSender;
 
@@ -7,14 +9,14 @@ use std::io::stdin;
 /// Get the option from the user via terminal
 ///
 /// ### Error
-///  * `ErrorTUI::TerminalReadFail`: It will appear when the terminal read fails
-pub fn select_option(logger: LoggerSender) -> Result<MenuOption, ErrorTUI> {
+///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
+pub fn select_option(logger: LoggerSender) -> Result<MenuOption, ErrorUI> {
     println!("Select an option:");
     MenuOption::print_all();
 
     let mut option: String = String::new();
     if stdin().read_line(&mut option).is_err() {
-        return Err(ErrorTUI::TerminalReadFail);
+        return Err(ErrorUI::TerminalReadFail);
     }
 
     loop {
@@ -28,7 +30,7 @@ pub fn select_option(logger: LoggerSender) -> Result<MenuOption, ErrorTUI> {
                 println!("Error, please enter a valid option:");
                 MenuOption::print_all();
                 if stdin().read_line(&mut option).is_err() {
-                    return Err(ErrorTUI::TerminalReadFail);
+                    return Err(ErrorUI::TerminalReadFail);
                 }
                 continue;
             }

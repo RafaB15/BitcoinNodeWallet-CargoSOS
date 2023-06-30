@@ -24,6 +24,7 @@ mod test_integration {
             initial_headers_download::InitialHeaderDownload, message_response::MessageResponse,
             peer_manager::PeerManager,
         },
+        notifications::{notification::Notification, notifier::Notifier},
     };
 
     use std::{
@@ -36,6 +37,13 @@ mod test_integration {
         let header = message::deserialize_until_found(stream, message_type).unwrap();
         assert_eq!(header.command_name, message_type);
         M::deserialize_message(stream, header).unwrap()
+    }
+
+    #[derive(Clone)]
+    struct NotificationMock {}
+
+    impl Notifier for NotificationMock {
+        fn notify(&self, _notification: Notification) {}
     }
 
     #[test]
@@ -164,6 +172,7 @@ mod test_integration {
 
         let (sender_message, receiver_message) = channel::<MessageResponse>();
         let (sender_transaction, receiver_transaction) = channel::<Transaction>();
+        let notifier = NotificationMock {};
 
         let peer_manager = PeerManager::new(
             stream,
@@ -171,6 +180,7 @@ mod test_integration {
             receiver_transaction,
             Arc::new(Mutex::new(true)),
             magic_numbers,
+            notifier,
             sender,
         );
 
