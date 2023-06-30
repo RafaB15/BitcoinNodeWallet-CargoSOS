@@ -108,7 +108,7 @@ fn login_registration_window(
     Ok(())
 }
 
-/// THis function sets up the combo box
+/// This function sets up the combo box
 fn login_combo_box(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) {
     let combo_box: ComboBoxText = builder.object("WalletsComboBox").unwrap();
     let cloned_builder = builder.clone();
@@ -411,7 +411,7 @@ fn spawn_local_handler(
 
     rx_from_back.attach(None, move |signal| {
         match signal {
-            SignalToFront::RegisterWallet(wallet_name) => {
+            SignalToFront::RegisterAccount(wallet_name) => {
                 if let Err(error) = add_account_to_combo_box(&cloned_builder, wallet_name.as_str())
                 {
                     println!("Error adding account to combo box, with error {:?}", error);

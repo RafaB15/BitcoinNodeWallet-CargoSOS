@@ -9,6 +9,7 @@ use cargosos_bitcoin::{
 
 use gtk::glib::Sender;
 
+/// Struct that handles the representation of the notifications for the GUI.
 #[derive(Clone)]
 pub struct NotifierGUI {
     tx_to_front: Sender<SignalToFront>,
@@ -78,7 +79,7 @@ impl Notifier for NotifierGUI {
             Notification::RegisterWalletAccount(account) => {
                 if self
                     .tx_to_front
-                    .send(SignalToFront::RegisterWallet(account.account_name.clone()))
+                    .send(SignalToFront::RegisterAccount(account.account_name.clone()))
                     .is_err()
                 {
                     let _ = self

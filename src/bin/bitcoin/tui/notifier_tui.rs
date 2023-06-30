@@ -5,6 +5,7 @@ use cargosos_bitcoin::{
 
 use std::cmp::max;
 
+/// Struct that handles the representation of the notifications for the TUI.
 #[derive(Clone)]
 pub struct NotifierTUI {
     logger: LoggerSender,
