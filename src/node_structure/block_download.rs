@@ -70,14 +70,11 @@ impl BlockDownload {
             let header = message::deserialize_until_found(peer_stream, CommandName::Block)?;
             let block_message = BlockMessage::deserialize_message(peer_stream, header)?;
 
-            /* Por ahora no funciona pero no encontramos el error
-            let block = match block_message.block.proof_of_inclusion() {
-                true => block_message.block,
-                false => return Err(ErrorMessage::InDeserialization(
-                    "Error while receiving block message".to_string()
-                )),
-            };
-            */
+            if !block_message.block.proof_of_inclusion() {
+                return Err(ErrorNode::WhileValidating(
+                    "Failed proof of inclusion".to_string()
+                ));
+            }
 
             blocks.push(block_message.block);
         }

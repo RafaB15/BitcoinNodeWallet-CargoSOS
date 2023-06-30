@@ -46,29 +46,10 @@ impl Transaction {
         if self.io_serialize(&mut buffer).is_err() {
             return Err(ErrorBlock::CouldNotGetTxId);
         }
-
-        let buffer = {
-            let mut temp: Vec<u8> = Vec::new();
-
-            // Hash the buffer to get the transaction ID
-            let txid = match hash256d(&buffer) {
-                Ok(txid) => txid,
-                Err(_) => return Err(ErrorBlock::CouldNotGetTxId),
-            };
-
-            for byte in txid.iter().rev() {
-                temp.push(*byte);
-            }
-
-            temp
-        };
-
-        let buffer: HashType = match (*buffer.as_slice()).try_into() {
-            Ok(buffer) => buffer,
-            _ => return Err(ErrorBlock::CouldNotGetTxId),
-        };
-
-        Ok(buffer)
+        match hash256d(&buffer) {
+            Ok(txid) => Ok(txid),
+            Err(_) => return Err(ErrorBlock::CouldNotGetTxId),
+        }
     }
 
     /// It create the id for all the transaction

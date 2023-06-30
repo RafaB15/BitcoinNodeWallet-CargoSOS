@@ -32,7 +32,7 @@ impl MerkleTree {
             None => return Err(ErrorBlock::CouldNotWriteTxId),
         };
 
-        while tx_ids.len() < initial_count {
+        while tx_ids.len() <= initial_count {
             tx_ids.push(last_tx);
         }
 
