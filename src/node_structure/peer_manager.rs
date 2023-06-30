@@ -25,6 +25,7 @@ use crate::{
         verack_message::VerackMessage,
         version_message::VersionMessage,
     },
+    notifications::{notification::Notification, notifier::Notifier},
 };
 
 use std::{
@@ -34,21 +35,24 @@ use std::{
 };
 
 /// It represents how to manage the the peer, listening to the there messages and sending them transactions
-pub struct PeerManager<RW>
+pub struct PeerManager<N, RW>
 where
     RW: Read + Write + Send + 'static,
+    N: Notifier + 'static,
 {
     peer: RW,
     sender: Sender<MessageResponse>,
     receiver: Receiver<Transaction>,
     stop: Arc<Mutex<bool>>,
     magic_numbers: [u8; 4],
+    notifier: N,
     logger: LoggerSender,
 }
 
-impl<RW> PeerManager<RW>
+impl<N, RW> PeerManager<N, RW>
 where
     RW: Read + Write + Send + 'static,
+    N: Notifier,
 {
     pub fn new(
         peer: RW,
@@ -56,6 +60,7 @@ where
         receiver: Receiver<Transaction>,
         stop: Arc<Mutex<bool>>,
         magic_numbers: [u8; 4],
+        notifier: N,
         logger: LoggerSender,
     ) -> Self {
         PeerManager {
@@ -64,6 +69,7 @@ where
             receiver,
             stop,
             magic_numbers,
+            notifier,
             logger,
         }
     }
@@ -88,6 +94,7 @@ where
                         let _ = self
                             .logger
                             .log_configuration("Closing this peer".to_string());
+                        self.notifier.notify(Notification::ClosingPeer);
                         break;
                     }
                 }
@@ -114,6 +121,9 @@ where
         let _ = self
             .logger
             .log_connection(format!("Receive message of type {:?}", header.command_name));
+
+        self.notifier
+            .notify(Notification::ReceivedMessage(header.command_name));
 
         match header.command_name {
             CommandName::Version => ignore_message::<VersionMessage>(&mut self.peer, header)?,
@@ -307,10 +317,18 @@ mod tests {
         connections::type_identifier::TypeIdentifier,
         logs::logger,
         messages::{compact_size::CompactSize, inventory_vector::InventoryVector, message},
+        notifications::{notification::Notification, notifier::Notifier},
         serialization::error_serialization::ErrorSerialization,
     };
 
     use std::sync::mpsc::channel;
+
+    #[derive(Clone)]
+    struct NotificationMock {}
+
+    impl Notifier for NotificationMock {
+        fn notify(&self, _notification: Notification) {}
+    }
 
     struct Stream {
         stream: Vec<u8>,
@@ -441,6 +459,7 @@ mod tests {
 
         let (sender_message, receiver_message) = channel::<MessageResponse>();
         let (_, receiver_transaction) = channel::<Transaction>();
+        let notifier = NotificationMock {};
 
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
@@ -450,6 +469,7 @@ mod tests {
             receiver_transaction,
             Arc::new(Mutex::new(true)),
             magic_numbers,
+            notifier,
             sender,
         );
 
@@ -475,6 +495,7 @@ mod tests {
 
         let (sender_message, receiver_message) = channel::<MessageResponse>();
         let (_, receiver_transaction) = channel::<Transaction>();
+        let notifier = NotificationMock {};
 
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
@@ -484,6 +505,7 @@ mod tests {
             receiver_transaction,
             Arc::new(Mutex::new(true)),
             magic_numbers,
+            notifier,
             sender,
         );
 
@@ -515,6 +537,7 @@ mod tests {
 
         let (sender_message, _) = channel::<MessageResponse>();
         let (_, receiver_transaction) = channel::<Transaction>();
+        let notifier = NotificationMock {};
 
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
@@ -524,6 +547,7 @@ mod tests {
             receiver_transaction,
             Arc::new(Mutex::new(true)),
             magic_numbers,
+            notifier,
             sender,
         );
 
@@ -566,6 +590,7 @@ mod tests {
 
         let (sender_message, _) = channel::<MessageResponse>();
         let (_, receiver_transaction) = channel::<Transaction>();
+        let notifier = NotificationMock {};
 
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
@@ -575,6 +600,7 @@ mod tests {
             receiver_transaction,
             Arc::new(Mutex::new(true)),
             magic_numbers,
+            notifier,
             sender,
         );
 
@@ -605,6 +631,7 @@ mod tests {
 
         let (sender_message, _) = channel::<MessageResponse>();
         let (sender_transaction, receiver_transaction) = channel::<Transaction>();
+        let notifier = NotificationMock {};
 
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
@@ -614,6 +641,7 @@ mod tests {
             receiver_transaction,
             Arc::new(Mutex::new(true)),
             magic_numbers,
+            notifier,
             sender,
         );
 

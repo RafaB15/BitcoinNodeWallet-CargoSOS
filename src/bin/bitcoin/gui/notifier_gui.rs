@@ -211,6 +211,10 @@ impl Notifier for NotifierGUI {
                 println!("{message}");
             }
             Notification::ClosingPeers => println!("Closing peers"),
+            Notification::ClosingPeer => println!("Closing this peer"),
+            Notification::ReceivedMessage(message) => {
+                println!("Received message of type {:?}", message)
+            }
         }
     }
 }

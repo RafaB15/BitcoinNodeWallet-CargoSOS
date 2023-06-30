@@ -22,14 +22,21 @@ use std::{
 };
 
 /// Creates the broadcasting
-pub fn get_broadcasting<RW: Read + Write + Send + 'static>(
+pub fn get_broadcasting<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
     peer_streams: Vec<RW>,
     sender_response: Sender<MessageResponse>,
     connection_config: ConnectionConfig,
+    notifier: N,
     logger: LoggerSender,
 ) -> Broadcasting<RW> {
     let _ = logger.log_node("Broadcasting".to_string());
-    Broadcasting::<RW>::new(peer_streams, sender_response, connection_config, logger)
+    Broadcasting::<RW>::new(
+        peer_streams,
+        sender_response,
+        connection_config,
+        notifier,
+        logger,
+    )
 }
 
 /// Create a thread for handling the blocks and transactions received

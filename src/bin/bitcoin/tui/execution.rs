@@ -98,6 +98,7 @@ fn broadcasting<N: Notifier + 'static>(
         peer_streams,
         sender_response,
         connection_config,
+        notifier.clone(),
         logger.clone(),
     );
 

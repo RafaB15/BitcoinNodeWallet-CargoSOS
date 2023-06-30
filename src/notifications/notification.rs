@@ -2,6 +2,7 @@ use std::net::SocketAddr;
 
 use crate::{
     block_structure::{block::Block, transaction::Transaction},
+    messages::command_name::CommandName,
     wallet_structure::account::Account,
 };
 
@@ -43,6 +44,10 @@ pub enum Notification {
     AccountCreationFail,
 
     NotEnoughFunds,
+
+    ReceivedMessage(CommandName),
+
+    ClosingPeer,
 
     ClosingPeers,
 }

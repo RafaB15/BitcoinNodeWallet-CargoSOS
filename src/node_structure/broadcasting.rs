@@ -30,10 +30,11 @@ impl<RW> Broadcasting<RW>
 where
     RW: Read + Write + Send + 'static,
 {
-    pub fn new(
+    pub fn new<N: Notifier + 'static>(
         peer_streams: Vec<RW>,
         sender_response: Sender<MessageResponse>,
         connection_config: ConnectionConfig,
+        notifier: N,
         logger: LoggerSender,
     ) -> Self {
         let stop = Arc::new(Mutex::new(false));
@@ -44,6 +45,7 @@ where
                 sender_response,
                 stop.clone(),
                 connection_config,
+                notifier,
                 logger.clone(),
             ),
             stop,
@@ -52,11 +54,12 @@ where
     }
 
     /// It creates a thread for each peer with it's corresponding sender of transactions
-    fn create_peers(
+    fn create_peers<N: Notifier + 'static>(
         peers_streams: Vec<RW>,
         sender: Sender<MessageResponse>,
         stop: Arc<Mutex<bool>>,
         connection_config: ConnectionConfig,
+        notifier: N,
         logger: LoggerSender,
     ) -> Vec<HandleSender<RW>> {
         let mut peers: Vec<HandleSender<RW>> = Vec::new();
@@ -70,6 +73,7 @@ where
                 receiver_transaction,
                 stop.clone(),
                 connection_config.magic_numbers,
+                notifier.clone(),
                 logger.clone(),
             );
 
