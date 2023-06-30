@@ -1,4 +1,4 @@
-/// This enum represents the signal that the back sends to the front. 
+/// This enum represents the signal that the back sends to the front.
 pub enum SignalToFront {
     /// Signal to add an account to the list of accounts.
     RegisterAccount(String),

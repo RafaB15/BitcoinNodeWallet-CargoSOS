@@ -8,7 +8,7 @@ use crate::{
 
 /// The different types of notifications that the notifier can send.
 pub enum Notification {
-    /// Notifies that we are trying to establish a connection with a peer. 
+    /// Notifies that we are trying to establish a connection with a peer.
     AttemptingHandshakeWithPeer(SocketAddr),
 
     /// Notifies that we have successfully established a connection with a peer.
