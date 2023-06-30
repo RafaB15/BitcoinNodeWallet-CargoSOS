@@ -36,7 +36,7 @@ impl Read for Stream {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::WouldBlock,
                 "Error reading the stream",
-            ))
+            ));
         }
         Ok(i)
     }

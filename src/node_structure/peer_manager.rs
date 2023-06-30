@@ -1,5 +1,6 @@
 use super::{
-    error_node::ErrorNode, message_response::MessageResponse, message_to_peer::MessageToPeer,
+    connection_id::ConnectionId, error_node::ErrorNode, message_response::MessageResponse,
+    message_to_peer::MessageToPeer,
 };
 
 use crate::{
@@ -42,9 +43,9 @@ where
     RW: Read + Write + Send + 'static,
     N: Notifier + 'static,
 {
+    id: ConnectionId,
     peer: RW,
     sender: Sender<MessageResponse>,
-    receiver: Receiver<MessageToPeer>,
     magic_numbers: [u8; 4],
     notifier: N,
     logger: LoggerSender,
@@ -56,17 +57,17 @@ where
     N: Notifier,
 {
     pub fn new(
+        id: ConnectionId,
         peer: RW,
         sender: Sender<MessageResponse>,
-        receiver: Receiver<MessageToPeer>,
         magic_numbers: [u8; 4],
         notifier: N,
         logger: LoggerSender,
     ) -> Self {
         PeerManager {
+            id,
             peer,
             sender,
-            receiver,
             magic_numbers,
             notifier,
             logger,
@@ -79,9 +80,12 @@ where
     ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
     ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
     ///  * `ErrorNode::NodeNotResponding`: It will appear when the node is not responding to the messages
-    pub fn connecting_to_peer(mut self) -> Result<RW, ErrorNode> {
+    pub fn connecting_to_peer(
+        mut self,
+        receiver: Receiver<MessageToPeer>,
+    ) -> Result<(RW, ConnectionId), ErrorNode> {
         loop {
-            match Work::listen(&mut self.peer, &self.receiver) {
+            match Work::listen(&mut self.peer, &receiver) {
                 Work::Message(header) => self.manage_message(header)?,
                 Work::SendTransaction(transaction) => self.send_transaction(transaction)?,
                 Work::Stop => {
@@ -94,7 +98,7 @@ where
             }
         }
 
-        Ok(self.peer)
+        Ok((self.peer, self.id))
     }
 
     /// Receives the message from the peer and manages it by sending to the peer or others threads via the sender
@@ -124,7 +128,9 @@ where
                 PongMessage::serialize_message(&mut self.peer, magic_numbers, &pong)?;
             }
             CommandName::Pong => ignore_message::<RW, PongMessage>(&mut self.peer, header)?,
-            CommandName::GetHeaders => ignore_message::<RW, GetHeadersMessage>(&mut self.peer, header)?,
+            CommandName::GetHeaders => {
+                ignore_message::<RW, GetHeadersMessage>(&mut self.peer, header)?
+            }
             CommandName::Headers => self.receive_headers(header)?,
             CommandName::GetData => ignore_message::<RW, GetDataMessage>(&mut self.peer, header)?,
             CommandName::Block => self.receive_blocks(header)?,
@@ -132,9 +138,13 @@ where
             CommandName::SendHeaders => {
                 ignore_message::<RW, SendHeadersMessage>(&mut self.peer, header)?
             }
-            CommandName::SendCmpct => ignore_message::<RW, SendCmpctMessage>(&mut self.peer, header)?,
+            CommandName::SendCmpct => {
+                ignore_message::<RW, SendCmpctMessage>(&mut self.peer, header)?
+            }
             CommandName::Addr => ignore_message::<RW, AddrMessage>(&mut self.peer, header)?,
-            CommandName::FeeFilter => ignore_message::<RW, FeeFilterMessage>(&mut self.peer, header)?,
+            CommandName::FeeFilter => {
+                ignore_message::<RW, FeeFilterMessage>(&mut self.peer, header)?
+            }
             CommandName::Alert => ignore_message::<RW, AlertMessage>(&mut self.peer, header)?,
             CommandName::Tx => self.receive_transaction(header)?,
         }
@@ -305,11 +315,15 @@ mod tests {
         connections::type_identifier::TypeIdentifier,
         logs::logger,
         messages::{compact_size::CompactSize, inventory_vector::InventoryVector, message},
+        node_structure::connection_type::ConnectionType,
         notifications::{notification::Notification, notifier::Notifier},
         serialization::error_serialization::ErrorSerialization,
     };
 
-    use std::sync::mpsc::channel;
+    use std::{
+        net::{IpAddr, Ipv4Addr, SocketAddr},
+        sync::mpsc::channel,
+    };
 
     #[derive(Clone)]
     struct NotificationMock {}
@@ -354,7 +368,7 @@ mod tests {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::WouldBlock,
                     "Error reading the stream",
-                ))
+                ));
             }
             Ok(i)
         }
@@ -467,12 +481,14 @@ mod tests {
         let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
         let notifier = NotificationMock {};
 
+        let id_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8333);
+
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
         let peer_manager = PeerManager::new(
+            ConnectionId::new(id_address, ConnectionType::Client),
             stream,
             sender_message,
-            receiver_transaction,
             magic_numbers,
             notifier,
             sender,
@@ -480,7 +496,9 @@ mod tests {
 
         sender_transaction.send(MessageToPeer::Stop).unwrap();
 
-        let _ = peer_manager.connecting_to_peer().unwrap();
+        let _ = peer_manager
+            .connecting_to_peer(receiver_transaction)
+            .unwrap();
 
         assert_eq!(
             MessageResponse::Transaction(transaction),
@@ -506,12 +524,14 @@ mod tests {
         let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
         let notifier = NotificationMock {};
 
+        let id_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8333);
+
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
         let peer_manager = PeerManager::new(
+            ConnectionId::new(id_address, ConnectionType::Peer),
             stream,
             sender_message,
-            receiver_transaction,
             magic_numbers,
             notifier,
             sender,
@@ -519,7 +539,9 @@ mod tests {
 
         sender_transaction.send(MessageToPeer::Stop).unwrap();
 
-        let _ = peer_manager.connecting_to_peer().unwrap();
+        let _ = peer_manager
+            .connecting_to_peer(receiver_transaction)
+            .unwrap();
 
         assert_eq!(
             MessageResponse::Block(block),
@@ -551,12 +573,14 @@ mod tests {
         let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
         let notifier = NotificationMock {};
 
+        let id_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8333);
+
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
         let peer_manager = PeerManager::new(
+            ConnectionId::new(id_address, ConnectionType::Peer),
             stream,
             sender_message,
-            receiver_transaction,
             magic_numbers,
             notifier,
             sender,
@@ -564,7 +588,9 @@ mod tests {
 
         sender_transaction.send(MessageToPeer::Stop).unwrap();
 
-        let stream = peer_manager.connecting_to_peer().unwrap();
+        let (stream, _) = peer_manager
+            .connecting_to_peer(receiver_transaction)
+            .unwrap();
         let mut stream = stream.get_write_stream();
 
         let header = message::deserialize_until_found(&mut stream, CommandName::GetData).unwrap();
@@ -608,19 +634,23 @@ mod tests {
         let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
         let notifier = NotificationMock {};
 
+        let id_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8333);
+
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
         let peer_manager = PeerManager::new(
+            ConnectionId::new(id_address, ConnectionType::Peer),
             stream,
             sender_message,
-            receiver_transaction,
             magic_numbers,
             notifier,
             sender,
         );
 
         sender_transaction.send(MessageToPeer::Stop).unwrap();
-        let stream = peer_manager.connecting_to_peer().unwrap();
+        let (stream, _) = peer_manager
+            .connecting_to_peer(receiver_transaction)
+            .unwrap();
         let mut stream = stream.get_write_stream();
 
         let header = message::deserialize_until_found(&mut stream, CommandName::GetData).unwrap();
@@ -652,12 +682,14 @@ mod tests {
         let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
         let notifier = NotificationMock {};
 
+        let id_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8333);
+
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
         let peer_manager = PeerManager::new(
+            ConnectionId::new(id_address, ConnectionType::Peer),
             stream,
             sender_message,
-            receiver_transaction,
             magic_numbers,
             notifier,
             sender,
@@ -668,7 +700,9 @@ mod tests {
             .unwrap();
         sender_transaction.send(MessageToPeer::Stop).unwrap();
 
-        let stream = peer_manager.connecting_to_peer().unwrap();
+        let (stream, _) = peer_manager
+            .connecting_to_peer(receiver_transaction)
+            .unwrap();
         let mut stream = stream.get_write_stream();
 
         let header = message::deserialize_until_found(&mut stream, CommandName::Pong).unwrap();

@@ -20,7 +20,8 @@ mod test_integration {
             version_message::VersionMessage,
         },
         node_structure::{
-            block_download::BlockDownload, handshake::Handshake, handshake_data::HandshakeData,
+            block_download::BlockDownload, connection_id::ConnectionId,
+            connection_type::ConnectionType, handshake::Handshake, handshake_data::HandshakeData,
             initial_headers_download::InitialHeaderDownload, message_response::MessageResponse,
             message_to_peer::MessageToPeer, peer_manager::PeerManager,
         },
@@ -175,10 +176,12 @@ mod test_integration {
         let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
         let notifier = NotificationMock {};
 
+        let id_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8333);
+
         let peer_manager = PeerManager::new(
+            ConnectionId::new(id_address, ConnectionType::Peer),
             stream,
             sender_message,
-            receiver_transaction,
             magic_numbers,
             notifier,
             sender,
@@ -189,7 +192,9 @@ mod test_integration {
             .unwrap();
         sender_transaction.send(MessageToPeer::Stop).unwrap();
 
-        let stream = peer_manager.connecting_to_peer().unwrap();
+        let (stream, _) = peer_manager
+            .connecting_to_peer(receiver_transaction)
+            .unwrap();
         let mut stream = stream.get_write_stream();
 
         assert_eq!(

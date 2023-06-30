@@ -1,7 +1,10 @@
 use cargosos_bitcoin::{
     configurations::connection_config::ConnectionConfig,
     logs::logger_sender::LoggerSender,
-    node_structure::{handshake::Handshake, handshake_data::HandshakeData},
+    node_structure::{
+        connection_id::ConnectionId, connection_type::ConnectionType, handshake::Handshake,
+        handshake_data::HandshakeData,
+    },
     notifications::{notification::Notification, notifier::Notifier},
 };
 
@@ -13,7 +16,7 @@ pub fn connect_to_peers<N: Notifier>(
     connection_config: ConnectionConfig,
     notifier: N,
     logger_sender: LoggerSender,
-) -> Vec<TcpStream> {
+) -> Vec<(TcpStream, ConnectionId)> {
     let _ = logger_sender.log_connection("Connecting to potential peers".to_string());
 
     let node = Handshake::new(
@@ -48,7 +51,7 @@ fn filters_peer<N: Notifier>(
     node: &Handshake,
     logger_sender: LoggerSender,
     notifier: N,
-) -> Option<TcpStream> {
+) -> Option<(TcpStream, ConnectionId)> {
     let mut peer_stream = match TcpStream::connect(potential_peer) {
         Ok(stream) => stream,
         Err(error) => {
@@ -76,7 +79,8 @@ fn filters_peer<N: Notifier>(
     match node.connect_to_peer(&mut peer_stream, &local_socket, &potential_peer) {
         Ok(_) => {
             notifier.notify(Notification::SuccessfulHandshakeWithPeer(potential_peer));
-            Some(peer_stream)
+            let id = ConnectionId::new(potential_peer, ConnectionType::Peer);
+            Some((peer_stream, id))
         }
         Err(error) => {
             let _ = logger_sender.log_connection(format!(

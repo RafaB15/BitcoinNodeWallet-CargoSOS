@@ -20,7 +20,7 @@ pub enum ErrorNode {
 
     /// It will appear when the connection is lost
     ConnectionAborted,
-    
+
     /// It will appear when the information is not yet send to the stream
     InformationNotReady,
 
@@ -37,13 +37,13 @@ impl From<ErrorSerialization> for ErrorNode {
             ErrorSerialization::ErrorInSerialization(error) => ErrorNode::WhileSerializing(error),
             ErrorSerialization::ErrorInDeserialization(error) => {
                 ErrorNode::WhileDeserializing(error)
-            },
+            }
             ErrorSerialization::ErrorWhileWriting => {
                 ErrorNode::WhileSendingMessage("Error in message".to_string())
-            },
+            }
             ErrorSerialization::ErrorWhileReading => {
                 ErrorNode::WhileReceivingMessage("Error in message".to_string())
-            },
+            }
             ErrorSerialization::ConnectionAborted => ErrorNode::ConnectionAborted,
             ErrorSerialization::InformationNotReady => ErrorNode::InformationNotReady,
         }

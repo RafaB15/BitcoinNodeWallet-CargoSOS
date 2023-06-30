@@ -8,32 +8,57 @@ use cargosos_bitcoin::{
         block::Block, block_chain::BlockChain, error_block::ErrorBlock, transaction::Transaction,
         utxo_set::UTXOSet,
     },
-    configurations::connection_config::ConnectionConfig,
     logs::logger_sender::LoggerSender,
-    node_structure::{broadcasting::Broadcasting, message_response::MessageResponse},
+    node_structure::{
+        broadcasting::Broadcasting, connection_id::ConnectionId, message_response::MessageResponse,
+        message_to_peer::MessageToPeer, peer_manager::PeerManager,
+    },
     notifications::{notification::Notification, notifier::Notifier},
     wallet_structure::wallet::Wallet,
 };
 
 use std::{
     io::{Read, Write},
-    sync::mpsc::{Receiver, Sender},
+    sync::mpsc::{channel, Receiver, Sender},
     thread::{self, JoinHandle},
 };
 
-/// Creates the broadcasting
-pub fn get_broadcasting<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
-    peer_streams: Vec<RW>,
+pub fn add_peers<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
+    broadcasting: &mut Broadcasting<RW>,
+    connections: Vec<(RW, ConnectionId)>,
     sender_response: Sender<MessageResponse>,
-    connection_config: ConnectionConfig,
+    magic_numbers: [u8; 4],
     notifier: N,
     logger: LoggerSender,
-) -> Broadcasting<RW> {
-    let _ = logger.log_node("Broadcasting".to_string());
-    Broadcasting::<RW>::new(
-        peer_streams,
+) {
+    for connection in connections {
+        let peer_manager = create_peer_manager(
+            connection,
+            sender_response.clone(),
+            magic_numbers,
+            notifier.clone(),
+            logger.clone(),
+        );
+
+        let (sender, receiver) = channel::<MessageToPeer>();
+
+        broadcasting.add_connection(peer_manager, (sender, receiver));
+    }
+}
+
+fn create_peer_manager<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
+    connection: (RW, ConnectionId),
+    sender_response: Sender<MessageResponse>,
+    magic_numbers: [u8; 4],
+    notifier: N,
+    logger: LoggerSender,
+) -> PeerManager<RW, N> {
+    let _ = logger.log_node("PeerManager".to_string());
+    PeerManager::<RW, N>::new(
+        connection.1,
+        connection.0,
         sender_response,
-        connection_config,
+        magic_numbers,
         notifier,
         logger,
     )

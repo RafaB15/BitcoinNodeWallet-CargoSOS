@@ -26,7 +26,7 @@ use super::{
     version_message::VersionMessage,
 };
 
-use std::io::{Read, Write, ErrorKind};
+use std::io::{ErrorKind, Read, Write};
 
 pub const CHECKSUM_EMPTY_PAYLOAD: MagicType = [0x5d, 0xf6, 0xe0, 0xe2];
 
@@ -62,7 +62,7 @@ pub trait Message: SerializableInternalOrder + DeserializableInternalOrder {
     ///  * `ErrorSerialization::ErrorSerialization`: It will appear when there is an error in the serialization
     ///  * `ErrorSerialization::ErrorInDeserialization`: It will appear when there is an error in the deserialization
     ///  * `ErrorSerialization::ErrorWhileReading`: It will appear when there is an error in the reading from a stream
-    fn deserialize_message<R : Read>(
+    fn deserialize_message<R: Read>(
         stream: &mut R,
         message_header: MessageHeader,
     ) -> Result<Self, ErrorSerialization> {
@@ -106,14 +106,14 @@ pub trait Message: SerializableInternalOrder + DeserializableInternalOrder {
     fn get_command_name() -> CommandName;
 }
 
-pub fn read_exact<R : Read>(stream: &mut R, buffer: &mut [u8]) -> Result<(), ErrorSerialization> {
+pub fn read_exact<R: Read>(stream: &mut R, buffer: &mut [u8]) -> Result<(), ErrorSerialization> {
     if let Err(error) = stream.read_exact(buffer) {
         let error = match error.kind() {
             ErrorKind::ConnectionAborted => ErrorSerialization::ConnectionAborted,
             ErrorKind::WouldBlock => ErrorSerialization::InformationNotReady,
             _ => ErrorSerialization::ErrorWhileReading,
         };
-        return Err(error)
+        return Err(error);
     }
     Ok(())
 }
@@ -167,7 +167,7 @@ pub fn deserialize_until_found<RW: Read + Write>(
 }
 
 /// Ignores any message of type Message
-pub fn ignore_message<R : Read, M: Message>(
+pub fn ignore_message<R: Read, M: Message>(
     stream: &mut R,
     header: MessageHeader,
 ) -> Result<(), ErrorSerialization> {

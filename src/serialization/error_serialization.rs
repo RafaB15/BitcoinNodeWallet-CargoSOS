@@ -9,7 +9,7 @@ pub enum ErrorSerialization {
 
     /// It will appear when the connection is lost
     ConnectionAborted,
-    
+
     /// It will appear when the information is not yet send to the stream
     InformationNotReady,
 
