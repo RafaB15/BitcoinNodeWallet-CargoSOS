@@ -284,15 +284,15 @@ mod tests {
 
         let tx_id = transaction.get_tx_id().unwrap();
         let actual_tx_id: [u8; 32] = [
-            45, 65, 106, 164, 25, 161, 226, 124, 62, 182, 123, 231, 104, 161, 13, 97, 30, 173, 224,
-            101, 171, 48, 77, 39, 87, 58, 123, 30, 225, 42, 175, 56,
+            56, 175, 42, 225, 30, 123, 58, 87, 39, 77, 48, 171, 101, 224, 173, 30, 97, 13, 161, 104,
+            231, 123, 182, 62, 124, 226, 161, 25, 164, 106, 65, 45,
         ];
 
         assert_eq!(tx_id, actual_tx_id);
     }
 
     #[test]
-    fn test_03_correct_verification_of_transaction_ownership() {
+    fn test_04_correct_verification_of_transaction_ownership() {
         let account_old = Address::new("mnQLoVaZ3w1NLVmUhfG8hh6WoG3iu7cnNw").unwrap();
         let account_new = Address::new("mrhW6tcF2LDetj3kJvaDTvatrVxNK64NXk").unwrap();
         let transaction_bytes: Vec<u8> = vec![
@@ -313,7 +313,7 @@ mod tests {
     }
 
     #[test]
-    fn test_04_correct_transaction_signing() {
+    fn test_05_correct_transaction_signing() {
         let account_old = Account::new(
             "Old",
             &[

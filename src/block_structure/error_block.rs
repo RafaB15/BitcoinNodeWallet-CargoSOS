@@ -5,7 +5,7 @@ pub enum ErrorBlock {
     CouldNotGetTxId,
 
     /// It will appear when the transaction id could not be written
-    CouldNotWriteTxId,
+    CouldNotWriteTxId(String),
 
     /// It will appear when the Transaction is already in the block
     TransactionAlreadyInBlock,
