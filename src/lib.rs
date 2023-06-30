@@ -6,6 +6,8 @@ pub mod logs;
 
 pub mod concurrency;
 
+pub mod notifications;
+
 pub mod configurations;
 
 pub mod node_structure;

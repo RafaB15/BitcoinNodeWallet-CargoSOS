@@ -1,6 +1,5 @@
 use crate::{
-    block_structure::transaction::Transaction,
-    messages::message_header::MessageHeader,
+    block_structure::transaction::Transaction, messages::message_header::MessageHeader,
     node_structure::message_to_peer::MessageToPeer,
 };
 
@@ -8,7 +7,6 @@ use std::{
     io::{Read, Write},
     sync::mpsc::{Receiver, TryRecvError},
 };
-
 
 #[derive(Debug)]
 pub enum Work {
@@ -18,10 +16,7 @@ pub enum Work {
 }
 
 impl Work {
-    pub fn listen<RW: Read + Write>(
-        stream: &mut RW,
-        receiver: &Receiver<MessageToPeer>,
-    ) -> Work {
+    pub fn listen<RW: Read + Write>(stream: &mut RW, receiver: &Receiver<MessageToPeer>) -> Work {
         loop {
             if let Ok(header) = MessageHeader::deserialize_header(stream) {
                 return Work::Message(header);

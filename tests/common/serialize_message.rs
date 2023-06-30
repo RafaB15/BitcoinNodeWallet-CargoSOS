@@ -10,10 +10,7 @@ use cargosos_bitcoin::{
     serialization::error_serialization::ErrorSerialization,
 };
 
-use std::{
-    io::Write,
-    net::Ipv4Addr,
-};
+use std::{io::Write, net::Ipv4Addr};
 
 use chrono::{offset::Utc, DateTime, NaiveDateTime};
 

@@ -22,8 +22,9 @@ mod test_integration {
         node_structure::{
             block_download::BlockDownload, handshake::Handshake, handshake_data::HandshakeData,
             initial_headers_download::InitialHeaderDownload, message_response::MessageResponse,
-            peer_manager::PeerManager, message_to_peer::MessageToPeer,
+            message_to_peer::MessageToPeer, peer_manager::PeerManager,
         },
+        notifications::{notification::Notification, notifier::Notifier},
     };
 
     use std::{
@@ -35,6 +36,13 @@ mod test_integration {
         let header = message::deserialize_until_found(stream, message_type).unwrap();
         assert_eq!(header.command_name, message_type);
         M::deserialize_message(stream, header).unwrap()
+    }
+
+    #[derive(Clone)]
+    struct NotificationMock {}
+
+    impl Notifier for NotificationMock {
+        fn notify(&self, _notification: Notification) {}
     }
 
     #[test]
@@ -165,16 +173,20 @@ mod test_integration {
 
         let (sender_message, receiver_message) = channel::<MessageResponse>();
         let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
+        let notifier = NotificationMock {};
 
         let peer_manager = PeerManager::new(
             stream,
             sender_message,
             receiver_transaction,
             magic_numbers,
+            notifier,
             sender,
         );
 
-        sender_transaction.send(MessageToPeer::SendTransaction(send_transaction.clone())).unwrap();
+        sender_transaction
+            .send(MessageToPeer::SendTransaction(send_transaction.clone()))
+            .unwrap();
         sender_transaction.send(MessageToPeer::Stop).unwrap();
 
         let stream = peer_manager.connecting_to_peer().unwrap();

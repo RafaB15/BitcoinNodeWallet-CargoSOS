@@ -1,13 +1,12 @@
 use super::{
-    error_node::ErrorNode, message_response::MessageResponse, 
-    message_to_peer::MessageToPeer, 
+    error_node::ErrorNode, message_response::MessageResponse, message_to_peer::MessageToPeer,
 };
 
 use crate::{
     block_structure::{hash::HashType, transaction::Transaction},
+    concurrency::work::Work,
     connections::type_identifier::TypeIdentifier,
     logs::logger_sender::LoggerSender,
-    concurrency::work::Work,
     messages::{
         addr_message::AddrMessage,
         alert_message::AlertMessage,
@@ -29,6 +28,7 @@ use crate::{
         verack_message::VerackMessage,
         version_message::VersionMessage,
     },
+    notifications::{notification::Notification, notifier::Notifier},
 };
 
 use std::{
@@ -36,27 +36,31 @@ use std::{
     sync::mpsc::{Receiver, Sender},
 };
 
-/// It represents how to manage the peer, listening to the there messages and sending them transactions
-pub struct PeerManager<RW>
+/// It represents how to manage the the peer, listening to the there messages and sending them transactions
+pub struct PeerManager<N, RW>
 where
     RW: Read + Write + Send + 'static,
+    N: Notifier + 'static,
 {
     peer: RW,
     sender: Sender<MessageResponse>,
     receiver: Receiver<MessageToPeer>,
     magic_numbers: [u8; 4],
+    notifier: N,
     logger: LoggerSender,
 }
 
-impl<RW> PeerManager<RW>
+impl<N, RW> PeerManager<N, RW>
 where
     RW: Read + Write + Send + 'static,
+    N: Notifier,
 {
     pub fn new(
         peer: RW,
         sender: Sender<MessageResponse>,
         receiver: Receiver<MessageToPeer>,
         magic_numbers: [u8; 4],
+        notifier: N,
         logger: LoggerSender,
     ) -> Self {
         PeerManager {
@@ -64,6 +68,7 @@ where
             sender,
             receiver,
             magic_numbers,
+            notifier,
             logger,
         }
     }
@@ -75,12 +80,17 @@ where
     ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
     ///  * `ErrorNode::NodeNotResponding`: It will appear when the node is not responding to the messages
     pub fn connecting_to_peer(mut self) -> Result<RW, ErrorNode> {
-
         loop {
             match Work::listen(&mut self.peer, &self.receiver) {
                 Work::Message(header) => self.manage_message(header)?,
                 Work::SendTransaction(transaction) => self.send_transaction(transaction)?,
-                Work::Stop => break,   
+                Work::Stop => {
+                    let _ = self
+                        .logger
+                        .log_configuration("Closing this peer".to_string());
+                    self.notifier.notify(Notification::ClosingPeer);
+                    break;
+                }
             }
         }
 
@@ -99,6 +109,9 @@ where
         let _ = self
             .logger
             .log_connection(format!("Receive message of type {:?}", header.command_name));
+
+        self.notifier
+            .notify(Notification::ReceivedMessage(header.command_name));
 
         match header.command_name {
             CommandName::Version => ignore_message::<VersionMessage>(&mut self.peer, header)?,
@@ -292,10 +305,18 @@ mod tests {
         connections::type_identifier::TypeIdentifier,
         logs::logger,
         messages::{compact_size::CompactSize, inventory_vector::InventoryVector, message},
+        notifications::{notification::Notification, notifier::Notifier},
         serialization::error_serialization::ErrorSerialization,
     };
 
     use std::sync::mpsc::channel;
+
+    #[derive(Clone)]
+    struct NotificationMock {}
+
+    impl Notifier for NotificationMock {
+        fn notify(&self, _notification: Notification) {}
+    }
 
     struct Stream {
         write_stream: Vec<u8>,
@@ -438,6 +459,7 @@ mod tests {
 
         let (sender_message, receiver_message) = channel::<MessageResponse>();
         let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
+        let notifier = NotificationMock {};
 
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
@@ -446,11 +468,12 @@ mod tests {
             sender_message,
             receiver_transaction,
             magic_numbers,
+            notifier,
             sender,
         );
 
         sender_transaction.send(MessageToPeer::Stop).unwrap();
-        
+
         let _ = peer_manager.connecting_to_peer().unwrap();
 
         assert_eq!(
@@ -475,6 +498,7 @@ mod tests {
 
         let (sender_message, receiver_message) = channel::<MessageResponse>();
         let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
+        let notifier = NotificationMock {};
 
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
@@ -483,13 +507,13 @@ mod tests {
             sender_message,
             receiver_transaction,
             magic_numbers,
+            notifier,
             sender,
         );
 
         sender_transaction.send(MessageToPeer::Stop).unwrap();
 
         let _ = peer_manager.connecting_to_peer().unwrap();
-
 
         assert_eq!(
             MessageResponse::Block(block),
@@ -519,6 +543,7 @@ mod tests {
 
         let (sender_message, _) = channel::<MessageResponse>();
         let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
+        let notifier = NotificationMock {};
 
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
@@ -527,6 +552,7 @@ mod tests {
             sender_message,
             receiver_transaction,
             magic_numbers,
+            notifier,
             sender,
         );
 
@@ -574,6 +600,7 @@ mod tests {
 
         let (sender_message, _) = channel::<MessageResponse>();
         let (_, receiver_transaction) = channel::<MessageToPeer>();
+        let notifier = NotificationMock {};
 
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
@@ -582,6 +609,7 @@ mod tests {
             sender_message,
             receiver_transaction,
             magic_numbers,
+            notifier,
             sender,
         );
 
@@ -615,6 +643,7 @@ mod tests {
 
         let (sender_message, _) = channel::<MessageResponse>();
         let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
+        let notifier = NotificationMock {};
 
         let logger_text: Vec<u8> = Vec::new();
         let (sender, _) = logger::initialize_logger(logger_text, false);
@@ -623,10 +652,13 @@ mod tests {
             sender_message,
             receiver_transaction,
             magic_numbers,
+            notifier,
             sender,
         );
 
-        sender_transaction.send(MessageToPeer::SendTransaction(transaction.clone())).unwrap();
+        sender_transaction
+            .send(MessageToPeer::SendTransaction(transaction.clone()))
+            .unwrap();
         sender_transaction.send(MessageToPeer::Stop).unwrap();
 
         let stream = peer_manager.connecting_to_peer().unwrap();

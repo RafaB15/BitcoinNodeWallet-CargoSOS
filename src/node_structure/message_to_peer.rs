@@ -1,10 +1,6 @@
-use crate::{
-    block_structure::transaction::Transaction,
-    concurrency::work::Work,
-};
+use crate::{block_structure::transaction::Transaction, concurrency::work::Work};
 
 use std::convert::From;
-
 
 #[derive(Debug)]
 pub enum MessageToPeer {

@@ -1,5 +1,5 @@
 use super::{
-    error_gui::ErrorGUI, gui_backend::spawn_backend_handler, signal_to_back::SignalToBack,
+    backend::spawn_backend_handler, notifier_gui::NotifierGUI, signal_to_back::SignalToBack,
     signal_to_front::SignalToFront,
 };
 
@@ -9,10 +9,13 @@ use gtk::{
     TreeStore, Window,
 };
 
-use crate::{error_execution::ErrorExecution, process::save_system::SaveSystem};
+use crate::{
+    error_execution::ErrorExecution, process::save_system::SaveSystem, ui::error_ui::ErrorUI,
+};
 
 use cargosos_bitcoin::configurations::{
-    connection_config::ConnectionConfig, download_config::DownloadConfig, save_config::SaveConfig,
+    connection_config::ConnectionConfig, download_config::DownloadConfig, mode_config::ModeConfig,
+    save_config::SaveConfig,
 };
 
 use cargosos_bitcoin::logs::logger_sender::LoggerSender;
@@ -26,7 +29,7 @@ fn login_main_window(
     application: &gtk::Application,
     builder: &Builder,
     tx_to_back: mpsc::Sender<SignalToBack>,
-) -> Result<(), ErrorGUI> {
+) -> Result<(), ErrorUI> {
     let window: Window = builder.object("MainWindow").unwrap();
     window.set_application(Some(application));
 
@@ -42,7 +45,7 @@ fn login_main_window(
     let account_registration_button: Button = match builder.object("AccountRegistrationButton") {
         Some(account_registration_button) => account_registration_button,
         None => {
-            return Err(ErrorGUI::MissingElement(
+            return Err(ErrorUI::MissingElement(
                 "AccountRegistrationButton".to_string(),
             ))
         }
@@ -73,7 +76,7 @@ fn login_registration_window(
     builder: &Builder,
     application: &gtk::Application,
     tx_to_back: mpsc::Sender<SignalToBack>,
-) -> Result<(), ErrorGUI> {
+) -> Result<(), ErrorUI> {
     let account_registration_window: Window = builder.object("AccountRegistrationWindow").unwrap();
     account_registration_window.set_application(Some(application));
 
@@ -105,34 +108,40 @@ fn login_registration_window(
     Ok(())
 }
 
-/// THis function sets up the combo box
+/// This function sets up the combo box
 fn login_combo_box(builder: &Builder, tx_to_back: mpsc::Sender<SignalToBack>) {
     let combo_box: ComboBoxText = builder.object("WalletsComboBox").unwrap();
     let cloned_builder = builder.clone();
     combo_box.connect_changed(move |_| {
         let combo_box_cloned: ComboBoxText = cloned_builder.object("WalletsComboBox").unwrap();
         let selected_wallet = combo_box_cloned.active_text().unwrap();
-        let _ = tx_to_back.send(SignalToBack::ChangeSelectedAccount(
+        if let Err(error) = tx_to_back.send(SignalToBack::ChangeSelectedAccount(
             selected_wallet.to_string(),
-        ));
-        let _ = tx_to_back.send(SignalToBack::GetAccountBalance);
-        let _ = tx_to_back.send(SignalToBack::GetAccountTransactions);
+        )) {
+            println!("Error sending change selected account signal: {}", error);
+        }
+        if let Err(error) = tx_to_back.send(SignalToBack::GetAccountBalance) {
+            println!("Error sending get account balance signal: {}", error);
+        };
+        if let Err(error) = tx_to_back.send(SignalToBack::GetAccountTransactions) {
+            println!("Error sending get account transactions signal: {}", error);
+        };
     });
 }
 
 /// This function sets up the error window
-fn login_transaction_error_window(builder: &Builder) -> Result<(), ErrorGUI> {
+fn login_transaction_error_window(builder: &Builder) -> Result<(), ErrorUI> {
     let transaction_error_window: Window = match builder.object("TransactionErrorWindow") {
         Some(transaction_error_window) => transaction_error_window,
         None => {
-            return Err(ErrorGUI::MissingElement(
+            return Err(ErrorUI::MissingElement(
                 "TransactionErrorWindow".to_string(),
             ))
         }
     };
     let transaction_error_button: Button = match builder.object("OkErrorButton") {
         Some(transaction_error_button) => transaction_error_button,
-        None => return Err(ErrorGUI::MissingElement("OkErrorButton".to_string())),
+        None => return Err(ErrorUI::MissingElement("OkErrorButton".to_string())),
     };
     transaction_error_button.connect_clicked(move |_| {
         transaction_error_window.set_visible(false);
@@ -141,19 +150,19 @@ fn login_transaction_error_window(builder: &Builder) -> Result<(), ErrorGUI> {
 }
 
 /// This function sets up the notification window for transactions
-fn login_transaction_notification_window(builder: &Builder) -> Result<(), ErrorGUI> {
+fn login_transaction_notification_window(builder: &Builder) -> Result<(), ErrorUI> {
     let transaction_notification_window: Window =
         match builder.object("TransactionNotificationWindow") {
             Some(transaction_notification_window) => transaction_notification_window,
             None => {
-                return Err(ErrorGUI::MissingElement(
+                return Err(ErrorUI::MissingElement(
                     "TransactionNotificationWindow".to_string(),
                 ))
             }
         };
     let transaction_notification_button: Button = match builder.object("OkNotificationButton") {
         Some(transaction_notification_button) => transaction_notification_button,
-        None => return Err(ErrorGUI::MissingElement("OkNotificationButton".to_string())),
+        None => return Err(ErrorUI::MissingElement("OkNotificationButton".to_string())),
     };
     transaction_notification_button.connect_clicked(move |_| {
         transaction_notification_window.set_visible(false);
@@ -162,11 +171,11 @@ fn login_transaction_notification_window(builder: &Builder) -> Result<(), ErrorG
 }
 
 /// This function sets up the notification window for blocks
-fn login_block_notification_window(builder: &Builder) -> Result<(), ErrorGUI> {
+fn login_block_notification_window(builder: &Builder) -> Result<(), ErrorUI> {
     let block_notification_window: Window = match builder.object("BlockNotificationWindow") {
         Some(block_notification_window) => block_notification_window,
         None => {
-            return Err(ErrorGUI::MissingElement(
+            return Err(ErrorUI::MissingElement(
                 "BlockNotificationWindow".to_string(),
             ))
         }
@@ -174,7 +183,7 @@ fn login_block_notification_window(builder: &Builder) -> Result<(), ErrorGUI> {
     let block_notification_button: Button = match builder.object("OkBlockNotificationButton") {
         Some(block_notification_button) => block_notification_button,
         None => {
-            return Err(ErrorGUI::MissingElement(
+            return Err(ErrorUI::MissingElement(
                 "OkBlockNotificationButton".to_string(),
             ))
         }
@@ -186,18 +195,18 @@ fn login_block_notification_window(builder: &Builder) -> Result<(), ErrorGUI> {
 }
 
 /// This function makes the error window visible and sets the error message
-fn show_window_with_error(builder: &Builder, error: &str) -> Result<(), ErrorGUI> {
+fn show_window_with_error(builder: &Builder, error: &str) -> Result<(), ErrorUI> {
     let transaction_error_window: Window = match builder.object("TransactionErrorWindow") {
         Some(transaction_error_window) => transaction_error_window,
         None => {
-            return Err(ErrorGUI::MissingElement(
+            return Err(ErrorUI::MissingElement(
                 "TransactionErrorWindow".to_string(),
             ))
         }
     };
     let error_label: Label = match builder.object("ErrorLabel") {
         Some(error_label) => error_label,
-        None => return Err(ErrorGUI::MissingElement("ErrorLabel".to_string())),
+        None => return Err(ErrorUI::MissingElement("ErrorLabel".to_string())),
     };
     error_label.set_text(error);
     transaction_error_window.set_visible(true);
@@ -208,12 +217,12 @@ fn show_window_with_error(builder: &Builder, error: &str) -> Result<(), ErrorGUI
 fn show_new_transaction_notification(
     builder: &Builder,
     account_name: String,
-) -> Result<(), ErrorGUI> {
+) -> Result<(), ErrorUI> {
     let transaction_notification_window: Window =
         match builder.object("TransactionNotificationWindow") {
             Some(transaction_notification_window) => transaction_notification_window,
             None => {
-                return Err(ErrorGUI::MissingElement(
+                return Err(ErrorUI::MissingElement(
                     "TransactionNotificationWindow".to_string(),
                 ))
             }
@@ -221,7 +230,7 @@ fn show_new_transaction_notification(
     let notification_label: Label = match builder.object("TransactionNotificationLabel") {
         Some(notification_label) => notification_label,
         None => {
-            return Err(ErrorGUI::MissingElement(
+            return Err(ErrorUI::MissingElement(
                 "TransactionNotificationLabel".to_string(),
             ))
         }
@@ -232,11 +241,11 @@ fn show_new_transaction_notification(
 }
 
 /// This function makes the notification window visible and sets the notification message
-fn show_new_block_notification(builder: &Builder) -> Result<(), ErrorGUI> {
+fn show_new_block_notification(builder: &Builder) -> Result<(), ErrorUI> {
     let block_notification_window: Window = match builder.object("BlockNotificationWindow") {
         Some(block_notification_window) => block_notification_window,
         None => {
-            return Err(ErrorGUI::MissingElement(
+            return Err(ErrorUI::MissingElement(
                 "BlockNotificationWindow".to_string(),
             ))
         }
@@ -246,10 +255,10 @@ fn show_new_block_notification(builder: &Builder) -> Result<(), ErrorGUI> {
 }
 
 /// This function adds an account to the combo box
-fn add_account_to_combo_box(builder: &Builder, account_name: &str) -> Result<(), ErrorGUI> {
+fn add_account_to_combo_box(builder: &Builder, account_name: &str) -> Result<(), ErrorUI> {
     let combo_box: ComboBoxText = match builder.object("WalletsComboBox") {
         Some(combo_box) => combo_box,
-        None => return Err(ErrorGUI::MissingElement("WalletsComboBox".to_string())),
+        None => return Err(ErrorUI::MissingElement("WalletsComboBox".to_string())),
     };
     combo_box.append_text(account_name);
     Ok(())
@@ -287,11 +296,11 @@ fn clear_send_transaction_contents(builder: &Builder) {
 fn login_send_page(
     builder: &Builder,
     tx_to_back: mpsc::Sender<SignalToBack>,
-) -> Result<(), ErrorGUI> {
+) -> Result<(), ErrorUI> {
     let transaction_clear_all_button: Button = match builder.object("TransactionClearAllButton") {
         Some(button) => button,
         None => {
-            return Err(ErrorGUI::MissingElement(
+            return Err(ErrorUI::MissingElement(
                 "TransactionClearAllButton".to_string(),
             ))
         }
@@ -303,11 +312,7 @@ fn login_send_page(
 
     let transaction_send_button: Button = match builder.object("TransactionSendButton") {
         Some(button) => button,
-        None => {
-            return Err(ErrorGUI::MissingElement(
-                "TransactionSendButton".to_string(),
-            ))
-        }
+        None => return Err(ErrorUI::MissingElement("TransactionSendButton".to_string())),
     };
 
     let cloned_builder = builder.clone();
@@ -348,14 +353,10 @@ fn login_send_page(
 }
 
 /// Function that takes a timestamp and turns it into a string of the date
-fn from_timestamp_to_string(timestamp: &u32) -> Result<String, ErrorGUI> {
+fn from_timestamp_to_string(timestamp: &u32) -> Result<String, ErrorUI> {
     let naive = match NaiveDateTime::from_timestamp_opt(*timestamp as i64, 0) {
         Some(naive) => naive,
-        None => {
-            return Err(ErrorGUI::ErrorReading(
-                "Error reading timestamp".to_string(),
-            ))
-        }
+        None => return Err(ErrorUI::ErrorReading("Error reading timestamp".to_string())),
     };
     let datetime: DateTime<Utc> = DateTime::from_utc(naive, Utc);
     Ok(datetime.format("%Y-%m-%d %H:%M:%S").to_string())
@@ -374,10 +375,10 @@ fn from_vector_to_string(vector: &[u8; 32]) -> String {
 fn show_transactions_in_tree_view(
     builder: &Builder,
     transaction_information: Vec<(u32, [u8; 32], i64)>,
-) -> Result<(), ErrorGUI> {
+) -> Result<(), ErrorUI> {
     let transactions_tree_store: TreeStore = match builder.object("TransactionTreeStore") {
         Some(list_store) => list_store,
-        None => return Err(ErrorGUI::MissingElement("TransactionTreeStore".to_string())),
+        None => return Err(ErrorUI::MissingElement("TransactionTreeStore".to_string())),
     };
 
     transactions_tree_store.clear();
@@ -410,7 +411,7 @@ fn spawn_local_handler(
 
     rx_from_back.attach(None, move |signal| {
         match signal {
-            SignalToFront::RegisterWallet(wallet_name) => {
+            SignalToFront::RegisterAccount(wallet_name) => {
                 if let Err(error) = add_account_to_combo_box(&cloned_builder, wallet_name.as_str())
                 {
                     println!("Error adding account to combo box, with error {:?}", error);
@@ -496,11 +497,11 @@ fn build_ui(
     rx_from_back: Option<glib::Receiver<SignalToFront>>,
     application: &gtk::Application,
     glade_src: &str,
-) -> Result<(), ErrorGUI> {
+) -> Result<(), ErrorUI> {
     let rx_from_back = match rx_from_back {
         Some(rx) => rx,
         None => {
-            return Err(ErrorGUI::MissingReceiver);
+            return Err(ErrorUI::MissingReceiver);
         }
     };
 
@@ -522,6 +523,7 @@ fn build_ui(
 
 /// The main function of the program for the graphical interface.
 pub fn program_execution(
+    mode_config: ModeConfig,
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
     save_config: SaveConfig,
@@ -531,13 +533,16 @@ pub fn program_execution(
     let (tx_to_front, rx_from_back) =
         glib::MainContext::channel::<SignalToFront>(glib::PRIORITY_DEFAULT);
 
+    let notifier = NotifierGUI::new(tx_to_front, logger.clone());
+
     let backend_handler = spawn_backend_handler(
+        mode_config,
         connection_config,
         download_config,
         save_config,
-        logger,
-        tx_to_front,
         rx_from_front,
+        notifier,
+        logger,
     );
 
     let glade_src = include_str!("WindowNotebook.glade");

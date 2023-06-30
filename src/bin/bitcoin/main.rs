@@ -3,6 +3,7 @@ mod error_initialization;
 mod gui;
 mod process;
 mod tui;
+mod ui;
 
 use std::{
     fs::{File, OpenOptions},
@@ -110,7 +111,7 @@ fn main() -> Result<(), ErrorExecution> {
     let config_file = open_config_file(config_name)?;
 
     let configuration = Configuration::new(config_file)?;
-    let (log_config, connection_config, download_config, save_config, ui_config) =
+    let (log_config, connection_config, download_config, save_config, ui_config, mode_config) =
         configuration.separate();
 
     let (handle, logger) = initialize_logs(log_config)?;
@@ -119,6 +120,7 @@ fn main() -> Result<(), ErrorExecution> {
         Interface::Tui => {
             let mut load_system = LoadSystem::new(save_config.clone(), logger.clone());
             tui::execution::program_execution(
+                mode_config,
                 connection_config,
                 download_config,
                 &mut load_system,
@@ -126,6 +128,7 @@ fn main() -> Result<(), ErrorExecution> {
             )?
         }
         Interface::Gui => gui::execution::program_execution(
+            mode_config,
             connection_config,
             download_config,
             save_config.clone(),

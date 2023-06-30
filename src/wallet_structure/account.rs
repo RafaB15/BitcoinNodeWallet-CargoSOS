@@ -54,6 +54,22 @@ impl Account {
         })
     }
 
+    pub fn from_keys(
+        name: &str,
+        private_key: PrivateKey,
+        public_key: PublicKey,
+    ) -> Result<Account, ErrorWallet> {
+        let account_name = name.to_string();
+        let address = Address::from_public_key(&public_key)?;
+
+        Ok(Account {
+            account_name,
+            private_key,
+            public_key,
+            address,
+        })
+    }
+
     /// Returns true if the account owns the given transaction output (works for P2PKH) and false otherwise.
     pub fn verify_transaction_output_ownership(&self, txo: &TransactionOutput) -> bool {
         self.address.verify_transaction_ownership(txo)
@@ -79,13 +95,14 @@ impl Account {
     /// ### Error
     ///  * `ErrorWallet::CannotCreateNewTransaction`: It will appear when a transaction cannot be created
     ///  * `ErrorWallet::NotEnoughFunds`: It will appear when an account does not have enough funds to create a transaction for the amount requested
-    pub fn create_transaction_with_available_outputs(
+    pub fn create_transaction(
         &self,
         to: Address,
         amount: i64,
         fee: i64,
-        mut available_outputs: Vec<(Outpoint, TransactionOutput)>,
+        utxo_set: &UTXOSet,
     ) -> Result<Transaction, ErrorWallet> {
+        let mut available_outputs = utxo_set.get_utxo_list_with_outpoints(Some(&self.address));
         available_outputs.sort_by(|(_, a), (_, b)| b.value.cmp(&a.value));
 
         let mut input_amount = 0;
@@ -112,22 +129,6 @@ impl Account {
                 error
             ))),
         }
-    }
-
-    /// Returns a transaction given the amount and to whom it is sent
-    ///
-    /// ### Error
-    ///  * `ErrorWallet::CannotCreateNewTransaction`: It will appear when a transaction cannot be created
-    ///  * `ErrorWallet::NotEnoughFunds`: It will appear when an account does not have enough funds to create a transaction for the amount requested
-    pub fn create_transaction(
-        &self,
-        to: Address,
-        amount: i64,
-        fee: i64,
-        utxo_set: UTXOSet,
-    ) -> Result<Transaction, ErrorWallet> {
-        let available_outputs = utxo_set.get_utxo_list_with_outpoints(Some(&self.address));
-        self.create_transaction_with_available_outputs(to, amount, fee, available_outputs)
     }
 
     /// Return a message signed with the private key of the account

@@ -81,7 +81,6 @@ where
     ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
     ///  * `ErrorNode::NodeNotResponding`: It will appear when the node is not responding to the messages
     pub fn connecting_to_client(mut self) -> Result<RW, ErrorNode> {
-
         loop {
             match self.receive_information()? {
                 Work::MessageFromPeer(header) => self.manage_message(header)?,
