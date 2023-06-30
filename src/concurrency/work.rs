@@ -1,11 +1,11 @@
 use crate::{
-    block_structure::transaction::Transaction, messages::message_header::MessageHeader,
-    node_structure::message_to_peer::MessageToPeer,
+    block_structure::transaction::Transaction, messages::message_header::MessageHeader, serialization::error_serialization::ErrorSerialization,
 };
 
 use std::{
     io::{Read, Write},
     sync::mpsc::{Receiver, TryRecvError},
+    convert::Into,
 };
 
 #[derive(Debug)]
@@ -16,16 +16,18 @@ pub enum Work {
 }
 
 impl Work {
-    pub fn listen<RW: Read + Write>(stream: &mut RW, receiver: &Receiver<MessageToPeer>) -> Work {
+    pub fn listen<RW: Read + Write, M : Into<Work>>(stream: &mut RW, receiver: &Receiver<M>) -> Work {
         loop {
-            if let Ok(header) = MessageHeader::deserialize_header(stream) {
-                return Work::Message(header);
+            match MessageHeader::deserialize_header(stream) {
+                Ok(header) => return Work::Message(header),
+                Err(ErrorSerialization::InformationNotReady) => {},
+                _ => return Work::Stop,
             }
 
             match receiver.try_recv() {
                 Ok(message_to_peer) => return message_to_peer.into(),
                 Err(TryRecvError::Disconnected) => return Work::Stop,
-                Err(_) => continue,
+                Err(_) => {},
             }
         }
     }

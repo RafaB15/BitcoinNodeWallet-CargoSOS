@@ -37,7 +37,7 @@ use std::{
 };
 
 /// It represents how to manage the the peer, listening to the there messages and sending them transactions
-pub struct PeerManager<N, RW>
+pub struct PeerManager<RW, N>
 where
     RW: Read + Write + Send + 'static,
     N: Notifier + 'static,
@@ -50,7 +50,7 @@ where
     logger: LoggerSender,
 }
 
-impl<N, RW> PeerManager<N, RW>
+impl<RW, N> PeerManager<RW, N>
 where
     RW: Read + Write + Send + 'static,
     N: Notifier,
@@ -114,8 +114,8 @@ where
             .notify(Notification::ReceivedMessage(header.command_name));
 
         match header.command_name {
-            CommandName::Version => ignore_message::<VersionMessage>(&mut self.peer, header)?,
-            CommandName::Verack => ignore_message::<VerackMessage>(&mut self.peer, header)?,
+            CommandName::Version => ignore_message::<RW, VersionMessage>(&mut self.peer, header)?,
+            CommandName::Verack => ignore_message::<RW, VerackMessage>(&mut self.peer, header)?,
             CommandName::Ping => {
                 let ping = PingMessage::deserialize_message(&mut self.peer, header)?;
 
@@ -123,19 +123,19 @@ where
 
                 PongMessage::serialize_message(&mut self.peer, magic_numbers, &pong)?;
             }
-            CommandName::Pong => ignore_message::<PongMessage>(&mut self.peer, header)?,
-            CommandName::GetHeaders => ignore_message::<GetHeadersMessage>(&mut self.peer, header)?,
+            CommandName::Pong => ignore_message::<RW, PongMessage>(&mut self.peer, header)?,
+            CommandName::GetHeaders => ignore_message::<RW, GetHeadersMessage>(&mut self.peer, header)?,
             CommandName::Headers => self.receive_headers(header)?,
-            CommandName::GetData => ignore_message::<GetDataMessage>(&mut self.peer, header)?,
+            CommandName::GetData => ignore_message::<RW, GetDataMessage>(&mut self.peer, header)?,
             CommandName::Block => self.receive_blocks(header)?,
             CommandName::Inventory => self.receive_inventory_message(header)?,
             CommandName::SendHeaders => {
-                ignore_message::<SendHeadersMessage>(&mut self.peer, header)?
+                ignore_message::<RW, SendHeadersMessage>(&mut self.peer, header)?
             }
-            CommandName::SendCmpct => ignore_message::<SendCmpctMessage>(&mut self.peer, header)?,
-            CommandName::Addr => ignore_message::<AddrMessage>(&mut self.peer, header)?,
-            CommandName::FeeFilter => ignore_message::<FeeFilterMessage>(&mut self.peer, header)?,
-            CommandName::Alert => ignore_message::<AlertMessage>(&mut self.peer, header)?,
+            CommandName::SendCmpct => ignore_message::<RW, SendCmpctMessage>(&mut self.peer, header)?,
+            CommandName::Addr => ignore_message::<RW, AddrMessage>(&mut self.peer, header)?,
+            CommandName::FeeFilter => ignore_message::<RW, FeeFilterMessage>(&mut self.peer, header)?,
+            CommandName::Alert => ignore_message::<RW, AlertMessage>(&mut self.peer, header)?,
             CommandName::Tx => self.receive_transaction(header)?,
         }
 

@@ -11,6 +11,12 @@ pub enum ErrorProcess {
     /// It will appear while writing to the stream
     ErrorWriting,
 
+    /// It will appear when the connection is lost
+    ConnectionAborted,
+    
+    /// It will appear when the information is not yet send to the stream
+    InformationNotReady,
+
     /// It will appear when a thread panics and fails
     FailThread,
 
@@ -43,6 +49,8 @@ impl From<ErrorSerialization> for ErrorProcess {
             ErrorSerialization::ErrorInDeserialization(_) => ErrorProcess::ErrorReading,
             ErrorSerialization::ErrorWhileWriting => ErrorProcess::ErrorWriting,
             ErrorSerialization::ErrorWhileReading => ErrorProcess::ErrorReading,
+            ErrorSerialization::ConnectionAborted => ErrorProcess::ConnectionAborted,
+            ErrorSerialization::InformationNotReady => ErrorProcess::InformationNotReady,
         }
     }
 }

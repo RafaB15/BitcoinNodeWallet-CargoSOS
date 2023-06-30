@@ -23,6 +23,12 @@ pub enum ErrorUI {
     /// It will appear when writing
     ErrorWriting(String),
 
+    /// It will appear when the connection is lost
+    ConnectionAborted,
+    
+    /// It will appear when the information is not yet send to the stream
+    InformationNotReady,
+
     /// It will appear when a thread panics and fails
     FailThread(String),
 
@@ -70,6 +76,8 @@ impl From<ErrorProcess> for ErrorUI {
                 ErrorUI::TransactionWithoutSufficientFunds
             }
             ErrorProcess::TransactionCreationFail => ErrorUI::TransactionCreationFail,
+            ErrorProcess::ConnectionAborted => ErrorUI::ConnectionAborted,
+            ErrorProcess::InformationNotReady => ErrorUI::InformationNotReady,
         }
     }
 }
