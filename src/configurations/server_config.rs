@@ -5,14 +5,16 @@ use super::{
 
 use crate::connections::dns_seeder::DNSSeeder;
 
-use std::cmp::PartialEq;
-use std::net::Ipv4Addr;
+
+use std::{cmp::PartialEq, net::Ipv4Addr};
 
 const DNS_SEEDER: &str = "dns_seeder";
 const PEER_COUNT_MAX: &str = "peer_count_max";
 const CLIENT_COUNT_MAX: &str = "client_count_max";
 const PORT: &str = "own_port";
 const ADDRESS: &str = "address";
+
+pub type ConnectionAddress = Vec<Ipv4Addr>;
 
 /// Configuration for the server process
 #[derive(Debug, PartialEq, Clone)]
@@ -29,8 +31,8 @@ pub struct ServerConfig {
     /// It's the port number where the server will be listening
     pub own_port: u16,
 
-    /// It's the address where the server will be listening
-    pub address: Ipv4Addr,
+    /// The address' where the server will be listening
+    pub address: ConnectionAddress,
 }
 
 impl Parsable for ServerConfig {
@@ -43,13 +45,15 @@ impl Parsable for ServerConfig {
             peer_count_max: usize::parse(PEER_COUNT_MAX, &map)?,
             client_count_max: usize::parse(CLIENT_COUNT_MAX, &map)?,
             own_port: u16::parse(PORT, &map)?,
-            address: Ipv4Addr::parse(ADDRESS, &map)?,
+            address: ConnectionAddress::parse(ADDRESS, &map)?,
         })
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::net::Ipv4Addr;
+
     use super::*;
 
     #[test]
@@ -62,7 +66,7 @@ mod tests {
             peer_count_max = 8
             client_count_max = 8
             own_port = 18333
-            address = 127.0.0.1
+            address = [127.0.0.1, 127.0.0.1]
         }";
 
         let name = "server";
@@ -75,7 +79,7 @@ mod tests {
             peer_count_max: 8,
             client_count_max: 8,
             own_port: 18333,
-            address: Ipv4Addr::new(127, 0, 0, 1),
+            address: vec![Ipv4Addr::new(127, 0, 0, 1),Ipv4Addr::new(127, 0, 0, 1)],
         };
 
         assert_eq!(Ok(config_server), server_result);
@@ -104,7 +108,7 @@ mod tests {
             peer_count_max: 8,
             client_count_max: 8,
             own_port: 18333,
-            address: Ipv4Addr::new(127, 0, 0, 1),
+            address: vec![Ipv4Addr::new(127, 0, 0, 1),Ipv4Addr::new(127, 0, 0, 1)],
         };
 
         assert_eq!(Ok(server_config), server_result);
@@ -119,7 +123,7 @@ mod tests {
             }
             peer_count_max = 8
             own_port = 18333
-            address = 127.0.0.1
+            address = [127.0.0.1,127.0.0.1]
         }";
 
         let name = "server";
@@ -141,7 +145,7 @@ mod tests {
             peer_count_max = 8
             client_count_max = 8
             own_port = 18333
-            address = 127.0.0.1
+            address = [127.0.0.1]
         }";
 
         let name = "server";
@@ -154,7 +158,7 @@ mod tests {
             peer_count_max: 8,
             client_count_max: 8,
             own_port: 18333,
-            address: Ipv4Addr::new(127, 0, 0, 1),
+            address: vec![Ipv4Addr::new(127, 0, 0, 1)],
         };
 
         assert_eq!(Ok(server_config), server_result);
