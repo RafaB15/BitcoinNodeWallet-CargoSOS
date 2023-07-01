@@ -5,7 +5,6 @@ use super::{
 
 use crate::connections::dns_seeder::DNSSeeder;
 
-
 use std::{cmp::PartialEq, net::Ipv4Addr};
 
 const DNS_SEEDER: &str = "dns_seeder";
@@ -79,7 +78,7 @@ mod tests {
             peer_count_max: 8,
             client_count_max: 8,
             own_port: 18333,
-            address: vec![Ipv4Addr::new(127, 0, 0, 1),Ipv4Addr::new(127, 0, 0, 1)],
+            address: vec![Ipv4Addr::new(127, 0, 0, 1), Ipv4Addr::new(127, 0, 0, 1)],
         };
 
         assert_eq!(Ok(config_server), server_result);
@@ -95,7 +94,7 @@ mod tests {
                       peer_count_max = 8
             client_count_max=                                 8
             own_port = 18333
-            address = 127.0.0.1
+            address = [127.0.0.1,127.0.0.1]
         }";
 
         let name = "server";
@@ -108,7 +107,7 @@ mod tests {
             peer_count_max: 8,
             client_count_max: 8,
             own_port: 18333,
-            address: vec![Ipv4Addr::new(127, 0, 0, 1),Ipv4Addr::new(127, 0, 0, 1)],
+            address: vec![Ipv4Addr::new(127, 0, 0, 1), Ipv4Addr::new(127, 0, 0, 1)],
         };
 
         assert_eq!(Ok(server_config), server_result);
