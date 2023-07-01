@@ -3,7 +3,7 @@ use super::{backend::user_input, notifier_tui::NotifierTUI};
 use crate::{
     error_execution::ErrorExecution,
     process::{
-        broadcasting, connection, download, handshake, load_system::LoadSystem, reference,
+        broadcasting, connection, download, process_connection, load_system::LoadSystem, reference,
         reference::MutArc, save_system::SaveSystem,
     },
     ui::error_ui::ErrorUI,
@@ -82,13 +82,16 @@ fn _show_merkle_path(block_chain: &BlockChain, logger: LoggerSender) -> Result<(
 ///  *
 fn broadcasting<N: Notifier + 'static>(
     connections: Vec<(TcpStream, ConnectionId)>,
-    wallet: MutArc<Wallet>,
-    utxo_set: MutArc<UTXOSet>,
-    block_chain: MutArc<BlockChain>,
+    data: (MutArc<Wallet>, MutArc<UTXOSet>, MutArc<BlockChain>),
     connection_config: ConnectionConfig,
+    mode_config: ModeConfig,
     notifier: N,
     logger: LoggerSender,
 ) -> Result<(), ErrorExecution> {
+    let wallet: Arc<Mutex<Wallet>> = data.0;
+    let utxo_set: Arc<Mutex<UTXOSet>> = data.1;
+    let block_chain: Arc<Mutex<BlockChain>> = data.2;
+
     let (sender_response, receiver_response) = mpsc::channel::<MessageResponse>();
 
     for (stream, _) in connections.iter() {
@@ -142,7 +145,7 @@ pub fn program_execution(
     load_system: &mut LoadSystem,
     logger: LoggerSender,
 ) -> Result<SaveSystem, ErrorExecution> {
-    let potential_peers = match mode_config {
+    let potential_peers = match mode_config.clone() {
         ModeConfig::Server(server_config) => {
             connection::get_potential_peers(server_config, logger.clone())?
         }
@@ -154,19 +157,23 @@ pub fn program_execution(
 
     let notifier = NotifierTUI::new(logger.clone());
 
-    let potential_connection = potential_peers
+    let potential_peers = potential_peers
         .iter()
         .map(|socket_address| ConnectionId::new(socket_address.clone(), ConnectionType::Peer))
         .collect();
 
-    let connections = handshake::connect_to_peers(
-        potential_connection,
+    let connections = process_connection::connect_to_peers(
+        potential_peers,
         connection_config.clone(),
         notifier.clone(),
         logger.clone(),
     );
 
     let mut block_chain = load_system.get_block_chain()?;
+
+    if let ModeConfig::Server(server_config) = mode_config.clone() {
+        
+    }
 
     let connections = download::update_block_chain(
         connections,
@@ -186,10 +193,9 @@ pub fn program_execution(
 
     broadcasting(
         connections,
-        wallet.clone(),
-        utxo_set,
-        block_chain.clone(),
+        (wallet.clone(), utxo_set, block_chain.clone()),
         connection_config,
+        mode_config,
         notifier.clone(),
         logger.clone(),
     )?;

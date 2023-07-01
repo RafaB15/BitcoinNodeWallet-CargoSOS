@@ -1,7 +1,7 @@
 pub mod broadcasting;
 pub mod connection;
 pub mod download;
-pub mod handshake;
+pub mod process_connection;
 pub mod transaction;
 
 pub mod configuration;

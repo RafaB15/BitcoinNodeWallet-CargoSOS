@@ -5,7 +5,7 @@ use crate::{
     process::{
         broadcasting::{add_peers, handle_peers},
         connection::get_potential_peers,
-        download, handshake,
+        download, process_connection,
         load_system::LoadSystem,
         reference::{self, get_inner, get_reference, MutArc},
         save_system::SaveSystem,
@@ -235,7 +235,7 @@ pub fn backend_execution<N: Notifier + 'static>(
         .map(|socket_address| ConnectionId::new(socket_address.clone(), ConnectionType::Peer))
         .collect();
 
-    let connections = handshake::connect_to_peers(
+    let connections = process_connection::connect_to_peers(
         potential_connection,
         connection_config.clone(),
         notifier.clone(),

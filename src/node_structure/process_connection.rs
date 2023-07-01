@@ -1,14 +1,76 @@
-use cargosos_bitcoin::{
+use super::{
+    connection_id::ConnectionId, connection_type::ConnectionType, handshake::Handshake,
+    handshake_data::HandshakeData, connection_event::ConnectionEvent,
+};
+
+use crate::{
     configurations::connection_config::ConnectionConfig,
     logs::logger_sender::LoggerSender,
-    node_structure::{
-        connection_id::ConnectionId, connection_type::ConnectionType, handshake::Handshake,
-        handshake_data::HandshakeData,
-    },
     notifications::{notification::Notification, notifier::Notifier},
 };
 
-use std::net::{TcpStream};
+use std::{
+    net::TcpStream,
+    sync::mpsc::{channel, Receiver, Sender},
+    io::{Read, Write},
+    thread::{self, JoinHandle},
+};
+
+pub struct ProcessConnection<N, RW>
+where
+    RW: Read + Write + Send + 'static,
+    N: Notifier,
+{
+    connection_config: ConnectionConfig,
+
+    sender_confirm_connection: Sender<(RW, ConnectionId)>,
+    receiver_potential_connections: Receiver<ConnectionId>,
+
+    pending_connection_handlers: Vec<(JoinHandle<()>, Sender<ConnectionEvent>)>,
+
+    notifier: N,
+    logger_sender: LoggerSender,
+}
+
+impl<N, RW> ProcessConnection<N, RW>
+where
+    RW: Read + Write + Send + 'static,
+    N: Notifier,
+{
+    pub fn new(
+        connection_config: ConnectionConfig,
+        sender_confirm_connection: Sender<(RW, ConnectionId)>,
+        receiver_potential_connections: Receiver<ConnectionId>,
+        notifier: N,
+        logger_sender: LoggerSender,
+    ) -> Self {
+        Self {
+            connection_config,
+            sender_confirm_connection,
+            receiver_potential_connections,
+            pending_connection_handlers: Vec::new(),
+            notifier,
+            logger_sender,
+        }
+    }
+
+    pub fn execution(mut self) {
+        for connection in self.receiver_potential_connections {
+
+            let (sender, receiver) = channel::<ConnectionEvent>();
+
+            let handler = Self::handle_connection_event(connection, receiver);
+
+            self.pending_connection_handlers.push((handler, sender));
+        }
+    }
+
+    fn handle_connection_event(connection: ConnectionId, receiver: Receiver<ConnectionEvent>) -> JoinHandle<()> {
+        thread::spawn(move || {
+            let _ = receiver.recv();
+        })
+    }
+}
 
 /// Creates a connection with the peers and if established then is return it's TCP stream
 pub fn connect_to_peers<N: Notifier>(
