@@ -283,7 +283,7 @@ mod tests {
             .io_serialize(&mut serialized_fields)
             .unwrap();
         (23 as u64).le_serialize(&mut serialized_fields).unwrap();
-
+        (1 as u64).le_serialize(&mut serialized_fields).unwrap();
         let mut serialized_node_chain = Vec::new();
         node_chain.io_serialize(&mut serialized_node_chain).unwrap();
 

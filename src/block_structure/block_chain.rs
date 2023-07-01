@@ -72,7 +72,7 @@ impl BlockChain {
     ///  * `ErrorBlock::TransactionAlreadyInBlock`: It will appear when the Transaction is already in the block
     pub fn append_block(&mut self, block: Block) -> Result<(), ErrorBlock> {
         for (i, index_last_block) in self.last_blocks.clone().iter().enumerate() {
-            let last_block = self.get_block_at(*index_last_block)?;
+            let mut last_block = self.get_block_at(*index_last_block)?;
 
             if last_block.is_equal(&block) {
                 return Err(ErrorBlock::TransactionAlreadyInBlock);
@@ -83,23 +83,21 @@ impl BlockChain {
                 self.blocks.push(node);
 
                 self.last_blocks[i] = self.blocks.len() - 1;
-
                 return Ok(());
             }
 
             while let Some(index_previous_node) = last_block.index_previous_node {
-                let last_block = self.get_block_at_mut(index_previous_node)?;
+                last_block = self.get_block_at_mut(index_previous_node)?;
 
                 if last_block.is_equal(&block) {
                     return Err(ErrorBlock::TransactionAlreadyInBlock);
                 }
 
                 if last_block.is_previous_of(&block) {
-                    let node = NodeChain::new(block, *index_last_block, last_block.height)?;
+                    let node = NodeChain::new(block, index_previous_node, last_block.height)?;
                     self.blocks.push(node);
 
                     self.last_blocks.push(self.blocks.len() - 1);
-
                     return Ok(());
                 }
             }
@@ -213,12 +211,9 @@ impl BlockChain {
             Some((index, _)) => latest_nodes.remove(index),
             None => return Err(ErrorBlock::NodeChainReferenceNotFound),
         };
-
-
         let mut main_chain_values: Vec<NodeChain> = Vec::new();
 
         while !latest_nodes.is_empty()  {
-            
             let current_biggest_index = match latest_nodes.iter().enumerate().max_by_key(|(_, node)| node.height) {
                 Some((index, _)) => index,
                 None => break,
@@ -260,9 +255,9 @@ impl BlockChain {
             index_temp += 1;
         } 
         main_chain_values.insert(0, self.get_block_at_mut(main_chain_update_index)?.clone());
-        self.last_blocks = vec![index_temp - 1];
         self.blocks.splice(main_chain_update_index.., main_chain_values);
-
+        self.last_blocks = vec![index_temp];
+        println!("{:?}", self.blocks);
         Ok(())
     }
 
@@ -355,9 +350,9 @@ mod tests {
     use super::*;
     use crate::messages::compact_size::CompactSize;
 
-    fn create_transaction(time: u32) -> Transaction {
+    fn create_transaction(time: u32, index: u32) -> Transaction {
         let transaction_input =
-            TransactionInput::new(Outpoint::new([1; 32], 23), vec![1, 2, 3], 24);
+            TransactionInput::new(Outpoint::new([1; 32], index), vec![1, 2, 3], 24);
 
         let transaction_output = TransactionOutput {
             value: 10,
@@ -372,12 +367,12 @@ mod tests {
         }
     }
 
-    fn create_block(previous_header: HashType, transaction_count: u64) -> Block {
+    fn create_block(previous_header: HashType, transaction_count: u64, time: u32) -> Block {
         Block::new(BlockHeader::new(
             block_version::BlockVersion::version(1),
             previous_header,
             [0; 32],
-            0,
+            time,
             Compact256::from(u32::MAX),
             0,
             CompactSize::new(transaction_count),
@@ -522,29 +517,29 @@ mod tests {
 
     #[test]
     fn test_05_correct_blockchain_cleansing() {
-        let transaction_1 = create_transaction(1);
-        let transaction_2 = create_transaction(2);
-        let transaction_3 = create_transaction(3);
-        let transaction_4 = create_transaction(4);
-        let transaction_5 = create_transaction(5);
-        let transaction_6 = create_transaction(6);
+        let transaction_1 = create_transaction(10, 0);
+        let transaction_2 = create_transaction(20, 1);
+        let transaction_3 = create_transaction(30, 2);
+        let transaction_4 = create_transaction(40, 3);
+        let transaction_5 = create_transaction(50, 4);
+        let transaction_6 = create_transaction(60, 5);
 
-        let mut block_1 = create_block([0; 32], 1);
+        let mut block_1 = create_block([0; 32], 1, 1);
         block_1.append_transaction(transaction_1).unwrap();
         
-        let mut block_2 = create_block(block_1.header.get_hash256d().unwrap(), 1);
+        let mut block_2 = create_block(block_1.header.get_hash256d().unwrap(), 1, 2);
         block_2.append_transaction(transaction_2).unwrap();
         
-        let mut block_3 = create_block(block_2.header.get_hash256d().unwrap(), 1);
+        let mut block_3 = create_block(block_2.header.get_hash256d().unwrap(), 1, 3);
         block_3.append_transaction(transaction_3).unwrap();
         
-        let mut block_4 = create_block(block_2.header.get_hash256d().unwrap(), 1);
+        let mut block_4 = create_block(block_2.header.get_hash256d().unwrap(), 1, 4);
         block_4.append_transaction(transaction_4).unwrap();
         
-        let mut block_5 = create_block(block_4.header.get_hash256d().unwrap(), 1);
+        let mut block_5 = create_block(block_4.header.get_hash256d().unwrap(), 1, 5);
         block_5.append_transaction(transaction_5).unwrap();
         
-        let mut block_6 = create_block(block_5.header.get_hash256d().unwrap(), 1);
+        let mut block_6 = create_block(block_5.header.get_hash256d().unwrap(), 1, 6);
         block_6.append_transaction(transaction_6).unwrap();
 
         let mut blockchain = BlockChain::new(block_1).unwrap();
@@ -554,11 +549,12 @@ mod tests {
         blockchain.append_block(block_5).unwrap();
         blockchain.append_block(block_6).unwrap();
 
-        assert!(blockchain.last_blocks.len() == 2);
-        assert_eq!(blockchain.last_blocks, vec![2, 4]);
+        assert_eq!(blockchain.last_blocks.len(), 2);
+        assert_eq!(blockchain.last_blocks, vec![2, 5]);
         assert!(blockchain.cleanse_block_chain().is_ok());
-        assert!(blockchain.last_blocks.len() == 1);
+        assert_eq!(blockchain.last_blocks.len(), 1);
         assert_eq!(blockchain.last_blocks, vec![4]);
+        assert_eq!(blockchain.blocks.len(), 5);
     }
 
 }
