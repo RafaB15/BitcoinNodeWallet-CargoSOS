@@ -1,4 +1,5 @@
 use super::{
+    hash::HashType,
     block::Block, block_header::BlockHeader, error_block::ErrorBlock, node_chain::NodeChain,
 };
 
@@ -180,6 +181,26 @@ impl BlockChain {
         match self.blocks.get(index) {
             Some(block) => Ok(block.clone()),
             None => Err(ErrorBlock::NodeChainReferenceNotFound),
+        }
+    }
+
+    fn get_header_with_hash(&self, header_hash: &HashType) -> Result<BlockHeader, ErrorBlock> {
+        for node_chain in self.blocks.iter() {
+            if node_chain.header_hash == *header_hash {
+                return Ok(node_chain.block.header.clone());
+            }
+        }
+        Err(ErrorBlock::NodeChainReferenceNotFound)
+    }
+
+    fn get_most_recent_hash(&self, hashes: Vec<HashType>) -> Result<HashType, ErrorBlock>{
+        let headers: Vec<BlockHeader> = Vec::new();
+        for hash in hashes.iter() {
+            let header = match self.get_header_with_hash(hash) {
+                Ok(header) => header,
+                Err(_) => BlockHeader::generate_genesis_block_header(),
+            };
+            headers.push(header);
         }
     }
 }

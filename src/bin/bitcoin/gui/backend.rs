@@ -19,7 +19,7 @@ use cargosos_bitcoin::{
         connection_config::ConnectionConfig, download_config::DownloadConfig,
         mode_config::ModeConfig, save_config::SaveConfig,
     },
-    node_structure::connection_id::ConnectionId,
+    node_structure::connection_id::ConnectionId, block_structure::block,
 };
 
 use cargosos_bitcoin::{
@@ -189,6 +189,7 @@ fn broadcasting<N: Notifier + 'static>(
         &mut broadcasting,
         connections,
         sender_response,
+        block_chain.clone(),
         connection_config.magic_numbers,
         notifier.clone(),
         logger.clone(),

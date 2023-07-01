@@ -10,7 +10,7 @@ use crate::{
 };
 
 use cargosos_bitcoin::{
-    block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
+    block_structure::{block_chain::BlockChain, utxo_set::UTXOSet, block},
     configurations::{
         connection_config::ConnectionConfig, download_config::DownloadConfig,
         mode_config::ModeConfig,
@@ -109,6 +109,7 @@ fn broadcasting<N: Notifier + 'static>(
         &mut broadcasting,
         connections,
         sender_response,
+        block_chain.clone(),
         connection_config.magic_numbers,
         notifier.clone(),
         logger.clone(),
