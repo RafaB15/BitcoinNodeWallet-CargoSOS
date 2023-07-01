@@ -79,7 +79,7 @@ impl BlockChain {
             }
 
             if last_block.is_previous_of(&block) {
-                let node = NodeChain::new(block, *index_last_block)?;
+                let node = NodeChain::new(block, *index_last_block, last_block.height)?;
                 self.blocks.push(node);
 
                 self.last_blocks[i] = self.blocks.len() - 1;
@@ -95,7 +95,7 @@ impl BlockChain {
                 }
 
                 if last_block.is_previous_of(&block) {
-                    let node = NodeChain::new(block, *index_last_block)?;
+                    let node = NodeChain::new(block, *index_last_block, last_block.height)?;
                     self.blocks.push(node);
 
                     self.last_blocks.push(self.blocks.len() - 1);
@@ -162,6 +162,22 @@ impl BlockChain {
         latest
     }
 
+    /// Get the latests node chains from the blockchain
+    fn get_latests_node_chains(&self) -> Vec<NodeChain> {
+        let mut latest: Vec<NodeChain> = Vec::new();
+
+        for index_last_block in self.last_blocks.iter() {
+            let last_block = match self.get_block_at(*index_last_block) {
+                Ok(block) => block,
+                Err(_) => continue,
+            };
+
+            latest.push(last_block);
+        }
+
+        latest
+    }
+
     /// Get the node at the given index
     ///
     /// ### Error
@@ -184,6 +200,73 @@ impl BlockChain {
         }
     }
 
+    /// Rids the blockchain of forks
+    ///  
+    /// ### Error
+    ///  * `ErrorBlock::NodeChainReferenceNotFound`: It will appear when a node position it's not found in the block chain
+    fn cleanse_block_chain(&mut self) -> Result<(), ErrorBlock> {
+        let mut latest_nodes = self.get_latests_node_chains();
+        if latest_nodes.len() == 1 {
+            return Ok(());
+        }
+        let mut main_node = match latest_nodes.iter().enumerate().max_by_key(|(_, node)| node.height) {
+            Some((index, _)) => latest_nodes.remove(index),
+            None => return Err(ErrorBlock::NodeChainReferenceNotFound),
+        };
+
+
+        let mut main_chain_values: Vec<NodeChain> = Vec::new();
+
+        while !latest_nodes.is_empty()  {
+            
+            let current_biggest_index = match latest_nodes.iter().enumerate().max_by_key(|(_, node)| node.height) {
+                Some((index, _)) => index,
+                None => break,
+            };
+
+            let current_biggest_node = latest_nodes[current_biggest_index].clone();
+            
+            if current_biggest_node == main_node {
+                latest_nodes.remove(current_biggest_index);
+                continue;
+            }
+
+            let current_biggest_height = current_biggest_node.height;
+            let main_height = main_node.height;
+
+            if main_height > current_biggest_height {
+                main_chain_values.insert(0, main_node.clone());
+                main_node = match main_node.index_previous_node {
+                    Some(index) => self.get_block_at_mut(index)?,
+                    None => return Err(ErrorBlock::NodeChainReferenceNotFound),
+                };
+            } else {
+                latest_nodes[current_biggest_index] = match latest_nodes[current_biggest_index].index_previous_node {
+                    Some(index) => self.get_block_at_mut(index)?,
+                    None => return Err(ErrorBlock::NodeChainReferenceNotFound),
+                };
+            }
+        }
+        main_chain_values.insert(0, main_node.clone());
+
+        let main_chain_update_index = match main_node.index_previous_node {
+            Some(index) => index,
+            None => return Err(ErrorBlock::NodeChainReferenceNotFound),
+        };
+
+        let mut index_temp = main_chain_update_index.clone();
+        for node in main_chain_values.iter_mut() {
+            node.index_previous_node = Some(index_temp);
+            index_temp += 1;
+        } 
+        main_chain_values.insert(0, self.get_block_at_mut(main_chain_update_index)?.clone());
+        self.last_blocks = vec![index_temp - 1];
+        self.blocks.splice(main_chain_update_index.., main_chain_values);
+
+        Ok(())
+    }
+
+    /* 
     fn get_header_with_hash(&self, header_hash: &HashType) -> Result<BlockHeader, ErrorBlock> {
         for node_chain in self.blocks.iter() {
             if node_chain.header_hash == *header_hash {
@@ -203,6 +286,7 @@ impl BlockChain {
             headers.push(header);
         }
     }
+    */
 }
 
 impl TryDefault for BlockChain {
@@ -270,6 +354,35 @@ mod tests {
 
     use super::*;
     use crate::messages::compact_size::CompactSize;
+
+    fn create_transaction(time: u32) -> Transaction {
+        let transaction_input =
+            TransactionInput::new(Outpoint::new([1; 32], 23), vec![1, 2, 3], 24);
+
+        let transaction_output = TransactionOutput {
+            value: 10,
+            pk_script: vec![4, 5, 6],
+        };
+
+        Transaction {
+            version: 1,
+            tx_in: vec![transaction_input.clone()],
+            tx_out: vec![transaction_output.clone()],
+            time,
+        }
+    }
+
+    fn create_block(previous_header: HashType, transaction_count: u64) -> Block {
+        Block::new(BlockHeader::new(
+            block_version::BlockVersion::version(1),
+            previous_header,
+            [0; 32],
+            0,
+            Compact256::from(u32::MAX),
+            0,
+            CompactSize::new(transaction_count),
+        ))
+    }
 
     #[test]
     fn test_01_correct_append_header() {
@@ -406,4 +519,46 @@ mod tests {
         let last_blocks = blockchain.latest();
         assert_eq!(last_blocks[0].header, header_to_append);
     }
+
+    #[test]
+    fn test_05_correct_blockchain_cleansing() {
+        let transaction_1 = create_transaction(1);
+        let transaction_2 = create_transaction(2);
+        let transaction_3 = create_transaction(3);
+        let transaction_4 = create_transaction(4);
+        let transaction_5 = create_transaction(5);
+        let transaction_6 = create_transaction(6);
+
+        let mut block_1 = create_block([0; 32], 1);
+        block_1.append_transaction(transaction_1).unwrap();
+        
+        let mut block_2 = create_block(block_1.header.get_hash256d().unwrap(), 1);
+        block_2.append_transaction(transaction_2).unwrap();
+        
+        let mut block_3 = create_block(block_2.header.get_hash256d().unwrap(), 1);
+        block_3.append_transaction(transaction_3).unwrap();
+        
+        let mut block_4 = create_block(block_2.header.get_hash256d().unwrap(), 1);
+        block_4.append_transaction(transaction_4).unwrap();
+        
+        let mut block_5 = create_block(block_4.header.get_hash256d().unwrap(), 1);
+        block_5.append_transaction(transaction_5).unwrap();
+        
+        let mut block_6 = create_block(block_5.header.get_hash256d().unwrap(), 1);
+        block_6.append_transaction(transaction_6).unwrap();
+
+        let mut blockchain = BlockChain::new(block_1).unwrap();
+        blockchain.append_block(block_2).unwrap();
+        blockchain.append_block(block_3).unwrap();
+        blockchain.append_block(block_4).unwrap();
+        blockchain.append_block(block_5).unwrap();
+        blockchain.append_block(block_6).unwrap();
+
+        assert!(blockchain.last_blocks.len() == 2);
+        assert_eq!(blockchain.last_blocks, vec![2, 4]);
+        assert!(blockchain.cleanse_block_chain().is_ok());
+        assert!(blockchain.last_blocks.len() == 1);
+        assert_eq!(blockchain.last_blocks, vec![4]);
+    }
+
 }

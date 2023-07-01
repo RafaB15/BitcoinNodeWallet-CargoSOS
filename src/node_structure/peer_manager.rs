@@ -136,9 +136,9 @@ where
             }
             CommandName::Pong => ignore_message::<RW, PongMessage>(&mut self.peer, header)?,
             CommandName::GetHeaders => {
-                let get_headers = GetHeadersMessage::deserialize_message(&mut self.peer, header)?;
-                let headers = self.generate_headers_message(get_headers)
-                //ignore_message::<RW, GetHeadersMessage>(&mut self.peer, header)?
+                //let get_headers = GetHeadersMessage::deserialize_message(&mut self.peer, header)?;
+                //let headers = self.generate_headers_message(get_headers)
+                ignore_message::<RW, GetHeadersMessage>(&mut self.peer, header)?
             }
             CommandName::Headers => self.receive_headers(header)?,
             CommandName::GetData => ignore_message::<RW, GetDataMessage>(&mut self.peer, header)?,
@@ -287,9 +287,9 @@ where
 
         Ok(())
     }
-
+    /* 
     fn generate_headers_message(&self, get_headers_message: GetHeadersMessage) -> HeadersMessage {
-        let mut headers: Vec<BlockHeader> = Vec::new();
+        let mut headers_: Vec<BlockHeader> = Vec::new();
 
         for hash in get_headers_message.header_locator_hashes {
             let block = self.blockchain.get_block_from_hash(hash);
@@ -300,6 +300,7 @@ where
         }
 
     }
+    */
 
     /// Sends a transaction to the peer
     ///
