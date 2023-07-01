@@ -1,13 +1,13 @@
-use super::{error_node::ErrorNode, handshake_data::HandshakeData};
+use super::{handshake_data::HandshakeData};
 
-use crate::messages::{
+use crate::{messages::{
     bitfield_services::BitfieldServices,
     command_name::CommandName,
     message::{self, Message},
     send_headers_message::SendHeadersMessage,
     verack_message::VerackMessage,
     version_message::VersionMessage,
-};
+}, serialization::error_serialization::ErrorSerialization};
 
 use crate::connections::{
     error_connection::ErrorConnection, p2p_protocol::ProtocolVersionP2P,
@@ -54,10 +54,10 @@ impl Handshake {
     ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
     fn send_version_message<RW: Read + Write>(
         &self,
+        peer_stream: &mut RW,
         local_socket_addr: &SocketAddr,
         potential_peer: &SocketAddr,
-        peer_stream: &mut RW,
-    ) -> Result<(), ErrorNode> {
+    ) -> Result<(), ErrorSerialization> {
         let timestamp = Utc::now();
         let (recv_addr, recv_port) = socket_to_ipv6_port(potential_peer);
         let (trans_addr, trans_port) = socket_to_ipv6_port(local_socket_addr);
@@ -79,51 +79,7 @@ impl Handshake {
             relay: self.data.relay,
         };
 
-        VersionMessage::serialize_message(peer_stream, self.data.magic_number, &version_message)?;
-
-        Ok(())
-    }
-
-    /// Function that sends a verack message to the given potential peer.
-    ///
-    /// ### Error
-    ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
-    fn send_verack_message<RW: Read + Write>(&self, peer_stream: &mut RW) -> Result<(), ErrorNode> {
-        VerackMessage::serialize_message(peer_stream, self.data.magic_number, &VerackMessage)?;
-
-        Ok(())
-    }
-
-    /// Sends a send header message to the peer.
-    ///
-    /// ### Error
-    ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
-    fn send_sendheaders_message<RW: Read + Write>(
-        &self,
-        peer_stream: &mut RW,
-    ) -> Result<(), ErrorNode> {
-        SendHeadersMessage::serialize_message(
-            peer_stream,
-            self.data.magic_number,
-            &SendHeadersMessage,
-        )?;
-
-        Ok(())
-    }
-
-    /// Send and waits to receive a version message from the given potential peer.
-    ///
-    /// ### Error
-    ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
-    ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
-    ///  * `ErrorNode::WhileReceivingMessage`: It will appear when there is an error in the reading from a stream
-    fn attempt_version_message_exchange<RW: Read + Write>(
-        &self,
-        peer_stream: &mut RW,
-        local_socket: &SocketAddr,
-        potential_peer: &SocketAddr,
-    ) -> Result<(), ErrorNode> {
-        if let Err(error) = self.send_version_message(local_socket, potential_peer, peer_stream) {
+        if let Err(error) = VersionMessage::serialize_message(peer_stream, self.data.magic_number, &version_message) {
             let _ = self.sender_log.log_connection(format!(
                 "Error while sending version message to peer {}: {:?}",
                 potential_peer, error
@@ -133,8 +89,16 @@ impl Handshake {
             let _ = self
                 .sender_log
                 .log_connection(format!("Version message sent to peer {}", potential_peer));
-        }
 
+            Ok(())
+        }
+    }
+
+    fn receive_version_message<RW: Read + Write>(
+        &self, 
+        peer_stream: &mut RW,
+        potential_peer: &SocketAddr,
+    ) -> Result<(), ErrorSerialization>{
         let header_version =
             match message::deserialize_until_found(peer_stream, CommandName::Version) {
                 Ok(header) => header,
@@ -143,7 +107,7 @@ impl Handshake {
                         "Error while receiving the header of version message from peer {}: {:?}",
                         potential_peer, error
                     ));
-                    return Err(error.into());
+                    return Err(error);
                 }
             };
 
@@ -152,23 +116,21 @@ impl Handshake {
                 "Error while receiving version message from peer {}: {:?}",
                 potential_peer, error
             ));
-            return Err(error.into());
+            return Err(error);
         }
         Ok(())
     }
 
-    /// Send and waits to receive a verack message from the given potential peer.
+    /// Function that sends a verack message to the given potential peer.
     ///
     /// ### Error
     ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
-    ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
-    ///  * `ErrorNode::WhileReceivingMessage`: It will appear when there is an error in the reading from a stream
-    fn attempt_verack_message_exchange<RW: Read + Write>(
-        &self,
+    fn send_verack_message<RW: Read + Write>(
+        &self, 
         peer_stream: &mut RW,
         potential_peer: &SocketAddr,
-    ) -> Result<(), ErrorNode> {
-        if let Err(error) = self.send_verack_message(peer_stream) {
+    ) -> Result<(), ErrorSerialization> {
+        if let Err(error) = VerackMessage::serialize_message(peer_stream, self.data.magic_number, &VerackMessage) {
             let _ = self.sender_log.log_connection(format!(
                 "Error while sending verack message to peer {}: {:?}",
                 potential_peer, error
@@ -178,8 +140,15 @@ impl Handshake {
             let _ = self
                 .sender_log
                 .log_connection(format!("Verack message sent to peer {}", potential_peer));
+            Ok(())
         }
+    }
 
+    fn receive_verack_message<RW: Read + Write>(
+        &self, 
+        peer_stream: &mut RW,
+        potential_peer: &SocketAddr,
+    ) -> Result<(), ErrorSerialization> {
         let header_verack = match message::deserialize_until_found(peer_stream, CommandName::Verack)
         {
             Ok(header) => header,
@@ -199,6 +168,75 @@ impl Handshake {
             ));
             return Err(error.into());
         }
+
+        Ok(())
+    }
+
+    /// Sends a send header message to the peer.
+    ///
+    /// ### Error
+    ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
+    fn send_sendheaders_message<RW: Read + Write>(
+        &self,
+        peer_stream: &mut RW,
+    ) -> Result<(), ErrorSerialization> {
+        SendHeadersMessage::serialize_message(
+            peer_stream,
+            self.data.magic_number,
+            &SendHeadersMessage,
+        )
+    }
+
+    /// Function that tries to do the handshake with the given potential peer.
+    ///
+    /// ### Error
+    ///  * `ErrorConnection::ErrorCannotConnectToAddress`: It will appear when the connection is not established with a peer
+    ///  * `ErrorConnection::ErrorCannotSendMessage`: It will appear when a message to a peer cannot be sent
+    fn attempt_connection_with_client<RW: Read + Write>(
+        &self,
+        client_stream: &mut RW,
+        local_socket: &SocketAddr,
+        potential_client: &SocketAddr,
+    ) -> Result<(), ErrorConnection> {
+
+        match (
+            self.send_version_message(client_stream, local_socket, potential_client),
+            self.receive_version_message(client_stream, potential_client)
+        ) {
+            (Ok(_), Ok(_)) => {
+                let _ = self.sender_log.log_connection(format!(
+                    "Version message exchange with client {} finished successfully",
+                    potential_client
+                ));
+            },
+            posible_error => {
+                let _ = self.sender_log.log_connection(format!(
+                    "Error while trying to exchange version messages with client {}: {:?}",
+                    potential_client, posible_error
+                ));
+                return Err(ErrorConnection::ErrorCannotConnectToAddress);
+            },
+        }
+
+        match (
+            self.send_verack_message(client_stream, potential_client),
+            self.receive_verack_message(client_stream, potential_client)
+        ) {
+            (Ok(_), Ok(_)) => {
+                let _ = self.sender_log.log_connection(format!(
+                    "Verack message exchange with client {} finished successfully",
+                    potential_client
+                ));
+            },
+            posible_error => {
+                let _ = self.sender_log.log_connection(format!(
+                    "Error while trying to exchange verack messages with client {}: {:?}",
+                    potential_client, posible_error
+                ));
+                return Err(ErrorConnection::ErrorCannotConnectToAddress);
+            },
+        }
+
         Ok(())
     }
 
@@ -213,32 +251,42 @@ impl Handshake {
         local_socket: &SocketAddr,
         potential_peer: &SocketAddr,
     ) -> Result<(), ErrorConnection> {
-        if let Err(e) =
-            self.attempt_version_message_exchange(peer_stream, local_socket, potential_peer)
-        {
-            let _ = self.sender_log.log_connection(format!(
-                "Error while trying to exchange version messages with peer {}: {:?}",
-                potential_peer, e
-            ));
-            return Err(ErrorConnection::ErrorCannotConnectToAddress);
-        } else {
-            let _ = self.sender_log.log_connection(format!(
-                "Version message exchange with peer {} finished successfully",
-                potential_peer
-            ));
+        match (
+            self.send_version_message(peer_stream, local_socket, potential_peer),
+            self.receive_version_message(peer_stream, potential_peer)
+        ) {
+            (Ok(_), Ok(_)) => {
+                let _ = self.sender_log.log_connection(format!(
+                    "Version message exchange with peer {} finished successfully",
+                    potential_peer
+                ));
+            },
+            posible_error => {
+                let _ = self.sender_log.log_connection(format!(
+                    "Error while trying to exchange version messages with peer {}: {:?}",
+                    potential_peer, posible_error
+                ));
+                return Err(ErrorConnection::ErrorCannotConnectToAddress);
+            },
         }
 
-        if let Err(e) = self.attempt_verack_message_exchange(peer_stream, potential_peer) {
-            let _ = self.sender_log.log_connection(format!(
-                "Error while trying to exchange verack messages with peer {}: {:?}",
-                potential_peer, e
-            ));
-            return Err(ErrorConnection::ErrorCannotConnectToAddress);
-        } else {
-            let _ = self.sender_log.log_connection(format!(
-                "Verack message exchange with peer {} finished successfully",
-                potential_peer
-            ));
+        match (
+            self.send_verack_message(peer_stream, potential_peer),
+            self.receive_verack_message(peer_stream, potential_peer)
+        ) {
+            (Ok(_), Ok(_)) => {
+                let _ = self.sender_log.log_connection(format!(
+                    "Verack message exchange with peer {} finished successfully",
+                    potential_peer
+                ));
+            },
+            posible_error => {
+                let _ = self.sender_log.log_connection(format!(
+                    "Error while trying to exchange verack messages with peer {}: {:?}",
+                    potential_peer, posible_error
+                ));
+                return Err(ErrorConnection::ErrorCannotConnectToAddress);
+            },
         }
 
         if let Err(e) = self.send_sendheaders_message(peer_stream) {
@@ -280,6 +328,35 @@ impl Handshake {
             let _ = self.sender_log.log_connection(format!(
                 "Connection with peer {} established",
                 potential_peer
+            ));
+            Ok(())
+        }
+    }
+
+    /// Function that tries to do the handshake with the given vector of potential clients.
+    ///
+    /// ### Error
+    ///  * `ErrorConnection::ErrorCannotConnectToAddress`: It will appear when the connection is not established with a clients
+    ///  * `ErrorConnection::ErrorCannotSendMessage`: It will appear when a message to a client cannot be sent
+    pub fn connect_to_client<RW: Read + Write>(
+        &self,
+        peer_stream: &mut RW,
+        local_socket: &SocketAddr,
+        potential_client: &SocketAddr,
+    ) -> Result<(), ErrorConnection> {
+        if let Err(error) =
+            self.attempt_connection_with_client(peer_stream, local_socket, potential_client)
+        {
+            let _ = self.sender_log.log_connection(format!(
+                "Error while trying to connect to client {}: {:?}",
+                potential_client, error
+            ));
+
+            Err(error)
+        } else {
+            let _ = self.sender_log.log_connection(format!(
+                "Connection with client {} established",
+                potential_client
             ));
             Ok(())
         }
@@ -340,7 +417,7 @@ mod tests {
     fn serialize_verack_message<RW: Read + Write>(
         stream: &mut RW,
         magic_number: [u8; 4],
-    ) -> Result<(), ErrorNode> {
+    ) -> Result<(), ErrorSerialization> {
         VerackMessage::serialize_message(stream, magic_number, &VerackMessage)?;
         Ok(())
     }
@@ -353,7 +430,7 @@ mod tests {
         handshake_data: HandshakeData,
         local_ip: (Ipv4Addr, u16),
         remote_ip: (Ipv4Addr, u16),
-    ) -> Result<(), ErrorNode> {
+    ) -> Result<(), ErrorSerialization> {
         let naive = NaiveDateTime::from_timestamp_opt(1234 as i64, 0).unwrap();
         let timestamp: DateTime<Utc> = DateTime::from_utc(naive, Utc);
 
@@ -378,75 +455,7 @@ mod tests {
     }
 
     #[test]
-    fn test01_verack_exchange() -> Result<(), ErrorNode> {
-        let mut stream: Stream = Stream::new();
-
-        let magic_number = [11, 17, 9, 7];
-        serialize_verack_message(&mut stream, magic_number)?;
-
-        let logger_text: Vec<u8> = Vec::new();
-        let (sender, _) = logger::initialize_logger(logger_text, false);
-
-        let handshake = Handshake::new(
-            ProtocolVersionP2P::V70016,
-            BitfieldServices::new(vec![SupportedServices::Unname]),
-            0,
-            HandshakeData {
-                nonce: 0,
-                user_agent: "".to_string(),
-                relay: false,
-                magic_number,
-            },
-            sender,
-        );
-
-        let potential_peer = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 2)), 8333);
-
-        handshake.attempt_verack_message_exchange(&mut stream, &potential_peer)
-    }
-
-    #[test]
-    fn test02_version_exchange() -> Result<(), ErrorNode> {
-        let mut stream: Stream = Stream::new();
-
-        let handshake_data = HandshakeData {
-            nonce: 0,
-            user_agent: "".to_string(),
-            relay: false,
-            magic_number: [11, 17, 9, 7],
-        };
-
-        let local_ip: (Ipv4Addr, u16) = (Ipv4Addr::new(127, 0, 0, 1), 8333);
-        let remote_ip: (Ipv4Addr, u16) = (Ipv4Addr::new(127, 0, 0, 2), 8333);
-
-        let p2p_protocol = ProtocolVersionP2P::V70016;
-        let services = BitfieldServices::new(vec![SupportedServices::Unname]);
-        let block_height = 0;
-
-        serialize_version_message(
-            &mut stream,
-            p2p_protocol.clone(),
-            services.clone(),
-            block_height,
-            handshake_data.clone(),
-            local_ip.clone(),
-            remote_ip.clone(),
-        )?;
-
-        let logger_text: Vec<u8> = Vec::new();
-        let (sender, _) = logger::initialize_logger(logger_text, false);
-
-        let handshake =
-            Handshake::new(p2p_protocol, services, block_height, handshake_data, sender);
-
-        let local_socket = SocketAddr::new(IpAddr::V4(local_ip.0), local_ip.1);
-        let potential_peer = SocketAddr::new(IpAddr::V4(remote_ip.0), remote_ip.1);
-
-        handshake.attempt_version_message_exchange(&mut stream, &local_socket, &potential_peer)
-    }
-
-    #[test]
-    fn test03_connection_to_peer_successfully() -> Result<(), ErrorConnection> {
+    fn test01_connection_to_peer_successfully() -> Result<(), ErrorConnection> {
         let mut stream: Stream = Stream::new();
 
         let handshake_data = HandshakeData {
