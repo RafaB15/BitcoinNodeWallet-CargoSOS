@@ -3,7 +3,7 @@ use super::signal_to_back::SignalToBack;
 use crate::{
     error_execution::ErrorExecution,
     process::{
-        broadcasting::{get_broadcasting, handle_peers},
+        broadcasting::{add_peers, handle_peers},
         connection::get_potential_peers,
         download, handshake,
         load_system::LoadSystem,
@@ -14,9 +14,12 @@ use crate::{
     ui::{account, error_ui::ErrorUI},
 };
 
-use cargosos_bitcoin::configurations::{
-    connection_config::ConnectionConfig, download_config::DownloadConfig, mode_config::ModeConfig,
-    save_config::SaveConfig,
+use cargosos_bitcoin::{
+    configurations::{
+        connection_config::ConnectionConfig, download_config::DownloadConfig,
+        mode_config::ModeConfig, save_config::SaveConfig,
+    },
+    node_structure::connection_id::ConnectionId,
 };
 
 use cargosos_bitcoin::{
@@ -151,7 +154,7 @@ pub fn spawn_frontend_handler<N: Notifier>(
 /// Broadcasting blocks and transactions from and to the given peers
 fn broadcasting<N: Notifier + 'static>(
     rx_from_front: Receiver<SignalToBack>,
-    peer_streams: Vec<TcpStream>,
+    connections: Vec<(TcpStream, ConnectionId)>,
     data: (MutArc<Wallet>, MutArc<UTXOSet>, MutArc<BlockChain>),
     connection_config: ConnectionConfig,
     notifier: N,
@@ -160,6 +163,7 @@ fn broadcasting<N: Notifier + 'static>(
     let wallet: Arc<Mutex<Wallet>> = data.0;
     let utxo_set: Arc<Mutex<UTXOSet>> = data.1;
     let block_chain: Arc<Mutex<BlockChain>> = data.2;
+
     let (sender_response, receiver_response) = channel::<MessageResponse>();
 
     let handle = handle_peers(
@@ -171,10 +175,13 @@ fn broadcasting<N: Notifier + 'static>(
         logger.clone(),
     );
 
-    let mut broadcasting = get_broadcasting(
-        peer_streams,
+    let mut broadcasting = Broadcasting::<TcpStream>::new(logger.clone());
+
+    add_peers(
+        &mut broadcasting,
+        connections,
         sender_response,
-        connection_config,
+        connection_config.magic_numbers,
         notifier.clone(),
         logger.clone(),
     );
@@ -215,7 +222,7 @@ pub fn backend_execution<N: Notifier + 'static>(
         )],
     };
 
-    let peer_streams = handshake::connect_to_peers(
+    let connections = handshake::connect_to_peers(
         potential_peers,
         connection_config.clone(),
         notifier.clone(),
@@ -224,8 +231,8 @@ pub fn backend_execution<N: Notifier + 'static>(
 
     let mut block_chain = load_system.get_block_chain()?;
 
-    let peer_streams = download::update_block_chain(
-        peer_streams,
+    let connections = download::update_block_chain(
+        connections,
         &mut block_chain,
         connection_config.clone(),
         download_config,
@@ -249,7 +256,7 @@ pub fn backend_execution<N: Notifier + 'static>(
 
     broadcasting(
         rx_from_front,
-        peer_streams,
+        connections,
         (wallet.clone(), utxo_set, block_chain.clone()),
         connection_config,
         notifier,

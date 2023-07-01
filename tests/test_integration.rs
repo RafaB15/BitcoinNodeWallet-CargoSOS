@@ -23,9 +23,10 @@ mod test_integration {
             version_message::VersionMessage,
         },
         node_structure::{
-            block_download::BlockDownload, handshake::Handshake, handshake_data::HandshakeData,
+            block_download::BlockDownload, connection_id::ConnectionId,
+            connection_type::ConnectionType, handshake::Handshake, handshake_data::HandshakeData,
             initial_headers_download::InitialHeaderDownload, message_response::MessageResponse,
-            peer_manager::PeerManager,
+            message_to_peer::MessageToPeer, peer_manager::PeerManager,
         },
         notifications::{notification::Notification, notifier::Notifier},
     };
@@ -33,7 +34,6 @@ mod test_integration {
     use std::{
         net::{IpAddr, Ipv4Addr, SocketAddr},
         sync::mpsc::channel,
-        sync::{Arc, Mutex},
     };
 
     fn read_message<M: Message>(stream: &mut Stream, message_type: CommandName) -> M {
@@ -56,7 +56,7 @@ mod test_integration {
 
     #[test]
     fn test01_program_run_correctly() {
-        let mut stream: Stream = Stream::new();
+        let mut stream = Vec::new();
         let magic_numbers = [11, 17, 9, 7];
 
         let handshake_data = HandshakeData {
@@ -144,6 +144,8 @@ mod test_integration {
 
         let send_transaction = creation::create_transaction(4);
 
+        let mut stream = Stream::new(stream);
+
         // program
 
         let logger_text: Vec<u8> = Vec::new();
@@ -182,22 +184,29 @@ mod test_integration {
         assert_eq!(blocks, vec![first_block, block_to_append]);
 
         let (sender_message, receiver_message) = channel::<MessageResponse>();
-        let (sender_transaction, receiver_transaction) = channel::<Transaction>();
+        let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
         let notifier = NotificationMock {};
 
+        let id_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8333);
+
         let peer_manager = PeerManager::new(
+            ConnectionId::new(id_address, ConnectionType::Peer),
             stream,
             sender_message,
-            receiver_transaction,
-            Arc::new(Mutex::new(true)),
             magic_numbers,
             notifier,
             sender,
         );
 
-        sender_transaction.send(send_transaction.clone()).unwrap();
+        sender_transaction
+            .send(MessageToPeer::SendTransaction(send_transaction.clone()))
+            .unwrap();
+        sender_transaction.send(MessageToPeer::Stop).unwrap();
 
-        let mut stream = peer_manager.connecting_to_peer().unwrap();
+        let (stream, _) = peer_manager
+            .connecting_to_peer(receiver_transaction)
+            .unwrap();
+        let mut stream = stream.get_write_stream();
 
         assert_eq!(
             MessageResponse::Transaction(new_transaction),

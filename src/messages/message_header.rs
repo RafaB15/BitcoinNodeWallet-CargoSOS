@@ -1,4 +1,4 @@
-use super::command_name::CommandName;
+use super::{command_name::CommandName, message::read_exact};
 
 use crate::serialization::{
     deserializable_internal_order::DeserializableInternalOrder,
@@ -21,7 +21,7 @@ const HEADER_SIZE: usize = MAGIC_BYTES_SIZE + MASSAGE_TYPE_SIZE + PAYLOAD_SIZE +
 
 pub type MagicType = [u8; 4];
 
-/// It;s the header of any message
+/// It's the header of any message
 #[derive(Debug, std::cmp::PartialEq)]
 pub struct MessageHeader {
     pub magic_numbers: MagicType,
@@ -35,12 +35,12 @@ impl MessageHeader {
     ///
     /// ### Error
     ///  * `ErrorSerialization::ErrorWhileReading`: It will appear when there is an error in the reading from a stream
-    pub fn deserialize_header(stream: &mut dyn Read) -> Result<MessageHeader, ErrorSerialization> {
+    pub fn deserialize_header<R: Read>(
+        stream: &mut R,
+    ) -> Result<MessageHeader, ErrorSerialization> {
         let mut buffer: Vec<u8> = vec![0; HEADER_SIZE];
 
-        if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorSerialization::ErrorWhileReading);
-        }
+        read_exact(stream, &mut buffer)?;
 
         let mut buffer: &[u8] = &buffer[..];
 

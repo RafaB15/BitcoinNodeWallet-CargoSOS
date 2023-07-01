@@ -1,28 +1,29 @@
-use super::{error_node::ErrorNode, message_response::MessageResponse, peer_manager::PeerManager};
+use super::{
+    connection_id::ConnectionId, error_node::ErrorNode, message_to_peer::MessageToPeer,
+    peer_manager::PeerManager,
+};
 
 use crate::{
     block_structure::transaction::Transaction,
-    configurations::connection_config::ConnectionConfig,
     logs::logger_sender::LoggerSender,
     notifications::{notification::Notification, notifier::Notifier},
 };
 
 use std::{
     io::{Read, Write},
-    sync::mpsc::{self, Sender},
-    sync::{Arc, Mutex},
+    sync::mpsc::{Receiver, Sender},
     thread::{self, JoinHandle},
 };
 
-type HandleSender<T> = (JoinHandle<Result<T, ErrorNode>>, Sender<Transaction>);
+type HandleSender<T> = (JoinHandle<Result<T, ErrorNode>>, Sender<MessageToPeer>);
+type SenderReceiver<T> = (Sender<T>, Receiver<T>);
 
 // It represents the broadcasting of the transactions and blocks to the peers
 pub struct Broadcasting<RW>
 where
     RW: Read + Write + Send + 'static,
 {
-    peers: Vec<HandleSender<RW>>,
-    stop: Arc<Mutex<bool>>,
+    peers: Vec<HandleSender<(RW, ConnectionId)>>,
     logger: LoggerSender,
 }
 
@@ -30,59 +31,21 @@ impl<RW> Broadcasting<RW>
 where
     RW: Read + Write + Send + 'static,
 {
-    pub fn new<N: Notifier + 'static>(
-        peer_streams: Vec<RW>,
-        sender_response: Sender<MessageResponse>,
-        connection_config: ConnectionConfig,
-        notifier: N,
-        logger: LoggerSender,
-    ) -> Self {
-        let stop = Arc::new(Mutex::new(false));
-
+    pub fn new(logger: LoggerSender) -> Self {
         Broadcasting {
-            peers: Self::create_peers(
-                peer_streams,
-                sender_response,
-                stop.clone(),
-                connection_config,
-                notifier,
-                logger.clone(),
-            ),
-            stop,
+            peers: Vec::new(),
             logger,
         }
     }
 
-    /// It creates a thread for each peer with it's corresponding sender of transactions
-    fn create_peers<N: Notifier + 'static>(
-        peers_streams: Vec<RW>,
-        sender: Sender<MessageResponse>,
-        stop: Arc<Mutex<bool>>,
-        connection_config: ConnectionConfig,
-        notifier: N,
-        logger: LoggerSender,
-    ) -> Vec<HandleSender<RW>> {
-        let mut peers: Vec<HandleSender<RW>> = Vec::new();
-
-        for peer_stream in peers_streams {
-            let (sender_transaction, receiver_transaction) = mpsc::channel::<Transaction>();
-
-            let peer_manager = PeerManager::new(
-                peer_stream,
-                sender.clone(),
-                receiver_transaction,
-                stop.clone(),
-                connection_config.magic_numbers,
-                notifier.clone(),
-                logger.clone(),
-            );
-
-            let handle = thread::spawn(move || peer_manager.connecting_to_peer());
-
-            peers.push((handle, sender_transaction));
-        }
-
-        peers
+    /// It adds a connection to a peer to the broadcasting
+    pub fn add_connection<N: Notifier>(
+        &mut self,
+        peer_manager: PeerManager<RW, N>,
+        sender_receiver: SenderReceiver<MessageToPeer>,
+    ) {
+        let handle = thread::spawn(move || peer_manager.connecting_to_peer(sender_receiver.1));
+        self.peers.push((handle, sender_receiver.0));
     }
 
     /// It sends a transaction to all the peers
@@ -103,10 +66,12 @@ where
             .logger
             .log_transaction(format!("Broadcasting transaction: {:?}", transaction_id));
         for (_, sender) in self.peers.iter() {
-            if sender.send(transaction.clone()).is_err() {
-                let _ = self.logger.log_error(format!(
-                    "Error while sending transaction: {:?}",
-                    transaction_id
+            if sender
+                .send(MessageToPeer::SendTransaction(transaction.clone()))
+                .is_err()
+            {
+                return Err(ErrorNode::WhileSendingMessage(
+                    "Sending transaction message to peer".to_string(),
                 ));
             }
         }
@@ -121,19 +86,19 @@ where
     pub fn destroy<N: Notifier>(self, notifier: N) -> Result<Vec<RW>, ErrorNode> {
         let _ = self.logger.log_configuration("Closing peers".to_string());
         notifier.notify(Notification::ClosingPeers);
-        match self.stop.lock() {
-            Ok(mut stop) => *stop = true,
-            Err(_) => {
-                return Err(ErrorNode::NodeNotResponding(
-                    "Thread could not stop peers".to_string(),
-                ))
+        for (_, sender) in self.peers.iter() {
+            if sender.send(MessageToPeer::Stop).is_err() {
+                return Err(ErrorNode::WhileSendingMessage(
+                    "Sending transaction message to peer".to_string(),
+                ));
             }
         }
 
         let mut peers_streams = Vec::new();
         for (handle, _) in self.peers {
             match handle.join() {
-                Ok(peer_stream) => peers_streams.push(peer_stream?),
+                Ok(Ok((peer_stream, _))) => peers_streams.push(peer_stream),
+                Ok(Err(error)) => return Err(error),
                 Err(_) => {
                     return Err(ErrorNode::NodeNotResponding(
                         "Thread could not finish correctly".to_string(),

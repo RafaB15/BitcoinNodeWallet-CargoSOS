@@ -16,7 +16,9 @@ use cargosos_bitcoin::{
         mode_config::ModeConfig,
     },
     logs::logger_sender::LoggerSender,
-    node_structure::message_response::MessageResponse,
+    node_structure::{
+        broadcasting::Broadcasting, connection_id::ConnectionId, message_response::MessageResponse,
+    },
     notifications::notifier::Notifier,
     wallet_structure::wallet::Wallet,
 };
@@ -76,7 +78,7 @@ fn _show_merkle_path(block_chain: &BlockChain, logger: LoggerSender) -> Result<(
 /// ### Error
 ///  *
 fn broadcasting<N: Notifier + 'static>(
-    peer_streams: Vec<TcpStream>,
+    connections: Vec<(TcpStream, ConnectionId)>,
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
     block_chain: MutArc<BlockChain>,
@@ -95,10 +97,13 @@ fn broadcasting<N: Notifier + 'static>(
         logger.clone(),
     );
 
-    let mut broadcasting = broadcasting::get_broadcasting(
-        peer_streams,
+    let mut broadcasting = Broadcasting::<TcpStream>::new(logger.clone());
+
+    broadcasting::add_peers(
+        &mut broadcasting,
+        connections,
         sender_response,
-        connection_config,
+        connection_config.magic_numbers,
         notifier.clone(),
         logger.clone(),
     );
@@ -140,7 +145,7 @@ pub fn program_execution(
 
     let notifier = NotifierTUI::new(logger.clone());
 
-    let peer_streams = handshake::connect_to_peers(
+    let connections = handshake::connect_to_peers(
         potential_peers,
         connection_config.clone(),
         notifier.clone(),
@@ -149,8 +154,8 @@ pub fn program_execution(
 
     let mut block_chain = load_system.get_block_chain()?;
 
-    let peer_streams = download::update_block_chain(
-        peer_streams,
+    let connections = download::update_block_chain(
+        connections,
         &mut block_chain,
         connection_config.clone(),
         download_config,
@@ -166,7 +171,7 @@ pub fn program_execution(
     let block_chain = Arc::new(Mutex::new(block_chain));
 
     broadcasting(
-        peer_streams,
+        connections,
         wallet.clone(),
         utxo_set,
         block_chain.clone(),
