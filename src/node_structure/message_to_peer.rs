@@ -9,10 +9,10 @@ pub enum MessageToPeer {
     Stop,
 }
 
-impl From<MessageToPeer> for Work {
+impl From<MessageToPeer> for Work<Transaction> {
     fn from(message_to_peer: MessageToPeer) -> Self {
         match message_to_peer {
-            MessageToPeer::SendTransaction(transaction) => Work::SendTransaction(transaction),
+            MessageToPeer::SendTransaction(transaction) => Work::Information(transaction),
             MessageToPeer::Stop => Work::Stop,
         }
     }
