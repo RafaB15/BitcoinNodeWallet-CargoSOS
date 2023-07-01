@@ -100,6 +100,35 @@ impl<V: Parsable> Parsable for Option<V> {
     }
 }
 
+impl<V: FromStr> Parsable for Vec<V> {
+    fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
+        let value = value_from_map(name.to_string(), map)?;
+
+        if let (Some(primero), Some(ultimo)) = (value.find('['), value.find(']')) {
+            let value: &str = &value[primero + 1..ultimo];
+            let values: Vec<String> = value
+                .split(',')
+                .map(|service| service.trim().to_string())
+                .collect();
+
+            let values: Vec<V> = values
+                .iter()
+                .filter_map(|value| match value.parse::<V>() {
+                    Ok(value) => Some(value),
+                    _ => None,
+                })
+                .collect();
+
+            return Ok(values);
+        }
+
+        Err(ErrorConfiguration::ErrorCantParseValue(format!(
+            "vec of {:?}",
+            value
+        )))
+    }
+}
+
 impl<const N: usize, V: FromStr> Parsable for [V; N] {
     fn parse(name: &str, map: &KeyValueMap) -> Result<Self, ErrorConfiguration> {
         let value = value_from_map(name.to_string(), map)?;
