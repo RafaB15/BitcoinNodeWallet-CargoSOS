@@ -100,20 +100,8 @@ impl BlockHeader {
                 return false;
             }
         };
-
-        match merkle_tree.get_root() {
-            Ok(root) => {
-                let resultado = root == self.merkle_root_hash;
-                if !resultado {
-                    println!("Roots are different");
-                }
-                resultado
-            }
-            Err(error) => {
-                println!("Error while getting the root: {:?}", error);
-                false
-            }
-        }
+        println!("Root: {:?}", self.merkle_root_hash);
+        merkle_tree.root == self.merkle_root_hash
     }
 
     /// Get the hash 256 double of the block header

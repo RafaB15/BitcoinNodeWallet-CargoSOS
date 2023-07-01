@@ -6,7 +6,10 @@ mod test_integration {
     use super::common::{creation, serialize_message, stream::Stream};
 
     use cargosos_bitcoin::{
-        block_structure::{block_chain::BlockChain, hash::HashType},
+        block_structure::{
+            block::Block, block_chain::BlockChain, hash::HashType, merkle_tree::MerkleTree,
+            transaction::Transaction,
+        },
         connections::{p2p_protocol::ProtocolVersionP2P, supported_services::SupportedServices},
         logs::logger,
         messages::{
@@ -44,6 +47,11 @@ mod test_integration {
 
     impl Notifier for NotificationMock {
         fn notify(&self, _notification: Notification) {}
+    }
+
+    fn update_merkle_root_hash(block: &mut Block) {
+        let merkle_tree = MerkleTree::new(&block.transactions).unwrap();
+        block.header.merkle_root_hash = merkle_tree.root;
     }
 
     #[test]
@@ -95,6 +103,9 @@ mod test_integration {
         block_to_append
             .append_transaction(creation::create_transaction(2))
             .unwrap();
+
+        update_merkle_root_hash(&mut block_to_append);
+
         let second_block_header_hash = block_to_append.header.get_hash256d().unwrap();
 
         serialize_message::serialize_headers_message(
@@ -119,7 +130,7 @@ mod test_integration {
 
         let mut expected_blockchain = BlockChain::new(creation::create_genesis_block()).unwrap();
         expected_blockchain
-            .append_header(creation::create_header(first_block_header_hash.clone(), 2))
+            .append_header(block_to_append.header.clone())
             .unwrap();
 
         let new_transaction = creation::create_transaction(3);
