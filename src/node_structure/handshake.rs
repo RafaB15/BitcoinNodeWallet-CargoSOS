@@ -6,7 +6,7 @@ use crate::{messages::{
     message::{self, Message},
     send_headers_message::SendHeadersMessage,
     verack_message::VerackMessage,
-    version_message::VersionMessage,
+    version_message::VersionMessage, message_header::MessageHeader,
 }, serialization::error_serialization::ErrorSerialization};
 
 use crate::connections::{
@@ -23,6 +23,7 @@ use std::{
 
 use chrono::offset::Utc;
 
+#[derive(Debug, Clone)]
 pub struct Handshake {
     protocol_version: ProtocolVersionP2P,
     services: BitfieldServices,
@@ -52,7 +53,7 @@ impl Handshake {
     ///
     /// ### Error
     ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
-    fn send_version_message<RW: Read + Write>(
+    pub fn send_version_message<RW: Read + Write>(
         &self,
         peer_stream: &mut RW,
         local_socket_addr: &SocketAddr,
@@ -94,11 +95,27 @@ impl Handshake {
         }
     }
 
-    fn receive_version_message<RW: Read + Write>(
+    pub fn receive_version_message<RW: Read + Write>(
+        &self, 
+        peer_stream: &mut RW,
+        header: MessageHeader,
+        potential_peer: &SocketAddr,
+    ) -> Result<(), ErrorSerialization> {
+        if let Err(error) = VersionMessage::deserialize_message(peer_stream, header) {
+            let _ = self.sender_log.log_connection(format!(
+                "Error while receiving version message from peer {}: {:?}",
+                potential_peer, error
+            ));
+            return Err(error);
+        }
+        Ok(())
+    }
+
+    fn receive_version_message2<RW: Read + Write>(
         &self, 
         peer_stream: &mut RW,
         potential_peer: &SocketAddr,
-    ) -> Result<(), ErrorSerialization>{
+    ) -> Result<(), ErrorSerialization> {
         let header_version =
             match message::deserialize_until_found(peer_stream, CommandName::Version) {
                 Ok(header) => header,
@@ -111,21 +128,14 @@ impl Handshake {
                 }
             };
 
-        if let Err(error) = VersionMessage::deserialize_message(peer_stream, header_version) {
-            let _ = self.sender_log.log_connection(format!(
-                "Error while receiving version message from peer {}: {:?}",
-                potential_peer, error
-            ));
-            return Err(error);
-        }
-        Ok(())
+        self.receive_version_message(peer_stream, header_version, potential_peer)
     }
 
     /// Function that sends a verack message to the given potential peer.
     ///
     /// ### Error
     ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
-    fn send_verack_message<RW: Read + Write>(
+    pub fn send_verack_message<RW: Read + Write>(
         &self, 
         peer_stream: &mut RW,
         potential_peer: &SocketAddr,
@@ -144,7 +154,24 @@ impl Handshake {
         }
     }
 
-    fn receive_verack_message<RW: Read + Write>(
+    pub fn receive_verack_message<RW: Read + Write>(
+        &self,
+        peer_stream: &mut RW,
+        header: MessageHeader,
+        potential_peer: &SocketAddr,
+    ) -> Result<(), ErrorSerialization> {
+        if let Err(error) = VerackMessage::deserialize_message(peer_stream, header) {
+            let _ = self.sender_log.log_connection(format!(
+                "Error while receiving verack message from peer {}: {:?}",
+                potential_peer, error
+            ));
+            return Err(error.into());
+        }
+
+        Ok(())
+    }
+
+    fn receive_verack_message2<RW: Read + Write>(
         &self, 
         peer_stream: &mut RW,
         potential_peer: &SocketAddr,
@@ -161,22 +188,14 @@ impl Handshake {
             }
         };
 
-        if let Err(error) = VerackMessage::deserialize_message(peer_stream, header_verack) {
-            let _ = self.sender_log.log_connection(format!(
-                "Error while receiving verack message from peer {}: {:?}",
-                potential_peer, error
-            ));
-            return Err(error.into());
-        }
-
-        Ok(())
+        self.receive_verack_message(peer_stream, header_verack, potential_peer)
     }
 
     /// Sends a send header message to the peer.
     ///
     /// ### Error
     ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
-    fn send_sendheaders_message<RW: Read + Write>(
+    pub fn send_sendheaders_message<RW: Read + Write>(
         &self,
         peer_stream: &mut RW,
     ) -> Result<(), ErrorSerialization> {
@@ -201,7 +220,7 @@ impl Handshake {
 
         match (
             self.send_version_message(client_stream, local_socket, potential_client),
-            self.receive_version_message(client_stream, potential_client)
+            self.receive_version_message2(client_stream, potential_client)
         ) {
             (Ok(_), Ok(_)) => {
                 let _ = self.sender_log.log_connection(format!(
@@ -220,7 +239,7 @@ impl Handshake {
 
         match (
             self.send_verack_message(client_stream, potential_client),
-            self.receive_verack_message(client_stream, potential_client)
+            self.receive_verack_message2(client_stream, potential_client)
         ) {
             (Ok(_), Ok(_)) => {
                 let _ = self.sender_log.log_connection(format!(
@@ -253,7 +272,7 @@ impl Handshake {
     ) -> Result<(), ErrorConnection> {
         match (
             self.send_version_message(peer_stream, local_socket, potential_peer),
-            self.receive_version_message(peer_stream, potential_peer)
+            self.receive_version_message2(peer_stream, potential_peer)
         ) {
             (Ok(_), Ok(_)) => {
                 let _ = self.sender_log.log_connection(format!(
@@ -272,7 +291,7 @@ impl Handshake {
 
         match (
             self.send_verack_message(peer_stream, potential_peer),
-            self.receive_verack_message(peer_stream, potential_peer)
+            self.receive_verack_message2(peer_stream, potential_peer)
         ) {
             (Ok(_), Ok(_)) => {
                 let _ = self.sender_log.log_connection(format!(

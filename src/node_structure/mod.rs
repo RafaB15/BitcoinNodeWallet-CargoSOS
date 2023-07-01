@@ -2,6 +2,7 @@ pub mod block_download;
 pub mod handshake;
 pub mod handshake_data;
 pub mod initial_headers_download;
+pub mod process_connection;
 
 pub mod broadcasting;
 pub mod message_response;

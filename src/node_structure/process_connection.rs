@@ -7,69 +7,248 @@ use crate::{
     configurations::connection_config::ConnectionConfig,
     logs::logger_sender::LoggerSender,
     notifications::{notification::Notification, notifier::Notifier},
+    concurrency::{work::Work, stop::Stop}, serialization::error_serialization::ErrorSerialization,
 };
 
 use std::{
     net::TcpStream,
     sync::mpsc::{channel, Receiver, Sender},
-    io::{Read, Write},
     thread::{self, JoinHandle},
+    time::Duration,
+    net::SocketAddr,
 };
 
-pub struct ProcessConnection<N, RW>
-where
-    RW: Read + Write + Send + 'static,
-    N: Notifier,
-{
-    connection_config: ConnectionConfig,
+pub struct ProcessConnection {
+    handshake: Handshake,
 
-    sender_confirm_connection: Sender<(RW, ConnectionId)>,
-    receiver_potential_connections: Receiver<ConnectionId>,
+    sender_confirm_connection: Sender<(TcpStream, ConnectionId)>,
+    receiver_potential_connections: Receiver<ConnectionEvent>,
 
-    pending_connection_handlers: Vec<(JoinHandle<()>, Sender<ConnectionEvent>)>,
-
-    notifier: N,
-    logger_sender: LoggerSender,
+    logger: LoggerSender,
 }
 
-impl<N, RW> ProcessConnection<N, RW>
-where
-    RW: Read + Write + Send + 'static,
-    N: Notifier,
-{
+impl ProcessConnection {
     pub fn new(
         connection_config: ConnectionConfig,
-        sender_confirm_connection: Sender<(RW, ConnectionId)>,
-        receiver_potential_connections: Receiver<ConnectionId>,
-        notifier: N,
-        logger_sender: LoggerSender,
+        sender_confirm_connection: Sender<(TcpStream, ConnectionId)>,
+        receiver_potential_connections: Receiver<ConnectionEvent>,
+        logger: LoggerSender,
     ) -> Self {
+
+        let handshake = Handshake::new(
+            connection_config.p2p_protocol_version,
+            connection_config.services,
+            connection_config.block_height,
+            HandshakeData {
+                nonce: connection_config.nonce,
+                user_agent: connection_config.user_agent,
+                relay: connection_config.relay,
+                magic_number: connection_config.magic_numbers,
+            },
+            logger.clone(),
+        );
+
         Self {
-            connection_config,
+            handshake,
             sender_confirm_connection,
             receiver_potential_connections,
-            pending_connection_handlers: Vec::new(),
-            notifier,
-            logger_sender,
+            logger,
         }
     }
 
-    pub fn execution(mut self) {
-        for connection in self.receiver_potential_connections {
+    pub fn execution(self) {
+        let mut pending_connection_handlers: Vec<(JoinHandle<()>, Sender<Stop>)> = Vec::new();
 
-            let (sender, receiver) = channel::<ConnectionEvent>();
+        for connection_event in &self.receiver_potential_connections {
 
-            let handler = Self::handle_connection_event(connection, receiver);
+            match connection_event {
+                ConnectionEvent::PotentialConnection(connection) => {
+                    let (sender, receiver) = channel::<Stop>();
 
-            self.pending_connection_handlers.push((handler, sender));
+                    let handler = self.handle_connection_event(
+                        connection, 
+                        receiver,
+                    );
+
+                    pending_connection_handlers.push((handler, sender));
+                }
+                ConnectionEvent::Stop => {
+                    break;
+                }
+            }
+        }
+
+        for (handler, sender) in pending_connection_handlers {
+            let _ = sender.send(Stop::Stop);
+            let _ = handler.join();
         }
     }
 
-    fn handle_connection_event(connection: ConnectionId, receiver: Receiver<ConnectionEvent>) -> JoinHandle<()> {
+    fn handle_connection_event(
+        &self,
+        connection: ConnectionId, 
+        receiver: Receiver<Stop>,
+    ) -> JoinHandle<()> {
+
+        let handshake = self.handshake.clone();
+        let logger = self.logger.clone();
+        let sender_confirm_connection = self.sender_confirm_connection.clone();
+
         thread::spawn(move || {
-            let _ = receiver.recv();
+
+            let mut stream = match create_stream(connection, logger.clone()) {
+                Some(stream) => stream,
+                None => { return; }
+            };
+
+            let local_socket = match stream.local_addr() {
+                Ok(addr) => addr,
+                Err(error) => {
+                    let _ = logger
+                        .log_connection(format!("Cannot get local address, it appear {:?}", error));
+                    return;
+                }
+            };
+
+            let result = match connection {
+                ConnectionId { address, connection_type: ConnectionType::Peer } => {
+                    Self::connect_to_peer(
+                        &mut stream,
+                        &local_socket,
+                        &address,
+                        &handshake,
+                        &receiver,
+                    )
+                },
+                ConnectionId { address, connection_type: ConnectionType::Client } => {
+                    Self::connect_to_client(
+                        &mut stream,
+                        &local_socket,
+                        &address,
+                        &handshake,
+                        &receiver,
+                    )
+                }
+            };
+
+            if let Ok(true) = result {
+                let _ = logger.log_connection(format!("Connection established with {:?}", connection));
+                let _ = sender_confirm_connection.send((stream, connection));
+            }
         })
     }
+
+    fn connect_to_peer(
+        stream: &mut TcpStream,
+        local_socket: &SocketAddr,
+        potential_socket: &SocketAddr,
+        handshake: &Handshake,
+        receiver: &Receiver<Stop>,
+    ) -> Result<bool, ErrorSerialization>{
+        handshake.send_version_message(
+            stream,
+            local_socket,
+            potential_socket,
+        )?;
+
+        loop {
+            match Work::listen(stream, &receiver) {
+                Work::Message(header) => {
+                    handshake.receive_version_message(stream, header, potential_socket)?;
+                    break;
+                }
+                Work::Information(()) => continue,
+                Work::Stop => { return Ok(false); }
+            }
+        }
+
+        handshake.send_verack_message(
+            stream,
+            potential_socket,
+        )?;
+
+
+        loop {
+            match Work::listen(stream, &receiver) {
+                Work::Message(header) => {
+                    handshake.receive_verack_message(stream, header, potential_socket)?;
+                    break;
+                }
+                Work::Information(()) => continue,
+                Work::Stop => { return Ok(false); }
+            }
+        }
+
+        handshake.send_sendheaders_message(stream)?;
+
+        Ok(true)
+    }
+
+    fn connect_to_client(
+        stream: &mut TcpStream,
+        local_socket: &SocketAddr,
+        potential_socket: &SocketAddr,
+        handshake: &Handshake,
+        receiver: &Receiver<Stop>,
+    ) -> Result<bool, ErrorSerialization>{
+        loop {
+            match Work::listen(stream, &receiver) {
+                Work::Message(header) => {
+                    handshake.receive_version_message(stream, header, potential_socket)?;
+                    break;
+                }
+                Work::Information(()) => continue,
+                Work::Stop => { return Ok(false); }
+            }
+        }
+
+        handshake.send_version_message(
+            stream,
+            local_socket,
+            potential_socket,
+        )?;
+
+        loop {
+            match Work::listen(stream, &receiver) {
+                Work::Message(header) => {
+                    handshake.receive_verack_message(stream, header, potential_socket)?;
+                    break;
+                }
+                Work::Information(()) => continue,
+                Work::Stop => { return Ok(false); }
+            }
+        }
+
+        handshake.send_verack_message(
+            stream,
+            potential_socket,
+        )?;
+
+        Ok(true)
+    }
+}
+
+fn create_stream(potential_connection: ConnectionId, logger: LoggerSender) -> Option<TcpStream>  {
+    let mut stream = match TcpStream::connect(potential_connection.address) {
+        Ok(stream) => stream,
+        Err(error) => {
+            let _ = logger.log_connection(format!(
+                "Cannot connect to address: {:?}, it appear {:?}",
+                potential_connection.address, error
+            ));
+            return None;
+        }
+    };
+
+    if let Err(error) = stream.set_read_timeout(Some(Duration::from_secs(1))) {
+        let _ = logger.log_connection(format!(
+            "Cannot connect to address: {:?}, it appear {:?}",
+            potential_connection.address, error
+        ));
+        return None;
+    };
+
+    Some(stream)
 }
 
 /// Creates a connection with the peers and if established then is return it's TCP stream
