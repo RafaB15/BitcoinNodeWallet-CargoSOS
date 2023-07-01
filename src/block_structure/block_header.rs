@@ -100,7 +100,6 @@ impl BlockHeader {
                 return false;
             }
         };
-        println!("Root: {:?}", self.merkle_root_hash);
         merkle_tree.root == self.merkle_root_hash
     }
 

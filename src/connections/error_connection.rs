@@ -12,4 +12,7 @@ pub enum ErrorConnection {
 
     /// It will appear when a message from a peer cannot be received
     ErrorCannotReceiveMessage,
+
+    /// It will appear when we are unable to set the properties of a stream
+    ErrorCannotSetStreamProperties,
 }

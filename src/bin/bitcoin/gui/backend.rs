@@ -30,6 +30,7 @@ use cargosos_bitcoin::{
     wallet_structure::{
         address::Address, private_key::PrivateKey, public_key::PublicKey, wallet::Wallet,
     },
+    connections::error_connection::ErrorConnection,
 };
 
 use std::{
@@ -37,6 +38,7 @@ use std::{
     sync::mpsc::{channel, Receiver},
     sync::{Arc, Mutex},
     thread,
+    time::Duration,
 };
 
 /// Creates a new account with the data entered by the user
@@ -165,6 +167,12 @@ fn broadcasting<N: Notifier + 'static>(
     let block_chain: Arc<Mutex<BlockChain>> = data.2;
 
     let (sender_response, receiver_response) = channel::<MessageResponse>();
+
+    for (stream, _) in connections.iter() {
+        if stream.set_read_timeout(Some(Duration::from_secs(1))).is_err() {
+            return Err(ErrorConnection::ErrorCannotSetStreamProperties.into());
+        };
+    }
 
     let handle = handle_peers(
         receiver_response,

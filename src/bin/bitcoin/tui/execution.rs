@@ -20,13 +20,13 @@ use cargosos_bitcoin::{
         broadcasting::Broadcasting, connection_id::ConnectionId, message_response::MessageResponse,
     },
     notifications::notifier::Notifier,
-    wallet_structure::wallet::Wallet,
+    wallet_structure::wallet::Wallet, connections::error_connection::ErrorConnection,
 };
 
 use std::{
     net::{IpAddr, SocketAddr, TcpStream},
     sync::mpsc,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex}, time::Duration,
 };
 
 fn _show_merkle_path(block_chain: &BlockChain, logger: LoggerSender) -> Result<(), ErrorExecution> {
@@ -87,6 +87,12 @@ fn broadcasting<N: Notifier + 'static>(
     logger: LoggerSender,
 ) -> Result<(), ErrorExecution> {
     let (sender_response, receiver_response) = mpsc::channel::<MessageResponse>();
+
+    for (stream, _) in connections.iter() {
+        if stream.set_read_timeout(Some(Duration::from_secs(1))).is_err() {
+            return Err(ErrorConnection::ErrorCannotSetStreamProperties.into());
+        };
+    }
 
     let handle = broadcasting::handle_peers(
         receiver_response,
