@@ -8,7 +8,6 @@ mod test_integration {
     use cargosos_bitcoin::{
         block_structure::{
             block::Block, block_chain::BlockChain, hash::HashType, merkle_tree::MerkleTree,
-            transaction::Transaction,
         },
         connections::{p2p_protocol::ProtocolVersionP2P, supported_services::SupportedServices},
         logs::logger,

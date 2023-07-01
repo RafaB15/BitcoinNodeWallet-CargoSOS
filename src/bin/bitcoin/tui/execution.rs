@@ -18,15 +18,18 @@ use cargosos_bitcoin::{
     logs::logger_sender::LoggerSender,
     node_structure::{
         broadcasting::Broadcasting, connection_id::ConnectionId, message_response::MessageResponse,
+        connection_type::ConnectionType,
     },
     notifications::notifier::Notifier,
     wallet_structure::wallet::Wallet,
+    connections::error_connection::ErrorConnection,
 };
 
 use std::{
     net::{IpAddr, SocketAddr, TcpStream},
     sync::mpsc,
     sync::{Arc, Mutex},
+    time::Duration,
 };
 
 fn _show_merkle_path(block_chain: &BlockChain, logger: LoggerSender) -> Result<(), ErrorExecution> {
@@ -88,6 +91,12 @@ fn broadcasting<N: Notifier + 'static>(
 ) -> Result<(), ErrorExecution> {
     let (sender_response, receiver_response) = mpsc::channel::<MessageResponse>();
 
+    for (stream, _) in connections.iter() {
+        if stream.set_read_timeout(Some(Duration::from_secs(1))).is_err() {
+            return Err(ErrorConnection::ErrorCannotSetStreamProperties.into());
+        };
+    }
+
     let handle = broadcasting::handle_peers(
         receiver_response,
         wallet.clone(),
@@ -145,8 +154,13 @@ pub fn program_execution(
 
     let notifier = NotifierTUI::new(logger.clone());
 
+    let potential_connection = potential_peers
+        .iter()
+        .map(|socket_address| ConnectionId::new(socket_address.clone(), ConnectionType::Peer))
+        .collect();
+
     let connections = handshake::connect_to_peers(
-        potential_peers,
+        potential_connection,
         connection_config.clone(),
         notifier.clone(),
         logger.clone(),

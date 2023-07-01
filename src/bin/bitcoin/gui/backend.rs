@@ -19,7 +19,8 @@ use cargosos_bitcoin::{
         connection_config::ConnectionConfig, download_config::DownloadConfig,
         mode_config::ModeConfig, save_config::SaveConfig,
     },
-    node_structure::connection_id::ConnectionId,
+    node_structure::{connection_id::ConnectionId, connection_type::ConnectionType},
+    connections::error_connection::ErrorConnection,
 };
 
 use cargosos_bitcoin::{
@@ -37,6 +38,7 @@ use std::{
     sync::mpsc::{channel, Receiver},
     sync::{Arc, Mutex},
     thread,
+    time::Duration,
 };
 
 /// Creates a new account with the data entered by the user
@@ -166,6 +168,12 @@ fn broadcasting<N: Notifier + 'static>(
 
     let (sender_response, receiver_response) = channel::<MessageResponse>();
 
+    for (stream, _) in connections.iter() {
+        if stream.set_read_timeout(Some(Duration::from_secs(1))).is_err() {
+            return Err(ErrorConnection::ErrorCannotSetStreamProperties.into());
+        };
+    }
+
     let handle = handle_peers(
         receiver_response,
         wallet.clone(),
@@ -222,8 +230,13 @@ pub fn backend_execution<N: Notifier + 'static>(
         )],
     };
 
+    let potential_connection = potential_peers
+        .iter()
+        .map(|socket_address| ConnectionId::new(socket_address.clone(), ConnectionType::Peer))
+        .collect();
+
     let connections = handshake::connect_to_peers(
-        potential_peers,
+        potential_connection,
         connection_config.clone(),
         notifier.clone(),
         logger.clone(),

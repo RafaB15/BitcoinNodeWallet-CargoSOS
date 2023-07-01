@@ -8,11 +8,11 @@ use cargosos_bitcoin::{
     notifications::{notification::Notification, notifier::Notifier},
 };
 
-use std::net::{SocketAddr, TcpStream};
+use std::net::{TcpStream};
 
-/// Creates a connection with the peers and if stablish then is return it's TCP stream
+/// Creates a connection with the peers and if established then is return it's TCP stream
 pub fn connect_to_peers<N: Notifier>(
-    potential_peers: Vec<SocketAddr>,
+    potential_connections: Vec<ConnectionId>,
     connection_config: ConnectionConfig,
     notifier: N,
     logger_sender: LoggerSender,
@@ -32,7 +32,7 @@ pub fn connect_to_peers<N: Notifier>(
         logger_sender.clone(),
     );
 
-    potential_peers
+    potential_connections
         .iter()
         .filter_map(|potential_peer| {
             filters_peer(
@@ -45,19 +45,19 @@ pub fn connect_to_peers<N: Notifier>(
         .collect()
 }
 
-/// Creates a connection with a specific peer and if stablish then is return it's TCP stream
+/// Creates a connection with a specific peer and if established then is return it's TCP stream
 fn filters_peer<N: Notifier>(
-    potential_peer: SocketAddr,
+    potential_connection: ConnectionId,
     node: &Handshake,
     logger_sender: LoggerSender,
     notifier: N,
 ) -> Option<(TcpStream, ConnectionId)> {
-    let mut peer_stream = match TcpStream::connect(potential_peer) {
+    let mut peer_stream = match TcpStream::connect(potential_connection.address) {
         Ok(stream) => stream,
         Err(error) => {
             let _ = logger_sender.log_connection(format!(
                 "Cannot connect to address: {:?}, it appear {:?}",
-                potential_peer, error
+                potential_connection, error
             ));
             return None;
         }
@@ -73,21 +73,29 @@ fn filters_peer<N: Notifier>(
     };
 
     notifier.notify(Notification::AttemptingHandshakeWithPeer(
-        potential_peer.clone(),
+        potential_connection.address.clone(),
     ));
 
-    match node.connect_to_peer(&mut peer_stream, &local_socket, &potential_peer) {
+    let result = match potential_connection {
+        ConnectionId { address, connection_type: ConnectionType::Peer } => {
+            node.connect_to_peer(&mut peer_stream, &local_socket, &address)
+        }, 
+        ConnectionId { address, connection_type: ConnectionType::Client } => {
+            node.connect_to_client(&mut peer_stream, &local_socket, &address)
+        }, 
+    };
+
+    match result {
         Ok(_) => {
-            notifier.notify(Notification::SuccessfulHandshakeWithPeer(potential_peer));
-            let id = ConnectionId::new(potential_peer, ConnectionType::Peer);
-            Some((peer_stream, id))
+            notifier.notify(Notification::SuccessfulHandshakeWithPeer(potential_connection.address));
+            Some((peer_stream, potential_connection))
         }
         Err(error) => {
             let _ = logger_sender.log_connection(format!(
                 "Error while connecting to addres: {:?}, it appear {:?}",
-                potential_peer, error
+                potential_connection, error
             ));
-            notifier.notify(Notification::FailedHandshakeWithPeer(potential_peer));
+            notifier.notify(Notification::FailedHandshakeWithPeer(potential_connection.address));
             None
         }
     }
