@@ -26,7 +26,7 @@ use std::{
     sync::mpsc,
     sync::{Arc, Mutex},
 };
-/* 
+
 fn _show_merkle_path(block_chain: &BlockChain, logger: LoggerSender) -> Result<(), ErrorExecution> {
     let latest = block_chain.latest();
 
@@ -69,7 +69,7 @@ fn _show_merkle_path(block_chain: &BlockChain, logger: LoggerSender) -> Result<(
 
     Ok(())
 }
-*/
+
 
 /// Broadcasting blocks and transactions from and to the given peers
 ///

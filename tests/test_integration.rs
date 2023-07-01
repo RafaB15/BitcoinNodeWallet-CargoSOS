@@ -6,7 +6,10 @@ mod test_integration {
     use super::common::{creation, serialize_message, stream::Stream};
 
     use cargosos_bitcoin::{
-        block_structure::{block_chain::BlockChain, hash::HashType, transaction::Transaction, merkle_tree::MerkleTree, block::Block},
+        block_structure::{
+            block::Block, block_chain::BlockChain, hash::HashType, merkle_tree::MerkleTree,
+            transaction::Transaction,
+        },
         connections::{p2p_protocol::ProtocolVersionP2P, supported_services::SupportedServices},
         logs::logger,
         messages::{
@@ -177,11 +180,11 @@ mod test_integration {
 
         assert_eq!(blocks.len(), 2);
         assert_eq!(blocks, vec![first_block, block_to_append]);
-        
+
         let (sender_message, receiver_message) = channel::<MessageResponse>();
         let (sender_transaction, receiver_transaction) = channel::<Transaction>();
         let notifier = NotificationMock {};
-   
+
         let peer_manager = PeerManager::new(
             stream,
             sender_message,
@@ -191,7 +194,7 @@ mod test_integration {
             notifier,
             sender,
         );
- 
+
         sender_transaction.send(send_transaction.clone()).unwrap();
 
         let mut stream = peer_manager.connecting_to_peer().unwrap();

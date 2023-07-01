@@ -72,7 +72,7 @@ impl BlockDownload {
 
             if !block_message.block.proof_of_inclusion() {
                 return Err(ErrorNode::WhileValidating(
-                    "Failed proof of inclusion".to_string()
+                    "Failed proof of inclusion".to_string(),
                 ));
             }
 
@@ -120,9 +120,9 @@ mod tests {
     use crate::{
         block_structure::{
             block::Block, block_header::BlockHeader, block_version::BlockVersion,
-            compact256::Compact256, outpoint::Outpoint, transaction::Transaction,
-            transaction_input::TransactionInput, transaction_output::TransactionOutput,
-            merkle_tree::MerkleTree,
+            compact256::Compact256, merkle_tree::MerkleTree, outpoint::Outpoint,
+            transaction::Transaction, transaction_input::TransactionInput,
+            transaction_output::TransactionOutput,
         },
         connections::type_identifier::TypeIdentifier,
         logs::logger,
