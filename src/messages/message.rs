@@ -26,7 +26,7 @@ use super::{
     version_message::VersionMessage,
 };
 
-use std::io::{Read, Write};
+use std::io::{ErrorKind, Read, Write};
 
 pub const CHECKSUM_EMPTY_PAYLOAD: MagicType = [0x5d, 0xf6, 0xe0, 0xe2];
 
@@ -62,14 +62,12 @@ pub trait Message: SerializableInternalOrder + DeserializableInternalOrder {
     ///  * `ErrorSerialization::ErrorSerialization`: It will appear when there is an error in the serialization
     ///  * `ErrorSerialization::ErrorInDeserialization`: It will appear when there is an error in the deserialization
     ///  * `ErrorSerialization::ErrorWhileReading`: It will appear when there is an error in the reading from a stream
-    fn deserialize_message(
-        stream: &mut dyn Read,
+    fn deserialize_message<R: Read>(
+        stream: &mut R,
         message_header: MessageHeader,
     ) -> Result<Self, ErrorSerialization> {
         let mut buffer: Vec<u8> = vec![0; message_header.payload_size as usize];
-        if stream.read_exact(&mut buffer).is_err() {
-            return Err(ErrorSerialization::ErrorWhileReading);
-        }
+        read_exact(stream, &mut buffer)?;
         let mut buffer: &[u8] = &buffer[..];
         let message = Self::io_deserialize(&mut buffer)?;
 
@@ -108,6 +106,18 @@ pub trait Message: SerializableInternalOrder + DeserializableInternalOrder {
     fn get_command_name() -> CommandName;
 }
 
+pub fn read_exact<R: Read>(stream: &mut R, buffer: &mut [u8]) -> Result<(), ErrorSerialization> {
+    if let Err(error) = stream.read_exact(buffer) {
+        let error = match error.kind() {
+            ErrorKind::ConnectionAborted => ErrorSerialization::ConnectionAborted,
+            ErrorKind::WouldBlock => ErrorSerialization::InformationNotReady,
+            _ => ErrorSerialization::ErrorWhileReading,
+        };
+        return Err(error);
+    }
+    Ok(())
+}
+
 /// Ignores any message that is not the one that is being searched for
 ///
 /// ### Error
@@ -131,12 +141,12 @@ pub fn deserialize_until_found<RW: Read + Write>(
         let magic_bytes = header.magic_numbers;
 
         match header.command_name {
-            CommandName::Version => ignore_message::<VersionMessage>(stream, header)?,
-            CommandName::Verack => ignore_message::<VerackMessage>(stream, header)?,
-            CommandName::GetHeaders => ignore_message::<GetHeadersMessage>(stream, header)?,
-            CommandName::Headers => ignore_message::<HeadersMessage>(stream, header)?,
-            CommandName::Inventory => ignore_message::<InventoryMessage>(stream, header)?,
-            CommandName::Block => ignore_message::<BlockMessage>(stream, header)?,
+            CommandName::Version => ignore_message::<RW, VersionMessage>(stream, header)?,
+            CommandName::Verack => ignore_message::<RW, VerackMessage>(stream, header)?,
+            CommandName::GetHeaders => ignore_message::<RW, GetHeadersMessage>(stream, header)?,
+            CommandName::Headers => ignore_message::<RW, HeadersMessage>(stream, header)?,
+            CommandName::Inventory => ignore_message::<RW, InventoryMessage>(stream, header)?,
+            CommandName::Block => ignore_message::<RW, BlockMessage>(stream, header)?,
             CommandName::Ping => {
                 let ping = PingMessage::deserialize_message(stream, header)?;
 
@@ -144,21 +154,21 @@ pub fn deserialize_until_found<RW: Read + Write>(
 
                 PongMessage::serialize_message(stream, magic_bytes, &pong)?;
             }
-            CommandName::Pong => ignore_message::<PongMessage>(stream, header)?,
-            CommandName::SendHeaders => ignore_message::<SendHeadersMessage>(stream, header)?,
-            CommandName::SendCmpct => ignore_message::<SendCmpctMessage>(stream, header)?,
-            CommandName::Addr => ignore_message::<AddrMessage>(stream, header)?,
-            CommandName::FeeFilter => ignore_message::<FeeFilterMessage>(stream, header)?,
-            CommandName::GetData => ignore_message::<GetDataMessage>(stream, header)?,
-            CommandName::Alert => ignore_message::<AlertMessage>(stream, header)?,
-            CommandName::Tx => ignore_message::<TxMessage>(stream, header)?,
+            CommandName::Pong => ignore_message::<RW, PongMessage>(stream, header)?,
+            CommandName::SendHeaders => ignore_message::<RW, SendHeadersMessage>(stream, header)?,
+            CommandName::SendCmpct => ignore_message::<RW, SendCmpctMessage>(stream, header)?,
+            CommandName::Addr => ignore_message::<RW, AddrMessage>(stream, header)?,
+            CommandName::FeeFilter => ignore_message::<RW, FeeFilterMessage>(stream, header)?,
+            CommandName::GetData => ignore_message::<RW, GetDataMessage>(stream, header)?,
+            CommandName::Alert => ignore_message::<RW, AlertMessage>(stream, header)?,
+            CommandName::Tx => ignore_message::<RW, TxMessage>(stream, header)?,
         }
     }
 }
 
 /// Ignores any message of type Message
-pub fn ignore_message<M: Message>(
-    stream: &mut dyn Read,
+pub fn ignore_message<R: Read, M: Message>(
+    stream: &mut R,
     header: MessageHeader,
 ) -> Result<(), ErrorSerialization> {
     let _ = M::deserialize_message(stream, header)?;
