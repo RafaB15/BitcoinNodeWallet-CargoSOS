@@ -24,27 +24,25 @@ use std::{
 };
 
 /// Gives the broadcasting the peers to broadcast the blocks and transactions
-pub fn add_peers<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
+pub fn add_peer_to_broadcasting<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
     broadcasting: &mut Broadcasting<RW>,
-    connections: Vec<(RW, ConnectionId)>,
+    connection: (RW, ConnectionId),
     sender_response: Sender<MessageResponse>,
     magic_numbers: [u8; 4],
     notifier: N,
     logger: LoggerSender,
 ) {
-    for connection in connections {
-        let peer_manager = create_peer_manager(
-            connection,
-            sender_response.clone(),
-            magic_numbers,
-            notifier.clone(),
-            logger.clone(),
-        );
+    let peer_manager = create_peer_manager(
+        connection,
+        sender_response.clone(),
+        magic_numbers,
+        notifier.clone(),
+        logger.clone(),
+    );
 
-        let (sender, receiver) = channel::<MessageToPeer>();
+    let (sender, receiver) = channel::<MessageToPeer>();
 
-        broadcasting.add_connection(peer_manager, (sender, receiver));
-    }
+    broadcasting.add_connection(peer_manager, (sender, receiver));
 }
 
 /// Creates a peer manager to manege the message of this peer

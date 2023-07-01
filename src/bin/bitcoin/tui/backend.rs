@@ -373,7 +373,7 @@ pub fn sending_transaction<N: Notifier, RW: Read + Write + Send + 'static>(
 ///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 ///  * `ErrorUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
 pub fn user_input<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
-    broadcasting: &mut Broadcasting<RW>,
+    broadcasting: MutArc<Broadcasting<RW>>,
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
     block_chain: MutArc<BlockChain>,
@@ -397,8 +397,9 @@ pub fn user_input<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
             MenuOption::SendTransaction => {
                 let wallet_reference = get_reference(&wallet)?;
                 let mut utxo_set_reference = get_reference(&utxo_set)?;
+                let mut broadcasting_reference = get_reference(&broadcasting)?;
                 sending_transaction(
-                    broadcasting,
+                    &mut broadcasting_reference,
                     &wallet_reference,
                     &mut utxo_set_reference,
                     notifier.clone(),

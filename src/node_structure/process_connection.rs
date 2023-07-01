@@ -18,20 +18,22 @@ use std::{
     net::SocketAddr,
 };
 
-pub struct ProcessConnection {
+pub struct ProcessConnection<N: Notifier + Send + 'static> {
     handshake: Handshake,
 
     sender_confirm_connection: Sender<(TcpStream, ConnectionId)>,
     receiver_potential_connections: Receiver<ConnectionEvent>,
 
+    notifier: N,
     logger: LoggerSender,
 }
 
-impl ProcessConnection {
+impl<N: Notifier + Send + 'static> ProcessConnection<N> {
     pub fn new(
         connection_config: ConnectionConfig,
         sender_confirm_connection: Sender<(TcpStream, ConnectionId)>,
         receiver_potential_connections: Receiver<ConnectionEvent>,
+        notifier: N,
         logger: LoggerSender,
     ) -> Self {
 
@@ -52,6 +54,7 @@ impl ProcessConnection {
             handshake,
             sender_confirm_connection,
             receiver_potential_connections,
+            notifier,
             logger,
         }
     }
@@ -93,10 +96,11 @@ impl ProcessConnection {
         let handshake = self.handshake.clone();
         let logger = self.logger.clone();
         let sender_confirm_connection = self.sender_confirm_connection.clone();
+        let notifier = self.notifier.clone();
 
         thread::spawn(move || {
 
-            let mut stream = match create_stream(connection, logger.clone()) {
+            let mut stream = match Self::create_stream(connection, logger.clone()) {
                 Some(stream) => stream,
                 None => { return; }
             };
@@ -109,6 +113,10 @@ impl ProcessConnection {
                     return;
                 }
             };
+
+            notifier.notify(Notification::AttemptingHandshakeWithPeer(
+                connection.address.clone(),
+            ));
 
             let result = match connection {
                 ConnectionId { address, connection_type: ConnectionType::Peer } => {
@@ -131,9 +139,19 @@ impl ProcessConnection {
                 }
             };
 
-            if let Ok(true) = result {
-                let _ = logger.log_connection(format!("Connection established with {:?}", connection));
-                let _ = sender_confirm_connection.send((stream, connection));
+            match result {
+                Ok(true) => {
+                    let _ = logger.log_connection(format!("Connection established with {:?}", connection));
+                    if sender_confirm_connection.send((stream, connection)).is_ok() {
+                        notifier.notify(Notification::SuccessfulHandshakeWithPeer(connection.address));
+                    } else {
+                        notifier.notify(Notification::FailedHandshakeWithPeer(connection.address));    
+                    }
+                },
+                Ok(false) => {},
+                Err(_) => {
+                    notifier.notify(Notification::FailedHandshakeWithPeer(connection.address));
+                },
             }
         })
     }
@@ -226,118 +244,29 @@ impl ProcessConnection {
 
         Ok(true)
     }
-}
 
-fn create_stream(potential_connection: ConnectionId, logger: LoggerSender) -> Option<TcpStream>  {
-    let mut stream = match TcpStream::connect(potential_connection.address) {
-        Ok(stream) => stream,
-        Err(error) => {
+    fn create_stream(potential_connection: ConnectionId, logger: LoggerSender) -> Option<TcpStream>  {
+        let stream = match TcpStream::connect(potential_connection.address) {
+            Ok(stream) => stream,
+            Err(error) => {
+                let _ = logger.log_connection(format!(
+                    "Cannot connect to address: {:?}, it appear {:?}",
+                    potential_connection.address, error
+                ));
+                return None;
+            }
+        };
+
+        if let Err(error) = stream.set_read_timeout(Some(Duration::from_secs(1))) {
             let _ = logger.log_connection(format!(
                 "Cannot connect to address: {:?}, it appear {:?}",
                 potential_connection.address, error
             ));
             return None;
-        }
-    };
+        };
 
-    if let Err(error) = stream.set_read_timeout(Some(Duration::from_secs(1))) {
-        let _ = logger.log_connection(format!(
-            "Cannot connect to address: {:?}, it appear {:?}",
-            potential_connection.address, error
-        ));
-        return None;
-    };
-
-    Some(stream)
-}
-
-/// Creates a connection with the peers and if established then is return it's TCP stream
-pub fn connect_to_peers<N: Notifier>(
-    potential_connections: Vec<ConnectionId>,
-    connection_config: ConnectionConfig,
-    notifier: N,
-    logger_sender: LoggerSender,
-) -> Vec<(TcpStream, ConnectionId)> {
-    let _ = logger_sender.log_connection("Connecting to potential peers".to_string());
-
-    let node = Handshake::new(
-        connection_config.p2p_protocol_version,
-        connection_config.services,
-        connection_config.block_height,
-        HandshakeData {
-            nonce: connection_config.nonce,
-            user_agent: connection_config.user_agent,
-            relay: connection_config.relay,
-            magic_number: connection_config.magic_numbers,
-        },
-        logger_sender.clone(),
-    );
-
-    potential_connections
-        .iter()
-        .filter_map(|potential_peer| {
-            filters_peer(
-                *potential_peer,
-                &node,
-                logger_sender.clone(),
-                notifier.clone(),
-            )
-        })
-        .collect()
-}
-
-/// Creates a connection with a specific peer and if established then is return it's TCP stream
-fn filters_peer<N: Notifier>(
-    potential_connection: ConnectionId,
-    node: &Handshake,
-    logger_sender: LoggerSender,
-    notifier: N,
-) -> Option<(TcpStream, ConnectionId)> {
-    let mut peer_stream = match TcpStream::connect(potential_connection.address) {
-        Ok(stream) => stream,
-        Err(error) => {
-            let _ = logger_sender.log_connection(format!(
-                "Cannot connect to address: {:?}, it appear {:?}",
-                potential_connection, error
-            ));
-            return None;
-        }
-    };
-
-    let local_socket = match peer_stream.local_addr() {
-        Ok(addr) => addr,
-        Err(error) => {
-            let _ = logger_sender
-                .log_connection(format!("Cannot get local address, it appear {:?}", error));
-            return None;
-        }
-    };
-
-    notifier.notify(Notification::AttemptingHandshakeWithPeer(
-        potential_connection.address.clone(),
-    ));
-
-    let result = match potential_connection {
-        ConnectionId { address, connection_type: ConnectionType::Peer } => {
-            node.connect_to_peer(&mut peer_stream, &local_socket, &address)
-        }, 
-        ConnectionId { address, connection_type: ConnectionType::Client } => {
-            node.connect_to_client(&mut peer_stream, &local_socket, &address)
-        }, 
-    };
-
-    match result {
-        Ok(_) => {
-            notifier.notify(Notification::SuccessfulHandshakeWithPeer(potential_connection.address));
-            Some((peer_stream, potential_connection))
-        }
-        Err(error) => {
-            let _ = logger_sender.log_connection(format!(
-                "Error while connecting to addres: {:?}, it appear {:?}",
-                potential_connection, error
-            ));
-            notifier.notify(Notification::FailedHandshakeWithPeer(potential_connection.address));
-            None
-        }
+        Some(stream)
     }
 }
+
+

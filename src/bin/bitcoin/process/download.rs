@@ -28,13 +28,13 @@ use std::{
 ///  * `ErrorBlock::CouldNotUpdate`: It will appear when the block is not in the blockchain.
 ///  * `ErrorProcess::FailThread`: It will appear when the thread fails
 fn headers_first<N: Notifier, RW: Read + Write + Send + Debug + 'static>(
-    connections: Vec<(RW, ConnectionId)>,
+    connection: (RW, ConnectionId),
     block_chain: &mut BlockChain,
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
     notifier: N,
     logger: LoggerSender,
-) -> Result<Vec<(RW, ConnectionId)>, ErrorProcess> {
+) -> Result<(RW, ConnectionId), ErrorProcess> {
     let header_download = InitialHeaderDownload::new(
         connection_config.p2p_protocol_version,
         connection_config.magic_numbers,
@@ -45,50 +45,40 @@ fn headers_first<N: Notifier, RW: Read + Write + Send + Debug + 'static>(
 
     let _ = logger.log_connection("Getting initial download headers first".to_string());
 
-    let mut peer_download_handles: Vec<(JoinHandle<(Vec<Block>, RW)>, ConnectionId)> = Vec::new();
+    let (mut peer_stream, id) = connection;
 
-    for (peer_stream, id) in connections {
-        let mut peer_stream = peer_stream;
+    let _ = logger.log_connection(format!("Connecting to peer: {}", id));
 
-        let _ = logger.log_connection(format!("Connecting to peer: {}", id));
+    get_peer_header(
+        &mut peer_stream,
+        &header_download,
+        block_chain,
+        notifier.clone(),
+        &logger,
+    )?;
 
-        get_peer_header(
-            &mut peer_stream,
-            &header_download,
-            block_chain,
-            notifier.clone(),
-            &logger,
-        )?;
-
-        let mut list_of_blocks: Vec<Block> = Vec::new();
-        for block in block_chain.get_blocks_after_timestamp(download_config.timestamp) {
-            if block.transactions.len() as u64 == 0 {
-                list_of_blocks.push(block);
-            }
+    let mut list_of_blocks: Vec<Block> = Vec::new();
+    for block in block_chain.get_blocks_after_timestamp(download_config.timestamp) {
+        if block.transactions.len() as u64 == 0 {
+            list_of_blocks.push(block);
         }
-
-        peer_download_handles.push((
-            get_blocks(
-                peer_stream,
-                block_download.clone(),
-                list_of_blocks,
-                logger.clone(),
-            ),
-            id,
-        ));
     }
 
-    let mut connections: Vec<(RW, ConnectionId)> = Vec::new();
-    for (peer_download_handle, id) in peer_download_handles {
-        let stream = updating_block_chain(
-            block_chain,
-            peer_download_handle,
-            notifier.clone(),
-            logger.clone(),
-        )?;
-        connections.push((stream, id));
-    }
-    Ok(connections)
+    let peer_download_handle = get_blocks(
+        peer_stream,
+        block_download.clone(),
+        list_of_blocks,
+        logger.clone(),
+    );
+
+    let stream = updating_block_chain(
+        block_chain,
+        peer_download_handle,
+        notifier.clone(),
+        logger.clone(),
+    )?;
+
+    Ok((stream, id))
 }
 
 /// It updates the blockchain with a specific peer headers until it reach the last header
@@ -161,18 +151,18 @@ fn get_blocks<RW: Read + Write + Send + 'static>(
 
 /// Updates the blockchain with the new blocks and returns the TcpStreams that are still connected
 pub fn update_block_chain<N: Notifier, RW: Read + Write + Send + Debug + 'static>(
-    connections: Vec<(RW, ConnectionId)>,
+    connection: (RW, ConnectionId),
     block_chain: &mut BlockChain,
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
     notifier: N,
     logger: LoggerSender,
-) -> Result<Vec<(RW, ConnectionId)>, ErrorProcess> {
+) -> Result<(RW, ConnectionId), ErrorProcess> {
     let _ = logger.log_connection("Getting block chain".to_string());
 
     Ok(match connection_config.ibd_method {
         IBDMethod::HeaderFirst => headers_first(
-            connections,
+            connection,
             block_chain,
             connection_config,
             download_config,
@@ -235,6 +225,6 @@ fn updating_block_chain<N: Notifier, RW: Read + Write + Send>(
 
 /// Given the peers connection, updates the blockchain with the new blocks of the respected peers.
 /// The approch is to get the entire block.
-fn blocks_first<RW: Read + Write + Send>() -> Vec<(RW, ConnectionId)> {
+fn blocks_first<RW: Read + Write + Send>() -> (RW, ConnectionId) {
     todo!()
 }
