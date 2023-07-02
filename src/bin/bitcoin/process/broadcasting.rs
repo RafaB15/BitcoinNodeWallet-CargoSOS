@@ -24,27 +24,27 @@ use std::{
 };
 
 /// Gives the broadcasting the peers to broadcast the blocks and transactions
-pub fn add_peers<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
+pub fn add_peer_to_broadcasting<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
     broadcasting: &mut Broadcasting<RW>,
-    connections: Vec<(RW, ConnectionId)>,
+    connection: (RW, ConnectionId),
     sender_response: Sender<MessageResponse>,
     magic_numbers: [u8; 4],
     notifier: N,
     logger: LoggerSender,
 ) {
-    for connection in connections {
-        let peer_manager = create_peer_manager(
-            connection,
-            sender_response.clone(),
-            magic_numbers,
-            notifier.clone(),
-            logger.clone(),
-        );
+    let peer_manager = create_peer_manager(
+        connection,
+        sender_response.clone(),
+        magic_numbers,
+        notifier.clone(),
+        logger.clone(),
+    );
 
-        let (sender, receiver) = channel::<MessageToPeer>();
+    let (sender, receiver) = channel::<MessageToPeer>();
 
-        broadcasting.add_connection(peer_manager, (sender, receiver));
-    }
+    broadcasting.add_connection(peer_manager, (sender, receiver));
+
+    let _ = logger.log_node("Adding new peer to bradcasting".to_string());
 }
 
 /// Creates a peer manager to manege the message of this peer
@@ -55,7 +55,7 @@ fn create_peer_manager<N: Notifier + 'static, RW: Read + Write + Send + 'static>
     notifier: N,
     logger: LoggerSender,
 ) -> PeerManager<RW, N> {
-    let _ = logger.log_node("PeerManager".to_string());
+    let _ = logger.log_node("Creating new Peer manager".to_string());
     PeerManager::<RW, N>::new(
         connection.1,
         connection.0,

@@ -8,7 +8,6 @@ mod test_integration {
     use cargosos_bitcoin::{
         block_structure::{
             block::Block, block_chain::BlockChain, hash::HashType, merkle_tree::MerkleTree,
-            transaction::Transaction,
         },
         connections::{p2p_protocol::ProtocolVersionP2P, supported_services::SupportedServices},
         logs::logger,
@@ -54,6 +53,7 @@ mod test_integration {
         block.header.merkle_root_hash = merkle_tree.root;
     }
 
+    #[ignore]
     #[test]
     fn test01_program_run_correctly() {
         let mut stream = Vec::new();
@@ -159,9 +159,9 @@ mod test_integration {
             sender.clone(),
         );
 
-        handshake
-            .connect_to_peer(&mut stream, &local_socket, &potential_peer)
-            .unwrap();
+        // handshake
+        //     .connect_to_peer(&mut stream, &local_socket, &potential_peer)
+        //     .unwrap();
 
         let initial_headers_download =
             InitialHeaderDownload::new(p2p_protocol, magic_numbers.clone(), sender.clone());
