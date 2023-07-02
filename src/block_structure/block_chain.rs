@@ -262,13 +262,13 @@ impl BlockChain {
     }
     
     /// Returns the header that matches the given hash
-    fn get_node_chain_with_hash(&self, header_hash: &HashType) -> Result<NodeChain, ErrorBlock> {
+    fn get_node_chain_with_hash(&self, header_hash: &HashType) -> Option<NodeChain> {
         for node_chain in self.blocks.iter() {
             if node_chain.header_hash == *header_hash {
-                return Ok(node_chain.clone());
+                return Some(node_chain.clone());
             }
         }
-        Err(ErrorBlock::NodeChainReferenceNotFound)
+        None
     }
 
     /// Returns the most reacents out of the headers that match the given hashes
@@ -276,10 +276,10 @@ impl BlockChain {
         let mut nodes: Vec<NodeChain> = Vec::new();
         for hash in hashes.iter() {
             match self.get_node_chain_with_hash(hash) {
-                Ok(node) => {
+                Some(node) => {
                     nodes.push(node);
                 },
-                Err(_) => continue,
+                None => continue,
             };
         }
         match nodes.iter().max_by_key(|node| node.height){
@@ -315,6 +315,14 @@ impl BlockChain {
             }
         }
         Ok(headers)
+    }
+
+    /// Gets a block with the given hash
+    pub fn get_block_with_hash(&self, header_hash: &HashType) -> Option<Block> {
+        if let Some(node) = self.get_node_chain_with_hash(header_hash){
+            return Some(node.block);
+        };
+        None
     }
     
 }

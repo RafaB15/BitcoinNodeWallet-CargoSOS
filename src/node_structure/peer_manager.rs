@@ -138,7 +138,7 @@ where
             CommandName::Pong => ignore_message::<RW, PongMessage>(&mut self.peer, header)?,
             CommandName::GetHeaders => self.replay_to_get_headers_message(header)?,
             CommandName::Headers => self.receive_headers(header)?,
-            CommandName::GetData => ignore_message::<RW, GetDataMessage>(&mut self.peer, header)?,
+            CommandName::GetData => self.reply_to_get_data_message(header)?,
             CommandName::Block => self.receive_blocks(header)?,
             CommandName::Inventory => self.receive_inventory_message(header)?,
             CommandName::SendHeaders => {
@@ -318,7 +318,25 @@ where
             headers: headers_to_send,
         })
     }
-    
+
+    /// Creates a response to a get data message
+    fn reply_to_get_data_message(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
+        let magic_numbers = header.magic_numbers.clone();
+        let get_data_message = GetDataMessage::deserialize_message(&mut self.peer, header)?;
+
+        for inventory_vector in get_data_message.inventory_vectors.iter() {
+            if let TypeIdentifier::Block =  inventory_vector.type_identifier {
+                let blockchain = match self.blockchain.lock() {
+                    Ok(blockchain) => blockchain,
+                    Err(_) => return Err(ErrorNode::WhileCreatingMessage("While locking the blockchain to create the get data message".to_string())),
+                };
+                if let Some(block) = blockchain.get_block_with_hash(&inventory_vector.hash_value) {
+                    BlockMessage::serialize_message(&mut self.peer, magic_numbers, &block)?;
+                }
+            }
+        }
+        Ok(())
+    }
 
     /// Sends a transaction to the peer
     ///
