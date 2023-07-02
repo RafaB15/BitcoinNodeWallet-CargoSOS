@@ -1,4 +1,7 @@
-use super::error_process::ErrorProcess;
+use super::{
+    error_process::ErrorProcess,
+    reference::{get_reference, MutArc},
+};
 
 use cargosos_bitcoin::{
     block_structure::{block::Block, block_chain::BlockChain, hash::HashType, utxo_set::UTXOSet},
@@ -147,6 +150,31 @@ fn get_blocks<RW: Read + Write + Send + 'static>(
             }
         }
     })
+}
+
+pub fn update_block_chain_with_peer<N: Notifier, RW: Read + Write + Send + Debug + 'static>(
+    connection: (RW, ConnectionId),
+    block_chain: MutArc<BlockChain>,
+    config: (ConnectionConfig, DownloadConfig),
+    notifier: N,
+    logger: LoggerSender,
+) -> Result<(RW, ConnectionId), ErrorProcess> {
+
+    let connection_config = config.0;
+    let download_config = config.1;
+
+    let mut block_chain_reference = get_reference(&block_chain)?;
+
+    let connection = update_block_chain(
+        connection,
+        &mut block_chain_reference,
+        connection_config.clone(),
+        download_config,
+        notifier.clone(),
+        logger.clone(),
+    )?;
+
+    Ok(connection)
 }
 
 /// Updates the blockchain with the new blocks and returns the TcpStreams that are still connected

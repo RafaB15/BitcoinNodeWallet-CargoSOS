@@ -4,7 +4,7 @@ use crate::{
     error_execution::ErrorExecution,
     process::{
         broadcasting, connection, download, load_system::LoadSystem, reference,
-        reference::{MutArc, get_reference}, save_system::SaveSystem, error_process::ErrorProcess,
+        reference::{MutArc}, save_system::SaveSystem, error_process::ErrorProcess,
     },
     ui::error_ui::ErrorUI,
 };
@@ -17,19 +17,17 @@ use cargosos_bitcoin::{
     },
     logs::{logger_sender::LoggerSender},
     node_structure::{
-        broadcasting::Broadcasting, connection_id::ConnectionId, message_response::MessageResponse,
-        connection_type::ConnectionType, connection_event::ConnectionEvent, process_connection::ProcessConnection,
+        broadcasting::Broadcasting, message_response::MessageResponse,
     },
     notifications::notifier::Notifier,
     wallet_structure::wallet::Wallet,
 };
 
 use std::{
-    net::{IpAddr, SocketAddr, TcpStream},
-    thread::{self, JoinHandle},
-    sync::mpsc::{channel, Receiver, Sender},
+    net::TcpStream,
+    thread::JoinHandle,
+    sync::mpsc::{channel, Sender},
     sync::{Arc, Mutex},
-    time::Duration,
 };
 
 fn _show_merkle_path(block_chain: &BlockChain, logger: LoggerSender) -> Result<(), ErrorExecution> {
@@ -103,164 +101,6 @@ fn broadcasting<N: Notifier + 'static>(
     Ok((handle, Broadcasting::<TcpStream>::new(logger.clone()), sender_response))
 }
 
-
-fn create_process_connection<N: Notifier + Send + 'static>(
-    connection_config: ConnectionConfig,
-    notifier: N,
-    logger: LoggerSender,
-) -> (JoinHandle<()>, Receiver<(TcpStream, ConnectionId)>, Sender<ConnectionEvent>) {
-    
-    let (sender_potential_connections, receiver_potential_connections) =
-        channel::<ConnectionEvent>();
-
-    let (sender_confirm_connection, receiver_confirm_connection) =
-        channel::<(TcpStream, ConnectionId)>();
-
-    let process_connection = ProcessConnection::new(
-        connection_config,
-        sender_confirm_connection,
-        receiver_potential_connections,
-        notifier,
-        logger,
-    );
-
-    let handle = thread::spawn(|| process_connection.execution());
-
-    (handle, receiver_confirm_connection, sender_potential_connections)
-}
-
-fn update_block_chain_with_peer<N: Notifier + Send + 'static>(
-    connection: (TcpStream, ConnectionId),
-    block_chain: MutArc<BlockChain>,
-    config: (ConnectionConfig, DownloadConfig),
-    notifier: N,
-    logger: LoggerSender,
-) -> Result<(TcpStream, ConnectionId), ErrorExecution> {
-
-    let connection_config = config.0;
-    let download_config = config.1;
-
-    let mut block_chain_reference = get_reference(&block_chain)?;
-
-    let connection = download::update_block_chain(
-        connection,
-        &mut block_chain_reference,
-        connection_config.clone(),
-        download_config,
-        notifier.clone(),
-        logger.clone(),
-    )?;
-
-    Ok(connection)
-}
-
-fn update_from_connection<N: Notifier + Send + 'static>(
-    receiver_confirm_connection: Receiver<(TcpStream, ConnectionId)>,
-    sender_response: Sender<MessageResponse>,
-    data: (MutArc<Broadcasting<TcpStream>>, MutArc<BlockChain>),
-    config: (ConnectionConfig, DownloadConfig),
-    notifier: N,
-    logger: LoggerSender,
-) -> JoinHandle<()> {
-
-    let broadcasting = data.0;
-    let block_chain = data.1;
-
-    let magic_numbers = config.0.magic_numbers;
-    
-    thread::spawn(move || {
-
-        for (stream, connection_id) in receiver_confirm_connection {
-
-            let mut connection = (stream, connection_id);
-
-            if connection_id.connection_type == ConnectionType::Peer {
-                connection = match update_block_chain_with_peer(
-                    (stream, connection_id),
-                    block_chain.clone(),
-                    config.clone(),
-                    notifier.clone(),
-                    logger.clone(),
-                ) {
-                    Ok(connection) => connection,
-                    Err(error) => {
-                        let _ = logger.log_connection(format!("Error while updating the block chain: {:?}", error));
-                        continue;
-                    }
-                }
-            }
-
-            let mut broadcasting_reference = match get_reference(&broadcasting) {
-                Ok(broadcasting_reference) => broadcasting_reference,
-                Err(error) => {
-                    let _ = logger.log_connection(format!("Error: {:?}", error));
-                    continue;
-                }
-            };
-
-            if stream.set_read_timeout(Some(Duration::from_secs(1))).is_err() {
-                let _  = logger.log_connection("Could not set timeout".to_string());
-                continue;
-            };
-
-            broadcasting::add_peer_to_broadcasting(
-                &mut broadcasting_reference,
-                connection,
-                sender_response,
-                magic_numbers,
-                notifier.clone(),
-                logger.clone(),
-            );
-        }
-    })
-}
-
-fn establish_connection(
-    mode_config: ModeConfig,
-    sender_potential_connections: Sender<ConnectionEvent>,
-    logger: LoggerSender,
-) -> Result<(), ErrorExecution> {
-    let potential_connections = match mode_config.clone() {
-        ModeConfig::Server(server_config) => {
-
-            let mut potential_connections = Vec::new();
-
-            let peer_adresses = connection::get_potential_peers(server_config, logger.clone())?;
-
-            peer_adresses
-                .iter()
-                .for_each(|socket_address| {
-                    potential_connections.push(
-                        ConnectionId::new(socket_address.clone(), ConnectionType::Peer)
-                    );
-                });
-
-            let port = server_config.own_port;
-
-            for ip in server_config.address {
-                let address = SocketAddr::new(IpAddr::V4(ip), port);
-
-                potential_connections.push(ConnectionId::new(address, ConnectionType::Peer));
-            }
-
-            potential_connections
-        }
-        ModeConfig::Client(client_config) => {
-            let address = SocketAddr::new(IpAddr::V4(client_config.address), client_config.port);
-
-            vec![ConnectionId::new(address, ConnectionType::Peer)]
-        },
-    };
-
-    for potential_connection in potential_connections {
-        if sender_potential_connections.send(ConnectionEvent::PotentialConnection(potential_connection)).is_err() {
-            let _ = logger.log_connection("Could not send potential connection".to_string());
-        }
-    }
-
-    Ok(())
-}
-
 /// The main function of the program for the terminal
 pub fn program_execution(
     mode_config: ModeConfig,
@@ -272,7 +112,7 @@ pub fn program_execution(
 
     let notifier = NotifierTUI::new(logger.clone());
 
-    let (handle_process_connection, receiver_confirm_connection, sender_potential_connections) = create_process_connection(
+    let (handle_process_connection, receiver_confirm_connection, sender_potential_connections) = connection::create_process_connection(
         connection_config.clone(),
         notifier.clone(),
         logger.clone(),
@@ -297,7 +137,7 @@ pub fn program_execution(
 
     let broadcasting = Arc::new(Mutex::new(broadcasting));
 
-    let handle_confirmed_connection = update_from_connection(
+    let handle_confirmed_connection = connection::update_from_connection(
         receiver_confirm_connection,
         sender_response,
         (broadcasting.clone(), block_chain.clone()),
@@ -306,7 +146,7 @@ pub fn program_execution(
         logger.clone(),
     );
 
-    establish_connection(
+    connection::establish_connection(
         mode_config.clone(),
         sender_potential_connections,
         logger.clone(),
@@ -318,7 +158,7 @@ pub fn program_execution(
         utxo_set,
         block_chain,
         notifier.clone(),
-        logger,
+        logger.clone(),
     )?;   
 
     reference::get_inner(broadcasting)?.destroy(notifier)?;
