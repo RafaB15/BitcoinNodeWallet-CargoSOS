@@ -1100,6 +1100,36 @@ has been identified but is still unconfirmed</property>
             <property name="y">26</property>
           </packing>
         </child>
+        <child>
+          <object class="GtkProgressBar" id="ProgressBar">
+            <property name="name">ProgressBar</property>
+            <property name="width-request">346</property>
+            <property name="height-request">25</property>
+            <property name="visible">True</property>
+            <property name="app-paintable">True</property>
+            <property name="can-focus">False</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+            <property name="fraction">0.5</property>
+            <property name="show-text">True</property>
+          </object>
+          <packing>
+            <property name="x">190</property>
+            <property name="y">324</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="BlockDownloadProgressLabel">
+            <property name="name">BlockDownloadProgressLabel</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="label" translatable="yes">Block Download Progress</property>
+          </object>
+          <packing>
+            <property name="x">6</property>
+            <property name="y">336</property>
+          </packing>
+        </child>
       </object>
     </child>
   </object>
