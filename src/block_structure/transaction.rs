@@ -142,9 +142,15 @@ impl Display for Transaction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let transaction_id = match self.get_tx_id() {
             Ok(transaction_id) => transaction_id,
-            Err(_) => return write!(f, "Transaction fail"),
+            Err(_) => return write!(f, "Transaction fail at get tx id"),
         };
-        write!(f, "{:?}", transaction_id)
+
+        let mut transaction_id_string = "".to_string();
+        for byte in transaction_id.iter().rev() {
+            transaction_id_string.push_str(&format!("{:02x}", byte));
+        }
+
+        write!(f, "{transaction_id_string}")
     }
 }
 
