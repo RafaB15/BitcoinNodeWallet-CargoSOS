@@ -154,6 +154,14 @@ fn get_blocks<RW: Read + Write + Send + 'static>(
     })
 }
 
+/// Updates the blockchain with the IBD with the specific peer
+/// 
+/// ### Error
+///  * `ErrorMessage::InSerialization`: It will appear when the serialization of the message fails or the SHA(SHA(header)) fails
+///  * `ErrorNode::NodeNotResponding`: It will appear when
+///  * `ErrorNode::WhileValidating`: It will appear when
+///  * `ErrorBlock::CouldNotUpdate`: It will appear when the block is not in the blockchain.
+///  * `ErrorProcess::FailThread`: It will appear when the thread fails
 pub fn update_block_chain_with_peer<N: Notifier, RW: Read + Write + Send + Debug + 'static>(
     connection: (RW, ConnectionId),
     block_chain: MutArc<BlockChain>,
@@ -169,36 +177,13 @@ pub fn update_block_chain_with_peer<N: Notifier, RW: Read + Write + Send + Debug
     let mut block_chain_reference = get_reference(&block_chain)?;
     let mut utxo_set_reference = get_reference(&utxo_set)?;
 
-    let connection = update_block_chain(
-        connection,
-        &mut block_chain_reference,
-        &mut utxo_set_reference,
-        connection_config.clone(),
-        download_config,
-        notifier.clone(),
-        logger.clone(),
-    )?;
-
-    Ok(connection)
-}
-
-/// Updates the blockchain with the new blocks and returns the TcpStreams that are still connected
-pub fn update_block_chain<N: Notifier, RW: Read + Write + Send + Debug + 'static>(
-    connection: (RW, ConnectionId),
-    block_chain: &mut BlockChain,
-    utxo_set: &mut UTXOSet,
-    connection_config: ConnectionConfig,
-    download_config: DownloadConfig,
-    notifier: N,
-    logger: LoggerSender,
-) -> Result<(RW, ConnectionId), ErrorProcess> {
     let _ = logger.log_connection("Getting block chain".to_string());
 
     Ok(match connection_config.ibd_method {
         IBDMethod::HeaderFirst => headers_first(
             connection,
-            block_chain,
-            utxo_set,
+            &mut block_chain_reference,
+            &mut utxo_set_reference,
             connection_config,
             download_config,
             notifier,

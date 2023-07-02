@@ -24,11 +24,21 @@ use cargosos_bitcoin::{
 use std::{
     net::TcpStream,
     thread::JoinHandle,
-    sync::mpsc::{channel, Sender},
+    sync::mpsc::{channel, Receiver},
     sync::{Arc, Mutex},
 };
 
+type HandlePeer = JoinHandle<Result<(), ErrorProcess>>;
+
 /// The main function of the program for the terminal
+/// 
+/// ### Error
+///  * `ErrorExecution::FailThread`: It will appear when the thread fails
+///  * `ErrorUI::CannotGetInner`: It will appear when we try to get the inner value of a mutex
+///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
+///  * `UI::ErrorFromPeer`: It will appear when a conextion with a peer fails
+///  * `ErrorProcess:CannotCreateDefault`: It will appear when can't create the default value
+///  * `ErrorProcess:AlreadyLoaded`: It will appear when try to get a value that is already loadedError
 pub fn backend<N, I>(
     mode_config: ModeConfig,
     connection_config: ConnectionConfig,
@@ -70,14 +80,16 @@ where
 
     notifier.notify(Notification::NotifyBlockchainIsReady);
 
+    let (sender_response, receiver_response) = channel::<MessageResponse>();
+
     let (handle_peers, 
-        broadcasting, 
-        sender_response
+        broadcasting
     ) = broadcasting(
         (wallet.clone(), utxo_set.clone(), block_chain.clone()),
+        receiver_response,
         notifier.clone(),
         logger.clone(),
-    )?;
+    );
 
     let broadcasting = Arc::new(Mutex::new(broadcasting));
 
@@ -107,8 +119,10 @@ where
         return Err(ErrorUI::ErrorFromPeer("Fail to stop potential connections".to_string()).into());
     }
 
-    if handle_process_connection.join().is_err() {
-        return Err(ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()).into());
+    match handle_process_connection.join() {
+        Ok(Ok(())) => {}
+        Ok(Err(error)) => return Err(error.into()),
+        Err(_) => return Err(ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()).into()),
     }
 
     if handle_confirmed_connection.join().is_err() {
@@ -129,20 +143,16 @@ where
 }
 
 /// Broadcasting blocks and transactions from and to the given peers
-///
-/// ### Error
-///  *
 fn broadcasting<N: Notifier + 'static>(
     data: (MutArc<Wallet>, MutArc<UTXOSet>, MutArc<BlockChain>),
+    receiver_response: Receiver<MessageResponse>,
     notifier: N,
     logger: LoggerSender,
-) -> Result<(JoinHandle<Result<(), ErrorProcess>>, Broadcasting::<TcpStream>, Sender<MessageResponse>), ErrorExecution> {
+) -> (HandlePeer, Broadcasting::<TcpStream>) {
     
     let wallet: Arc<Mutex<Wallet>> = data.0;
     let utxo_set: Arc<Mutex<UTXOSet>> = data.1;
     let block_chain: Arc<Mutex<BlockChain>> = data.2;
-
-    let (sender_response, receiver_response) = channel::<MessageResponse>();
 
     let handle = broadcasting::handle_peers(
         receiver_response,
@@ -153,5 +163,5 @@ fn broadcasting<N: Notifier + 'static>(
         logger.clone(),
     );
 
-    Ok((handle, Broadcasting::<TcpStream>::new(logger.clone()), sender_response))
+    (handle, Broadcasting::<TcpStream>::new(logger.clone()))
 }

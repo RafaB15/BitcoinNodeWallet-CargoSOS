@@ -1,6 +1,6 @@
 use super::{
     connection_id::ConnectionId, connection_type::ConnectionType, handshake::Handshake,
-    handshake_data::HandshakeData, connection_event::ConnectionEvent,
+    handshake_data::HandshakeData, connection_event::ConnectionEvent, error_node::ErrorNode,
 };
 
 use crate::{
@@ -18,11 +18,17 @@ use std::{
     net::SocketAddr,
 };
 
+pub type SenderConfirm = Sender<(TcpStream, ConnectionId)>;
+pub type ReceiverConfirm = Receiver<(TcpStream, ConnectionId)>;
+
+pub type SenderPotential = Sender<ConnectionEvent>;
+pub type ReceiverPotential = Receiver<ConnectionEvent>;
+
 pub struct ProcessConnection<N: Notifier + Send + 'static> {
     handshake: Handshake,
 
-    sender_confirm_connection: Sender<(TcpStream, ConnectionId)>,
-    receiver_potential_connections: Receiver<ConnectionEvent>,
+    sender_confirm_connection: SenderConfirm,
+    receiver_potential_connections: ReceiverPotential,
 
     notifier: N,
     logger: LoggerSender,
@@ -31,8 +37,8 @@ pub struct ProcessConnection<N: Notifier + Send + 'static> {
 impl<N: Notifier + Send + 'static> ProcessConnection<N> {
     pub fn new(
         connection_config: ConnectionConfig,
-        sender_confirm_connection: Sender<(TcpStream, ConnectionId)>,
-        receiver_potential_connections: Receiver<ConnectionEvent>,
+        sender_confirm_connection: SenderConfirm,
+        receiver_potential_connections: ReceiverPotential,
         notifier: N,
         logger: LoggerSender,
     ) -> Self {
@@ -59,7 +65,12 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
         }
     }
 
-    pub fn execution(self) {
+    /// Handle the incoming potentail connections 
+    /// 
+    /// ###
+    ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to a peer or others threads
+    ///  * `ErrorNode::FailThread`: It will appear when thread is poisoned
+    pub fn execution(self) -> Result<(), ErrorNode> {
         let mut pending_connection_handlers: Vec<(JoinHandle<()>, Sender<Stop>)> = Vec::new();
 
         for connection_event in &self.receiver_potential_connections {
@@ -81,12 +92,21 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
             }
         }
 
+        let mut result = Ok(());
         for (handler, sender) in pending_connection_handlers {
-            let _ = sender.send(Stop::Stop);
-            let _ = handler.join();
+            if sender.send(Stop::Stop).is_err() {
+                result = Err(ErrorNode::WhileSendingMessage("Cannot send stop message to handler".to_string()));
+                continue;
+            }
+            if handler.join().is_err() {
+                result = Err(ErrorNode::FailThread)
+            }
         }
+
+        result
     }
 
+    /// Create a thread to handle the new potential connection to establish the handshake
     fn handle_connection_event(
         &self,
         connection: ConnectionId, 
@@ -156,6 +176,12 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
         })
     }
 
+    /// Establish the handshake with a peer
+    /// 
+    /// ### Error
+    ///  * `ErrorSerialization::ErrorSerialization`: It will appear when there is an error in the serialization
+    ///  * `ErrorSerialization::ErrorInDeserialization`: It will appear when there is an error in the deserialization
+    ///  * `ErrorSerialization::ErrorWhileReading`: It will appear when there is an error in the reading from a stream
     fn connect_to_peer(
         stream: &mut TcpStream,
         local_socket: &SocketAddr,
@@ -202,6 +228,12 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
         Ok(true)
     }
 
+    /// Establish the handshake with a client
+    /// 
+    /// ### Error
+    ///  * `ErrorSerialization::ErrorSerialization`: It will appear when there is an error in the serialization
+    ///  * `ErrorSerialization::ErrorInDeserialization`: It will appear when there is an error in the deserialization
+    ///  * `ErrorSerialization::ErrorWhileReading`: It will appear when there is an error in the reading from a stream
     fn connect_to_client(
         stream: &mut TcpStream,
         local_socket: &SocketAddr,
@@ -245,6 +277,7 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
         Ok(true)
     }
 
+    /// Create a stream to connect to a potential connection
     fn create_stream(potential_connection: ConnectionId, logger: LoggerSender) -> Option<TcpStream>  {
         let stream = match TcpStream::connect(potential_connection.address) {
             Ok(stream) => stream,

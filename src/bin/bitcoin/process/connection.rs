@@ -10,8 +10,8 @@ use cargosos_bitcoin::{
     connections::error_connection::ErrorConnection,
     block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
     node_structure::{
-        connection_event::ConnectionEvent, connection_type::ConnectionType, process_connection::ProcessConnection, 
-        connection_id::ConnectionId, message_response::MessageResponse, broadcasting::Broadcasting, 
+        connection_event::ConnectionEvent, connection_type::ConnectionType, process_connection::{ProcessConnection, SenderPotential, ReceiverConfirm}, 
+        connection_id::ConnectionId, message_response::MessageResponse, broadcasting::Broadcasting, error_node::ErrorNode, 
     },
     logs::logger_sender::LoggerSender,
     notifications::{notifier::Notifier},
@@ -47,11 +47,12 @@ pub fn get_potential_peers(
     Ok(potential_peers)
 }
 
+/// Crates the thread to manega the potential connections to establish a connection via a handshake
 pub fn create_process_connection<N: Notifier + Send + 'static>(
     connection_config: ConnectionConfig,
     notifier: N,
     logger: LoggerSender,
-) -> (JoinHandle<()>, Receiver<(TcpStream, ConnectionId)>, Sender<ConnectionEvent>) {
+) -> (JoinHandle<Result<(), ErrorNode>>, ReceiverConfirm, SenderPotential) {
     
     let (sender_potential_connections, receiver_potential_connections) =
         channel::<ConnectionEvent>();
@@ -72,6 +73,7 @@ pub fn create_process_connection<N: Notifier + Send + 'static>(
     (handle, receiver_confirm_connection, sender_potential_connections)
 }
 
+/// Creates a thread to manage the confirmed connections and update the block chain if the connection is a peer
 pub fn update_from_connection<N: Notifier + Send + 'static>(
     receiver_confirm_connection: Receiver<(TcpStream, ConnectionId)>,
     sender_response: Sender<MessageResponse>,
@@ -136,6 +138,7 @@ pub fn update_from_connection<N: Notifier + Send + 'static>(
     })
 }
 
+/// Establish the connection with the peers and the clients
 pub fn establish_connection(
     mode_config: ModeConfig,
     sender_potential_connections: Sender<ConnectionEvent>,

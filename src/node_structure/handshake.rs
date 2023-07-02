@@ -94,6 +94,12 @@ impl Handshake {
         }
     }
 
+    /// Function that receives a version message from the given potential peer.
+    ///
+    /// ### Error
+    ///  * `ErrorSerialization::ErrorSerialization`: It will appear when there is an error in the serialization
+    ///  * `ErrorSerialization::ErrorInDeserialization`: It will appear when there is an error in the deserialization
+    ///  * `ErrorSerialization::ErrorWhileReading`: It will appear when there is an error in the reading from a stream
     pub fn receive_version_message<RW: Read + Write>(
         &self, 
         peer_stream: &mut RW,
@@ -133,6 +139,12 @@ impl Handshake {
         }
     }
 
+    /// Function that receives a verack message from the given potential peer.
+    ///
+    /// ### Error
+    ///  * `ErrorSerialization::ErrorSerialization`: It will appear when there is an error in the serialization
+    ///  * `ErrorSerialization::ErrorInDeserialization`: It will appear when there is an error in the deserialization
+    ///  * `ErrorSerialization::ErrorWhileReading`: It will appear when there is an error in the reading from a stream
     pub fn receive_verack_message<RW: Read + Write>(
         &self,
         peer_stream: &mut RW,
