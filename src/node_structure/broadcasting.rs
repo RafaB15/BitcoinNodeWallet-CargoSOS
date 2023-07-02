@@ -4,7 +4,7 @@ use super::{
 };
 
 use crate::{
-    block_structure::{transaction::Transaction, block::Block},
+    block_structure::{block::Block, transaction::Transaction},
     logs::logger_sender::LoggerSender,
     notifications::{notification::Notification, notifier::Notifier},
 };
@@ -59,13 +59,14 @@ where
                 println!("HOLAAAA 0");
                 return Err(ErrorNode::WhileSendingMessage(
                     "Getting transaction id".to_string(),
-                ))
+                ));
             }
         };
 
-        let _ = self
-            .logger
-            .log_broadcasting(format!("Broadcasting own transaction: {:?}", transaction_id));
+        let _ = self.logger.log_broadcasting(format!(
+            "Broadcasting own transaction: {:?}",
+            transaction_id
+        ));
         for (_, sender) in self.peers.iter() {
             if sender
                 .send(MessageToPeer::SendTransaction(transaction.clone(), None))
@@ -85,14 +86,18 @@ where
     ///
     /// ### Error
     ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to a peer
-    pub fn broadcast_transaction(&mut self, transaction: Transaction, from: ConnectionId) -> Result<(), ErrorNode> {
+    pub fn broadcast_transaction(
+        &mut self,
+        transaction: Transaction,
+        from: ConnectionId,
+    ) -> Result<(), ErrorNode> {
         let transaction_id = match transaction.get_tx_id() {
             Ok(id) => id,
             Err(_) => {
                 println!("HOLAAAA 2");
                 return Err(ErrorNode::WhileSendingMessage(
                     "Getting transaction id".to_string(),
-                ))
+                ));
             }
         };
 
@@ -101,7 +106,10 @@ where
             .log_broadcasting(format!("Broadcasting a transaction: {:?}", transaction_id));
         for (_, sender) in self.peers.iter() {
             if sender
-                .send(MessageToPeer::SendTransaction(transaction.clone(), Some(from)))
+                .send(MessageToPeer::SendTransaction(
+                    transaction.clone(),
+                    Some(from),
+                ))
                 .is_err()
             {
                 println!("HOLAAAA 3");

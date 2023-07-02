@@ -1,6 +1,9 @@
-use super::{message_broadcast::MessageBroadcast, connection_id::ConnectionId};
+use super::{connection_id::ConnectionId, message_broadcast::MessageBroadcast};
 
-use crate::{block_structure::{transaction::Transaction, block::Block}, concurrency::work::Work};
+use crate::{
+    block_structure::{block::Block, transaction::Transaction},
+    concurrency::work::Work,
+};
 
 use std::convert::From;
 
@@ -17,10 +20,10 @@ impl From<MessageToPeer> for Work<MessageBroadcast> {
         match message_to_peer {
             MessageToPeer::SendTransaction(transaction, id) => {
                 Work::Information(MessageBroadcast::Transaction(transaction, id))
-            },
+            }
             MessageToPeer::SendBlock(block, id) => {
                 Work::Information(MessageBroadcast::Block(block, id))
-            },
+            }
             MessageToPeer::Stop => Work::Stop,
         }
     }

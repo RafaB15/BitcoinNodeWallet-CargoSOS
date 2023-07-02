@@ -79,7 +79,7 @@ pub fn handle_peers<RW, N>(
     block_chain: MutArc<BlockChain>,
     notifier: N,
     logger: LoggerSender,
-) -> JoinHandle<Result<(), ErrorProcess>> 
+) -> JoinHandle<Result<(), ErrorProcess>>
 where
     RW: Read + Write + Send + 'static,
     N: Notifier + 'static,
@@ -90,7 +90,13 @@ where
 
             match message {
                 MessageResponse::Block(block, from) => {
-                    receive_block(&utxo_set, &wallet, &block_chain, block.clone(), notifier.clone())?;
+                    receive_block(
+                        &utxo_set,
+                        &wallet,
+                        &block_chain,
+                        block.clone(),
+                        notifier.clone(),
+                    )?;
 
                     if broadcasting_reference.broadcast_block(block, from).is_err() {
                         let _ = logger.log_node("Error broadcasting block".to_string());
@@ -105,9 +111,12 @@ where
                         logger.clone(),
                         notifier.clone(),
                     )?;
-                    
-                    if broadcasting_reference.broadcast_transaction(transaction, from).is_err() {
-                        let _ = logger.log_node("Error broadcasting trabsaction".to_string());
+
+                    if broadcasting_reference
+                        .broadcast_transaction(transaction, from)
+                        .is_err()
+                    {
+                        let _ = logger.log_node("Error broadcasting transaction".to_string());
                         return Err(ErrorProcess::ErrorReading);
                     }
                 }

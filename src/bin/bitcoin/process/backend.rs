@@ -159,7 +159,7 @@ fn broadcasting<N: Notifier + 'static>(
     let utxo_set: Arc<Mutex<UTXOSet>> = data.1;
     let block_chain: Arc<Mutex<BlockChain>> = data.2;
 
-    let broadcasting =  Broadcasting::<TcpStream>::new(logger.clone());
+    let broadcasting = Broadcasting::<TcpStream>::new(logger.clone());
     let broadcasting = Arc::new(Mutex::new(broadcasting));
 
     let handle = broadcasting::handle_peers(

@@ -5,9 +5,9 @@ pub mod initial_headers_download;
 pub mod process_connection;
 
 pub mod broadcasting;
+pub mod message_broadcast;
 pub mod message_response;
 pub mod message_to_peer;
-pub mod message_broadcast;
 pub mod peer_manager;
 
 pub mod connection_event;
