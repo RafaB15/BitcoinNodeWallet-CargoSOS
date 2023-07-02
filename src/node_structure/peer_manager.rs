@@ -4,7 +4,7 @@ use super::{
 };
 
 use crate::{
-    block_structure::{hash::HashType, transaction::Transaction, block_chain::BlockChain},
+    block_structure::{hash::HashType, transaction::Transaction, block_chain::BlockChain, block_header::BlockHeader},
     concurrency::work::Work,
     connections::type_identifier::TypeIdentifier,
     logs::logger_sender::LoggerSender,
@@ -38,6 +38,7 @@ use std::{
         mpsc::{Receiver, Sender},
         Arc,
         Mutex,
+        MutexGuard,
     },
 };
 
@@ -135,11 +136,7 @@ where
                 PongMessage::serialize_message(&mut self.peer, magic_numbers, &pong)?;
             }
             CommandName::Pong => ignore_message::<RW, PongMessage>(&mut self.peer, header)?,
-            CommandName::GetHeaders => {
-                //let get_headers = GetHeadersMessage::deserialize_message(&mut self.peer, header)?;
-                //let headers = self.generate_headers_message(get_headers)
-                ignore_message::<RW, GetHeadersMessage>(&mut self.peer, header)?
-            }
+            CommandName::GetHeaders => self.replay_to_get_headers_message(magic_numbers.clone(), header)?,
             CommandName::Headers => self.receive_headers(header)?,
             CommandName::GetData => ignore_message::<RW, GetDataMessage>(&mut self.peer, header)?,
             CommandName::Block => self.receive_blocks(header)?,
@@ -287,20 +284,40 @@ where
 
         Ok(())
     }
-    /* 
-    fn generate_headers_message(&self, get_headers_message: GetHeadersMessage) -> HeadersMessage {
-        let mut headers_: Vec<BlockHeader> = Vec::new();
 
-        for hash in get_headers_message.header_locator_hashes {
-            let block = self.blockchain.get_block_from_hash(hash);
-            match block {
-                Some(block) => headers.push(block.header),
-                None => {}
-            }
-        }
-
+    fn replay_to_get_headers_message(
+        &mut self,
+        magic_numbers: [u8; 4],
+        header: MessageHeader,
+    ) -> Result<(), ErrorNode> {
+        let get_headers = GetHeadersMessage::deserialize_message(&mut self.peer, header)?;
+        let headers = self.generate_headers_message(get_headers)?;
+        HeadersMessage::serialize_message(&mut self.peer, magic_numbers, &headers)?;
+        Ok(())
     }
-    */
+    
+    /// Creates a response to a get headers message
+    /// 
+    /// ### Error
+    /// * `ErrorNode::WhileCreatingMessage`: It will appear when there is an error while creating the message
+    fn generate_headers_message(&self, get_headers_message: GetHeadersMessage) -> Result<HeadersMessage, ErrorNode> {
+        let mut blockchain = match self.blockchain.lock() {
+            Ok(blockchain) => blockchain,
+            Err(_) => return Err(ErrorNode::WhileCreatingMessage("While locking the blockchain to create the headers message".to_string())),
+        };
+        let most_recent_hash = match blockchain.get_most_recent_hash(get_headers_message.header_locator_hashes) {
+            Ok(most_recent_hash) => most_recent_hash,
+            Err(_) => return Err(ErrorNode::WhileCreatingMessage("While getting the most recent hash to create the headers message".to_string())),
+        };
+        let headers_to_send = match blockchain.get_headers_from_header_hash(&most_recent_hash, &get_headers_message.stop_hash) {
+            Ok(headers_to_send) => headers_to_send,
+            Err(_) => return Err(ErrorNode::WhileCreatingMessage("While getting the headers to send to create the headers message".to_string())),
+        };
+        Ok(HeadersMessage {
+            headers: headers_to_send,
+        })
+    }
+    
 
     /// Sends a transaction to the peer
     ///

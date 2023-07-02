@@ -36,4 +36,10 @@ pub enum ErrorBlock {
 
     /// It will appear when the hash in merkle tree could not be found at given index
     NoHashFound,
+
+    /// It will apper when there is an error hashing a block header
+    ErrorHashingBlockHeader,
+
+    /// It will appear when there is an error disposing of branches
+    ErrorCleansingBlockChain,
 }

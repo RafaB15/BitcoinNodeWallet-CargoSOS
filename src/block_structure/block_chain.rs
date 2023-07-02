@@ -260,28 +260,63 @@ impl BlockChain {
         println!("{:?}", self.blocks);
         Ok(())
     }
-
-    /* 
-    fn get_header_with_hash(&self, header_hash: &HashType) -> Result<BlockHeader, ErrorBlock> {
+    
+    /// Returns the header that matches the given hash
+    fn get_node_chain_with_hash(&self, header_hash: &HashType) -> Result<NodeChain, ErrorBlock> {
         for node_chain in self.blocks.iter() {
             if node_chain.header_hash == *header_hash {
-                return Ok(node_chain.block.header.clone());
+                return Ok(node_chain.clone());
             }
         }
         Err(ErrorBlock::NodeChainReferenceNotFound)
     }
 
-    fn get_most_recent_hash(&self, hashes: Vec<HashType>) -> Result<HashType, ErrorBlock>{
-        let headers: Vec<BlockHeader> = Vec::new();
+    /// Returns the most reacents out of the headers that match the given hashes
+    pub fn get_most_recent_hash(&self, hashes: Vec<HashType>) -> Result<HashType, ErrorBlock>{
+        let mut nodes: Vec<NodeChain> = Vec::new();
         for hash in hashes.iter() {
-            let header = match self.get_header_with_hash(hash) {
-                Ok(header) => header,
-                Err(_) => BlockHeader::generate_genesis_block_header(),
+            match self.get_node_chain_with_hash(hash) {
+                Ok(node) => {
+                    nodes.push(node);
+                },
+                Err(_) => continue,
             };
-            headers.push(header);
+        }
+        match nodes.iter().max_by_key(|node| node.height){
+            Some(node) => Ok(node.header_hash),
+            None => {
+                match BlockHeader::generate_genesis_block_header().get_hash256d() {
+                    Ok(hash) => Ok(hash),
+                    Err(_) => Err(ErrorBlock::ErrorHashingBlockHeader),
+                }
+            },
         }
     }
-    */
+
+    /// Gets a maximum of 2000 headers from the given hash
+    pub fn get_headers_from_header_hash(&mut self, header_hash: &HashType, stop_hash: &HashType) -> Result<Vec<BlockHeader>, ErrorBlock> {
+        let mut headers: Vec<BlockHeader> = Vec::new();
+        let mut save = false;
+
+        if self.cleanse_block_chain().is_err() {
+            return Err(ErrorBlock::ErrorCleansingBlockChain);
+        }
+
+        for node in self.blocks.iter() {
+            if node.header_hash == *header_hash {
+                save = true;
+                continue;
+            }
+            if save {
+                headers.push(node.block.header.clone());
+                if (node.header_hash == *stop_hash) || (headers.len() >= 2000) {
+                    break;
+                }
+            }
+        }
+        Ok(headers)
+    }
+    
 }
 
 impl TryDefault for BlockChain {
@@ -343,6 +378,7 @@ impl DeserializableInternalOrder for BlockChain {
 #[cfg(test)]
 mod tests {
     use crate::block_structure::{
+        hash::HashType,
         block_version, compact256::Compact256, outpoint::Outpoint, transaction::Transaction,
         transaction_input::TransactionInput, transaction_output::TransactionOutput,
     };
