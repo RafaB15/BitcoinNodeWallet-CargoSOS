@@ -53,27 +53,15 @@ where
     /// ### Error
     ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to a peer
     pub fn send_transaction(&mut self, transaction: Transaction) -> Result<(), ErrorNode> {
-        let transaction_id = match transaction.get_tx_id() {
-            Ok(id) => id,
-            Err(_) => {
-                return Err(ErrorNode::WhileSendingMessage(
-                    "Getting transaction id".to_string(),
-                ));
-            }
-        };
-
         let _ = self.logger.log_broadcasting(format!(
-            "Broadcasting own transaction: {:?}",
-            transaction_id
+            "Broadcasting own transaction: {transaction}"
         ));
         for (_, sender) in self.peers.iter() {
             if sender
                 .send(MessageToPeer::SendTransaction(transaction.clone(), None))
                 .is_err()
             {
-                return Err(ErrorNode::WhileSendingMessage(
-                    "Sending transaction message to peer".to_string(),
-                ));
+                let _ = self.logger.log_error("Sending transaction message to peer".to_string());
             }
         }
 
@@ -89,18 +77,9 @@ where
         transaction: Transaction,
         from: ConnectionId,
     ) -> Result<(), ErrorNode> {
-        let transaction_id = match transaction.get_tx_id() {
-            Ok(id) => id,
-            Err(_) => {
-                return Err(ErrorNode::WhileSendingMessage(
-                    "Getting transaction id".to_string(),
-                ));
-            }
-        };
-
         let _ = self
             .logger
-            .log_broadcasting(format!("Broadcasting a transaction: {:?}", transaction_id));
+            .log_broadcasting(format!("Broadcasting a transaction: {transaction}"));
         for (_, sender) in self.peers.iter() {
             if sender
                 .send(MessageToPeer::SendTransaction(
@@ -109,9 +88,7 @@ where
                 ))
                 .is_err()
             {
-                return Err(ErrorNode::WhileSendingMessage(
-                    "Sending transaction message to peer".to_string(),
-                ));
+                let _ = self.logger.log_error("Sending transaction message to peer".to_string());
             }
         }
 
@@ -123,26 +100,15 @@ where
     /// ### Error
     ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to a peer
     pub fn broadcast_block(&mut self, block: Block, from: ConnectionId) -> Result<(), ErrorNode> {
-        let block_id = match block.header.get_hash256d() {
-            Ok(id) => id,
-            Err(_) => {
-                return Err(ErrorNode::WhileSendingMessage(
-                    "Getting transaction id".to_string(),
-                ))
-            }
-        };
-
         let _ = self
             .logger
-            .log_broadcasting(format!("Broadcasting a block: {:?}", block_id));
+            .log_broadcasting(format!("Broadcasting a block: {block}"));
         for (_, sender) in self.peers.iter() {
             if sender
                 .send(MessageToPeer::SendBlock(block.clone(), from))
                 .is_err()
             {
-                return Err(ErrorNode::WhileSendingMessage(
-                    "Sending transaction message to peer".to_string(),
-                ));
+                let _ = self.logger.log_error("Sending block message to peer".to_string());
             }
         }
 

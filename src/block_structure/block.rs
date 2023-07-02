@@ -10,7 +10,7 @@ use crate::serialization::{
 };
 
 use std::{
-    fmt::Display,
+    fmt::{Display, Formatter},
     io::{Read, Write},
 };
 
@@ -81,8 +81,18 @@ impl Block {
 }
 
 impl Display for Block {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Block: todo!()")
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let block_id = match self.header.get_hash256d() {
+            Ok(block_id) => block_id,
+            Err(_) => return write!(f, "Block fail to get header hash"),
+        };
+
+        let mut block_id_string = "".to_string();
+        for byte in block_id.iter() {
+            block_id_string.push_str(&format!("{:02x}", byte));
+        }
+        
+        write!(f, "{block_id_string}")
     }
 }
 
