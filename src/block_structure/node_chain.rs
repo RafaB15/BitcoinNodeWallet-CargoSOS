@@ -20,7 +20,7 @@ pub(super) const NONE_INDEX: u64 = u64::MAX;
 pub(super) struct NodeChain {
     pub block: Block,
     pub header_hash: HashType,
-
+    pub height: u64,
     pub index_previous_node: Option<usize>,
 }
 
@@ -39,6 +39,7 @@ impl NodeChain {
             index_previous_node: None,
             header_hash,
             block,
+            height: 0,
         })
     }
 
@@ -46,7 +47,11 @@ impl NodeChain {
     ///
     /// ### Error
     ///  * `ErrorBlock::CouldNotHash`: It will appear when a header could not be hash correctly
-    pub fn new(block: Block, index_previous_node: usize) -> Result<Self, ErrorBlock> {
+    pub fn new(
+        block: Block,
+        index_previous_node: usize,
+        height_previous_node: u64,
+    ) -> Result<Self, ErrorBlock> {
         let header_hash = match block.header.get_hash256d() {
             Ok(hash) => hash,
             _ => return Err(ErrorBlock::CouldNotHash),
@@ -56,6 +61,7 @@ impl NodeChain {
             index_previous_node: Some(index_previous_node),
             header_hash,
             block,
+            height: height_previous_node + 1,
         })
     }
 
@@ -108,6 +114,8 @@ impl SerializableInternalOrder for NodeChain {
             None => NONE_INDEX.le_serialize(stream)?,
         };
 
+        self.height.le_serialize(stream)?;
+
         Ok(())
     }
 }
@@ -131,6 +139,7 @@ impl DeserializableInternalOrder for NodeChain {
                 NONE_INDEX => None,
                 index => Some(index as usize),
             },
+            height: u64::le_deserialize(stream)?,
         })
     }
 }
@@ -172,7 +181,7 @@ mod tests {
             0,
             CompactSize::new(2),
         ));
-        let node_chain = NodeChain::new(block, 23).unwrap();
+        let node_chain = NodeChain::new(block, 23, 0).unwrap();
         assert_eq!(node_chain.index_previous_node, Some(23));
     }
 
@@ -180,7 +189,7 @@ mod tests {
     pub fn test_03_correct_is_previous_of() {
         let block = Block::new(BlockHeader::generate_genesis_block_header());
 
-        let node_chain = NodeChain::new(block, 23).unwrap();
+        let node_chain = NodeChain::new(block, 23, 0).unwrap();
         let block = Block::new(BlockHeader::new(
             BlockVersion::version(1),
             [
@@ -200,14 +209,14 @@ mod tests {
     #[test]
     pub fn test_04_correct_is_equal() {
         let block = Block::new(BlockHeader::generate_genesis_block_header());
-        let node_chain = NodeChain::new(block.clone(), 23).unwrap();
+        let node_chain = NodeChain::new(block.clone(), 23, 0).unwrap();
         assert!(node_chain.is_equal(&block));
     }
 
     #[test]
     pub fn test_05_correct_node_chain_update() {
         let block_1 = Block::new(BlockHeader::generate_genesis_block_header());
-        let mut node_chain = NodeChain::new(block_1, 23).unwrap();
+        let mut node_chain = NodeChain::new(block_1, 23, 0).unwrap();
         let block_2 = Block::new(BlockHeader::new(
             BlockVersion::version(1),
             [
@@ -261,7 +270,7 @@ mod tests {
             transactions: transactions.clone(),
         };
 
-        let node_chain = NodeChain::new(block.clone(), 23).unwrap();
+        let node_chain = NodeChain::new(block.clone(), 23, 0).unwrap();
 
         let mut serialized_fields = Vec::new();
         block_header.io_serialize(&mut serialized_fields).unwrap();
@@ -278,7 +287,7 @@ mod tests {
             .io_serialize(&mut serialized_fields)
             .unwrap();
         (23 as u64).le_serialize(&mut serialized_fields).unwrap();
-
+        (1 as u64).le_serialize(&mut serialized_fields).unwrap();
         let mut serialized_node_chain = Vec::new();
         node_chain.io_serialize(&mut serialized_node_chain).unwrap();
 
@@ -334,7 +343,7 @@ mod tests {
             transactions: transactions.clone(),
         };
 
-        let node_chain = NodeChain::new(block.clone(), 23).unwrap();
+        let node_chain = NodeChain::new(block.clone(), 23, 0).unwrap();
 
         let mut serialized_node_chain = Vec::new();
         node_chain.io_serialize(&mut serialized_node_chain).unwrap();

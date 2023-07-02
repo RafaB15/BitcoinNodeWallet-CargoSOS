@@ -91,12 +91,7 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
 
         let mut result = Ok(());
         for (handler, sender) in pending_connection_handlers {
-            if sender.send(Stop::Stop).is_err() {
-                result = Err(ErrorNode::WhileSendingMessage(
-                    "Cannot send stop message to handler".to_string(),
-                ));
-                continue;
-            }
+            let _ = sender.send(Stop::Stop);
             if handler.join().is_err() {
                 result = Err(ErrorNode::FailThread)
             }

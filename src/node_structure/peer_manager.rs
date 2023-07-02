@@ -4,7 +4,7 @@ use super::{
 };
 
 use crate::{
-    block_structure::{hash::HashType, transaction::Transaction},
+    block_structure::{block_chain::BlockChain, hash::HashType, transaction::Transaction},
     concurrency::work::Work,
     connections::type_identifier::TypeIdentifier,
     logs::logger_sender::LoggerSender,
@@ -34,7 +34,10 @@ use crate::{
 
 use std::{
     io::{Read, Write},
-    sync::mpsc::{Receiver, Sender},
+    sync::{
+        mpsc::{Receiver, Sender},
+        Arc, Mutex,
+    },
 };
 
 /// It represents how to manage the the peer, listening to the there messages and sending them transactions
@@ -46,6 +49,7 @@ where
     id: ConnectionId,
     peer: RW,
     sender: Sender<MessageResponse>,
+    blockchain: Arc<Mutex<BlockChain>>,
     magic_numbers: [u8; 4],
     notifier: N,
     logger: LoggerSender,
@@ -60,6 +64,7 @@ where
         id: ConnectionId,
         peer: RW,
         sender: Sender<MessageResponse>,
+        blockchain: Arc<Mutex<BlockChain>>,
         magic_numbers: [u8; 4],
         notifier: N,
         logger: LoggerSender,
@@ -68,6 +73,7 @@ where
             id,
             peer,
             sender,
+            blockchain,
             magic_numbers,
             notifier,
             logger,
@@ -128,11 +134,9 @@ where
                 PongMessage::serialize_message(&mut self.peer, magic_numbers, &pong)?;
             }
             CommandName::Pong => ignore_message::<RW, PongMessage>(&mut self.peer, header)?,
-            CommandName::GetHeaders => {
-                ignore_message::<RW, GetHeadersMessage>(&mut self.peer, header)?
-            }
+            CommandName::GetHeaders => self.replay_to_get_headers_message(header)?,
             CommandName::Headers => self.receive_headers(header)?,
-            CommandName::GetData => ignore_message::<RW, GetDataMessage>(&mut self.peer, header)?,
+            CommandName::GetData => self.reply_to_get_data_message(header)?,
             CommandName::Block => self.receive_blocks(header)?,
             CommandName::Inventory => self.receive_inventory_message(header)?,
             CommandName::SendHeaders => {
@@ -276,6 +280,80 @@ where
             ));
         }
 
+        Ok(())
+    }
+
+    /// Creates a response to a get headers message
+    fn replay_to_get_headers_message(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
+        let magic_numbers = header.magic_numbers.clone();
+        let get_headers = GetHeadersMessage::deserialize_message(&mut self.peer, header)?;
+        let headers = self.generate_headers_message(get_headers)?;
+        HeadersMessage::serialize_message(&mut self.peer, magic_numbers, &headers)?;
+        Ok(())
+    }
+
+    /// Creates a response to a get headers message
+    ///
+    /// ### Error
+    /// * `ErrorNode::WhileCreatingMessage`: It will appear when there is an error while creating the message
+    fn generate_headers_message(
+        &self,
+        get_headers_message: GetHeadersMessage,
+    ) -> Result<HeadersMessage, ErrorNode> {
+        let mut blockchain = match self.blockchain.lock() {
+            Ok(blockchain) => blockchain,
+            Err(_) => {
+                return Err(ErrorNode::WhileCreatingMessage(
+                    "While locking the blockchain to create the headers message".to_string(),
+                ))
+            }
+        };
+        let most_recent_hash = match blockchain
+            .get_most_recent_hash(get_headers_message.header_locator_hashes)
+        {
+            Ok(most_recent_hash) => most_recent_hash,
+            Err(_) => {
+                return Err(ErrorNode::WhileCreatingMessage(
+                    "While getting the most recent hash to create the headers message".to_string(),
+                ))
+            }
+        };
+        let headers_to_send = match blockchain
+            .get_headers_from_header_hash(&most_recent_hash, &get_headers_message.stop_hash)
+        {
+            Ok(headers_to_send) => headers_to_send,
+            Err(_) => {
+                return Err(ErrorNode::WhileCreatingMessage(
+                    "While getting the headers to send to create the headers message".to_string(),
+                ))
+            }
+        };
+        Ok(HeadersMessage {
+            headers: headers_to_send,
+        })
+    }
+
+    /// Creates a response to a get data message
+    fn reply_to_get_data_message(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
+        let magic_numbers = header.magic_numbers.clone();
+        let get_data_message = GetDataMessage::deserialize_message(&mut self.peer, header)?;
+
+        for inventory_vector in get_data_message.inventory_vectors.iter() {
+            if let TypeIdentifier::Block = inventory_vector.type_identifier {
+                let blockchain = match self.blockchain.lock() {
+                    Ok(blockchain) => blockchain,
+                    Err(_) => {
+                        return Err(ErrorNode::WhileCreatingMessage(
+                            "While locking the blockchain to create the get data message"
+                                .to_string(),
+                        ))
+                    }
+                };
+                if let Some(block) = blockchain.get_block_with_hash(&inventory_vector.hash_value) {
+                    BlockMessage::serialize_message(&mut self.peer, magic_numbers, &block)?;
+                }
+            }
+        }
         Ok(())
     }
 
@@ -466,6 +544,46 @@ mod tests {
         Block::new(create_header(transaction_count))
     }
 
+    fn create_mock_blockchain() -> BlockChain {
+        let transaction_input = TransactionInput::new(
+            Outpoint::new([1; 32], 23),
+            "Prueba in".as_bytes().to_vec(),
+            24,
+        );
+
+        let transaction_output = TransactionOutput {
+            value: 10,
+            pk_script: "Prueba out".as_bytes().to_vec(),
+        };
+
+        let transaction = Transaction {
+            version: 1,
+            tx_in: vec![transaction_input.clone()],
+            tx_out: vec![transaction_output.clone()],
+            time: 0,
+        };
+
+        let empty_block = Block::new(BlockHeader::new(
+            BlockVersion::version(1),
+            [0; 32],
+            [0; 32],
+            0,
+            Compact256::from(u32::MAX),
+            0,
+            CompactSize::new(0),
+        ));
+
+        let mut block_with_transactions = empty_block.clone();
+        block_with_transactions
+            .append_transaction(transaction.clone())
+            .unwrap();
+
+        let mut blockchain = BlockChain::new(empty_block).unwrap();
+
+        blockchain.update_block(block_with_transactions).unwrap();
+        blockchain
+    }
+
     #[test]
     fn test01_peer_manager_receives_transaction_successfully() {
         let mut stream: Vec<u8> = Vec::new();
@@ -480,6 +598,8 @@ mod tests {
         let (sender_message, receiver_message) = channel::<MessageResponse>();
         let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
         let notifier = NotificationMock {};
+        let blockchain = create_mock_blockchain();
+        let blockchain: Arc<Mutex<BlockChain>> = Arc::new(Mutex::new(blockchain));
 
         let id_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8333);
 
@@ -489,6 +609,7 @@ mod tests {
             ConnectionId::new(id_address, ConnectionType::Client),
             stream,
             sender_message,
+            blockchain,
             magic_numbers,
             notifier,
             sender,
@@ -523,6 +644,8 @@ mod tests {
         let (sender_message, receiver_message) = channel::<MessageResponse>();
         let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
         let notifier = NotificationMock {};
+        let blockchain = create_mock_blockchain();
+        let blockchain: Arc<Mutex<BlockChain>> = Arc::new(Mutex::new(blockchain));
 
         let id_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8333);
 
@@ -532,6 +655,7 @@ mod tests {
             ConnectionId::new(id_address, ConnectionType::Peer),
             stream,
             sender_message,
+            blockchain,
             magic_numbers,
             notifier,
             sender,
@@ -572,6 +696,8 @@ mod tests {
         let (sender_message, _) = channel::<MessageResponse>();
         let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
         let notifier = NotificationMock {};
+        let blockchain = create_mock_blockchain();
+        let blockchain: Arc<Mutex<BlockChain>> = Arc::new(Mutex::new(blockchain));
 
         let id_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8333);
 
@@ -581,6 +707,7 @@ mod tests {
             ConnectionId::new(id_address, ConnectionType::Peer),
             stream,
             sender_message,
+            blockchain,
             magic_numbers,
             notifier,
             sender,
@@ -633,6 +760,8 @@ mod tests {
         let (sender_message, _) = channel::<MessageResponse>();
         let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
         let notifier = NotificationMock {};
+        let blockchain = create_mock_blockchain();
+        let blockchain: Arc<Mutex<BlockChain>> = Arc::new(Mutex::new(blockchain));
 
         let id_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8333);
 
@@ -642,6 +771,7 @@ mod tests {
             ConnectionId::new(id_address, ConnectionType::Peer),
             stream,
             sender_message,
+            blockchain,
             magic_numbers,
             notifier,
             sender,
@@ -681,6 +811,8 @@ mod tests {
         let (sender_message, _) = channel::<MessageResponse>();
         let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
         let notifier = NotificationMock {};
+        let blockchain = create_mock_blockchain();
+        let blockchain: Arc<Mutex<BlockChain>> = Arc::new(Mutex::new(blockchain));
 
         let id_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8333);
 
@@ -690,6 +822,7 @@ mod tests {
             ConnectionId::new(id_address, ConnectionType::Peer),
             stream,
             sender_message,
+            blockchain,
             magic_numbers,
             notifier,
             sender,

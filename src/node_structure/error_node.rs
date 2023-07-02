@@ -12,6 +12,9 @@ pub enum ErrorNode {
     /// It will appear when there is an error in the reading from a stream
     WhileReceivingMessage(String),
 
+    /// It will appear when there is a problem while creating a message
+    WhileCreatingMessage(String),
+
     /// It will appear when there is an error in the serialization
     WhileSerializing(String),
 

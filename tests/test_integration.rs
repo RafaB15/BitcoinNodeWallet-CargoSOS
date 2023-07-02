@@ -7,13 +7,17 @@ mod test_integration {
 
     use cargosos_bitcoin::{
         block_structure::{
-            block::Block, block_chain::BlockChain, hash::HashType, merkle_tree::MerkleTree,
+            block::Block, block_chain::BlockChain, block_header::BlockHeader,
+            block_version::BlockVersion, compact256::Compact256, hash::HashType,
+            merkle_tree::MerkleTree, outpoint::Outpoint, transaction::Transaction,
+            transaction_input::TransactionInput, transaction_output::TransactionOutput,
         },
         connections::{p2p_protocol::ProtocolVersionP2P, supported_services::SupportedServices},
         logs::logger,
         messages::{
             bitfield_services::BitfieldServices,
             command_name::CommandName,
+            compact_size::CompactSize,
             get_headers_message::GetHeadersMessage,
             message::{self, Message},
             send_headers_message::SendHeadersMessage,
@@ -32,7 +36,7 @@ mod test_integration {
 
     use std::{
         net::{IpAddr, Ipv4Addr, SocketAddr},
-        sync::mpsc::channel,
+        sync::{mpsc::channel, Arc, Mutex},
     };
 
     fn read_message<M: Message>(stream: &mut Stream, message_type: CommandName) -> M {
@@ -51,6 +55,46 @@ mod test_integration {
     fn update_merkle_root_hash(block: &mut Block) {
         let merkle_tree = MerkleTree::new(&block.transactions).unwrap();
         block.header.merkle_root_hash = merkle_tree.root;
+    }
+
+    fn create_mock_blockchain() -> BlockChain {
+        let transaction_input = TransactionInput::new(
+            Outpoint::new([1; 32], 23),
+            "Prueba in".as_bytes().to_vec(),
+            24,
+        );
+
+        let transaction_output = TransactionOutput {
+            value: 10,
+            pk_script: "Prueba out".as_bytes().to_vec(),
+        };
+
+        let transaction = Transaction {
+            version: 1,
+            tx_in: vec![transaction_input.clone()],
+            tx_out: vec![transaction_output.clone()],
+            time: 0,
+        };
+
+        let empty_block = Block::new(BlockHeader::new(
+            BlockVersion::version(1),
+            [0; 32],
+            [0; 32],
+            0,
+            Compact256::from(u32::MAX),
+            0,
+            CompactSize::new(0),
+        ));
+
+        let mut block_with_transactions = empty_block.clone();
+        block_with_transactions
+            .append_transaction(transaction.clone())
+            .unwrap();
+
+        let mut blockchain = BlockChain::new(empty_block).unwrap();
+
+        blockchain.update_block(block_with_transactions).unwrap();
+        blockchain
     }
 
     #[ignore]
@@ -193,6 +237,7 @@ mod test_integration {
             ConnectionId::new(id_address, ConnectionType::Peer),
             stream,
             sender_message,
+            Arc::new(Mutex::new(blockchain.clone())),
             magic_numbers,
             notifier,
             sender,

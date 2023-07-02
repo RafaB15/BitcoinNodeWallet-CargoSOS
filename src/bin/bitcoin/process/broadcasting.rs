@@ -28,6 +28,7 @@ pub fn add_peer_to_broadcasting<N: Notifier + 'static, RW: Read + Write + Send +
     broadcasting: &mut Broadcasting<RW>,
     connection: (RW, ConnectionId),
     sender_response: Sender<MessageResponse>,
+    blockchain: MutArc<BlockChain>,
     magic_numbers: [u8; 4],
     notifier: N,
     logger: LoggerSender,
@@ -35,6 +36,7 @@ pub fn add_peer_to_broadcasting<N: Notifier + 'static, RW: Read + Write + Send +
     let peer_manager = create_peer_manager(
         connection,
         sender_response.clone(),
+        blockchain.clone(),
         magic_numbers,
         notifier.clone(),
         logger.clone(),
@@ -51,6 +53,7 @@ pub fn add_peer_to_broadcasting<N: Notifier + 'static, RW: Read + Write + Send +
 fn create_peer_manager<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
     connection: (RW, ConnectionId),
     sender_response: Sender<MessageResponse>,
+    blockchain: MutArc<BlockChain>,
     magic_numbers: [u8; 4],
     notifier: N,
     logger: LoggerSender,
@@ -60,6 +63,7 @@ fn create_peer_manager<N: Notifier + 'static, RW: Read + Write + Send + 'static>
         connection.1,
         connection.0,
         sender_response,
+        blockchain,
         magic_numbers,
         notifier,
         logger,
