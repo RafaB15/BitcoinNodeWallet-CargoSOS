@@ -10,23 +10,25 @@ use crate::{
 };
 
 use cargosos_bitcoin::{
-    block_structure::{block_chain::BlockChain, utxo_set::UTXOSet, block},
+    block_structure::{block, block_chain::BlockChain, utxo_set::UTXOSet},
     configurations::{
         connection_config::ConnectionConfig, download_config::DownloadConfig,
         mode_config::ModeConfig,
     },
+    connections::error_connection::ErrorConnection,
     logs::logger_sender::LoggerSender,
     node_structure::{
         broadcasting::Broadcasting, connection_id::ConnectionId, message_response::MessageResponse,
     },
     notifications::notifier::Notifier,
-    wallet_structure::wallet::Wallet, connections::error_connection::ErrorConnection,
+    wallet_structure::wallet::Wallet,
 };
 
 use std::{
     net::{IpAddr, SocketAddr, TcpStream},
     sync::mpsc,
-    sync::{Arc, Mutex}, time::Duration,
+    sync::{Arc, Mutex},
+    time::Duration,
 };
 
 fn _show_merkle_path(block_chain: &BlockChain, logger: LoggerSender) -> Result<(), ErrorExecution> {
@@ -72,7 +74,6 @@ fn _show_merkle_path(block_chain: &BlockChain, logger: LoggerSender) -> Result<(
     Ok(())
 }
 
-
 /// Broadcasting blocks and transactions from and to the given peers
 ///
 /// ### Error
@@ -89,7 +90,10 @@ fn broadcasting<N: Notifier + 'static>(
     let (sender_response, receiver_response) = mpsc::channel::<MessageResponse>();
 
     for (stream, _) in connections.iter() {
-        if stream.set_read_timeout(Some(Duration::from_secs(1))).is_err() {
+        if stream
+            .set_read_timeout(Some(Duration::from_secs(1)))
+            .is_err()
+        {
             return Err(ErrorConnection::ErrorCannotSetStreamProperties.into());
         };
     }

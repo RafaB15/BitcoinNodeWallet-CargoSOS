@@ -1,6 +1,6 @@
 use super::{
-    hash::HashType,
-    block::Block, block_header::BlockHeader, error_block::ErrorBlock, node_chain::NodeChain,
+    block::Block, block_header::BlockHeader, error_block::ErrorBlock, hash::HashType,
+    node_chain::NodeChain,
 };
 
 use crate::serialization::{
@@ -207,20 +207,28 @@ impl BlockChain {
         if latest_nodes.len() == 1 {
             return Ok(());
         }
-        let mut main_node = match latest_nodes.iter().enumerate().max_by_key(|(_, node)| node.height) {
+        let mut main_node = match latest_nodes
+            .iter()
+            .enumerate()
+            .max_by_key(|(_, node)| node.height)
+        {
             Some((index, _)) => latest_nodes.remove(index),
             None => return Err(ErrorBlock::NodeChainReferenceNotFound),
         };
         let mut main_chain_values: Vec<NodeChain> = Vec::new();
 
-        while !latest_nodes.is_empty()  {
-            let current_biggest_index = match latest_nodes.iter().enumerate().max_by_key(|(_, node)| node.height) {
+        while !latest_nodes.is_empty() {
+            let current_biggest_index = match latest_nodes
+                .iter()
+                .enumerate()
+                .max_by_key(|(_, node)| node.height)
+            {
                 Some((index, _)) => index,
                 None => break,
             };
 
             let current_biggest_node = latest_nodes[current_biggest_index].clone();
-            
+
             if current_biggest_node == main_node {
                 latest_nodes.remove(current_biggest_index);
                 continue;
@@ -236,10 +244,11 @@ impl BlockChain {
                     None => return Err(ErrorBlock::NodeChainReferenceNotFound),
                 };
             } else {
-                latest_nodes[current_biggest_index] = match latest_nodes[current_biggest_index].index_previous_node {
-                    Some(index) => self.get_block_at_mut(index)?,
-                    None => return Err(ErrorBlock::NodeChainReferenceNotFound),
-                };
+                latest_nodes[current_biggest_index] =
+                    match latest_nodes[current_biggest_index].index_previous_node {
+                        Some(index) => self.get_block_at_mut(index)?,
+                        None => return Err(ErrorBlock::NodeChainReferenceNotFound),
+                    };
             }
         }
         main_chain_values.insert(0, main_node.clone());
@@ -253,14 +262,15 @@ impl BlockChain {
         for node in main_chain_values.iter_mut() {
             node.index_previous_node = Some(index_temp);
             index_temp += 1;
-        } 
+        }
         main_chain_values.insert(0, self.get_block_at_mut(main_chain_update_index)?.clone());
-        self.blocks.splice(main_chain_update_index.., main_chain_values);
+        self.blocks
+            .splice(main_chain_update_index.., main_chain_values);
         self.last_blocks = vec![index_temp];
         println!("{:?}", self.blocks);
         Ok(())
     }
-    
+
     /// Returns the header that matches the given hash
     fn get_node_chain_with_hash(&self, header_hash: &HashType) -> Option<NodeChain> {
         for node_chain in self.blocks.iter() {
@@ -272,29 +282,31 @@ impl BlockChain {
     }
 
     /// Returns the most reacents out of the headers that match the given hashes
-    pub fn get_most_recent_hash(&self, hashes: Vec<HashType>) -> Result<HashType, ErrorBlock>{
+    pub fn get_most_recent_hash(&self, hashes: Vec<HashType>) -> Result<HashType, ErrorBlock> {
         let mut nodes: Vec<NodeChain> = Vec::new();
         for hash in hashes.iter() {
             match self.get_node_chain_with_hash(hash) {
                 Some(node) => {
                     nodes.push(node);
-                },
+                }
                 None => continue,
             };
         }
-        match nodes.iter().max_by_key(|node| node.height){
+        match nodes.iter().max_by_key(|node| node.height) {
             Some(node) => Ok(node.header_hash),
-            None => {
-                match BlockHeader::generate_genesis_block_header().get_hash256d() {
-                    Ok(hash) => Ok(hash),
-                    Err(_) => Err(ErrorBlock::ErrorHashingBlockHeader),
-                }
+            None => match BlockHeader::generate_genesis_block_header().get_hash256d() {
+                Ok(hash) => Ok(hash),
+                Err(_) => Err(ErrorBlock::ErrorHashingBlockHeader),
             },
         }
     }
 
     /// Gets a maximum of 2000 headers from the given hash
-    pub fn get_headers_from_header_hash(&mut self, header_hash: &HashType, stop_hash: &HashType) -> Result<Vec<BlockHeader>, ErrorBlock> {
+    pub fn get_headers_from_header_hash(
+        &mut self,
+        header_hash: &HashType,
+        stop_hash: &HashType,
+    ) -> Result<Vec<BlockHeader>, ErrorBlock> {
         let mut headers: Vec<BlockHeader> = Vec::new();
         let mut save = false;
 
@@ -319,12 +331,11 @@ impl BlockChain {
 
     /// Gets a block with the given hash
     pub fn get_block_with_hash(&self, header_hash: &HashType) -> Option<Block> {
-        if let Some(node) = self.get_node_chain_with_hash(header_hash){
+        if let Some(node) = self.get_node_chain_with_hash(header_hash) {
             return Some(node.block);
         };
         None
     }
-    
 }
 
 impl TryDefault for BlockChain {
@@ -386,9 +397,9 @@ impl DeserializableInternalOrder for BlockChain {
 #[cfg(test)]
 mod tests {
     use crate::block_structure::{
-        hash::HashType,
-        block_version, compact256::Compact256, outpoint::Outpoint, transaction::Transaction,
-        transaction_input::TransactionInput, transaction_output::TransactionOutput,
+        block_version, compact256::Compact256, hash::HashType, outpoint::Outpoint,
+        transaction::Transaction, transaction_input::TransactionInput,
+        transaction_output::TransactionOutput,
     };
 
     use super::*;
@@ -570,19 +581,19 @@ mod tests {
 
         let mut block_1 = create_block([0; 32], 1, 1);
         block_1.append_transaction(transaction_1).unwrap();
-        
+
         let mut block_2 = create_block(block_1.header.get_hash256d().unwrap(), 1, 2);
         block_2.append_transaction(transaction_2).unwrap();
-        
+
         let mut block_3 = create_block(block_2.header.get_hash256d().unwrap(), 1, 3);
         block_3.append_transaction(transaction_3).unwrap();
-        
+
         let mut block_4 = create_block(block_2.header.get_hash256d().unwrap(), 1, 4);
         block_4.append_transaction(transaction_4).unwrap();
-        
+
         let mut block_5 = create_block(block_4.header.get_hash256d().unwrap(), 1, 5);
         block_5.append_transaction(transaction_5).unwrap();
-        
+
         let mut block_6 = create_block(block_5.header.get_hash256d().unwrap(), 1, 6);
         block_6.append_transaction(transaction_6).unwrap();
 
@@ -617,7 +628,12 @@ mod tests {
         blockchain.append_block(block_5.clone()).unwrap();
         blockchain.append_block(block_6.clone()).unwrap();
 
-        let headers = blockchain.get_headers_from_header_hash(&block_3.header.get_hash256d().unwrap(), &block_6.header.get_hash256d().unwrap()).unwrap();
+        let headers = blockchain
+            .get_headers_from_header_hash(
+                &block_3.header.get_hash256d().unwrap(),
+                &block_6.header.get_hash256d().unwrap(),
+            )
+            .unwrap();
         assert_eq!(headers.len(), 3);
         assert_eq!(headers[0], block_4.header);
         assert_eq!(headers[1], block_5.header);
@@ -649,5 +665,4 @@ mod tests {
         let most_recent_hash = blockchain.get_most_recent_hash(hashes).unwrap();
         assert_eq!(most_recent_hash, block_6.header.get_hash256d().unwrap());
     }
-
 }

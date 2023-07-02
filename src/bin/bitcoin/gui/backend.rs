@@ -15,22 +15,23 @@ use crate::{
 };
 
 use cargosos_bitcoin::{
+    block_structure::block,
     configurations::{
         connection_config::ConnectionConfig, download_config::DownloadConfig,
         mode_config::ModeConfig, save_config::SaveConfig,
     },
-    node_structure::connection_id::ConnectionId, block_structure::block,
+    node_structure::connection_id::ConnectionId,
 };
 
 use cargosos_bitcoin::{
     block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
+    connections::error_connection::ErrorConnection,
     logs::logger_sender::LoggerSender,
     node_structure::{broadcasting::Broadcasting, message_response::MessageResponse},
     notifications::{notification::Notification, notifier::Notifier},
     wallet_structure::{
         address::Address, private_key::PrivateKey, public_key::PublicKey, wallet::Wallet,
     },
-    connections::error_connection::ErrorConnection,
 };
 
 use std::{
@@ -169,7 +170,10 @@ fn broadcasting<N: Notifier + 'static>(
     let (sender_response, receiver_response) = channel::<MessageResponse>();
 
     for (stream, _) in connections.iter() {
-        if stream.set_read_timeout(Some(Duration::from_secs(1))).is_err() {
+        if stream
+            .set_read_timeout(Some(Duration::from_secs(1)))
+            .is_err()
+        {
             return Err(ErrorConnection::ErrorCannotSetStreamProperties.into());
         };
     }

@@ -47,7 +47,11 @@ impl NodeChain {
     ///
     /// ### Error
     ///  * `ErrorBlock::CouldNotHash`: It will appear when a header could not be hash correctly
-    pub fn new(block: Block, index_previous_node: usize, height_previous_node: u64) -> Result<Self, ErrorBlock> {
+    pub fn new(
+        block: Block,
+        index_previous_node: usize,
+        height_previous_node: u64,
+    ) -> Result<Self, ErrorBlock> {
         let header_hash = match block.header.get_hash256d() {
             Ok(hash) => hash,
             _ => return Err(ErrorBlock::CouldNotHash),

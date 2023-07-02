@@ -7,16 +7,17 @@ mod test_integration {
 
     use cargosos_bitcoin::{
         block_structure::{
-            block::Block, block_chain::BlockChain, hash::HashType, merkle_tree::MerkleTree,
-            transaction::Transaction,transaction_input::TransactionInput, transaction_output::TransactionOutput,
-            outpoint::Outpoint, block_version::BlockVersion, block_header::BlockHeader, compact256::Compact256,
+            block::Block, block_chain::BlockChain, block_header::BlockHeader,
+            block_version::BlockVersion, compact256::Compact256, hash::HashType,
+            merkle_tree::MerkleTree, outpoint::Outpoint, transaction::Transaction,
+            transaction_input::TransactionInput, transaction_output::TransactionOutput,
         },
         connections::{p2p_protocol::ProtocolVersionP2P, supported_services::SupportedServices},
         logs::logger,
         messages::{
-            compact_size::CompactSize,
             bitfield_services::BitfieldServices,
             command_name::CommandName,
+            compact_size::CompactSize,
             get_headers_message::GetHeadersMessage,
             message::{self, Message},
             send_headers_message::SendHeadersMessage,
@@ -35,10 +36,7 @@ mod test_integration {
 
     use std::{
         net::{IpAddr, Ipv4Addr, SocketAddr},
-        sync::{
-            mpsc::channel,
-            Arc, Mutex,    
-        },
+        sync::{mpsc::channel, Arc, Mutex},
     };
 
     fn read_message<M: Message>(stream: &mut Stream, message_type: CommandName) -> M {

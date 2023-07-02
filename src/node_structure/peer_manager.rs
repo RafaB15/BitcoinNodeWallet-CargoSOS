@@ -4,7 +4,7 @@ use super::{
 };
 
 use crate::{
-    block_structure::{hash::HashType, transaction::Transaction, block_chain::BlockChain, block_header::BlockHeader},
+    block_structure::{block_chain::BlockChain, hash::HashType, transaction::Transaction},
     concurrency::work::Work,
     connections::type_identifier::TypeIdentifier,
     logs::logger_sender::LoggerSender,
@@ -36,9 +36,7 @@ use std::{
     io::{Read, Write},
     sync::{
         mpsc::{Receiver, Sender},
-        Arc,
-        Mutex,
-        MutexGuard,
+        Arc, Mutex,
     },
 };
 
@@ -286,33 +284,49 @@ where
     }
 
     /// Creates a response to a get headers message
-    fn replay_to_get_headers_message(
-        &mut self,
-        header: MessageHeader,
-    ) -> Result<(), ErrorNode> {
+    fn replay_to_get_headers_message(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
         let magic_numbers = header.magic_numbers.clone();
         let get_headers = GetHeadersMessage::deserialize_message(&mut self.peer, header)?;
         let headers = self.generate_headers_message(get_headers)?;
         HeadersMessage::serialize_message(&mut self.peer, magic_numbers, &headers)?;
         Ok(())
     }
-    
+
     /// Creates a response to a get headers message
-    /// 
+    ///
     /// ### Error
     /// * `ErrorNode::WhileCreatingMessage`: It will appear when there is an error while creating the message
-    fn generate_headers_message(&self, get_headers_message: GetHeadersMessage) -> Result<HeadersMessage, ErrorNode> {
+    fn generate_headers_message(
+        &self,
+        get_headers_message: GetHeadersMessage,
+    ) -> Result<HeadersMessage, ErrorNode> {
         let mut blockchain = match self.blockchain.lock() {
             Ok(blockchain) => blockchain,
-            Err(_) => return Err(ErrorNode::WhileCreatingMessage("While locking the blockchain to create the headers message".to_string())),
+            Err(_) => {
+                return Err(ErrorNode::WhileCreatingMessage(
+                    "While locking the blockchain to create the headers message".to_string(),
+                ))
+            }
         };
-        let most_recent_hash = match blockchain.get_most_recent_hash(get_headers_message.header_locator_hashes) {
+        let most_recent_hash = match blockchain
+            .get_most_recent_hash(get_headers_message.header_locator_hashes)
+        {
             Ok(most_recent_hash) => most_recent_hash,
-            Err(_) => return Err(ErrorNode::WhileCreatingMessage("While getting the most recent hash to create the headers message".to_string())),
+            Err(_) => {
+                return Err(ErrorNode::WhileCreatingMessage(
+                    "While getting the most recent hash to create the headers message".to_string(),
+                ))
+            }
         };
-        let headers_to_send = match blockchain.get_headers_from_header_hash(&most_recent_hash, &get_headers_message.stop_hash) {
+        let headers_to_send = match blockchain
+            .get_headers_from_header_hash(&most_recent_hash, &get_headers_message.stop_hash)
+        {
             Ok(headers_to_send) => headers_to_send,
-            Err(_) => return Err(ErrorNode::WhileCreatingMessage("While getting the headers to send to create the headers message".to_string())),
+            Err(_) => {
+                return Err(ErrorNode::WhileCreatingMessage(
+                    "While getting the headers to send to create the headers message".to_string(),
+                ))
+            }
         };
         Ok(HeadersMessage {
             headers: headers_to_send,
@@ -325,10 +339,15 @@ where
         let get_data_message = GetDataMessage::deserialize_message(&mut self.peer, header)?;
 
         for inventory_vector in get_data_message.inventory_vectors.iter() {
-            if let TypeIdentifier::Block =  inventory_vector.type_identifier {
+            if let TypeIdentifier::Block = inventory_vector.type_identifier {
                 let blockchain = match self.blockchain.lock() {
                     Ok(blockchain) => blockchain,
-                    Err(_) => return Err(ErrorNode::WhileCreatingMessage("While locking the blockchain to create the get data message".to_string())),
+                    Err(_) => {
+                        return Err(ErrorNode::WhileCreatingMessage(
+                            "While locking the blockchain to create the get data message"
+                                .to_string(),
+                        ))
+                    }
                 };
                 if let Some(block) = blockchain.get_block_with_hash(&inventory_vector.hash_value) {
                     BlockMessage::serialize_message(&mut self.peer, magic_numbers, &block)?;
