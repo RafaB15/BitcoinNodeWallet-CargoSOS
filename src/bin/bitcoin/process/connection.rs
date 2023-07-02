@@ -8,7 +8,7 @@ use cargosos_bitcoin::{
         mode_config::ModeConfig,
     }, 
     connections::error_connection::ErrorConnection,
-    block_structure::block_chain::BlockChain,
+    block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
     node_structure::{
         connection_event::ConnectionEvent, connection_type::ConnectionType, process_connection::ProcessConnection, 
         connection_id::ConnectionId, message_response::MessageResponse, broadcasting::Broadcasting, 
@@ -75,7 +75,7 @@ pub fn create_process_connection<N: Notifier + Send + 'static>(
 pub fn update_from_connection<N: Notifier + Send + 'static>(
     receiver_confirm_connection: Receiver<(TcpStream, ConnectionId)>,
     sender_response: Sender<MessageResponse>,
-    data: (MutArc<Broadcasting<TcpStream>>, MutArc<BlockChain>),
+    data: (MutArc<Broadcasting<TcpStream>>, MutArc<BlockChain>, MutArc<UTXOSet>),
     config: (ConnectionConfig, DownloadConfig),
     notifier: N,
     logger: LoggerSender,
@@ -83,6 +83,7 @@ pub fn update_from_connection<N: Notifier + Send + 'static>(
 
     let broadcasting = data.0;
     let block_chain = data.1;
+    let utxo_set = data.2;
 
     let magic_numbers = config.0.magic_numbers;
     
@@ -95,6 +96,7 @@ pub fn update_from_connection<N: Notifier + Send + 'static>(
                     match download::update_block_chain_with_peer(
                         (stream, connection_id),
                         block_chain.clone(),
+                        utxo_set.clone(),
                         config.clone(),
                         notifier.clone(),
                         logger.clone(),

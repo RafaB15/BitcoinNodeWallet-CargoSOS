@@ -45,6 +45,8 @@ pub fn add_peer_to_broadcasting<N: Notifier + 'static, RW: Read + Write + Send +
     let (sender, receiver) = channel::<MessageToPeer>();
 
     broadcasting.add_connection(peer_manager, (sender, receiver));
+
+    let _ = logger.log_node("Adding new peer to bradcasting".to_string());
 }
 
 /// Creates a peer manager to manege the message of this peer
@@ -55,7 +57,7 @@ fn create_peer_manager<N: Notifier + 'static, RW: Read + Write + Send + 'static>
     notifier: N,
     logger: LoggerSender,
 ) -> PeerManager<RW, N> {
-    let _ = logger.log_node("PeerManager".to_string());
+    let _ = logger.log_node("Creating new Peer manager".to_string());
     PeerManager::<RW, N>::new(
         connection.1,
         connection.0,

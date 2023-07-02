@@ -17,7 +17,7 @@ use cargosos_bitcoin::{
     node_structure::{
         broadcasting::Broadcasting, message_response::MessageResponse, connection_event::ConnectionEvent,
     },
-    notifications::notifier::Notifier,
+    notifications::{notifier::Notifier, notification::Notification},
     wallet_structure::wallet::Wallet,
 };
 
@@ -51,9 +51,15 @@ where
         logger.clone(),
     );
 
-    let block_chain = load_system.get_block_chain()?;
+    let wallet = load_system.get_wallet()?;
 
-    let wallet = Arc::new(Mutex::new(load_system.get_wallet()?));
+    for account in wallet.get_accounts().iter() {
+        notifier.notify(Notification::RegisterWalletAccount(account.clone()));
+    }
+
+    let wallet = Arc::new(Mutex::new(wallet));
+
+    let block_chain = load_system.get_block_chain()?;
 
     let utxo_set = Arc::new(Mutex::new(download::get_utxo_set(
         &block_chain,
@@ -61,6 +67,8 @@ where
     )));
 
     let block_chain = Arc::new(Mutex::new(block_chain));
+
+    notifier.notify(Notification::NotifyBlockchainIsReady);
 
     let (handle_peers, 
         broadcasting, 
@@ -76,7 +84,7 @@ where
     let handle_confirmed_connection = connection::update_from_connection(
         receiver_confirm_connection,
         sender_response,
-        (broadcasting.clone(), block_chain.clone()),
+        (broadcasting.clone(), block_chain.clone(), utxo_set.clone()),
         (connection_config.clone(), download_config.clone()),
         notifier.clone(),
         logger.clone(),

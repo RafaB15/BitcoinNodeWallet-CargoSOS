@@ -33,6 +33,7 @@ use std::{
 fn headers_first<N: Notifier, RW: Read + Write + Send + Debug + 'static>(
     connection: (RW, ConnectionId),
     block_chain: &mut BlockChain,
+    utxo_set: &mut UTXOSet,
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
     notifier: N,
@@ -76,6 +77,7 @@ fn headers_first<N: Notifier, RW: Read + Write + Send + Debug + 'static>(
 
     let stream = updating_block_chain(
         block_chain,
+        utxo_set,
         peer_download_handle,
         notifier.clone(),
         logger.clone(),
@@ -155,6 +157,7 @@ fn get_blocks<RW: Read + Write + Send + 'static>(
 pub fn update_block_chain_with_peer<N: Notifier, RW: Read + Write + Send + Debug + 'static>(
     connection: (RW, ConnectionId),
     block_chain: MutArc<BlockChain>,
+    utxo_set: MutArc<UTXOSet>,
     config: (ConnectionConfig, DownloadConfig),
     notifier: N,
     logger: LoggerSender,
@@ -164,10 +167,12 @@ pub fn update_block_chain_with_peer<N: Notifier, RW: Read + Write + Send + Debug
     let download_config = config.1;
 
     let mut block_chain_reference = get_reference(&block_chain)?;
+    let mut utxo_set_reference = get_reference(&utxo_set)?;
 
     let connection = update_block_chain(
         connection,
         &mut block_chain_reference,
+        &mut utxo_set_reference,
         connection_config.clone(),
         download_config,
         notifier.clone(),
@@ -181,6 +186,7 @@ pub fn update_block_chain_with_peer<N: Notifier, RW: Read + Write + Send + Debug
 pub fn update_block_chain<N: Notifier, RW: Read + Write + Send + Debug + 'static>(
     connection: (RW, ConnectionId),
     block_chain: &mut BlockChain,
+    utxo_set: &mut UTXOSet,
     connection_config: ConnectionConfig,
     download_config: DownloadConfig,
     notifier: N,
@@ -192,6 +198,7 @@ pub fn update_block_chain<N: Notifier, RW: Read + Write + Send + Debug + 'static
         IBDMethod::HeaderFirst => headers_first(
             connection,
             block_chain,
+            utxo_set,
             connection_config,
             download_config,
             notifier,
@@ -218,6 +225,7 @@ pub fn get_utxo_set(block_chain: &BlockChain, logger: LoggerSender) -> UTXOSet {
 ///  * `ErrorExecution::FailThread`: It will appear when the thread fails
 fn updating_block_chain<N: Notifier, RW: Read + Write + Send>(
     block_chain: &mut BlockChain,
+    utxo_set: &mut UTXOSet,
     peer_download_handle: JoinHandle<(Vec<Block>, RW)>,
     notifier: N,
     logger: LoggerSender,
@@ -225,7 +233,7 @@ fn updating_block_chain<N: Notifier, RW: Read + Write + Send>(
     let _ = logger.log_connection("Finish downloading, loading to blockchain".to_string());
     match peer_download_handle.join() {
         Ok((blocks, peer_stream)) => {
-            let total_blocks = blocks.len();
+            let total_blocks = blocks.len() as u32;
             let _ = logger.log_connection(format!("Loading {total_blocks} blocks to blockchain"));
 
             for (i, block) in blocks.iter().enumerate() {
@@ -233,13 +241,21 @@ fn updating_block_chain<N: Notifier, RW: Read + Write + Send>(
                     continue;
                 }
 
+                utxo_set.update_utxo_with_block(&block);
+
                 if i % 50 == 0 {
                     let _ = logger.log_connection(format!("Loading [{i}] blocks to blockchain",));
                     notifier.notify(Notification::ProgressDownloadingBlocks(
                         i as u32,
-                        total_blocks as u32,
+                        total_blocks,
                     ));
                 }
+            }
+
+            if total_blocks == 0 {
+                notifier.notify(Notification::ProgressDownloadingBlocks(1, 1));
+            } else {
+                notifier.notify(Notification::ProgressDownloadingBlocks(total_blocks, total_blocks));
             }
 
             let _ =
