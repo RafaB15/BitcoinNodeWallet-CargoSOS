@@ -201,11 +201,11 @@ it contains one unconfirmed transaction previously identified</property>
   </object>
   <object class="GtkTreeStore" id="ConnectionsTreeStore">
     <columns>
+      <!-- column-name Connection -->
+      <column type="gchararray"/>
       <!-- column-name IP -->
       <column type="gchararray"/>
       <!-- column-name Port -->
-      <column type="gchararray"/>
-      <!-- column-name Connection -->
       <column type="gchararray"/>
     </columns>
   </object>
@@ -940,16 +940,16 @@ has been identified but is still unconfirmed</property>
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
                             <property name="model">ConnectionsTreeStore</property>
-                            <property name="tooltip-column">4</property>
+                            <property name="enable-grid-lines">both</property>
                             <child internal-child="selection">
                               <object class="GtkTreeSelection"/>
                             </child>
                             <child>
-                              <object class="GtkTreeViewColumn" id="IPAddressColumn">
-                                <property name="fixed-width">150</property>
-                                <property name="title" translatable="yes">IP Address</property>
+                              <object class="GtkTreeViewColumn" id="ConnectionTypColumn">
+                                <property name="fixed-width">475</property>
+                                <property name="title" translatable="yes">Connection Type</property>
                                 <child>
-                                  <object class="GtkCellRendererText" id="IPAddressCellRenderer"/>
+                                  <object class="GtkCellRendererText" id="ConnectionTypCellRenderer"/>
                                   <attributes>
                                     <attribute name="text">0</attribute>
                                   </attributes>
@@ -957,11 +957,11 @@ has been identified but is still unconfirmed</property>
                               </object>
                             </child>
                             <child>
-                              <object class="GtkTreeViewColumn" id="PortColumn">
-                                <property name="fixed-width">125</property>
-                                <property name="title" translatable="yes">Port</property>
+                              <object class="GtkTreeViewColumn" id="IPAddressColumn">
+                                <property name="fixed-width">160</property>
+                                <property name="title" translatable="yes">IP Address</property>
                                 <child>
-                                  <object class="GtkCellRendererText" id="PortCellRenderer"/>
+                                  <object class="GtkCellRendererText" id="IPAddressCellRenderer"/>
                                   <attributes>
                                     <attribute name="text">1</attribute>
                                   </attributes>
@@ -969,10 +969,10 @@ has been identified but is still unconfirmed</property>
                               </object>
                             </child>
                             <child>
-                              <object class="GtkTreeViewColumn" id="ConnectionTypeColumn">
-                                <property name="title" translatable="yes">Connection Type</property>
+                              <object class="GtkTreeViewColumn" id="PortColumn">
+                                <property name="title" translatable="yes">Port</property>
                                 <child>
-                                  <object class="GtkCellRendererText" id="ConnectionTypeCellRenderer"/>
+                                  <object class="GtkCellRendererText" id="PortCellRenderer"/>
                                   <attributes>
                                     <attribute name="text">2</attribute>
                                   </attributes>

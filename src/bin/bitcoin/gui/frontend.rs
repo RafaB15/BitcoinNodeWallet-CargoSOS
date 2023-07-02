@@ -491,9 +491,9 @@ fn show_connections_in_tree_view(builder: &Builder, connection: ConnectionId ) -
     let port = connection.address.port().to_string();
 
     let tree_iter = connections_tree_store.append(None);
-    connections_tree_store.set_value(&tree_iter, 0, &glib::Value::from(ip_address));
-    connections_tree_store.set_value(&tree_iter, 1, &glib::Value::from(port));
-    connections_tree_store.set_value(&tree_iter, 2, &glib::Value::from(connection.connection_type.to_string()));
+    connections_tree_store.set_value(&tree_iter, 0, &glib::Value::from(connection.connection_type.to_string()));
+    connections_tree_store.set_value(&tree_iter, 1, &glib::Value::from(ip_address));
+    connections_tree_store.set_value(&tree_iter, 2, &glib::Value::from(port));
 
     Ok(())
 }
