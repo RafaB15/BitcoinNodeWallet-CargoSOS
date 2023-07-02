@@ -90,23 +90,24 @@ pub fn update_from_connection<N: Notifier + Send + 'static>(
 
         for (stream, connection_id) in receiver_confirm_connection {
 
-            let mut connection = (stream, connection_id);
-
-            if connection_id.connection_type == ConnectionType::Peer {
-                connection = match download::update_block_chain_with_peer(
-                    (stream, connection_id),
-                    block_chain.clone(),
-                    config.clone(),
-                    notifier.clone(),
-                    logger.clone(),
-                ) {
-                    Ok(connection) => connection,
-                    Err(error) => {
-                        let _ = logger.log_connection(format!("Error while updating the block chain: {:?}", error));
-                        continue;
+            let (stream, connection_id) = match connection_id.connection_type {
+                ConnectionType::Peer => {
+                    match download::update_block_chain_with_peer(
+                        (stream, connection_id),
+                        block_chain.clone(),
+                        config.clone(),
+                        notifier.clone(),
+                        logger.clone(),
+                    ) {
+                        Ok(connection) => connection,
+                        Err(error) => {
+                            let _ = logger.log_connection(format!("Error while updating the block chain: {:?}", error));
+                            continue;
+                        }
                     }
-                }
-            }
+                },
+                ConnectionType::Client => (stream, connection_id),
+            };
 
             let mut broadcasting_reference = match get_reference(&broadcasting) {
                 Ok(broadcasting_reference) => broadcasting_reference,
@@ -123,8 +124,8 @@ pub fn update_from_connection<N: Notifier + Send + 'static>(
 
             broadcasting::add_peer_to_broadcasting(
                 &mut broadcasting_reference,
-                connection,
-                sender_response,
+                (stream, connection_id),
+                sender_response.clone(),
                 magic_numbers,
                 notifier.clone(),
                 logger.clone(),
@@ -143,7 +144,7 @@ pub fn establish_connection(
 
             let mut potential_connections = Vec::new();
 
-            let peer_adresses = get_potential_peers(server_config, logger.clone())?;
+            let peer_adresses = get_potential_peers(server_config.clone(), logger.clone())?;
 
             peer_adresses
                 .iter()
