@@ -15,6 +15,8 @@ use gtk::{
     Window,
 };
 
+use glib::GString;
+
 use std::sync::mpsc::Sender;
 
 use chrono::{DateTime, NaiveDateTime, Utc};
@@ -62,7 +64,10 @@ fn login_main_window(
     builder: &Builder,
     tx_to_back: Sender<SignalToBack>,
 ) -> Result<(), ErrorUI> {
-    let window: Window = builder.object("MainWindow").unwrap();
+    let window: Window = match builder.object("MainWindow") {
+        Some(window) => window,
+        None => return Err(ErrorUI::MissingElement("MainWindow".to_string())),
+    };
     window.set_application(Some(application));
 
     let application_clone = application.clone();
@@ -109,18 +114,46 @@ fn login_registration_window(
     application: &gtk::Application,
     tx_to_back: Sender<SignalToBack>,
 ) -> Result<(), ErrorUI> {
-    let account_registration_window: Window = builder.object("AccountRegistrationWindow").unwrap();
+    let account_registration_window: Window = match builder.object("AccountRegistrationWindow") {
+        Some(account_registration_window) => account_registration_window,
+        None => {
+            return Err(ErrorUI::MissingElement(
+                "AccountRegistrationWindow".to_string(),
+            ))
+        }
+    };
     account_registration_window.set_application(Some(application));
 
     let cloned_builder = builder.clone();
 
-    let save_wallet_button: Button = builder.object("SaveWalletButton").unwrap();
+    let save_wallet_button: Button = match builder.object("SaveWalletButton") {
+        Some(save_wallet_button) => save_wallet_button,
+        None => return Err(ErrorUI::MissingElement("SaveWalletButton".to_string())),
+    };
     save_wallet_button.connect_clicked(move |_| {
         account_registration_window.set_visible(false);
 
-        let private_key_entry: Entry = cloned_builder.object("PrivateKeyEntry").unwrap();
-        let public_key_entry: Entry = cloned_builder.object("PublicKeyEntry").unwrap();
-        let name_entry: Entry = cloned_builder.object("NameEntry").unwrap();
+        let private_key_entry: Entry = match cloned_builder.object("PrivateKeyEntry") {
+            Some(entry) => entry,
+            None => {
+                println!("Error: Missing element PrivateKeyEntry");
+                Entry::new()
+            }
+        };
+        let public_key_entry: Entry = match cloned_builder.object("PublicKeyEntry") {
+            Some(entry) => entry,
+            None => {
+                println!("Error: Missing element PublicKeyEntry");
+                Entry::new()
+            }
+        };
+        let name_entry: Entry = match cloned_builder.object("NameEntry") {
+            Some(entry) => entry,
+            None => {
+                println!("Error: Missing element NameEntry");
+                Entry::new()
+            }
+        };
 
         if tx_to_back
             .send(SignalToBack::CreateAccount(
@@ -141,12 +174,27 @@ fn login_registration_window(
 }
 
 /// This function sets up the combo box
-fn login_combo_box(builder: &Builder, tx_to_back: Sender<SignalToBack>) {
-    let combo_box: ComboBoxText = builder.object("WalletsComboBox").unwrap();
+fn login_combo_box(builder: &Builder, tx_to_back: Sender<SignalToBack>) -> Result<(), ErrorUI> {
+    let combo_box: ComboBoxText = match builder.object("WalletsComboBox") {
+        Some(combo_box) => combo_box,
+        None => return Err(ErrorUI::MissingElement("WalletsComboBox".to_string())),
+    };
     let cloned_builder = builder.clone();
     combo_box.connect_changed(move |_| {
-        let combo_box_cloned: ComboBoxText = cloned_builder.object("WalletsComboBox").unwrap();
-        let selected_wallet = combo_box_cloned.active_text().unwrap();
+        let combo_box_cloned: ComboBoxText = match cloned_builder.object("WalletsComboBox") {
+            Some(combo_box) => combo_box,
+            None => {
+                println!("Error: Missing element WalletsComboBox");
+                ComboBoxText::new()
+            }
+        };
+        let selected_wallet = match combo_box_cloned.active_text() {
+            Some(selected_wallet) => selected_wallet,
+            None => {
+                println!("Error: Missing element WalletsComboBox");
+                GString::new()
+            }
+        };
         if let Err(error) = tx_to_back.send(SignalToBack::ChangeSelectedAccount(
             selected_wallet.to_string(),
         )) {
@@ -159,6 +207,7 @@ fn login_combo_box(builder: &Builder, tx_to_back: Sender<SignalToBack>) {
             println!("Error sending get account transactions signal: {}", error);
         };
     });
+    Ok(())
 }
 
 /// This function sets up the error window
@@ -447,9 +496,27 @@ fn spawn_local_handler(
                 };
             }
             SignalToFront::LoadAvailableBalance(balance) => {
-                let balance_label: Label = cloned_builder.object("AvailableBalanceLabel").unwrap();
-                let pending_label: Label = cloned_builder.object("PendingBalanceLabel").unwrap();
-                let total_label: Label = cloned_builder.object("TotalBalanceLabel").unwrap();
+                let balance_label: Label = match cloned_builder.object("AvailableBalanceLabel") {
+                    Some(label) => label,
+                    None => {
+                        println!("Error: Missing element AvailableBalanceLabel");
+                        Label::new(None)
+                    }
+                };
+                let pending_label: Label = match cloned_builder.object("PendingBalanceLabel") {
+                    Some(label) => label,
+                    None => {
+                        println!("Error: Missing element PendingBalanceLabel");
+                        Label::new(None)
+                    }
+                };
+                let total_label: Label = match cloned_builder.object("TotalBalanceLabel") {
+                    Some(label) => label,
+                    None => {
+                        println!("Error: Missing element TotalBalanceLabel");
+                        Label::new(None)
+                    }
+                };
 
                 let balance_string = format!("{:.8}", balance.0);
                 let pending_string = format!("{:.8}", balance.1);
