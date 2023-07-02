@@ -3,9 +3,9 @@ use super::signal_to_back::SignalToBack;
 use crate::{
     error_execution::ErrorExecution,
     process::{
-        broadcasting::{add_peers, handle_peers},
-        connection::get_potential_peers,
-        download, process_connection,
+        broadcasting,
+        connection,
+        download, 
         load_system::LoadSystem,
         reference::{self, get_inner, get_reference, MutArc},
         save_system::SaveSystem,
