@@ -1,10 +1,10 @@
 use super::{
     connection_id::ConnectionId, error_node::ErrorNode, message_response::MessageResponse,
-    message_to_peer::MessageToPeer,
+    message_to_peer::MessageToPeer, message_broadcast::MessageBroadcast,
 };
 
 use crate::{
-    block_structure::{block_chain::BlockChain, hash::HashType, transaction::Transaction},
+    block_structure::{block_chain::BlockChain, hash::HashType, transaction::Transaction, block::Block},
     concurrency::work::Work,
     connections::type_identifier::TypeIdentifier,
     logs::logger_sender::LoggerSender,
@@ -93,7 +93,19 @@ where
         loop {
             match Work::listen(&mut self.peer, &receiver) {
                 Work::Message(header) => self.manage_message(header)?,
-                Work::Information(transaction) => self.send_transaction(transaction)?,
+                Work::Information(MessageBroadcast::Transaction(transaction, None)) => {
+                    self.send_transaction(transaction)?
+                },
+                Work::Information(MessageBroadcast::Transaction(transaction, Some(from))) => {
+                    if from != self.id {
+                        self.send_transaction(transaction)?
+                    }
+                },
+                Work::Information(MessageBroadcast::Block(block, from)) => {
+                    if from != self.id {
+                        self.send_block(block)?
+                    }
+                },
                 Work::Stop => {
                     let _ = self
                         .logger
@@ -204,7 +216,7 @@ where
 
         if self
             .sender
-            .send(MessageResponse::Block(block_message.block))
+            .send(MessageResponse::Block(block_message.block, self.id.clone()))
             .is_err()
         {
             return Err(ErrorNode::WhileSendingMessage(
@@ -229,7 +241,7 @@ where
 
         if self
             .sender
-            .send(MessageResponse::Transaction(tx_message.transaction))
+            .send(MessageResponse::Transaction(tx_message.transaction, self.id.clone()))
             .is_err()
         {
             return Err(ErrorNode::WhileSendingMessage(
@@ -370,6 +382,27 @@ where
         let tx_message = TxMessage { transaction };
 
         if TxMessage::serialize_message(&mut self.peer, self.magic_numbers, &tx_message).is_err() {
+            return Err(ErrorNode::WhileSendingMessage(
+                "Sending transaction to peers".to_string(),
+            ));
+        }
+
+        Ok(())
+    }
+
+    /// Sends a block to the peer
+    ///
+    /// ### Error
+    ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
+    ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
+    ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to others threads
+    fn send_block(&mut self, block: Block) -> Result<(), ErrorNode> {
+        let _ = self
+            .logger
+            .log_connection("Sending a block".to_string());
+        let block_message = BlockMessage { block };
+
+        if BlockMessage::serialize_message(&mut self.peer, self.magic_numbers, &block_message).is_err() {
             return Err(ErrorNode::WhileSendingMessage(
                 "Sending transaction to peers".to_string(),
             ));
@@ -622,7 +655,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            MessageResponse::Transaction(transaction),
+            MessageResponse::Transaction(transaction, ConnectionId::new(id_address, ConnectionType::Client)),
             receiver_message.try_recv().unwrap()
         );
     }
@@ -668,7 +701,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            MessageResponse::Block(block),
+            MessageResponse::Block(block, ConnectionId::new(id_address, ConnectionType::Client)),
             receiver_message.try_recv().unwrap()
         );
     }
@@ -829,7 +862,7 @@ mod tests {
         );
 
         sender_transaction
-            .send(MessageToPeer::SendTransaction(transaction.clone()))
+            .send(MessageToPeer::SendTransaction(transaction.clone(), None))
             .unwrap();
         sender_transaction.send(MessageToPeer::Stop).unwrap();
 

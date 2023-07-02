@@ -88,8 +88,6 @@ where
         logger.clone(),
     );
 
-    let broadcasting = Arc::new(Mutex::new(broadcasting));
-
     let handle_confirmed_connection = connection::update_from_connection(
         receiver_confirm_connection,
         sender_response,
@@ -137,7 +135,7 @@ where
         );
     }
 
-    reference::get_inner(broadcasting)?.destroy(notifier)?;
+    reference::get_reference(&broadcasting)?.close_connections(notifier)?;
 
     if handle_peers.join().is_err() {
         return Err(ErrorUI::ErrorFromPeer("Fail to remove notifications".to_string()).into());
@@ -156,13 +154,17 @@ fn broadcasting<N: Notifier + 'static>(
     receiver_response: Receiver<MessageResponse>,
     notifier: N,
     logger: LoggerSender,
-) -> (HandlePeer, Broadcasting<TcpStream>) {
+) -> (HandlePeer, MutArc<Broadcasting<TcpStream>>) {
     let wallet: Arc<Mutex<Wallet>> = data.0;
     let utxo_set: Arc<Mutex<UTXOSet>> = data.1;
     let block_chain: Arc<Mutex<BlockChain>> = data.2;
 
+    let broadcasting =  Broadcasting::<TcpStream>::new(logger.clone());
+    let broadcasting = Arc::new(Mutex::new(broadcasting));
+
     let handle = broadcasting::handle_peers(
         receiver_response,
+        broadcasting.clone(),
         wallet.clone(),
         utxo_set.clone(),
         block_chain.clone(),
@@ -170,5 +172,5 @@ fn broadcasting<N: Notifier + 'static>(
         logger.clone(),
     );
 
-    (handle, Broadcasting::<TcpStream>::new(logger.clone()))
+    (handle, broadcasting)
 }

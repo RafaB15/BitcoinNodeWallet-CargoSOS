@@ -244,7 +244,7 @@ mod test_integration {
         );
 
         sender_transaction
-            .send(MessageToPeer::SendTransaction(send_transaction.clone()))
+            .send(MessageToPeer::SendTransaction(send_transaction.clone(), None))
             .unwrap();
         sender_transaction.send(MessageToPeer::Stop).unwrap();
 
@@ -254,7 +254,7 @@ mod test_integration {
         let mut stream = stream.get_write_stream();
 
         assert_eq!(
-            MessageResponse::Transaction(new_transaction),
+            MessageResponse::Transaction(new_transaction, ConnectionId::new(id_address, ConnectionType::Client)),
             receiver_message.try_recv().unwrap()
         );
 

@@ -9,6 +9,7 @@ pub enum Level {
     FILE,
     INTERFACE,
     NOTIFICATION,
+    BROADCASTING,
     ERROR,
 }
 
@@ -23,6 +24,7 @@ impl std::fmt::Display for Level {
             Level::FILE => write!(f, "FILE"),
             Level::INTERFACE => write!(f, "INTERFACE"),
             Level::NOTIFICATION => write!(f, "NOTIFICATION"),
+            Level::BROADCASTING => write!(f, "BROADCASTING"),
             Level::ERROR => write!(f, "ERROR"),
         }
     }
