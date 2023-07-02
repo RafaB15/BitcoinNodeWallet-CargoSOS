@@ -11,7 +11,6 @@ use cargosos_bitcoin::{
         connection_config::ConnectionConfig, download_config::DownloadConfig,
         mode_config::ModeConfig,
     },
-    connections::error_connection::ErrorConnection,
     logs::logger_sender::LoggerSender,
 };
 

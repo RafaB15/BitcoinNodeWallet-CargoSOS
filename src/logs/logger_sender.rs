@@ -98,6 +98,15 @@ impl LoggerSender {
         Ok(())
     }
 
+    /// Sends the desired message with level: `Level::BROADCASTING`
+    ///
+    /// ### Errores
+    ///  * `ErrorLog::ReceiverNotFound`: It will appear when the receiver it's drop and can't send the message
+    pub fn log_broadcasting(&self, mensaje: String) -> Result<(), ErrorLog> {
+        self.log(Level::BROADCASTING, mensaje)?;
+        Ok(())
+    }
+
     /// Sends the desired message with level: `Level::CONNECTION`
     ///
     /// ### Errores
