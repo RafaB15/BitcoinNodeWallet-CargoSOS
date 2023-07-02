@@ -593,4 +593,53 @@ mod tests {
         assert_eq!(blockchain.blocks.len(), 5);
     }
 
+    #[test]
+    fn test_06_correct_headers_from_hash() {
+        let block_1 = create_block([0; 32], 1, 1);
+        let block_2 = create_block(block_1.header.get_hash256d().unwrap(), 2, 2);
+        let block_3 = create_block(block_2.header.get_hash256d().unwrap(), 3, 3);
+        let block_4 = create_block(block_3.header.get_hash256d().unwrap(), 4, 4);
+        let block_5 = create_block(block_4.header.get_hash256d().unwrap(), 5, 5);
+        let block_6 = create_block(block_5.header.get_hash256d().unwrap(), 6, 6);
+
+        let mut blockchain = BlockChain::new(block_1).unwrap();
+        blockchain.append_block(block_2).unwrap();
+        blockchain.append_block(block_3.clone()).unwrap();
+        blockchain.append_block(block_4.clone()).unwrap();
+        blockchain.append_block(block_5.clone()).unwrap();
+        blockchain.append_block(block_6.clone()).unwrap();
+
+        let headers = blockchain.get_headers_from_header_hash(&block_3.header.get_hash256d().unwrap(), &block_6.header.get_hash256d().unwrap()).unwrap();
+        assert_eq!(headers.len(), 3);
+        assert_eq!(headers[0], block_4.header);
+        assert_eq!(headers[1], block_5.header);
+        assert_eq!(headers[2], block_6.header);
+    }
+
+    #[test]
+    fn test_07_correct_get_most_recent_hash() {
+        let block_1 = create_block([0; 32], 1, 1);
+        let block_2 = create_block(block_1.header.get_hash256d().unwrap(), 2, 2);
+        let block_3 = create_block(block_2.header.get_hash256d().unwrap(), 3, 3);
+        let block_4 = create_block(block_3.header.get_hash256d().unwrap(), 4, 4);
+        let block_5 = create_block(block_4.header.get_hash256d().unwrap(), 5, 5);
+        let block_6 = create_block(block_5.header.get_hash256d().unwrap(), 6, 6);
+
+        let mut blockchain = BlockChain::new(block_1).unwrap();
+        blockchain.append_block(block_2.clone()).unwrap();
+        blockchain.append_block(block_3.clone()).unwrap();
+        blockchain.append_block(block_4).unwrap();
+        blockchain.append_block(block_5).unwrap();
+        blockchain.append_block(block_6.clone()).unwrap();
+
+        let hashes = vec![
+            block_2.header.get_hash256d().unwrap(),
+            block_3.header.get_hash256d().unwrap(),
+            block_6.header.get_hash256d().unwrap(),
+        ];
+
+        let most_recent_hash = blockchain.get_most_recent_hash(hashes).unwrap();
+        assert_eq!(most_recent_hash, block_6.header.get_hash256d().unwrap());
+    }
+
 }

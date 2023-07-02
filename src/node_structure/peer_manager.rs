@@ -136,7 +136,7 @@ where
                 PongMessage::serialize_message(&mut self.peer, magic_numbers, &pong)?;
             }
             CommandName::Pong => ignore_message::<RW, PongMessage>(&mut self.peer, header)?,
-            CommandName::GetHeaders => self.replay_to_get_headers_message(magic_numbers.clone(), header)?,
+            CommandName::GetHeaders => self.replay_to_get_headers_message(header)?,
             CommandName::Headers => self.receive_headers(header)?,
             CommandName::GetData => ignore_message::<RW, GetDataMessage>(&mut self.peer, header)?,
             CommandName::Block => self.receive_blocks(header)?,
@@ -285,11 +285,12 @@ where
         Ok(())
     }
 
+    /// Creates a response to a get headers message
     fn replay_to_get_headers_message(
         &mut self,
-        magic_numbers: [u8; 4],
         header: MessageHeader,
     ) -> Result<(), ErrorNode> {
+        let magic_numbers = header.magic_numbers.clone();
         let get_headers = GetHeadersMessage::deserialize_message(&mut self.peer, header)?;
         let headers = self.generate_headers_message(get_headers)?;
         HeadersMessage::serialize_message(&mut self.peer, magic_numbers, &headers)?;
