@@ -11,7 +11,6 @@ mod test_integration {
             block_version::BlockVersion, compact256::Compact256, hash::HashType,
             merkle_tree::MerkleTree, outpoint::Outpoint, transaction::Transaction,
             transaction_input::TransactionInput, transaction_output::TransactionOutput,
-            block::Block, block_chain::BlockChain, hash::HashType, merkle_tree::MerkleTree,
         },
         connections::{p2p_protocol::ProtocolVersionP2P, supported_services::SupportedServices},
         logs::logger,

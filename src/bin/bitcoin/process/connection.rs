@@ -6,7 +6,7 @@ use super::{
 use crate::error_execution::ErrorExecution;
 
 use cargosos_bitcoin::{
-    block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
+    block_structure::{block, block_chain::BlockChain, utxo_set::UTXOSet},
     configurations::{
         connection_config::ConnectionConfig, download_config::DownloadConfig,
         mode_config::ModeConfig, server_config::ServerConfig,
@@ -152,6 +152,7 @@ pub fn update_from_connection<N: Notifier + Send + 'static>(
                 &mut broadcasting_reference,
                 (stream, connection_id),
                 sender_response.clone(),
+                block_chain.clone(),
                 magic_numbers,
                 notifier.clone(),
                 logger.clone(),

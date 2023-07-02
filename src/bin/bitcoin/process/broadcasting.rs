@@ -36,6 +36,7 @@ pub fn add_peer_to_broadcasting<N: Notifier + 'static, RW: Read + Write + Send +
     let peer_manager = create_peer_manager(
         connection,
         sender_response.clone(),
+        blockchain.clone(),
         magic_numbers,
         notifier.clone(),
         logger.clone(),
