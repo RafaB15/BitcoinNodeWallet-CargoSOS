@@ -136,6 +136,14 @@ impl Notifier for NotifierTUI {
                 );
                 println!("{message}");
             }
+            Notification::ProgressUpdatingBlockchain(blocks_updated, total_blocks) => {
+                let percentage_updated = (blocks_updated as f32 / total_blocks as f32) * 100.0;
+                let message = format!(
+                    "Finished updating {percentage}% of the blockchain",
+                    percentage = percentage_updated
+                );
+                println!("{message}");
+            }
             Notification::HeadersReceived(headers) => {
                 println!("Received {headers} headers");
             }

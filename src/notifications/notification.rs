@@ -32,6 +32,9 @@ pub enum Notification {
     /// Notifies the amount of blocks that we have downloaded.
     ProgressDownloadingBlocks(u32, u32),
 
+    /// Notifies the amount of blocks added to the blockchain.
+    ProgressUpdatingBlockchain(u32, u32),
+
     /// Notifies that we have received a block.
     NewBlockAddedToTheBlockchain(Block),
 

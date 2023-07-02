@@ -24,8 +24,11 @@ pub enum SignalToFront {
     /// Signal to transmit the information of the transactions of an account.
     AccountTransactions(Vec<(u32, [u8; 32], i64)>),
     
-    /// Signal to notify that we have to update the progress bar download.
-    UpdateProgressBar(u32, u32),
+    /// Signal to notify that we have to update the progress bar download of blocks.
+    UpdateBlockProgressBar(u32, u32),
+
+    /// Signal to notify that we have to update the progress bar update of the blockchain.
+    UpdateBlockchainProgressBar(u32, u32),
 
     /// Signal to notify that we have to update the front.
     Update,

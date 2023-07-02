@@ -582,7 +582,34 @@ fn spawn_local_handler(
                     println!("Error showing error window, with error {:?}", error);
                 };
             }
-            SignalToFront::UpdateProgressBar(downloaded, total) => {
+            SignalToFront::UpdateBlockchainProgressBar(to_update, total) => {
+                let progress_label = match cloned_builder.object("ProgressLabel") {
+                    Some(progress_label) => progress_label,
+                    None => {
+                        println!("Error: Missing element ProgressLabel");
+                        Label::new(None)
+                    }
+                };
+                progress_label.set_text("Blockchain Update Progress");
+                let progress_bar: ProgressBar = match cloned_builder.object("ProgressBar") {
+                    Some(progress_bar) => progress_bar,
+                    None => {
+                        println!("Error: Missing element ProgressBar");
+                        ProgressBar::new()
+                    }
+                };
+                progress_bar.set_fraction(to_update as f64 / total as f64);
+
+            }
+            SignalToFront::UpdateBlockProgressBar(downloaded, total) => {
+                let progress_label = match cloned_builder.object("ProgressLabel") {
+                    Some(progress_label) => progress_label,
+                    None => {
+                        println!("Error: Missing element ProgressLabel");
+                        Label::new(None)
+                    }
+                };
+                progress_label.set_text("Block Download Progress");
                 let progress_bar: ProgressBar = match cloned_builder.object("ProgressBar") {
                     Some(progress_bar) => progress_bar,
                     None => {
@@ -591,7 +618,6 @@ fn spawn_local_handler(
                     }
                 };
                 progress_bar.set_fraction(downloaded as f64 / total as f64);
-
             }
         }
         glib::Continue(true)

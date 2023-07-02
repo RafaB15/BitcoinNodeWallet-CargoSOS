@@ -1118,8 +1118,8 @@ has been identified but is still unconfirmed</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="BlockDownloadProgressLabel">
-            <property name="name">BlockDownloadProgressLabel</property>
+          <object class="GtkLabel" id="ProgressLabel">
+            <property name="name">ProgressLabel</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="label" translatable="yes">Block Download Progress</property>

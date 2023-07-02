@@ -207,12 +207,24 @@ impl Notifier for NotifierGUI {
             }
             Notification::ProgressDownloadingBlocks(blocks_downloaded, total_blocks) => {
                 if self.tx_to_front
-                    .send(SignalToFront::UpdateProgressBar(
+                    .send(SignalToFront::UpdateBlockProgressBar(
                         blocks_downloaded,
                         total_blocks,
                     )).is_err() {
                         let _ = self.logger.log_error(
                             "Failed to send error signal for updating the progress download bar"
+                                .to_string(),
+                        );
+                    }
+            }
+            Notification::ProgressUpdatingBlockchain(blocks_updated, total_blocks) => {
+                if self.tx_to_front
+                    .send(SignalToFront::UpdateBlockchainProgressBar(
+                        blocks_updated,
+                        total_blocks,
+                    )).is_err() {
+                        let _ = self.logger.log_error(
+                            "Failed to send error signal for updating the progress update bar"
                                 .to_string(),
                         );
                     }
