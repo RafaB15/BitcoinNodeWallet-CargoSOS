@@ -219,9 +219,10 @@ mod test_integration {
         let hashed_headers: Vec<HashType> = vec![first_block_header_hash, second_block_header_hash];
 
         let block_download = BlockDownload::new(magic_numbers.clone(), sender.clone());
+        let notifier = NotificationMock {};
 
         let blocks = block_download
-            .get_data(&mut stream, hashed_headers)
+            .get_data(&mut stream, hashed_headers, notifier.clone())
             .unwrap();
 
         assert_eq!(blocks.len(), 2);
@@ -229,7 +230,6 @@ mod test_integration {
 
         let (sender_message, receiver_message) = channel::<MessageResponse>();
         let (sender_transaction, receiver_transaction) = channel::<MessageToPeer>();
-        let notifier = NotificationMock {};
 
         let id_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8333);
 

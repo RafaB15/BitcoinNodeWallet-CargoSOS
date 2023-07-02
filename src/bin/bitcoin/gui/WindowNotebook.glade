@@ -1113,7 +1113,7 @@ has been identified but is still unconfirmed</property>
             <property name="show-text">True</property>
           </object>
           <packing>
-            <property name="x">190</property>
+            <property name="x">205</property>
             <property name="y">324</property>
           </packing>
         </child>

@@ -11,8 +11,8 @@ use cargosos_bitcoin::{
 };
 
 use gtk::{
-    glib, prelude::*, Builder, Button, ComboBoxText, Entry, Image, Label, SpinButton, TreeStore,
-    Window, ProgressBar,
+    glib, prelude::*, Builder, Button, ComboBoxText, Entry, Image, Label, ProgressBar, SpinButton,
+    TreeStore, Window,
 };
 
 use glib::GString;
@@ -599,7 +599,6 @@ fn spawn_local_handler(
                     }
                 };
                 progress_bar.set_fraction(to_update as f64 / total as f64);
-
             }
             SignalToFront::UpdateBlockProgressBar(downloaded, total) => {
                 let progress_label = match cloned_builder.object("ProgressLabel") {
