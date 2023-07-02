@@ -4,6 +4,7 @@ use crate::{
     block_structure::{block::Block, transaction::Transaction},
     messages::command_name::CommandName,
     wallet_structure::account::Account,
+    node_structure::connection_id::ConnectionId,
 };
 
 /// The different types of notifications that the notifier can send.
@@ -16,6 +17,9 @@ pub enum Notification {
 
     /// Notifies that we have failed to establish a connection with a peer.
     FailedHandshakeWithPeer(SocketAddr),
+
+    /// Notifies that we have to update a connection
+    ConnectionUpdated(ConnectionId),
 
     /// Notifies that we have received a transaction for an account in the wallet.
     TransactionOfAccountReceived(Vec<Account>, Transaction),

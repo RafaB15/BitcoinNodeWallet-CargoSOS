@@ -1,3 +1,7 @@
+use cargosos_bitcoin::{
+    node_structure::connection_id::ConnectionId,
+};
+
 /// This enum represents the signal that the back sends to the front.
 pub enum SignalToFront {
     /// Signal to add an account to the list of accounts.
@@ -29,6 +33,9 @@ pub enum SignalToFront {
 
     /// Signal to notify that we have to update the progress bar update of the blockchain.
     UpdateBlockchainProgressBar(u32, u32),
+
+    /// Signal to notify to that we have to update the current connections
+    UpdateConnection(ConnectionId),
 
     /// Signal to notify that we have to update the front.
     Update,

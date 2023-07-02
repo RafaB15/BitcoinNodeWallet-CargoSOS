@@ -8,6 +8,7 @@ use crate::{
 use cargosos_bitcoin::{
     notifications::{notification::Notification, notifier::Notifier},
     wallet_structure::{private_key::PrivateKey, public_key::PublicKey, wallet::Wallet},
+    node_structure::connection_id::ConnectionId,
 };
 
 use gtk::{
@@ -479,6 +480,24 @@ fn show_transactions_in_tree_view(
     Ok(())
 }
 
+/// Function that displays the tree view with the connections
+fn show_connections_in_tree_view(builder: &Builder, connection: ConnectionId ) -> Result<(), ErrorUI> {
+    let connections_tree_store: TreeStore = match builder.object("ConnectionsTreeStore") {
+        Some(list_store) => list_store,
+        None => return Err(ErrorUI::MissingElement("ConnectionsTreeStore".to_string())),
+    };
+
+    let ip_address = connection.address.ip().to_string();
+    let port = connection.address.port().to_string();
+
+    let tree_iter = connections_tree_store.append(None);
+    connections_tree_store.set_value(&tree_iter, 0, &glib::Value::from(ip_address));
+    connections_tree_store.set_value(&tree_iter, 1, &glib::Value::from(port));
+    connections_tree_store.set_value(&tree_iter, 2, &glib::Value::from(connection.connection_type.to_string()));
+
+    Ok(())
+}
+
 /// This functions sets up the behaviour of the GUI when it receives a signal from the backend
 fn spawn_local_handler(
     builder: &Builder,
@@ -617,6 +636,14 @@ fn spawn_local_handler(
                     }
                 };
                 progress_bar.set_fraction(downloaded as f64 / total as f64);
+            }
+            SignalToFront::UpdateConnection(connection) => {
+                if let Err(error) = show_connections_in_tree_view(&cloned_builder, connection) {
+                    println!(
+                        "Error showing connections in tree view, with error {:?}",
+                        error
+                    );
+                };
             }
         }
         glib::Continue(true)

@@ -199,6 +199,16 @@ it contains one unconfirmed transaction previously identified</property>
       </object>
     </child>
   </object>
+  <object class="GtkTreeStore" id="ConnectionsTreeStore">
+    <columns>
+      <!-- column-name IP -->
+      <column type="gchararray"/>
+      <!-- column-name Port -->
+      <column type="gchararray"/>
+      <!-- column-name Connection -->
+      <column type="gchararray"/>
+    </columns>
+  </object>
   <object class="GtkWindow" id="TransactionErrorWindow">
     <property name="name">TransactionErrorWindow</property>
     <property name="height-request">275</property>
@@ -804,7 +814,7 @@ has been identified but is still unconfirmed</property>
                   <object class="GtkScrolledWindow" id="TransactionScrolledWindow">
                     <property name="name">TransactionScrolledWindow</property>
                     <property name="width-request">752</property>
-                    <property name="height-request">168</property>
+                    <property name="height-request">200</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="hexpand">True</property>
@@ -903,6 +913,96 @@ has been identified but is still unconfirmed</property>
               </object>
               <packing>
                 <property name="position">2</property>
+                <property name="tab-fill">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkFixed" id="ConnectionsGrid">
+                <property name="name">ConnectionsGrid</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <child>
+                  <object class="GtkScrolledWindow" id="ConnectionsScrolledWindow">
+                    <property name="name">ConnectionsScrolledWindow</property>
+                    <property name="width-request">752</property>
+                    <property name="height-request">200</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="shadow-type">in</property>
+                    <child>
+                      <object class="GtkViewport" id="ConnectionsViewPort">
+                        <property name="name">ConnectionsViewPort</property>
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <child>
+                          <object class="GtkTreeView" id="ConnectionsTreeView">
+                            <property name="name">ConnectionsTreeView</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="model">ConnectionsTreeStore</property>
+                            <property name="tooltip-column">4</property>
+                            <child internal-child="selection">
+                              <object class="GtkTreeSelection"/>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn" id="IPAddressColumn">
+                                <property name="fixed-width">150</property>
+                                <property name="title" translatable="yes">IP Address</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="IPAddressCellRenderer"/>
+                                  <attributes>
+                                    <attribute name="text">0</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn" id="PortColumn">
+                                <property name="fixed-width">125</property>
+                                <property name="title" translatable="yes">Port</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="PortCellRenderer"/>
+                                  <attributes>
+                                    <attribute name="text">1</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn" id="ConnectionTypeColumn">
+                                <property name="title" translatable="yes">Connection Type</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="ConnectionTypeCellRenderer"/>
+                                  <attributes>
+                                    <attribute name="text">2</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="x">23</property>
+                    <property name="y">40</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="position">3</property>
+              </packing>
+            </child>
+            <child type="tab">
+              <object class="GtkLabel" id="ConnectionsPage">
+                <property name="name">ConnectionsPage</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">Connections</property>
+              </object>
+              <packing>
+                <property name="position">3</property>
                 <property name="tab-fill">False</property>
               </packing>
             </child>

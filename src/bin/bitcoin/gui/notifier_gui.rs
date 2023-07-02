@@ -37,6 +37,13 @@ impl Notifier for NotifierGUI {
             Notification::FailedHandshakeWithPeer(peer) => {
                 println!("Failed handshake with peer {}", peer)
             }
+            Notification::ConnectionUpdated(connection_id) => {
+                if self.tx_to_front.send(SignalToFront::UpdateConnection(connection_id)).is_err(){
+                    let _ = self
+                        .logger
+                        .log_error("Error updating connection".to_string());
+                }
+            }
             Notification::TransactionOfAccountReceived(accounts, _) => {
                 if self.tx_to_front.send(SignalToFront::Update).is_err()
                     || self

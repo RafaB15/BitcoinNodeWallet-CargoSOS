@@ -29,6 +29,9 @@ impl Notifier for NotifierTUI {
             Notification::FailedHandshakeWithPeer(socket_address) => {
                 println!("Failed handshake with {socket_address}");
             }
+            Notification::ConnectionUpdated(connection_id) => {
+                println!("Connection updated: {connection_id}");
+            }
             Notification::TransactionOfAccountReceived(accounts, transaction) => {
                 for account in accounts {
                     show_notification(
