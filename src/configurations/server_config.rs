@@ -85,7 +85,6 @@ mod tests {
                              port = 18333
         }
                       peer_count_max = 8
-            client_count_max=                                 8
             own_port = 18333
             address = [127.0.0.1,127.0.0.1]
         }";
@@ -112,7 +111,6 @@ mod tests {
                 seed = seed.testnet.bitcoin.sprovoost.nl
                 port = 18333
             }
-            peer_count_max = 8
             own_port = 18333
             address = [127.0.0.1,127.0.0.1]
         }";
