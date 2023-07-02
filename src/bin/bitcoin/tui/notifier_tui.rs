@@ -131,7 +131,7 @@ impl Notifier for NotifierTUI {
                 let percentage_downloaded =
                     (blocks_downloaded as f32 / total_blocks as f32) * 100.0;
                 let message = format!(
-                    "Finished downloading {percentage}% of the blockchain",
+                    "Finished downloading {percentage}% of blocks",
                     percentage = percentage_downloaded
                 );
                 println!("{message}");
