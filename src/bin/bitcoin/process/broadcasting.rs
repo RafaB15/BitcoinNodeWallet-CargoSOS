@@ -71,28 +71,54 @@ fn create_peer_manager<N: Notifier + 'static, RW: Read + Write + Send + 'static>
 }
 
 /// Create a thread for handling the blocks and transactions received
-pub fn handle_peers<N: Notifier + 'static>(
+pub fn handle_peers<RW, N>(
     receiver_broadcasting: Receiver<MessageResponse>,
+    broadcasting: MutArc<Broadcasting<RW>>,
     wallet: MutArc<Wallet>,
     utxo_set: MutArc<UTXOSet>,
     block_chain: MutArc<BlockChain>,
     notifier: N,
     logger: LoggerSender,
-) -> JoinHandle<Result<(), ErrorProcess>> {
+) -> JoinHandle<Result<(), ErrorProcess>>
+where
+    RW: Read + Write + Send + 'static,
+    N: Notifier + 'static,
+{
     thread::spawn(move || {
         for message in receiver_broadcasting {
+            let mut broadcasting_reference = get_reference(&broadcasting)?;
+
             match message {
-                MessageResponse::Block(block) => {
-                    receive_block(&utxo_set, &wallet, &block_chain, block, notifier.clone())?;
+                MessageResponse::Block(block, from) => {
+                    receive_block(
+                        &utxo_set,
+                        &wallet,
+                        &block_chain,
+                        block.clone(),
+                        notifier.clone(),
+                    )?;
+
+                    if broadcasting_reference.broadcast_block(block, from).is_err() {
+                        let _ = logger.log_node("Error broadcasting block".to_string());
+                        return Err(ErrorProcess::ErrorReading);
+                    }
                 }
-                MessageResponse::Transaction(transaction) => {
+                MessageResponse::Transaction(transaction, from) => {
                     receive_transaction(
                         &wallet,
-                        transaction,
+                        transaction.clone(),
                         &utxo_set,
                         logger.clone(),
                         notifier.clone(),
                     )?;
+
+                    if broadcasting_reference
+                        .broadcast_transaction(transaction, from)
+                        .is_err()
+                    {
+                        let _ = logger.log_node("Error broadcasting transaction".to_string());
+                        return Err(ErrorProcess::ErrorReading);
+                    }
                 }
             }
         }
