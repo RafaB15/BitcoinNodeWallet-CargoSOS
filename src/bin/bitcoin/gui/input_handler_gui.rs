@@ -15,6 +15,7 @@ use cargosos_bitcoin::{
     notifications::{notification::Notification, notifier::Notifier},
     wallet_structure::{address::Address, wallet::Wallet},
 };
+use gtk::glib::subclass::Signal;
 
 use std::{
     io::{Read, Write},
@@ -105,6 +106,15 @@ where
                     account::give_account_transactions(
                         &wallet_reference,
                         &block_chain_reference,
+                        self.notifier.clone(),
+                        self.logger.clone(),
+                    )?;
+                }
+                SignalToBack::RequestMerkleProof(block_hash, transaction_id) => {
+                    frontend::request_merkle_proof(
+                        &block_chain_reference,
+                        block_hash,
+                        transaction_id,
                         self.notifier.clone(),
                         self.logger.clone(),
                     )?;

@@ -5,6 +5,7 @@ use crate::{
     ui::{account, error_ui::ErrorUI},
 };
 
+use bs58::alphabet::Error;
 use cargosos_bitcoin::{
     notifications::{notification::Notification, notifier::Notifier},
     wallet_structure::{private_key::PrivateKey, public_key::PublicKey, wallet::Wallet},
@@ -108,6 +109,10 @@ fn login_main_window(
     window.show_all();
     Ok(())
 }
+
+
+
+
 
 /// This function sets up the registration window
 fn login_registration_window(
@@ -274,6 +279,63 @@ fn login_block_notification_window(builder: &Builder) -> Result<(), ErrorUI> {
         block_notification_window.set_visible(false);
     });
     Ok(())
+}
+
+/// Requests the merkle proof of a transaction with the data entered by the user
+///
+/// ### Error
+///  * `ErrorUI::FailedSignalToFront`: It will appear when the sender fails
+pub fn request_merkle_proof<N: Notifier>(
+    block_chain: &BlockChain,
+    block_hash: &str,
+    transaction_id: &str,
+    notifier: N,
+    logger: LoggerSender,
+
+) -> Result<(), ErrorUI> {
+
+    
+
+    Ok(())
+}
+
+
+/// This function sets up the notification window for merkle proof
+fn login_markle_proof_window(builder: &Builder, tx_to_back: Sender<SignalToBack>) -> Result<(), ErrorUI> {
+
+    let validation_button: Button = match builder.object("MerkleProofValidateButton") {
+        Some(validation_button) => validation_button,
+        None => {
+            return Err(ErrorUI::MissingElement(
+                "MerkleProofValidateButton".to_string(),
+            ))
+        }
+    };
+    let cloned_builder = builder.clone();
+    validation_button.connect_clicked(move |_|{
+        let block_hash: Entry = match cloned_builder.object("BlockHeaderHashEntry") {
+            Some(entry) => entry,
+            None => {
+                println!("Error: Missing element BlockHeaderHashEntry");
+                Entry::new()
+            }
+        };
+        let transaction_id: Entry = match cloned_builder.object("TransactionIDEntry") {
+            Some(entry) => entry,
+            None => {
+                println!("Error: Missing element TransactionIDEntry");
+                Entry::new()
+            }
+        };
+
+        if tx_to_back.send(SignalToBack::RequestMerkleProof(block_hash.text().to_string(), transaction_id.text().to_string())).is_err() {
+            println!("Error sending merkle proof signal");
+        }
+
+    });
+
+    Ok(())
+
 }
 
 /// This function makes the error window visible and sets the error message
