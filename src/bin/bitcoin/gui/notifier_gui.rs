@@ -206,13 +206,16 @@ impl Notifier for NotifierGUI {
                 println!("Received {headers} headers");
             }
             Notification::ProgressDownloadingBlocks(blocks_downloaded, total_blocks) => {
-                let percentage_downloaded =
-                    (blocks_downloaded as f32 / total_blocks as f32) * 100.0;
-                let message = format!(
-                    "Finished downloading {percentage}% of the blockchain",
-                    percentage = percentage_downloaded
-                );
-                println!("{message}");
+                if self.tx_to_front
+                    .send(SignalToFront::UpdateProgressBar(
+                        blocks_downloaded,
+                        total_blocks,
+                    )).is_err() {
+                        let _ = self.logger.log_error(
+                            "Failed to send error signal for updating the progress download bar"
+                                .to_string(),
+                        );
+                    }
             }
             Notification::ClosingPeers => println!("Closing peers"),
             Notification::ClosingPeer => println!("Closing this peer"),

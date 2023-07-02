@@ -12,7 +12,7 @@ use cargosos_bitcoin::{
 
 use gtk::{
     glib, prelude::*, Builder, Button, ComboBoxText, Entry, Image, Label, SpinButton, TreeStore,
-    Window,
+    Window, ProgressBar,
 };
 
 use glib::GString;
@@ -582,6 +582,17 @@ fn spawn_local_handler(
                     println!("Error showing error window, with error {:?}", error);
                 };
             }
+            SignalToFront::UpdateProgressBar(downloaded, total) => {
+                let progress_bar: ProgressBar = match cloned_builder.object("ProgressBar") {
+                    Some(progress_bar) => progress_bar,
+                    None => {
+                        println!("Error: Missing element ProgressBar");
+                        ProgressBar::new()
+                    }
+                };
+                progress_bar.set_fraction(downloaded as f64 / total as f64);
+
+            }
         }
         glib::Continue(true)
     });
@@ -609,7 +620,7 @@ pub fn build_ui(
 
     login_registration_window(&builder, application, tx_to_back.clone())?;
 
-    login_combo_box(&builder, tx_to_back);
+    login_combo_box(&builder, tx_to_back)?;
 
     login_transaction_error_window(&builder)?;
 
