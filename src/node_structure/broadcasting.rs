@@ -56,7 +56,6 @@ where
         let transaction_id = match transaction.get_tx_id() {
             Ok(id) => id,
             Err(_) => {
-                println!("HOLAAAA 0");
                 return Err(ErrorNode::WhileSendingMessage(
                     "Getting transaction id".to_string(),
                 ));
@@ -72,7 +71,6 @@ where
                 .send(MessageToPeer::SendTransaction(transaction.clone(), None))
                 .is_err()
             {
-                println!("HOLAAAA 1");
                 return Err(ErrorNode::WhileSendingMessage(
                     "Sending transaction message to peer".to_string(),
                 ));
@@ -94,7 +92,6 @@ where
         let transaction_id = match transaction.get_tx_id() {
             Ok(id) => id,
             Err(_) => {
-                println!("HOLAAAA 2");
                 return Err(ErrorNode::WhileSendingMessage(
                     "Getting transaction id".to_string(),
                 ));
@@ -112,7 +109,6 @@ where
                 ))
                 .is_err()
             {
-                println!("HOLAAAA 3");
                 return Err(ErrorNode::WhileSendingMessage(
                     "Sending transaction message to peer".to_string(),
                 ));
