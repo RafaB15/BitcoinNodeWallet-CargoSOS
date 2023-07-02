@@ -93,7 +93,7 @@ where
         loop {
             match Work::listen(&mut self.peer, &receiver) {
                 Work::Message(header) => self.manage_message(header)?,
-                Work::SendTransaction(transaction) => self.send_transaction(transaction)?,
+                Work::Information(transaction) => self.send_transaction(transaction)?,
                 Work::Stop => {
                     let _ = self
                         .logger

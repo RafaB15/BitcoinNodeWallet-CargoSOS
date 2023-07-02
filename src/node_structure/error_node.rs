@@ -30,6 +30,9 @@ pub enum ErrorNode {
     /// It will appear when the node is not responding to the messages
     NodeNotResponding(String),
 
+    /// It will appear when thread is poisoned
+    FailThread,
+
     /// It will appear when the headers count is bigger than the maximum headers count
     RequestedDataTooBig,
 }

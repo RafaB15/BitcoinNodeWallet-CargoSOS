@@ -1,6 +1,5 @@
 use crate::{
-    block_structure::transaction::Transaction, messages::message_header::MessageHeader,
-    serialization::error_serialization::ErrorSerialization,
+    messages::message_header::MessageHeader, serialization::error_serialization::ErrorSerialization,
 };
 
 use std::{
@@ -10,17 +9,17 @@ use std::{
 };
 
 #[derive(Debug)]
-pub enum Work {
+pub enum Work<I> {
     Message(MessageHeader),
-    SendTransaction(Transaction),
+    Information(I),
     Stop,
 }
 
-impl Work {
-    pub fn listen<RW: Read + Write, M: Into<Work>>(
+impl<I> Work<I> {
+    pub fn listen<RW: Read + Write, M: Into<Work<I>>>(
         stream: &mut RW,
         receiver: &Receiver<M>,
-    ) -> Work {
+    ) -> Self {
         loop {
             match MessageHeader::deserialize_header(stream) {
                 Ok(header) => return Work::Message(header),
