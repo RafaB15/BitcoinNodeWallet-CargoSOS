@@ -1,16 +1,19 @@
-use super::{signal_to_back::SignalToBack, frontend};
+use super::{frontend, signal_to_back::SignalToBack};
 
 use crate::{
-    ui::{error_ui::ErrorUI, input_handler::InputHandler, account},
-    process::{reference::{MutArc, get_reference}, transaction},
+    process::{
+        reference::{get_reference, MutArc},
+        transaction,
+    },
+    ui::{account, error_ui::ErrorUI, input_handler::InputHandler},
 };
 
 use cargosos_bitcoin::{
-    notifications::{notifier::Notifier, notification::Notification},
+    block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
     logs::logger_sender::LoggerSender,
     node_structure::broadcasting::Broadcasting,
-    wallet_structure::{wallet::Wallet, address::Address},
-    block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
+    notifications::{notification::Notification, notifier::Notifier},
+    wallet_structure::{address::Address, wallet::Wallet},
 };
 
 use std::{
@@ -45,11 +48,10 @@ where
     fn handle_input(
         &self,
         broadcasting: MutArc<Broadcasting<RW>>,
-        wallet: MutArc<Wallet>, 
-        utxo_set: MutArc<UTXOSet>, 
+        wallet: MutArc<Wallet>,
+        utxo_set: MutArc<UTXOSet>,
         block_chain: MutArc<BlockChain>,
     ) -> Result<(), ErrorUI> {
-
         for rx in &self.rx_from_front {
             let mut wallet_reference = get_reference(&wallet)?;
             let mut utxo_set_reference = get_reference(&utxo_set)?;

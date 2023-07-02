@@ -1,6 +1,5 @@
 use crate::{
-    messages::message_header::MessageHeader,
-    serialization::error_serialization::ErrorSerialization,
+    messages::message_header::MessageHeader, serialization::error_serialization::ErrorSerialization,
 };
 
 use std::{

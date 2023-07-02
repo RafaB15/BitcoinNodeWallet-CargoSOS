@@ -155,7 +155,7 @@ fn get_blocks<RW: Read + Write + Send + 'static>(
 }
 
 /// Updates the blockchain with the IBD with the specific peer
-/// 
+///
 /// ### Error
 ///  * `ErrorMessage::InSerialization`: It will appear when the serialization of the message fails or the SHA(SHA(header)) fails
 ///  * `ErrorNode::NodeNotResponding`: It will appear when
@@ -170,7 +170,6 @@ pub fn update_block_chain_with_peer<N: Notifier, RW: Read + Write + Send + Debug
     notifier: N,
     logger: LoggerSender,
 ) -> Result<(RW, ConnectionId), ErrorProcess> {
-
     let connection_config = config.0;
     let download_config = config.1;
 
@@ -240,7 +239,10 @@ fn updating_block_chain<N: Notifier, RW: Read + Write + Send>(
             if total_blocks == 0 {
                 notifier.notify(Notification::ProgressDownloadingBlocks(1, 1));
             } else {
-                notifier.notify(Notification::ProgressDownloadingBlocks(total_blocks, total_blocks));
+                notifier.notify(Notification::ProgressDownloadingBlocks(
+                    total_blocks,
+                    total_blocks,
+                ));
             }
 
             let _ =

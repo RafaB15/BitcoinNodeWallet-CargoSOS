@@ -1,30 +1,29 @@
 use super::{
-    notifier_gui::NotifierGUI, signal_to_back::SignalToBack,
-    signal_to_front::SignalToFront, input_handler_gui::InputHandlerGUI,
-    frontend
+    frontend, input_handler_gui::InputHandlerGUI, notifier_gui::NotifierGUI,
+    signal_to_back::SignalToBack, signal_to_front::SignalToFront,
 };
 
 use crate::{
-    error_execution::ErrorExecution, 
-    process::{save_system::SaveSystem, backend, load_system::LoadSystem}, 
+    error_execution::ErrorExecution,
+    process::{backend, load_system::LoadSystem, save_system::SaveSystem},
 };
 
 use cargosos_bitcoin::{
+    configurations::{
+        connection_config::ConnectionConfig, download_config::DownloadConfig,
+        mode_config::ModeConfig, save_config::SaveConfig,
+    },
     logs::logger_sender::LoggerSender,
     notifications::notifier::Notifier,
-    configurations::{
-        connection_config::ConnectionConfig, download_config::DownloadConfig, mode_config::ModeConfig,
-        save_config::SaveConfig,
-    }
 };
 
 use std::{
-    cell::Cell, 
-    sync::mpsc::{Receiver, channel},
+    cell::Cell,
+    sync::mpsc::{channel, Receiver},
     thread::{self, JoinHandle},
 };
 
-use gtk::{prelude::*, Application, glib};
+use gtk::{glib, prelude::*, Application};
 
 /// Function that spawns the backend handler thread
 fn spawn_backend_handler<N: Notifier + 'static>(
@@ -38,12 +37,8 @@ fn spawn_backend_handler<N: Notifier + 'static>(
 ) -> JoinHandle<Result<SaveSystem, ErrorExecution>> {
     thread::spawn(move || {
         let mut load_system = LoadSystem::new(save_config.clone(), logger.clone());
-        
-        let input_handler = InputHandlerGUI::new(
-            rx_from_front,
-            notifier.clone(),
-            logger.clone(),
-        );
+
+        let input_handler = InputHandlerGUI::new(rx_from_front, notifier.clone(), logger.clone());
 
         backend::backend(
             mode_config,

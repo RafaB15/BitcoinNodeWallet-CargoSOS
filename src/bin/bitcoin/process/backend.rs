@@ -1,8 +1,8 @@
 use crate::{
     error_execution::ErrorExecution,
     process::{
-        broadcasting, connection, download, load_system::LoadSystem, reference,
-        reference::{MutArc}, save_system::SaveSystem, error_process::ErrorProcess,
+        broadcasting, connection, download, error_process::ErrorProcess, load_system::LoadSystem,
+        reference, reference::MutArc, save_system::SaveSystem,
     },
     ui::{error_ui::ErrorUI, input_handler::InputHandler},
 };
@@ -13,25 +13,26 @@ use cargosos_bitcoin::{
         connection_config::ConnectionConfig, download_config::DownloadConfig,
         mode_config::ModeConfig,
     },
-    logs::{logger_sender::LoggerSender},
+    logs::logger_sender::LoggerSender,
     node_structure::{
-        broadcasting::Broadcasting, message_response::MessageResponse, connection_event::ConnectionEvent,
+        broadcasting::Broadcasting, connection_event::ConnectionEvent,
+        message_response::MessageResponse,
     },
-    notifications::{notifier::Notifier, notification::Notification},
+    notifications::{notification::Notification, notifier::Notifier},
     wallet_structure::wallet::Wallet,
 };
 
 use std::{
     net::TcpStream,
-    thread::JoinHandle,
     sync::mpsc::{channel, Receiver},
     sync::{Arc, Mutex},
+    thread::JoinHandle,
 };
 
 type HandlePeer = JoinHandle<Result<(), ErrorProcess>>;
 
 /// The main function of the program for the terminal
-/// 
+///
 /// ### Error
 ///  * `ErrorExecution::FailThread`: It will appear when the thread fails
 ///  * `ErrorUI::CannotGetInner`: It will appear when we try to get the inner value of a mutex
@@ -47,19 +48,17 @@ pub fn backend<N, I>(
     input_handler: I,
     notifier: N,
     logger: LoggerSender,
-) -> Result<SaveSystem, ErrorExecution> 
+) -> Result<SaveSystem, ErrorExecution>
 where
     I: InputHandler<TcpStream>,
     N: Notifier + 'static,
 {
-    let (handle_process_connection, 
-        receiver_confirm_connection, 
-        sender_potential_connections
-    ) = connection::create_process_connection(
-        connection_config.clone(),
-        notifier.clone(),
-        logger.clone(),
-    );
+    let (handle_process_connection, receiver_confirm_connection, sender_potential_connections) =
+        connection::create_process_connection(
+            connection_config.clone(),
+            notifier.clone(),
+            logger.clone(),
+        );
 
     let wallet = load_system.get_wallet()?;
 
@@ -82,9 +81,7 @@ where
 
     let (sender_response, receiver_response) = channel::<MessageResponse>();
 
-    let (handle_peers, 
-        broadcasting
-    ) = broadcasting(
+    let (handle_peers, broadcasting) = broadcasting(
         (wallet.clone(), utxo_set.clone(), block_chain.clone()),
         receiver_response,
         notifier.clone(),
@@ -109,25 +106,36 @@ where
     )?;
 
     input_handler.handle_input(
-        broadcasting.clone(), 
-        wallet.clone(), 
-        utxo_set, 
+        broadcasting.clone(),
+        wallet.clone(),
+        utxo_set,
         block_chain.clone(),
     )?;
 
-    if sender_potential_connections.send(ConnectionEvent::Stop).is_err() {
-        return Err(ErrorUI::ErrorFromPeer("Fail to stop potential connections".to_string()).into());
+    if sender_potential_connections
+        .send(ConnectionEvent::Stop)
+        .is_err()
+    {
+        return Err(
+            ErrorUI::ErrorFromPeer("Fail to stop potential connections".to_string()).into(),
+        );
     }
 
     match handle_process_connection.join() {
         Ok(Ok(())) => {}
         Ok(Err(error)) => return Err(error.into()),
-        Err(_) => return Err(ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()).into()),
+        Err(_) => {
+            return Err(
+                ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()).into(),
+            )
+        }
     }
 
     if handle_confirmed_connection.join().is_err() {
-        return Err(ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()).into());
-    }    
+        return Err(
+            ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()).into(),
+        );
+    }
 
     reference::get_inner(broadcasting)?.destroy(notifier)?;
 
@@ -148,8 +156,7 @@ fn broadcasting<N: Notifier + 'static>(
     receiver_response: Receiver<MessageResponse>,
     notifier: N,
     logger: LoggerSender,
-) -> (HandlePeer, Broadcasting::<TcpStream>) {
-    
+) -> (HandlePeer, Broadcasting<TcpStream>) {
     let wallet: Arc<Mutex<Wallet>> = data.0;
     let utxo_set: Arc<Mutex<UTXOSet>> = data.1;
     let block_chain: Arc<Mutex<BlockChain>> = data.2;

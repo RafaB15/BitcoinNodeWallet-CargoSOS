@@ -1,21 +1,23 @@
 use super::{
-    connection_id::ConnectionId, connection_type::ConnectionType, handshake::Handshake,
-    handshake_data::HandshakeData, connection_event::ConnectionEvent, error_node::ErrorNode,
+    connection_event::ConnectionEvent, connection_id::ConnectionId,
+    connection_type::ConnectionType, error_node::ErrorNode, handshake::Handshake,
+    handshake_data::HandshakeData,
 };
 
 use crate::{
+    concurrency::{stop::Stop, work::Work},
     configurations::connection_config::ConnectionConfig,
     logs::logger_sender::LoggerSender,
     notifications::{notification::Notification, notifier::Notifier},
-    concurrency::{work::Work, stop::Stop}, serialization::error_serialization::ErrorSerialization,
+    serialization::error_serialization::ErrorSerialization,
 };
 
 use std::{
+    net::SocketAddr,
     net::TcpStream,
     sync::mpsc::{channel, Receiver, Sender},
     thread::{self, JoinHandle},
     time::Duration,
-    net::SocketAddr,
 };
 
 pub type SenderConfirm = Sender<(TcpStream, ConnectionId)>;
@@ -42,7 +44,6 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
         notifier: N,
         logger: LoggerSender,
     ) -> Self {
-
         let handshake = Handshake::new(
             connection_config.p2p_protocol_version,
             connection_config.services,
@@ -65,8 +66,8 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
         }
     }
 
-    /// Handle the incoming potentail connections 
-    /// 
+    /// Handle the incoming potentail connections
+    ///
     /// ###
     ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to a peer or others threads
     ///  * `ErrorNode::FailThread`: It will appear when thread is poisoned
@@ -74,15 +75,11 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
         let mut pending_connection_handlers: Vec<(JoinHandle<()>, Sender<Stop>)> = Vec::new();
 
         for connection_event in &self.receiver_potential_connections {
-
             match connection_event {
                 ConnectionEvent::PotentialConnection(connection) => {
                     let (sender, receiver) = channel::<Stop>();
 
-                    let handler = self.handle_connection_event(
-                        connection, 
-                        receiver,
-                    );
+                    let handler = self.handle_connection_event(connection, receiver);
 
                     pending_connection_handlers.push((handler, sender));
                 }
@@ -95,7 +92,9 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
         let mut result = Ok(());
         for (handler, sender) in pending_connection_handlers {
             if sender.send(Stop::Stop).is_err() {
-                result = Err(ErrorNode::WhileSendingMessage("Cannot send stop message to handler".to_string()));
+                result = Err(ErrorNode::WhileSendingMessage(
+                    "Cannot send stop message to handler".to_string(),
+                ));
                 continue;
             }
             if handler.join().is_err() {
@@ -109,20 +108,20 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
     /// Create a thread to handle the new potential connection to establish the handshake
     fn handle_connection_event(
         &self,
-        connection: ConnectionId, 
+        connection: ConnectionId,
         receiver: Receiver<Stop>,
     ) -> JoinHandle<()> {
-
         let handshake = self.handshake.clone();
         let logger = self.logger.clone();
         let sender_confirm_connection = self.sender_confirm_connection.clone();
         let notifier = self.notifier.clone();
 
         thread::spawn(move || {
-
             let mut stream = match Self::create_stream(connection, logger.clone()) {
                 Some(stream) => stream,
-                None => { return; }
+                None => {
+                    return;
+                }
             };
 
             let local_socket = match stream.local_addr() {
@@ -139,45 +138,50 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
             ));
 
             let result = match connection {
-                ConnectionId { address, connection_type: ConnectionType::Peer } => {
-                    Self::connect_to_peer(
-                        &mut stream,
-                        &local_socket,
-                        &address,
-                        &handshake,
-                        &receiver,
-                    )
-                },
-                ConnectionId { address, connection_type: ConnectionType::Client } => {
-                    Self::connect_to_client(
-                        &mut stream,
-                        &local_socket,
-                        &address,
-                        &handshake,
-                        &receiver,
-                    )
-                }
+                ConnectionId {
+                    address,
+                    connection_type: ConnectionType::Peer,
+                } => Self::connect_to_peer(
+                    &mut stream,
+                    &local_socket,
+                    &address,
+                    &handshake,
+                    &receiver,
+                ),
+                ConnectionId {
+                    address,
+                    connection_type: ConnectionType::Client,
+                } => Self::connect_to_client(
+                    &mut stream,
+                    &local_socket,
+                    &address,
+                    &handshake,
+                    &receiver,
+                ),
             };
 
             match result {
                 Ok(true) => {
-                    let _ = logger.log_connection(format!("Connection established with {:?}", connection));
+                    let _ = logger
+                        .log_connection(format!("Connection established with {:?}", connection));
                     if sender_confirm_connection.send((stream, connection)).is_ok() {
-                        notifier.notify(Notification::SuccessfulHandshakeWithPeer(connection.address));
+                        notifier.notify(Notification::SuccessfulHandshakeWithPeer(
+                            connection.address,
+                        ));
                     } else {
-                        notifier.notify(Notification::FailedHandshakeWithPeer(connection.address));    
+                        notifier.notify(Notification::FailedHandshakeWithPeer(connection.address));
                     }
-                },
-                Ok(false) => {},
+                }
+                Ok(false) => {}
                 Err(_) => {
                     notifier.notify(Notification::FailedHandshakeWithPeer(connection.address));
-                },
+                }
             }
         })
     }
 
     /// Establish the handshake with a peer
-    /// 
+    ///
     /// ### Error
     ///  * `ErrorSerialization::ErrorSerialization`: It will appear when there is an error in the serialization
     ///  * `ErrorSerialization::ErrorInDeserialization`: It will appear when there is an error in the deserialization
@@ -188,12 +192,8 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
         potential_socket: &SocketAddr,
         handshake: &Handshake,
         receiver: &Receiver<Stop>,
-    ) -> Result<bool, ErrorSerialization>{
-        handshake.send_version_message(
-            stream,
-            local_socket,
-            potential_socket,
-        )?;
+    ) -> Result<bool, ErrorSerialization> {
+        handshake.send_version_message(stream, local_socket, potential_socket)?;
 
         loop {
             match Work::listen(stream, &receiver) {
@@ -202,15 +202,13 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
                     break;
                 }
                 Work::Information(()) => continue,
-                Work::Stop => { return Ok(false); }
+                Work::Stop => {
+                    return Ok(false);
+                }
             }
         }
 
-        handshake.send_verack_message(
-            stream,
-            potential_socket,
-        )?;
-
+        handshake.send_verack_message(stream, potential_socket)?;
 
         loop {
             match Work::listen(stream, &receiver) {
@@ -219,7 +217,9 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
                     break;
                 }
                 Work::Information(()) => continue,
-                Work::Stop => { return Ok(false); }
+                Work::Stop => {
+                    return Ok(false);
+                }
             }
         }
 
@@ -229,7 +229,7 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
     }
 
     /// Establish the handshake with a client
-    /// 
+    ///
     /// ### Error
     ///  * `ErrorSerialization::ErrorSerialization`: It will appear when there is an error in the serialization
     ///  * `ErrorSerialization::ErrorInDeserialization`: It will appear when there is an error in the deserialization
@@ -240,7 +240,7 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
         potential_socket: &SocketAddr,
         handshake: &Handshake,
         receiver: &Receiver<Stop>,
-    ) -> Result<bool, ErrorSerialization>{
+    ) -> Result<bool, ErrorSerialization> {
         loop {
             match Work::listen(stream, &receiver) {
                 Work::Message(header) => {
@@ -248,15 +248,13 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
                     break;
                 }
                 Work::Information(()) => continue,
-                Work::Stop => { return Ok(false); }
+                Work::Stop => {
+                    return Ok(false);
+                }
             }
         }
 
-        handshake.send_version_message(
-            stream,
-            local_socket,
-            potential_socket,
-        )?;
+        handshake.send_version_message(stream, local_socket, potential_socket)?;
 
         loop {
             match Work::listen(stream, &receiver) {
@@ -265,20 +263,22 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
                     break;
                 }
                 Work::Information(()) => continue,
-                Work::Stop => { return Ok(false); }
+                Work::Stop => {
+                    return Ok(false);
+                }
             }
         }
 
-        handshake.send_verack_message(
-            stream,
-            potential_socket,
-        )?;
+        handshake.send_verack_message(stream, potential_socket)?;
 
         Ok(true)
     }
 
     /// Create a stream to connect to a potential connection
-    fn create_stream(potential_connection: ConnectionId, logger: LoggerSender) -> Option<TcpStream>  {
+    fn create_stream(
+        potential_connection: ConnectionId,
+        logger: LoggerSender,
+    ) -> Option<TcpStream> {
         let stream = match TcpStream::connect(potential_connection.address) {
             Ok(stream) => stream,
             Err(error) => {
@@ -301,5 +301,3 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
         Some(stream)
     }
 }
-
-

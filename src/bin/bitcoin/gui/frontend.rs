@@ -1,6 +1,4 @@
-use super::{
-    signal_to_back::SignalToBack, signal_to_front::SignalToFront,
-};
+use super::{signal_to_back::SignalToBack, signal_to_front::SignalToFront};
 
 use crate::{
     process::reference::{self, MutArc},
@@ -12,16 +10,12 @@ use cargosos_bitcoin::{
     wallet_structure::{private_key::PrivateKey, public_key::PublicKey, wallet::Wallet},
 };
 
-
-
 use gtk::{
-    prelude::*, Builder, Button, ComboBoxText, Entry, Image, Label, SpinButton,
-    TreeStore, Window, glib,
+    glib, prelude::*, Builder, Button, ComboBoxText, Entry, Image, Label, SpinButton, TreeStore,
+    Window,
 };
 
-use std::{
-    sync::mpsc::{Sender},
-};
+use std::sync::mpsc::Sender;
 
 use chrono::{DateTime, NaiveDateTime, Utc};
 
@@ -331,10 +325,7 @@ fn clear_send_transaction_contents(builder: &Builder) {
 }
 
 /// Function that sets up the send transaction page
-fn login_send_page(
-    builder: &Builder,
-    tx_to_back: Sender<SignalToBack>,
-) -> Result<(), ErrorUI> {
+fn login_send_page(builder: &Builder, tx_to_back: Sender<SignalToBack>) -> Result<(), ErrorUI> {
     let transaction_clear_all_button: Button = match builder.object("TransactionClearAllButton") {
         Some(button) => button,
         None => {
@@ -554,7 +545,7 @@ pub fn build_ui(
     login_combo_box(&builder, tx_to_back);
 
     login_transaction_error_window(&builder)?;
-    
+
     login_transaction_notification_window(&builder)?;
 
     Ok(())

@@ -1,16 +1,17 @@
-use super::{handshake_data::HandshakeData};
+use super::handshake_data::HandshakeData;
 
-use crate::{messages::{
-    bitfield_services::BitfieldServices,
-    message::{Message},
-    send_headers_message::SendHeadersMessage,
-    verack_message::VerackMessage,
-    version_message::VersionMessage, message_header::MessageHeader,
-}, serialization::error_serialization::ErrorSerialization};
+use crate::{
+    messages::{
+        bitfield_services::BitfieldServices, message::Message, message_header::MessageHeader,
+        send_headers_message::SendHeadersMessage, verack_message::VerackMessage,
+        version_message::VersionMessage,
+    },
+    serialization::error_serialization::ErrorSerialization,
+};
 
 use crate::connections::{
-    p2p_protocol::ProtocolVersionP2P,
-    socket_conversion::socket_to_ipv6_port, supported_services::SupportedServices,
+    p2p_protocol::ProtocolVersionP2P, socket_conversion::socket_to_ipv6_port,
+    supported_services::SupportedServices,
 };
 
 use crate::logs::logger_sender::LoggerSender;
@@ -79,7 +80,9 @@ impl Handshake {
             relay: self.data.relay,
         };
 
-        if let Err(error) = VersionMessage::serialize_message(peer_stream, self.data.magic_number, &version_message) {
+        if let Err(error) =
+            VersionMessage::serialize_message(peer_stream, self.data.magic_number, &version_message)
+        {
             let _ = self.sender_log.log_connection(format!(
                 "Error while sending version message to peer {}: {:?}",
                 potential_peer, error
@@ -101,7 +104,7 @@ impl Handshake {
     ///  * `ErrorSerialization::ErrorInDeserialization`: It will appear when there is an error in the deserialization
     ///  * `ErrorSerialization::ErrorWhileReading`: It will appear when there is an error in the reading from a stream
     pub fn receive_version_message<RW: Read + Write>(
-        &self, 
+        &self,
         peer_stream: &mut RW,
         header: MessageHeader,
         potential_peer: &SocketAddr,
@@ -121,11 +124,13 @@ impl Handshake {
     /// ### Error
     ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
     pub fn send_verack_message<RW: Read + Write>(
-        &self, 
+        &self,
         peer_stream: &mut RW,
         potential_peer: &SocketAddr,
     ) -> Result<(), ErrorSerialization> {
-        if let Err(error) = VerackMessage::serialize_message(peer_stream, self.data.magic_number, &VerackMessage) {
+        if let Err(error) =
+            VerackMessage::serialize_message(peer_stream, self.data.magic_number, &VerackMessage)
+        {
             let _ = self.sender_log.log_connection(format!(
                 "Error while sending verack message to peer {}: {:?}",
                 potential_peer, error

@@ -1,8 +1,8 @@
-use super::{notifier_tui::NotifierTUI, input_handler_tui::InputHandlerTUI};
+use super::{input_handler_tui::InputHandlerTUI, notifier_tui::NotifierTUI};
 
 use crate::{
     error_execution::ErrorExecution,
-    process::{load_system::LoadSystem, save_system::SaveSystem, backend},
+    process::{backend, load_system::LoadSystem, save_system::SaveSystem},
 };
 
 use cargosos_bitcoin::{
@@ -11,9 +11,8 @@ use cargosos_bitcoin::{
         connection_config::ConnectionConfig, download_config::DownloadConfig,
         mode_config::ModeConfig,
     },
-    logs::{logger_sender::LoggerSender},
+    logs::logger_sender::LoggerSender,
 };
-
 
 fn _show_merkle_path(block_chain: &BlockChain, logger: LoggerSender) -> Result<(), ErrorExecution> {
     let latest = block_chain.latest();
@@ -65,7 +64,6 @@ pub fn program_execution(
     load_system: &mut LoadSystem,
     logger: LoggerSender,
 ) -> Result<SaveSystem, ErrorExecution> {
-    
     let notifier = NotifierTUI::new(logger.clone());
     let input_handler = InputHandlerTUI::new(notifier.clone(), logger.clone());
 

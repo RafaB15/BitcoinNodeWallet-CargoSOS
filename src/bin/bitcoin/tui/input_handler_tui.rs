@@ -1,16 +1,16 @@
-use super::{menu, menu_option::MenuOption, frontend};
+use super::{frontend, menu, menu_option::MenuOption};
 
 use crate::{
-    ui::{input_handler::InputHandler, error_ui::ErrorUI, account},
-    process::reference::{MutArc, get_reference},
+    process::reference::{get_reference, MutArc},
+    ui::{account, error_ui::ErrorUI, input_handler::InputHandler},
 };
 
 use cargosos_bitcoin::{
-    notifications::notifier::Notifier,
+    block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
     logs::logger_sender::LoggerSender,
     node_structure::broadcasting::Broadcasting,
+    notifications::notifier::Notifier,
     wallet_structure::wallet::Wallet,
-    block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
 };
 
 use std::io::{Read, Write};
@@ -37,19 +37,27 @@ where
     fn handle_input(
         &self,
         broadcasting: MutArc<Broadcasting<RW>>,
-        wallet: MutArc<Wallet>, 
-        utxo_set: MutArc<UTXOSet>, 
+        wallet: MutArc<Wallet>,
+        utxo_set: MutArc<UTXOSet>,
         block_chain: MutArc<BlockChain>,
     ) -> Result<(), ErrorUI> {
         loop {
             match menu::select_option(self.logger.clone())? {
                 MenuOption::CreateAccount => {
                     let mut wallet_reference = get_reference(&wallet)?;
-                    frontend::create_account(&mut wallet_reference, self.notifier.clone(), self.logger.clone())?
+                    frontend::create_account(
+                        &mut wallet_reference,
+                        self.notifier.clone(),
+                        self.logger.clone(),
+                    )?
                 }
                 MenuOption::ChangeAccount => {
                     let mut wallet_reference = get_reference(&wallet)?;
-                    frontend::change_account(&mut wallet_reference, self.notifier.clone(), self.logger.clone())?
+                    frontend::change_account(
+                        &mut wallet_reference,
+                        self.notifier.clone(),
+                        self.logger.clone(),
+                    )?
                 }
                 MenuOption::RemoveAccount => {
                     let mut wallet_reference = get_reference(&wallet)?;

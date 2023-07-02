@@ -23,8 +23,6 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-
-
 /// Gives the broadcasting the peers to broadcast the blocks and transactions
 pub fn add_peer_to_broadcasting<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
     broadcasting: &mut Broadcasting<RW>,

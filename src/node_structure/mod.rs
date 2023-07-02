@@ -9,8 +9,8 @@ pub mod message_response;
 pub mod message_to_peer;
 pub mod peer_manager;
 
+pub mod connection_event;
 pub mod connection_id;
 pub mod connection_type;
-pub mod connection_event;
 
 pub mod error_node;
