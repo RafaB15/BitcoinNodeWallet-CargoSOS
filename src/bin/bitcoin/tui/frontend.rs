@@ -1,14 +1,9 @@
-use super::{menu, menu_option::MenuOption};
-
 use crate::ui::{account, error_ui::ErrorUI};
 
-use crate::process::{
-    reference::{get_reference, MutArc},
-    transaction,
-};
+use crate::process::transaction;
 
 use cargosos_bitcoin::{
-    block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
+    block_structure::utxo_set::UTXOSet,
     logs::logger_sender::LoggerSender,
     node_structure::broadcasting::Broadcasting,
     notifications::{notification::Notification, notifier::Notifier},
@@ -364,74 +359,4 @@ pub fn sending_transaction<N: Notifier, RW: Read + Write + Send + 'static>(
         notifier,
         logger,
     )
-}
-
-/// It will responde to the user input
-///
-/// ### Error
-///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
-///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
-///  * `ErrorUI::ErrorFromPeer`: It will appear when a conextion with a peer fails
-pub fn user_input<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
-    broadcasting: MutArc<Broadcasting<RW>>,
-    wallet: MutArc<Wallet>,
-    utxo_set: MutArc<UTXOSet>,
-    block_chain: MutArc<BlockChain>,
-    notifier: N,
-    logger: LoggerSender,
-) -> Result<(), ErrorUI> {
-    loop {
-        match menu::select_option(logger.clone())? {
-            MenuOption::CreateAccount => {
-                let mut wallet_reference = get_reference(&wallet)?;
-                create_account(&mut wallet_reference, notifier.clone(), logger.clone())?
-            }
-            MenuOption::ChangeAccount => {
-                let mut wallet_reference = get_reference(&wallet)?;
-                change_account(&mut wallet_reference, notifier.clone(), logger.clone())?
-            }
-            MenuOption::RemoveAccount => {
-                let mut wallet_reference = get_reference(&wallet)?;
-                remove_account(&mut wallet_reference, logger.clone())?
-            }
-            MenuOption::SendTransaction => {
-                let wallet_reference = get_reference(&wallet)?;
-                let mut utxo_set_reference = get_reference(&utxo_set)?;
-                let mut broadcasting_reference = get_reference(&broadcasting)?;
-                sending_transaction(
-                    &mut broadcasting_reference,
-                    &wallet_reference,
-                    &mut utxo_set_reference,
-                    notifier.clone(),
-                    logger.clone(),
-                )?
-            }
-            MenuOption::ShowAccounts => {
-                let wallet_reference = get_reference(&wallet)?;
-                show_accounts(&wallet_reference, logger.clone());
-            }
-            MenuOption::ShowBalance => {
-                let wallet_reference = get_reference(&wallet)?;
-                let utxo_set_reference = get_reference(&utxo_set)?;
-                account::give_account_balance(
-                    &wallet_reference,
-                    &utxo_set_reference,
-                    notifier.clone(),
-                )
-            }
-            MenuOption::LastTransactions => {
-                let wallet_reference = get_reference(&wallet)?;
-                let blockchain_reference = get_reference(&block_chain)?;
-                account::give_account_transactions(
-                    &wallet_reference,
-                    &blockchain_reference,
-                    notifier.clone(),
-                    logger.clone(),
-                )?
-            }
-            MenuOption::Exit => break,
-        }
-    }
-
-    Ok(())
 }
