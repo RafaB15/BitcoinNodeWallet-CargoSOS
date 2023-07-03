@@ -62,10 +62,12 @@ impl Notifier for NotifierGUI {
                         .log_error("Error sending notification".to_string());
                 }
             }
-            Notification::TransactionOfAccountInNewBlock(_) => {
+            Notification::TransactionOfAccountInNewBlock(block, transaction) => {
                 if self
                     .tx_to_front
-                    .send(SignalToFront::BlockWithUnconfirmedTransactionReceived)
+                    .send(SignalToFront::BlockWithUnconfirmedTransactionReceived(
+                        block.to_string(),
+                        transaction.to_string()))
                     .is_err()
                 {
                     let _ = self
@@ -210,7 +212,12 @@ impl Notifier for NotifierGUI {
                     );
                 }
             }
-            Notification::SuccessfullySentTransaction(transaction) => {
+            Notification::SuccessfullySentTransaction(transaction) => {   
+                if self.tx_to_front.send(SignalToFront::SuccessfullySentTransaction(transaction.to_string())).is_err() {
+                    let _ = self
+                        .logger
+                        .log_error("Failed to send update after sending transaction".to_string());
+                }
                 println!("Transaction sent: {transaction}", transaction = transaction);
             }
             Notification::HeadersReceived(headers) => {

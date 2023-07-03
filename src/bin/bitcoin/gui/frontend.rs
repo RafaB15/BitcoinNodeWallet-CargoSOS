@@ -352,6 +352,54 @@ fn login_merkle_proof_successful_window(builder: &Builder) -> Result<(), ErrorUI
     Ok(())
 }
 
+/// This function sets up the notification window for transaction successfully sent
+fn login_transaction_sent_notification_window(builder: &Builder) -> Result<(), ErrorUI> {
+    let transaction_sent_notification_window: Window =
+        match builder.object("TransactionSentNotificationWindow") {
+            Some(transaction_sent_notification_window) => transaction_sent_notification_window,
+            None => {
+                return Err(ErrorUI::MissingElement(
+                    "TransactionSentNotificationWindow".to_string(),
+                ))
+            }
+        };
+    let transaction_sent_notification_button: Button = match builder.object("OkSentNotificationButton") {
+        Some(transaction_sent_notification_button) => transaction_sent_notification_button,
+        None => return Err(ErrorUI::MissingElement("OkSentNotificationButton".to_string())),
+    };
+    transaction_sent_notification_button.connect_clicked(move |_| {
+        transaction_sent_notification_window.set_visible(false);
+    });
+    Ok(())
+}
+
+fn show_new_transaction_sent_notification(
+    builder: &Builder,
+    tx_id: String,
+) -> Result<(), ErrorUI> {
+    let transaction_sent_notification_window: Window =
+        match builder.object("TransactionSentNotificationWindow") {
+            Some(transaction_notification_window) => transaction_notification_window,
+            None => {
+                return Err(ErrorUI::MissingElement(
+                    "TransactionSentNotificationWindow".to_string(),
+                ))
+            }
+        };
+    let notification_label: Label = match builder.object("TransactionSentNotificationLabel") {
+        Some(notification_label) => notification_label,
+        None => {
+            return Err(ErrorUI::MissingElement(
+                "TransactionSentNotificationLabel".to_string(),
+            ))
+        }
+    };
+    notification_label.set_text(format!("{}", tx_id).as_str());
+    transaction_sent_notification_window.set_visible(true);
+    Ok(())
+}
+
+
 /// This function sets up the notification window for transactions
 fn login_transaction_notification_window(builder: &Builder) -> Result<(), ErrorUI> {
     let transaction_notification_window: Window =
@@ -527,7 +575,7 @@ fn show_new_transaction_notification(
 }
 
 /// This function makes the notification window visible and sets the notification message
-fn show_new_block_notification(builder: &Builder) -> Result<(), ErrorUI> {
+fn show_new_block_notification(builder: &Builder, block_hash: String, transaction: String) -> Result<(), ErrorUI> {
     let block_notification_window: Window = match builder.object("BlockNotificationWindow") {
         Some(block_notification_window) => block_notification_window,
         None => {
@@ -536,6 +584,15 @@ fn show_new_block_notification(builder: &Builder) -> Result<(), ErrorUI> {
             ))
         }
     };
+    let notification_label: Label = match builder.object("TransactionNotificationLabel") {
+        Some(notification_label) => notification_label,
+        None => {
+            return Err(ErrorUI::MissingElement(
+                "TransactionNotificationLabel".to_string(),
+            ))
+        }
+    };
+    notification_label.set_text(format!("New block with hash {} and transaction {}", block_hash, transaction).as_str());
     block_notification_window.set_visible(true);
     Ok(())
 }
@@ -780,8 +837,8 @@ fn spawn_local_handler(
                     );
                 };
             }
-            SignalToFront::BlockWithUnconfirmedTransactionReceived => {
-                if let Err(error) = show_new_block_notification(&cloned_builder) {
+            SignalToFront::BlockWithUnconfirmedTransactionReceived(block_hash, transaction_id) => {
+                if let Err(error) = show_new_block_notification(&cloned_builder, block_hash, transaction_id) {
                     println!(
                         "Error showing new block notification, with error {:?}",
                         error
@@ -794,6 +851,14 @@ fn spawn_local_handler(
                 {
                     println!(
                         "Error showing transactions in tree view, with error {:?}",
+                        error
+                    );
+                };
+            }
+            SignalToFront::SuccessfullySentTransaction(tx_id) => {
+                if let Err(error) = show_new_transaction_sent_notification(&cloned_builder, tx_id) {
+                    println!(
+                        "Error showing new transaction sent notification, with error {:?}",
                         error
                     );
                 };
@@ -906,6 +971,7 @@ pub fn build_ui(
     login_transaction_error_window(&builder)?;
     login_merkle_error_window(&builder)?;
     login_transaction_notification_window(&builder)?;
+    login_transaction_sent_notification_window(&builder)?;
     login_merkle_proof_successful_window(&builder)?;
 
     Ok(())

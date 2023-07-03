@@ -44,9 +44,9 @@ impl Notifier for NotifierTUI {
                     );
                 }
             }
-            Notification::TransactionOfAccountInNewBlock(transaction) => show_notification(
+            Notification::TransactionOfAccountInNewBlock(block, transaction) => show_notification(
                 "Transaction in block",
-                &format!("The transaction {transaction} was added to a block"),
+                &format!("The transaction {transaction} was added to a block with hash {block}"),
                 &self.logger,
             ),
             Notification::NewBlockAddedToTheBlockchain(block) => {
