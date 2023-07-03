@@ -128,12 +128,28 @@ where
         block_chain.clone(),
     )?;
 
+    if let Some(handle) = posible_handle {
+
+        if sender_stop.send(Stop::Stop).is_err() {
+            let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to stop potential connections".to_string()));
+        } else {
+            println!("y aca esta el error?");
+            if handle.join().is_err() {
+                let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()));
+            }
+
+            println!("Nop");
+        }
+    }
+
     if sender_potential_connections
         .send(ConnectionEvent::Stop)
         .is_err()
     {
         let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to stop potential connections".to_string()));
     } else {
+
+        println!("Aca esta el error?");
 
         match handle_process_connection.join() {
             Ok(Ok(())) => {}
@@ -148,24 +164,18 @@ where
         if handle_confirmed_connection.join().is_err() {
             let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()));
         }
+
+        println!("Nop");
     }
 
     if reference::get_reference(&broadcasting)?.close_connections(notifier).is_ok() {
+        println!("Tal vez aca esta el error?");
         if handle_peers.join().is_err() {
             let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to remove notifications".to_string()));
         }
+
+        println!("No");
     }    
-
-    if let Some(handle) = posible_handle {
-
-        if sender_stop.send(Stop::Stop).is_err() {
-            let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to stop potential connections".to_string()));
-        } else {
-            if handle.join().is_err() {
-                let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()));
-            }
-        }
-    }
 
     Ok(SaveSystem::new(
         reference::get_inner(block_chain)?,

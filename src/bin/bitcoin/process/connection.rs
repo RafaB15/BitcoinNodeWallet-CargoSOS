@@ -164,25 +164,18 @@ pub fn establish_connection_to_peers(
     sender_potential_connections: Sender<ConnectionEvent>,
     logger: LoggerSender,
 ) -> Result<(), ErrorExecution> {
-    let potential_connections = match mode_config.clone() {
+    let potential_sockets = match mode_config.clone() {
         ModeConfig::Server(server_config) => {
             get_potential_peers(server_config.clone(), logger.clone())?
-                .iter()
-                .map(|socket_address| {
-                    ConnectionId::new(socket_address.clone(), ConnectionType::Peer)
-                })
-                .collect()
         }
         ModeConfig::Client(client_config) => {
-            let address = SocketAddr::new(IpAddr::V4(client_config.address), client_config.port);
-
-            vec![ConnectionId::new(address, ConnectionType::Peer)]
+            vec![SocketAddr::new(IpAddr::V4(client_config.address), client_config.port)]
         }
     };
 
-    for potential_connection in potential_connections {
+    for potential_socket in potential_sockets {
         if sender_potential_connections
-            .send(ConnectionEvent::PotentialConnection(potential_connection))
+            .send(ConnectionEvent::PotentialPeer(potential_socket))
             .is_err()
         {
             let _ = logger.log_connection("Could not send potential connection".to_string());
@@ -219,9 +212,9 @@ pub fn establish_connection_with_clients(
 
         loop {
             match Listener::listen(&mut listener, &receiver_stop) {
-                Listener::Stream(_, socket_address) => {
+                Listener::Stream(stream, socket_address) => {
                     if sender_potential_connections.send(
-                        ConnectionEvent::PotentialConnection(ConnectionId::new(socket_address, ConnectionType::Client))
+                        ConnectionEvent::PotentialClient(stream, socket_address)
                     ).is_err() {
                         let _ = logger.log_error("Could not send client to connect".to_string());
                     }
