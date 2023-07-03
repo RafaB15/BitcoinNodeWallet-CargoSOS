@@ -59,7 +59,7 @@ where
     let (handle_process_connection, sender_potential_connections) =
         connection::create_process_connection(
             connection_config.clone(),
-            sender_confirm_connection.clone(),
+            sender_confirm_connection,
             notifier.clone(),
             logger.clone(),
         );
@@ -133,12 +133,9 @@ where
         if sender_stop.send(Stop::Stop).is_err() {
             let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to stop potential connections".to_string()));
         } else {
-            println!("y aca esta el error?");
             if handle.join().is_err() {
                 let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()));
             }
-
-            println!("Nop");
         }
     }
 
@@ -148,8 +145,6 @@ where
     {
         let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to stop potential connections".to_string()));
     } else {
-
-        println!("Aca esta el error?");
 
         match handle_process_connection.join() {
             Ok(Ok(())) => {}
@@ -164,17 +159,12 @@ where
         if handle_confirmed_connection.join().is_err() {
             let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()));
         }
-
-        println!("Nop");
     }
 
     if reference::get_reference(&broadcasting)?.close_connections(notifier).is_ok() {
-        println!("Tal vez aca esta el error?");
         if handle_peers.join().is_err() {
             let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to remove notifications".to_string()));
         }
-
-        println!("No");
     }    
 
     Ok(SaveSystem::new(
