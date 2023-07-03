@@ -181,12 +181,13 @@ pub fn establish_connection(
             });
 
             let port = server_config.own_port;
-
+            
             for ip in server_config.address {
                 let address = SocketAddr::new(IpAddr::V4(ip), port);
 
                 potential_connections.push(ConnectionId::new(address, ConnectionType::Client));
             }
+
 
             potential_connections
         }

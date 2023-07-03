@@ -13,7 +13,7 @@ use cargosos_bitcoin::{
         connection_config::ConnectionConfig, download_config::DownloadConfig,
         mode_config::ModeConfig,
     },
-    logs::logger_sender::LoggerSender,
+    logs::{logger_sender::LoggerSender, level::Level},
     node_structure::{
         broadcasting::Broadcasting, connection_event::ConnectionEvent,
         message_response::MessageResponse,
@@ -114,32 +114,29 @@ where
         .send(ConnectionEvent::Stop)
         .is_err()
     {
-        return Err(
-            ErrorUI::ErrorFromPeer("Fail to stop potential connections".to_string()).into(),
-        );
-    }
+        let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to stop potential connections".to_string()));
+    } else {
 
-    match handle_process_connection.join() {
-        Ok(Ok(())) => {}
-        Ok(Err(error)) => return Err(error.into()),
-        Err(_) => {
-            return Err(
-                ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()).into(),
-            )
+        match handle_process_connection.join() {
+            Ok(Ok(())) => {}
+            Ok(Err(error)) => {
+                let _ = logger.log_data(Level::ERROR, error);
+            },
+            Err(_) => {
+                let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()));
+            }
+        }
+
+        if handle_confirmed_connection.join().is_err() {
+            let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()));
         }
     }
 
-    if handle_confirmed_connection.join().is_err() {
-        return Err(
-            ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()).into(),
-        );
-    }
-
-    reference::get_reference(&broadcasting)?.close_connections(notifier)?;
-
-    if handle_peers.join().is_err() {
-        return Err(ErrorUI::ErrorFromPeer("Fail to remove notifications".to_string()).into());
-    }
+    if reference::get_reference(&broadcasting)?.close_connections(notifier).is_ok() {
+        if handle_peers.join().is_err() {
+            let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to remove notifications".to_string()));
+        }
+    }    
 
     Ok(SaveSystem::new(
         reference::get_inner(block_chain)?,

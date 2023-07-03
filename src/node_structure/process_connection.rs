@@ -112,9 +112,15 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
         let notifier = self.notifier.clone();
 
         thread::spawn(move || {
+            notifier.notify(Notification::AttemptingHandshakeWithPeer(
+                connection.address.clone(),
+            ));
+
             let mut stream = match Self::create_stream(connection, logger.clone()) {
                 Some(stream) => stream,
                 None => {
+                    let _ = logger
+                        .log_connection(format!("Cannot connecto to {connection}"));
                     return;
                 }
             };
@@ -127,10 +133,6 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
                     return;
                 }
             };
-
-            notifier.notify(Notification::AttemptingHandshakeWithPeer(
-                connection.address.clone(),
-            ));
 
             let result = match connection {
                 ConnectionId {
