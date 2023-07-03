@@ -181,6 +181,7 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
                         notifier.notify(Notification::SuccessfulHandshakeWithPeer(
                             connection.address,
                         ));
+                        notifier.notify(Notification::ConnectionUpdated(connection));
                     } else {
                         notifier.notify(Notification::FailedHandshakeWithPeer(connection.address));
                     }

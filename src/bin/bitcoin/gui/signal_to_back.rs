@@ -15,6 +15,9 @@ pub enum SignalToBack {
     /// Signal to get the transactions of an account.
     GetAccountTransactions,
 
+    /// Signal requesting the merkle proof of a transaction.
+    RequestMerkleProof(String, String),
+
     /// Signal to exit the program.
     ExitProgram,
 }

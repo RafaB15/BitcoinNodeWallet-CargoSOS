@@ -29,6 +29,9 @@ impl Notifier for NotifierTUI {
             Notification::FailedHandshakeWithPeer(socket_address) => {
                 println!("Failed handshake with {socket_address}");
             }
+            Notification::ConnectionUpdated(connection_id) => {
+                println!("Connection updated: {connection_id}");
+            }
             Notification::TransactionOfAccountReceived(accounts, transaction) => {
                 for account in accounts {
                     show_notification(
@@ -131,8 +134,16 @@ impl Notifier for NotifierTUI {
                 let percentage_downloaded =
                     (blocks_downloaded as f32 / total_blocks as f32) * 100.0;
                 let message = format!(
-                    "Finished downloading {percentage}% of the blockchain",
+                    "Finished downloading {percentage}% of blocks",
                     percentage = percentage_downloaded
+                );
+                println!("{message}");
+            }
+            Notification::ProgressUpdatingBlockchain(blocks_updated, total_blocks) => {
+                let percentage_updated = (blocks_updated as f32 / total_blocks as f32) * 100.0;
+                let message = format!(
+                    "Finished updating {percentage}% of the blockchain",
+                    percentage = percentage_updated
                 );
                 println!("{message}");
             }
@@ -144,6 +155,8 @@ impl Notifier for NotifierTUI {
             Notification::ReceivedMessage(message) => {
                 println!("Received message of type {:?}", message)
             }
+            Notification::ProblemVerifyingTransactionMerkleProofOfInclusion(_) => todo!(),
+            Notification::SuccessfulMerkleProof(_, _) => todo!(),
         }
     }
 }

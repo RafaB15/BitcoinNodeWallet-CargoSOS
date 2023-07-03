@@ -1,9 +1,10 @@
 use std::net::SocketAddr;
 
 use crate::{
-    block_structure::{block::Block, transaction::Transaction},
+    block_structure::{block::Block, transaction::Transaction, hash::HashType},
     messages::command_name::CommandName,
     wallet_structure::account::Account,
+    node_structure::connection_id::ConnectionId,
 };
 
 /// The different types of notifications that the notifier can send.
@@ -17,8 +18,14 @@ pub enum Notification {
     /// Notifies that we have failed to establish a connection with a peer.
     FailedHandshakeWithPeer(SocketAddr),
 
+    /// Notifies that we have to update a connection
+    ConnectionUpdated(ConnectionId),
+
     /// Notifies that we have received a transaction for an account in the wallet.
     TransactionOfAccountReceived(Vec<Account>, Transaction),
+
+    /// Notifies that there was a problem while trying to obtain the merkle proof of inclusion.
+    ProblemVerifyingTransactionMerkleProofOfInclusion(String),
 
     /// Notifies that we have received a transaction for an account in the wallet in a block.
     TransactionOfAccountInNewBlock(Transaction),
@@ -26,11 +33,17 @@ pub enum Notification {
     /// Notifies that we have successfully sent a transaction.
     SuccessfullySentTransaction(Transaction),
 
+    /// Notifies that we successfully obtained the merkle poof of inclusion.
+    SuccessfulMerkleProof(Vec<HashType>, HashType),
+
     /// Notifies that we have received an amount of headers.
     HeadersReceived(u32),
 
     /// Notifies the amount of blocks that we have downloaded.
     ProgressDownloadingBlocks(u32, u32),
+
+    /// Notifies the amount of blocks added to the blockchain.
+    ProgressUpdatingBlockchain(u32, u32),
 
     /// Notifies that we have received a block.
     NewBlockAddedToTheBlockchain(Block),

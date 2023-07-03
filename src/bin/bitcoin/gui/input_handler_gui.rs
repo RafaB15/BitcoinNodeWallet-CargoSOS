@@ -109,6 +109,15 @@ where
                         self.logger.clone(),
                     )?;
                 }
+                SignalToBack::RequestMerkleProof(block_hash, transaction_id) => {
+                    frontend::request_merkle_proof(
+                        &block_chain_reference,
+                        &block_hash,
+                        &transaction_id,
+                        self.notifier.clone(),
+                        self.logger.clone(),
+                    )?;
+                }
                 SignalToBack::ExitProgram => {
                     break;
                 }

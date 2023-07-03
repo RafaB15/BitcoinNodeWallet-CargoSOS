@@ -30,7 +30,7 @@ use std::{
 ///  * `ErrorNode::WhileValidating`: It will appear when
 ///  * `ErrorBlock::CouldNotUpdate`: It will appear when the block is not in the blockchain.
 ///  * `ErrorProcess::FailThread`: It will appear when the thread fails
-fn headers_first<N: Notifier, RW: Read + Write + Send + Debug + 'static>(
+fn headers_first<N: Notifier + 'static, RW: Read + Write + Send + Debug + 'static>(
     connection: (RW, ConnectionId),
     block_chain: &mut BlockChain,
     utxo_set: &mut UTXOSet,
@@ -72,6 +72,7 @@ fn headers_first<N: Notifier, RW: Read + Write + Send + Debug + 'static>(
         peer_stream,
         block_download.clone(),
         list_of_blocks,
+        notifier.clone(),
         logger.clone(),
     );
 
@@ -126,10 +127,11 @@ fn get_peer_header<N: Notifier, RW: Read + Write>(
 }
 
 /// It gets the blocks from a specific peer in a thread
-fn get_blocks<RW: Read + Write + Send + 'static>(
+fn get_blocks<N: Notifier + 'static, RW: Read + Write + Send + 'static>(
     mut peer_stream: RW,
     block_download: BlockDownload,
     list_of_blocks: Vec<Block>,
+    notifier: N,
     logger: LoggerSender,
 ) -> JoinHandle<(Vec<Block>, RW)> {
     thread::spawn(move || {
@@ -144,7 +146,7 @@ fn get_blocks<RW: Read + Write + Send + 'static>(
             headers.push(header_hash);
         }
 
-        match block_download.get_data(&mut peer_stream, headers) {
+        match block_download.get_data(&mut peer_stream, headers, notifier) {
             Ok(blocks) => (blocks, peer_stream),
             Err(error) => {
                 let _ = logger.log_connection(format!("Cannot get block, we get {:?}", error));
@@ -162,7 +164,10 @@ fn get_blocks<RW: Read + Write + Send + 'static>(
 ///  * `ErrorNode::WhileValidating`: It will appear when
 ///  * `ErrorBlock::CouldNotUpdate`: It will appear when the block is not in the blockchain.
 ///  * `ErrorProcess::FailThread`: It will appear when the thread fails
-pub fn update_block_chain_with_peer<N: Notifier, RW: Read + Write + Send + Debug + 'static>(
+pub fn update_block_chain_with_peer<
+    N: Notifier + 'static,
+    RW: Read + Write + Send + Debug + 'static,
+>(
     connection: (RW, ConnectionId),
     block_chain: MutArc<BlockChain>,
     utxo_set: MutArc<UTXOSet>,
@@ -229,7 +234,7 @@ fn updating_block_chain<N: Notifier, RW: Read + Write + Send>(
 
                 if i % 50 == 0 {
                     let _ = logger.log_connection(format!("Loading [{i}] blocks to blockchain",));
-                    notifier.notify(Notification::ProgressDownloadingBlocks(
+                    notifier.notify(Notification::ProgressUpdatingBlockchain(
                         i as u32,
                         total_blocks,
                     ));
@@ -237,9 +242,9 @@ fn updating_block_chain<N: Notifier, RW: Read + Write + Send>(
             }
 
             if total_blocks == 0 {
-                notifier.notify(Notification::ProgressDownloadingBlocks(1, 1));
+                notifier.notify(Notification::ProgressUpdatingBlockchain(1, 1));
             } else {
-                notifier.notify(Notification::ProgressDownloadingBlocks(
+                notifier.notify(Notification::ProgressUpdatingBlockchain(
                     total_blocks,
                     total_blocks,
                 ));

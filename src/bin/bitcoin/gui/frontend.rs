@@ -1,19 +1,30 @@
 use super::{signal_to_back::SignalToBack, signal_to_front::SignalToFront};
 
 use crate::{
-    process::reference::{self, MutArc},
-    ui::{account, error_ui::ErrorUI},
+    process::{
+        reference::{self, MutArc},
+        transaction,
+    },
+    ui::{account, error_ui::ErrorUI, from_hexa},
 };
 
 use cargosos_bitcoin::{
     notifications::{notification::Notification, notifier::Notifier},
     wallet_structure::{private_key::PrivateKey, public_key::PublicKey, wallet::Wallet},
+    node_structure::connection_id::ConnectionId,
+    logs::logger_sender::LoggerSender,
+    block_structure::{
+        hash::HashType,
+        block_chain::BlockChain,
+    },
 };
 
 use gtk::{
-    glib, prelude::*, Builder, Button, ComboBoxText, Entry, Image, Label, SpinButton, TreeStore,
-    Window,
+    glib, prelude::*, Builder, Button, ComboBoxText, Entry, Image, Label, ProgressBar, SpinButton,
+    TreeStore, Window,
 };
+
+use glib::GString;
 
 use std::sync::mpsc::Sender;
 
@@ -62,7 +73,10 @@ fn login_main_window(
     builder: &Builder,
     tx_to_back: Sender<SignalToBack>,
 ) -> Result<(), ErrorUI> {
-    let window: Window = builder.object("MainWindow").unwrap();
+    let window: Window = match builder.object("MainWindow") {
+        Some(window) => window,
+        None => return Err(ErrorUI::MissingElement("MainWindow".to_string())),
+    };
     window.set_application(Some(application));
 
     let application_clone = application.clone();
@@ -97,11 +111,16 @@ fn login_main_window(
         account_registration_window.set_visible(true);
     });
 
-    login_send_page(builder, tx_to_back)?;
+    login_send_page(builder, tx_to_back.clone())?;
     login_block_notification_window(builder)?;
+    login_merkle_proof_window(builder, tx_to_back)?;
     window.show_all();
     Ok(())
 }
+
+
+
+
 
 /// This function sets up the registration window
 fn login_registration_window(
@@ -109,18 +128,46 @@ fn login_registration_window(
     application: &gtk::Application,
     tx_to_back: Sender<SignalToBack>,
 ) -> Result<(), ErrorUI> {
-    let account_registration_window: Window = builder.object("AccountRegistrationWindow").unwrap();
+    let account_registration_window: Window = match builder.object("AccountRegistrationWindow") {
+        Some(account_registration_window) => account_registration_window,
+        None => {
+            return Err(ErrorUI::MissingElement(
+                "AccountRegistrationWindow".to_string(),
+            ))
+        }
+    };
     account_registration_window.set_application(Some(application));
 
     let cloned_builder = builder.clone();
 
-    let save_wallet_button: Button = builder.object("SaveWalletButton").unwrap();
+    let save_wallet_button: Button = match builder.object("SaveWalletButton") {
+        Some(save_wallet_button) => save_wallet_button,
+        None => return Err(ErrorUI::MissingElement("SaveWalletButton".to_string())),
+    };
     save_wallet_button.connect_clicked(move |_| {
         account_registration_window.set_visible(false);
 
-        let private_key_entry: Entry = cloned_builder.object("PrivateKeyEntry").unwrap();
-        let public_key_entry: Entry = cloned_builder.object("PublicKeyEntry").unwrap();
-        let name_entry: Entry = cloned_builder.object("NameEntry").unwrap();
+        let private_key_entry: Entry = match cloned_builder.object("PrivateKeyEntry") {
+            Some(entry) => entry,
+            None => {
+                println!("Error: Missing element PrivateKeyEntry");
+                Entry::new()
+            }
+        };
+        let public_key_entry: Entry = match cloned_builder.object("PublicKeyEntry") {
+            Some(entry) => entry,
+            None => {
+                println!("Error: Missing element PublicKeyEntry");
+                Entry::new()
+            }
+        };
+        let name_entry: Entry = match cloned_builder.object("NameEntry") {
+            Some(entry) => entry,
+            None => {
+                println!("Error: Missing element NameEntry");
+                Entry::new()
+            }
+        };
 
         if tx_to_back
             .send(SignalToBack::CreateAccount(
@@ -141,12 +188,27 @@ fn login_registration_window(
 }
 
 /// This function sets up the combo box
-fn login_combo_box(builder: &Builder, tx_to_back: Sender<SignalToBack>) {
-    let combo_box: ComboBoxText = builder.object("WalletsComboBox").unwrap();
+fn login_combo_box(builder: &Builder, tx_to_back: Sender<SignalToBack>) -> Result<(), ErrorUI> {
+    let combo_box: ComboBoxText = match builder.object("WalletsComboBox") {
+        Some(combo_box) => combo_box,
+        None => return Err(ErrorUI::MissingElement("WalletsComboBox".to_string())),
+    };
     let cloned_builder = builder.clone();
     combo_box.connect_changed(move |_| {
-        let combo_box_cloned: ComboBoxText = cloned_builder.object("WalletsComboBox").unwrap();
-        let selected_wallet = combo_box_cloned.active_text().unwrap();
+        let combo_box_cloned: ComboBoxText = match cloned_builder.object("WalletsComboBox") {
+            Some(combo_box) => combo_box,
+            None => {
+                println!("Error: Missing element WalletsComboBox");
+                ComboBoxText::new()
+            }
+        };
+        let selected_wallet = match combo_box_cloned.active_text() {
+            Some(selected_wallet) => selected_wallet,
+            None => {
+                println!("Error: Missing element WalletsComboBox");
+                GString::new()
+            }
+        };
         if let Err(error) = tx_to_back.send(SignalToBack::ChangeSelectedAccount(
             selected_wallet.to_string(),
         )) {
@@ -159,6 +221,7 @@ fn login_combo_box(builder: &Builder, tx_to_back: Sender<SignalToBack>) {
             println!("Error sending get account transactions signal: {}", error);
         };
     });
+    Ok(())
 }
 
 /// This function sets up the error window
@@ -177,6 +240,102 @@ fn login_transaction_error_window(builder: &Builder) -> Result<(), ErrorUI> {
     };
     transaction_error_button.connect_clicked(move |_| {
         transaction_error_window.set_visible(false);
+    });
+    Ok(())
+}
+
+/// This function sets up the error window
+fn login_merkle_error_window(builder: &Builder) -> Result<(), ErrorUI> {
+    let merkle_error_window: Window = match builder.object("MerkleProofErrorWindow") {
+        Some(merkle_error_window) => merkle_error_window,
+        None => {
+            return Err(ErrorUI::MissingElement(
+                "MerkleProofErrorWindow".to_string(),
+            ))
+        }
+    };
+    let merkle_error_button: Button = match builder.object("OkMerkleProofErrorButton") {
+        Some(merkle_error_button) => merkle_error_button,
+        None => return Err(ErrorUI::MissingElement("OkMerkleProofErrorButton".to_string())),
+    };
+    merkle_error_button.connect_clicked(move |_| {
+        merkle_error_window.set_visible(false);
+    });
+    Ok(())
+}
+
+/// Function that makes the error window for the merkle proof of inclusion visible
+fn show_merkle_error_window(builder: &Builder, error: String) -> Result<(), ErrorUI>{
+    let merkle_error_window: Window = match builder.object("MerkleProofErrorWindow") {
+        Some(merkle_error_window) => merkle_error_window,
+        None => {
+            return Err(ErrorUI::MissingElement(
+                "MerkleProofErrorWindow".to_string(),
+            ))
+        }
+    };
+    let merkle_error_label: Label = match builder.object("MerkleProofErrorLabel") {
+        Some(merkle_error_label) => merkle_error_label,
+        None => return Err(ErrorUI::MissingElement("MerkleProofErrorLabel".to_string())),
+    };
+    merkle_error_label.set_text(&error);
+    merkle_error_window.set_visible(true);
+    Ok(())
+}
+
+/// Turns a hashtype to a string
+fn from_hashtype_to_string(hash: HashType) -> String {
+    let mut hash_string = "".to_string();
+    for byte in hash.iter() {
+        hash_string.push_str(&format!("{:02x}", byte));
+    }
+    hash_string
+}
+
+fn show_merkle_proof_success_window(builder: &Builder, merkle_path: Vec<HashType>, root: HashType) -> Result<(), ErrorUI>{
+    let merkle_success_window: Window = match builder.object("MerkleProofSuccessfulWindow") {
+        Some(merkle_success_window) => merkle_success_window,
+        None => {
+            return Err(ErrorUI::MissingElement(
+                "MerkleProofSuccessfulWindow".to_string(),
+            ))
+        }
+    };
+    let merkle_success_label: Label = match builder.object("MerkleProofNotificationLabel") {
+        Some(merkle_success_label) => merkle_success_label,
+        None => return Err(ErrorUI::MissingElement("MerkleProofNotificationLabel".to_string())),
+    };
+
+    
+    let mut message_path = "".to_string();
+    
+    for hash in merkle_path.clone() {
+        message_path.push_str(&format!("{}\n", from_hashtype_to_string(hash)));
+    }
+    
+    let message = format!("Merkle root: \n{}\n Merkle path:\n{}", from_hashtype_to_string(root), message_path);
+
+    merkle_success_label.set_text(&message);
+    merkle_success_window.set_visible(true);
+    Ok(())
+}
+
+/// This function sets up the error window
+fn login_merkle_proof_successful_window(builder: &Builder) -> Result<(), ErrorUI> {
+    let merkle_success_window: Window = match builder.object("MerkleProofSuccessfulWindow") {
+        Some(merkle_success_window) => merkle_success_window,
+        None => {
+            return Err(ErrorUI::MissingElement(
+                "MerkleProofSuccessfulWindow".to_string(),
+            ))
+        }
+    };
+    let merkle_success_button: Button = match builder.object("OkMerkleProofNotificationButton") {
+        Some(merkle_success_button) => merkle_success_button,
+        None => return Err(ErrorUI::MissingElement("OkMerkleProofNotificationButton".to_string())),
+    };
+    merkle_success_button.connect_clicked(move |_| {
+        merkle_success_window.set_visible(false);
     });
     Ok(())
 }
@@ -224,6 +383,84 @@ fn login_block_notification_window(builder: &Builder) -> Result<(), ErrorUI> {
         block_notification_window.set_visible(false);
     });
     Ok(())
+}
+
+/// Requests the merkle proof of a transaction with the data entered by the user
+///
+/// ### Error
+///  * `ErrorUI::FailedSignalToFront`: It will appear when the sender fails
+pub fn request_merkle_proof<N: Notifier>(
+    block_chain: &BlockChain,
+    block_hash: &str,
+    transaction_id: &str,
+    notifier: N,
+    logger: LoggerSender,
+
+) -> Result<(), ErrorUI> {
+    let block_hash_bytes: HashType = match from_hexa::from(block_hash.to_string())?.try_into() {
+        Ok(block_hash_bytes) => block_hash_bytes,
+        Err(_) => {
+            let _ = logger.log_error("Error reading block hash".to_string());
+            return Err(ErrorUI::ErrorReading("Block hash".to_string()));
+        }
+    };
+
+    let transaction_id_bytes: HashType = match from_hexa::from(transaction_id.to_string())?.try_into() {
+        Ok(transaction_id_bytes) => transaction_id_bytes,
+        Err(_) => {
+            let _ = logger.log_error("Error reading block hash".to_string());
+            return Err(ErrorUI::ErrorReading("Block hash".to_string()));
+        }
+    };
+
+    transaction::verify_transaction_merkle_proof_of_inclusion(
+        block_chain,
+        block_hash_bytes,
+        transaction_id_bytes,
+        notifier,
+        logger
+    );
+
+    Ok(())
+}
+
+
+/// This function sets up the notification window for merkle proof
+fn login_merkle_proof_window(builder: &Builder, tx_to_back: Sender<SignalToBack>) -> Result<(), ErrorUI> {
+
+    let validation_button: Button = match builder.object("MerkleProofValidateButton") {
+        Some(validation_button) => validation_button,
+        None => {
+            return Err(ErrorUI::MissingElement(
+                "MerkleProofValidateButton".to_string(),
+            ))
+        }
+    };
+    let cloned_builder = builder.clone();
+    validation_button.connect_clicked(move |_|{
+        let block_hash: Entry = match cloned_builder.object("BlockHeaderHashEntry") {
+            Some(entry) => entry,
+            None => {
+                println!("Error: Missing element BlockHeaderHashEntry");
+                Entry::new()
+            }
+        };
+        let transaction_id: Entry = match cloned_builder.object("TransactionIDEntry") {
+            Some(entry) => entry,
+            None => {
+                println!("Error: Missing element TransactionIDEntry");
+                Entry::new()
+            }
+        };
+
+        if tx_to_back.send(SignalToBack::RequestMerkleProof(block_hash.text().to_string(), transaction_id.text().to_string())).is_err() {
+            println!("Error sending merkle proof signal");
+        }
+
+    });
+
+    Ok(())
+
 }
 
 /// This function makes the error window visible and sets the error message
@@ -430,6 +667,24 @@ fn show_transactions_in_tree_view(
     Ok(())
 }
 
+/// Function that displays the tree view with the connections
+fn show_connections_in_tree_view(builder: &Builder, connection: ConnectionId ) -> Result<(), ErrorUI> {
+    let connections_tree_store: TreeStore = match builder.object("ConnectionsTreeStore") {
+        Some(list_store) => list_store,
+        None => return Err(ErrorUI::MissingElement("ConnectionsTreeStore".to_string())),
+    };
+
+    let ip_address = connection.address.ip().to_string();
+    let port = connection.address.port().to_string();
+
+    let tree_iter = connections_tree_store.append(None);
+    connections_tree_store.set_value(&tree_iter, 0, &glib::Value::from(connection.connection_type.to_string()));
+    connections_tree_store.set_value(&tree_iter, 1, &glib::Value::from(ip_address));
+    connections_tree_store.set_value(&tree_iter, 2, &glib::Value::from(port));
+
+    Ok(())
+}
+
 /// This functions sets up the behaviour of the GUI when it receives a signal from the backend
 fn spawn_local_handler(
     builder: &Builder,
@@ -447,9 +702,27 @@ fn spawn_local_handler(
                 };
             }
             SignalToFront::LoadAvailableBalance(balance) => {
-                let balance_label: Label = cloned_builder.object("AvailableBalanceLabel").unwrap();
-                let pending_label: Label = cloned_builder.object("PendingBalanceLabel").unwrap();
-                let total_label: Label = cloned_builder.object("TotalBalanceLabel").unwrap();
+                let balance_label: Label = match cloned_builder.object("AvailableBalanceLabel") {
+                    Some(label) => label,
+                    None => {
+                        println!("Error: Missing element AvailableBalanceLabel");
+                        Label::new(None)
+                    }
+                };
+                let pending_label: Label = match cloned_builder.object("PendingBalanceLabel") {
+                    Some(label) => label,
+                    None => {
+                        println!("Error: Missing element PendingBalanceLabel");
+                        Label::new(None)
+                    }
+                };
+                let total_label: Label = match cloned_builder.object("TotalBalanceLabel") {
+                    Some(label) => label,
+                    None => {
+                        println!("Error: Missing element TotalBalanceLabel");
+                        Label::new(None)
+                    }
+                };
 
                 let balance_string = format!("{:.8}", balance.0);
                 let pending_string = format!("{:.8}", balance.1);
@@ -515,6 +788,66 @@ fn spawn_local_handler(
                     println!("Error showing error window, with error {:?}", error);
                 };
             }
+            SignalToFront::UpdateBlockchainProgressBar(to_update, total) => {
+                let progress_label = match cloned_builder.object("ProgressLabel") {
+                    Some(progress_label) => progress_label,
+                    None => {
+                        println!("Error: Missing element ProgressLabel");
+                        Label::new(None)
+                    }
+                };
+                progress_label.set_text("Blockchain Update Progress");
+                let progress_bar: ProgressBar = match cloned_builder.object("ProgressBar") {
+                    Some(progress_bar) => progress_bar,
+                    None => {
+                        println!("Error: Missing element ProgressBar");
+                        ProgressBar::new()
+                    }
+                };
+                progress_bar.set_fraction(to_update as f64 / total as f64);
+            }
+            SignalToFront::UpdateBlockProgressBar(downloaded, total) => {
+                let progress_label = match cloned_builder.object("ProgressLabel") {
+                    Some(progress_label) => progress_label,
+                    None => {
+                        println!("Error: Missing element ProgressLabel");
+                        Label::new(None)
+                    }
+                };
+                progress_label.set_text("Block Download Progress");
+                let progress_bar: ProgressBar = match cloned_builder.object("ProgressBar") {
+                    Some(progress_bar) => progress_bar,
+                    None => {
+                        println!("Error: Missing element ProgressBar");
+                        ProgressBar::new()
+                    }
+                };
+                progress_bar.set_fraction(downloaded as f64 / total as f64);
+            }
+            SignalToFront::UpdateConnection(connection) => {
+                if let Err(error) = show_connections_in_tree_view(&cloned_builder, connection) {
+                    println!(
+                        "Error showing connections in tree view, with error {:?}",
+                        error
+                    );
+                };
+            }
+            SignalToFront::ErrorInMerkleProof(error) => {
+                if let Err(error) = show_merkle_error_window(&cloned_builder, error) {
+                    println!(
+                        "Error showing merkle proof error window, with error {:?}",
+                        error
+                    );
+                };
+            },
+            SignalToFront::DisplayMerklePath(merkle_path, root) => {
+                if let Err(error) = show_merkle_proof_success_window(&cloned_builder, merkle_path, root) {
+                    println!(
+                        "Error showing merkle proof success window, with error {:?}",
+                        error
+                    );
+                };
+            }
         }
         glib::Continue(true)
     });
@@ -542,11 +875,12 @@ pub fn build_ui(
 
     login_registration_window(&builder, application, tx_to_back.clone())?;
 
-    login_combo_box(&builder, tx_to_back);
+    login_combo_box(&builder, tx_to_back)?;
 
     login_transaction_error_window(&builder)?;
-
+    login_merkle_error_window(&builder)?;
     login_transaction_notification_window(&builder)?;
+    login_merkle_proof_successful_window(&builder)?;
 
     Ok(())
 }
