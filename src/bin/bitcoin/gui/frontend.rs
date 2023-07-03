@@ -9,7 +9,7 @@ use crate::{
 };
 
 use cargosos_bitcoin::{
-    block_structure::{block_chain::BlockChain, hash::HashType},
+    block_structure::{block_chain::BlockChain, hash::{HashType, HASH_TYPE_SIZE}},
     logs::logger_sender::LoggerSender,
     node_structure::connection_id::ConnectionId,
     notifications::{notification::Notification, notifier::Notifier},
@@ -408,27 +408,14 @@ pub fn request_merkle_proof<N: Notifier>(
     notifier: N,
     logger: LoggerSender,
 ) -> Result<(), ErrorUI> {
-    let block_hash_bytes: HashType = match from_hexa::from(block_hash.to_string())?.try_into() {
-        Ok(block_hash_bytes) => block_hash_bytes,
-        Err(_) => {
-            let _ = logger.log_error("Error reading block hash".to_string());
-            return Err(ErrorUI::ErrorReading("Block hash".to_string()));
-        }
-    };
+    let block_hash = from_hexa::from::<HASH_TYPE_SIZE>(block_hash)?;
 
-    let transaction_id_bytes: HashType =
-        match from_hexa::from(transaction_id.to_string())?.try_into() {
-            Ok(transaction_id_bytes) => transaction_id_bytes,
-            Err(_) => {
-                let _ = logger.log_error("Error reading block hash".to_string());
-                return Err(ErrorUI::ErrorReading("Block hash".to_string()));
-            }
-        };
+    let transaction_id = from_hexa::from::<HASH_TYPE_SIZE>(transaction_id)?;
 
     transaction::verify_transaction_merkle_proof_of_inclusion(
         block_chain,
-        block_hash_bytes,
-        transaction_id_bytes,
+        block_hash,
+        transaction_id,
         notifier,
         logger,
     );

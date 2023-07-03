@@ -155,8 +155,29 @@ impl Notifier for NotifierTUI {
             Notification::ReceivedMessage(message) => {
                 println!("Received message of type {:?}", message)
             }
-            Notification::ProblemVerifyingTransactionMerkleProofOfInclusion(_) => todo!(),
-            Notification::SuccessfulMerkleProof(_, _) => todo!(),
+            Notification::ProblemVerifyingTransactionMerkleProofOfInclusion(error_message) => {
+                show_notification(
+                    "Error while verifying transaction merkle proof of inclusion",
+                    &format!("There was an error in the process of verifying the merkle proof\n the error was: {error_message}"),
+                    &self.logger,
+                );
+            },
+            Notification::SuccessfulMerkleProof(path, root) => {
+                let mut message_path = "".to_string();
+
+                for hash in path.clone() {
+                    message_path.push_str(&format!("{}\n", from_hashtype_to_string(&hash)));
+                }
+
+                show_notification(
+                    "Merkle proof successfully validated",
+                    &format!(
+                        "Merkle root: \n{root}\n Merkle path:\n{message_path}",
+                        root = from_hashtype_to_string(&root),
+                    ),
+                    &self.logger,
+                );
+            },
         }
     }
 }
@@ -190,4 +211,13 @@ fn calculate_body_len(body: &str) -> usize {
         len = max(len, line.len());
     }
     len
+}
+
+/// Turns a hashtype to a string
+fn from_hashtype_to_string(hash: &[u8]) -> String {
+    let mut hash_string = "".to_string();
+    for byte in hash.iter() {
+        hash_string.push_str(&format!("{:02x}", byte));
+    }
+    hash_string
 }
