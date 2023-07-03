@@ -134,7 +134,7 @@ pub fn verify_transaction_merkle_proof_of_inclusion<N: Notifier>(
     }
     let merkle_tree = match MerkleTree::new(&block.transactions) {
         Ok(merkle_tree) => merkle_tree,
-        Err(error) => {
+        Err(_) => {
             let _ = logger.log_transaction("Error verifying transaction merkle proof of inclusion, with error: Merkle tree creation failed".to_string());
             notifier.notify(Notification::ProblemVerifyingTransactionMerkleProofOfInclusion("Merkle tree creation failed".to_string()));
             return;
@@ -142,9 +142,9 @@ pub fn verify_transaction_merkle_proof_of_inclusion<N: Notifier>(
     };
 
 
-    let mut merkle_path = match merkle_tree.get_merkle_path(transaction_id) {
+    let merkle_path = match merkle_tree.get_merkle_path(transaction_id) {
         Ok(merkle_path) => merkle_path,
-        Err(error) => {
+        Err(_) => {
             let _ = logger.log_transaction("Error verifying transaction merkle proof of inclusion, with error: Merkle path creation failed".to_string());
             notifier.notify(Notification::ProblemVerifyingTransactionMerkleProofOfInclusion("Merkle path creation failed".to_string()));
             return;
