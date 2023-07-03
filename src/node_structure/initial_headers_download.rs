@@ -248,11 +248,11 @@ mod tests {
         let get_headers_message =
             GetHeadersMessage::deserialize_message(&mut stream, header).unwrap();
 
-        assert_eq!(get_headers_message.header_locator_hashes.len(), 1);
+        assert_eq!(get_headers_message.header_locator_hashes.len(), 2);
         assert_eq!(get_headers_message.version, ProtocolVersionP2P::V70016);
         assert_eq!(
             get_headers_message.header_locator_hashes,
-            vec![hash_of_first_block_header]
+            vec![hash_of_first_block_header, hash_of_first_block_header]
         );
     }
 }

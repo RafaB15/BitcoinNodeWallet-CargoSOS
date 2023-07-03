@@ -238,7 +238,7 @@ mod test_integration {
 
         assert_eq!(
             get_headers_message.header_locator_hashes,
-            vec![first_block_header_hash]
+            vec![first_block_header_hash, first_block_header_hash]
         );
 
         let transaction_message = read_message::<TxMessage>(&mut stream, CommandName::Tx);
