@@ -17,6 +17,7 @@ use crate::messages::{
 use std::io::{Read, Write};
 
 const NO_STOP_HASH: HashType = [0; 32];
+const GO_BACK: usize = 50;
 
 /// It represents the download of the headers from a peer
 #[derive(Debug, Clone)]
@@ -54,7 +55,7 @@ impl InitialHeaderDownload {
 
         let mut header_locator_hashes: Vec<HashType> = Vec::new();
 
-        for block in block_chain.latest().iter() {
+        for block in block_chain.headers_to_update(GO_BACK).iter() {
             let last_header: &BlockHeader = &block.header;
             header_locator_hashes.push(last_header.get_hash256d()?);
         }
