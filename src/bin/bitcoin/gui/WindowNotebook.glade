@@ -136,6 +136,7 @@
     <child>
       <object class="GtkFixed" id="BlockNotificationFrame">
         <property name="name">TransactionNotificationFrame</property>
+        <property name="height-request">350</property>
         <property name="visible">True</property>
         <property name="can-focus">False</property>
         <child>
@@ -193,7 +194,7 @@ it contains one unconfirmed transaction previously identified</property>
           </object>
           <packing>
             <property name="x">174</property>
-            <property name="y">182</property>
+            <property name="y">290</property>
           </packing>
         </child>
       </object>
@@ -247,15 +248,16 @@ There was an error in the process of verifying the merkle proof</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="MerkleProofErrorLabel1">
+          <object class="GtkLabel" id="MerkleProofErrorLabelMessage">
             <property name="name">MerkleProofErrorLabel</property>
-            <property name="width-request">140</property>
-            <property name="height-request">40</property>
+            <property name="width-request">350</property>
+            <property name="height-request">50</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
+            <property name="justify">center</property>
           </object>
           <packing>
-            <property name="x">154</property>
+            <property name="x">50</property>
             <property name="y">125</property>
           </packing>
         </child>

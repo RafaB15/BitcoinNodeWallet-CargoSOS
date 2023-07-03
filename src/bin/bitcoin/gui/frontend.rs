@@ -271,9 +271,9 @@ fn show_merkle_error_window(builder: &Builder, error: String) -> Result<(), Erro
             ))
         }
     };
-    let merkle_error_label: Label = match builder.object("MerkleProofErrorLabel") {
+    let merkle_error_label: Label = match builder.object("MerkleProofErrorLabelMessage") {
         Some(merkle_error_label) => merkle_error_label,
-        None => return Err(ErrorUI::MissingElement("MerkleProofErrorLabel".to_string())),
+        None => return Err(ErrorUI::MissingElement("MerkleProofErrorLabelMessage".to_string())),
     };
     merkle_error_label.set_text(&error);
     merkle_error_window.set_visible(true);
@@ -394,7 +394,10 @@ fn show_new_transaction_sent_notification(
             ))
         }
     };
-    notification_label.set_text(format!("{}", tx_id).as_str());
+
+    let (first, second) = tx_id.split_at(tx_id.len() / 2);
+
+    notification_label.set_text(format!("{first}\n{second}").as_str());
     transaction_sent_notification_window.set_visible(true);
     Ok(())
 }
@@ -571,15 +574,21 @@ fn show_new_block_notification(builder: &Builder, block_hash: String, transactio
             ))
         }
     };
-    let notification_label: Label = match builder.object("TransactionNotificationLabel") {
+    let notification_label: Label = match builder.object("BlockNotificationLabel") {
         Some(notification_label) => notification_label,
         None => {
             return Err(ErrorUI::MissingElement(
-                "TransactionNotificationLabel".to_string(),
+                "BlockNotificationLabel".to_string(),
             ))
         }
     };
-    notification_label.set_text(format!("New block with hash {} and transaction {}", block_hash, transaction).as_str());
+
+    let (first_block, second_block) = block_hash.split_at(block_hash.len() / 2);
+    let (first_tx, second_tx) = transaction.split_at(transaction.len() / 2);
+
+    notification_label.set_text(&format!(
+        "New block with hash\n{first_block}\n{second_block}\nand transaction\n{first_tx}\n{second_tx}"
+    ));
     block_notification_window.set_visible(true);
     Ok(())
 }

@@ -37,7 +37,7 @@ impl Notifier for NotifierTUI {
                     show_notification(
                         "Transaction received",
                         &format!(
-                            "The transaction: {transaction} was received \n    in the account: {account}",
+                            "The transaction: {transaction} was received\n    in the account: {account}",
                             transaction = transaction.clone(),
                         ),
                         &self.logger,
@@ -46,7 +46,7 @@ impl Notifier for NotifierTUI {
             }
             Notification::TransactionOfAccountInNewBlock(block, transaction) => show_notification(
                 "Transaction in block",
-                &format!("The transaction {transaction} was added to a block with hash {block}"),
+                &format!("The transaction {transaction}was added\n    to a block with hash {block}"),
                 &self.logger,
             ),
             Notification::NewBlockAddedToTheBlockchain(block) => {
@@ -172,7 +172,7 @@ impl Notifier for NotifierTUI {
                 show_notification(
                     "Merkle proof successfully validated",
                     &format!(
-                        "Merkle root: \n{root}\n Merkle path:\n{message_path}",
+                        "Merkle root:\n{root}\n Merkle path:\n{message_path}",
                         root = from_hashtype_to_string(&root),
                     ),
                     &self.logger,
