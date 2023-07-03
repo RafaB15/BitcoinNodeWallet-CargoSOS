@@ -13,7 +13,10 @@ use crate::serialization::{
 
 use crate::configurations::try_default::TryDefault;
 
-use std::io::{Read, Write};
+use std::{
+    io::{Read, Write},
+    cmp,
+};
 
 /// It's the internal representation of the block chain
 #[derive(Debug, Clone, PartialEq)]
@@ -156,6 +159,27 @@ impl BlockChain {
 
             latest.push(last_block.block.clone());
         }
+
+        latest
+    }
+
+    pub fn headers_to_update(&self, go_back: usize) -> Vec<Block> {
+        let mut latest: Vec<Block> = Vec::new();
+
+        for index_last_block in self.last_blocks.iter() {
+            match self.get_block_at(*index_last_block) {
+                Ok(last_block) => latest.push(last_block.block),
+                Err(_) => continue,
+            };
+
+            let previous_index = cmp::max(0, *index_last_block as i32 - go_back as i32) as usize;
+            
+            match self.get_block_at(previous_index) {
+                Ok(last_block) => latest.push(last_block.block),
+                Err(_) => continue,
+            };
+        }
+
 
         latest
     }
