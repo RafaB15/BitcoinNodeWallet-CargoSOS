@@ -81,7 +81,7 @@ where
     ) -> Result<(), ErrorNode> {
         let _ = self
             .logger
-            .log_broadcasting(format!("Broadcasting a transaction: {transaction}"));
+            .log_broadcasting(format!("Broadcasting a transaction"));
         for (_, sender) in self.peers.iter() {
             if sender
                 .send(MessageToPeer::SendTransaction(
@@ -106,7 +106,7 @@ where
     pub fn broadcast_block(&mut self, block: Block, from: ConnectionId) -> Result<(), ErrorNode> {
         let _ = self
             .logger
-            .log_broadcasting(format!("Broadcasting a block: {block}"));
+            .log_broadcasting(format!("Broadcasting a block"));
         for (_, sender) in self.peers.iter() {
             if sender
                 .send(MessageToPeer::SendBlock(block.clone(), from))

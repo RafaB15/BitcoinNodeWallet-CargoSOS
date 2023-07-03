@@ -213,8 +213,9 @@ where
     ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
     ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to others threads
     fn receive_blocks(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
-        let _ = self.logger.log_connection("Receiving blocks".to_string());
         let block_message = BlockMessage::deserialize_message(&mut self.peer, header)?;
+        
+        let _ = self.logger.log_connection(format!("Receiving a block: {}", block_message.block));
 
         if self
             .sender
@@ -236,10 +237,11 @@ where
     ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
     ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to others threads
     fn receive_transaction(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
+        let tx_message = TxMessage::deserialize_message(&mut self.peer, header)?;
+
         let _ = self
             .logger
-            .log_connection("Receiving a transaction".to_string());
-        let tx_message = TxMessage::deserialize_message(&mut self.peer, header)?;
+            .log_connection(format!("Receiving a transaction: {}", tx_message.transaction));
 
         if self
             .sender
@@ -381,9 +383,6 @@ where
     ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
     ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to others threads
     fn send_transaction(&mut self, transaction: Transaction) -> Result<(), ErrorNode> {
-        let _ = self
-            .logger
-            .log_connection("Sending a transaction".to_string());
         let tx_message = TxMessage { transaction };
 
         if TxMessage::serialize_message(&mut self.peer, self.magic_numbers, &tx_message).is_err() {
@@ -402,7 +401,6 @@ where
     ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
     ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to others threads
     fn send_block(&mut self, block: Block) -> Result<(), ErrorNode> {
-        let _ = self.logger.log_connection("Sending a block".to_string());
         let block_message = BlockMessage { block };
 
         if BlockMessage::serialize_message(&mut self.peer, self.magic_numbers, &block_message)

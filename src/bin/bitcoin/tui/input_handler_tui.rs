@@ -98,6 +98,14 @@ where
                         self.logger.clone(),
                     )?
                 }
+                MenuOption::MerkleProof => {
+                    let blockchain_reference = get_reference(&block_chain)?;
+                    frontend::create_merkle_proof_of_inclusion(
+                        &blockchain_reference, 
+                        self.notifier.clone(),
+                        self.logger.clone()
+                    )?
+                },
                 MenuOption::Exit => break,
             }
         }

@@ -28,7 +28,7 @@ pub enum Notification {
     ProblemVerifyingTransactionMerkleProofOfInclusion(String),
 
     /// Notifies that we have received a transaction for an account in the wallet in a block.
-    TransactionOfAccountInNewBlock(Transaction),
+    TransactionOfAccountInNewBlock(Block, Transaction),
 
     /// Notifies that we have successfully sent a transaction.
     SuccessfullySentTransaction(Transaction),

@@ -1,4 +1,4 @@
-use crate::ui::{account, error_ui::ErrorUI};
+use crate::ui::{account, error_ui::ErrorUI, from_hexa};
 
 use crate::process::transaction;
 
@@ -7,6 +7,7 @@ use cargosos_bitcoin::{
     logs::logger_sender::LoggerSender,
     node_structure::broadcasting::Broadcasting,
     notifications::{notification::Notification, notifier::Notifier},
+    block_structure::{block_chain::BlockChain, hash::{HashType, HASH_TYPE_SIZE}},
     wallet_structure::{
         account::Account, address::Address, private_key::PrivateKey, public_key::PublicKey,
         wallet::Wallet,
@@ -127,6 +128,57 @@ fn get_account_name() -> Result<String, ErrorUI> {
         Ok(_) => Ok(name.trim().to_string()),
         Err(_) => Err(ErrorUI::TerminalReadFail),
     }
+}
+
+fn get_hash_id<N: Notifier>(
+    hash_type: &str,
+    notifier: N,
+    logger: LoggerSender,
+) -> Result<HashType, ErrorUI> {
+    let mut hash: String = String::new();
+
+    println!("Enter the {hash_type}: ");
+    if stdin().read_line(&mut hash).is_err() {
+        return Err(ErrorUI::TerminalReadFail);
+    }
+
+    loop {
+        match from_hexa::from::<HASH_TYPE_SIZE>(hash.trim()) {
+            Ok(result) => {
+                let _ = logger.log_wallet(format!("Valid {hash_type} entered"));
+                return Ok(result);
+            }
+            _ => {
+                notifier.notify(Notification::ProblemVerifyingTransactionMerkleProofOfInclusion(format!("Invalid {hash_type} entered")));
+
+                hash.clear();
+                println!("Error, please enter a valid {hash_type}:");
+                if stdin().read_line(&mut hash).is_err() {
+                    return Err(ErrorUI::TerminalReadFail);
+                }
+                continue;
+            }
+        };
+    }
+}
+
+pub fn create_merkle_proof_of_inclusion<N: Notifier>(
+    block_chain: &BlockChain,
+    notifier: N,
+    logger: LoggerSender,
+) -> Result<(), ErrorUI> {
+    let block_hash = get_hash_id("block hash", notifier.clone(), logger.clone())?;
+    let transaction_id = get_hash_id("transaction id", notifier.clone(), logger.clone())?;
+
+    transaction::verify_transaction_merkle_proof_of_inclusion(
+        block_chain,
+        block_hash,
+        transaction_id,
+        notifier,
+        logger,
+    );
+
+    Ok(())
 }
 
 /// Creates a new account with the data entered by the user

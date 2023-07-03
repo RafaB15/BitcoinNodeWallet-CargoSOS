@@ -1,6 +1,6 @@
 use super::error_ui::ErrorUI;
 
-pub fn from(value: String) -> Result<Vec<u8>, ErrorUI> {
+pub fn from<const N: usize>(value: &str) -> Result<[u8; N], ErrorUI> {
     let mut bytes: Vec<u8> = Vec::new();
 
     for (i, char) in value.chars().enumerate().step_by(2) {
@@ -22,6 +22,16 @@ pub fn from(value: String) -> Result<Vec<u8>, ErrorUI> {
             }
         }
     }
+
+    let bytes: [u8; N] = match bytes.try_into() {
+        Ok(bytes) => bytes,
+        Err(error) => {
+            return Err(ErrorUI::ErrorReading(format!(
+                "Error while converting a vector of bytes into an array of bytes: {:?}",
+                error
+            )));
+        }
+    };
 
     Ok(bytes)
 }

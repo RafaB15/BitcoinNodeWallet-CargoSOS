@@ -12,7 +12,8 @@ const SEND_TRANSACTION: char = '4';
 const SHOW_ACCOUNTS: char = '5';
 const SHOW_BALANCE: char = '6';
 const LAST_TRANSACTIONS: char = '7';
-const EXIT: char = '8';
+const MERKLE_PROOF: char = '8';
+const EXIT: char = '9';
 
 /// The options for the user in the menu
 #[derive(Debug, Clone, Copy)]
@@ -24,6 +25,7 @@ pub enum MenuOption {
     ShowAccounts,
     ShowBalance,
     LastTransactions,
+    MerkleProof,
     Exit,
 }
 
@@ -37,6 +39,7 @@ impl MenuOption {
             MenuOption::ShowAccounts,
             MenuOption::ShowBalance,
             MenuOption::LastTransactions,
+            MenuOption::MerkleProof,
             MenuOption::Exit,
         ];
 
@@ -59,6 +62,7 @@ impl Display for MenuOption {
             MenuOption::ShowAccounts => write!(f, "Show accounts"),
             MenuOption::ShowBalance => write!(f, "Show balance"),
             MenuOption::LastTransactions => write!(f, "Last transactions"),
+            MenuOption::MerkleProof => write!(f, "Merkle proof"),
             MenuOption::Exit => write!(f, "Exit"),
         }
     }
@@ -74,6 +78,7 @@ impl From<MenuOption> for char {
             MenuOption::ShowAccounts => SHOW_ACCOUNTS,
             MenuOption::ShowBalance => SHOW_BALANCE,
             MenuOption::LastTransactions => LAST_TRANSACTIONS,
+            MenuOption::MerkleProof => MERKLE_PROOF,
             MenuOption::Exit => EXIT,
         }
     }
@@ -96,6 +101,7 @@ impl TryFrom<&str> for MenuOption {
             SHOW_ACCOUNTS => Ok(MenuOption::ShowAccounts),
             SHOW_BALANCE => Ok(MenuOption::ShowBalance),
             LAST_TRANSACTIONS => Ok(MenuOption::LastTransactions),
+            MERKLE_PROOF => Ok(MenuOption::MerkleProof),
             EXIT => Ok(MenuOption::Exit),
             _ => Err(ErrorUI::InvalidMenuOption),
         }
