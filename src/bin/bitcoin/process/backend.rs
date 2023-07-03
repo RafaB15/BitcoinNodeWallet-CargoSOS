@@ -97,7 +97,7 @@ where
         receiver_confirm_connection,
         sender_response,
         (broadcasting.clone(), block_chain.clone(), utxo_set.clone()),
-        (connection_config.clone(), download_config.clone()),
+        (connection_config, download_config),
         notifier.clone(),
         logger.clone(),
     );
@@ -110,7 +110,7 @@ where
 
     let (sender_stop, receiver_stop) = channel::<Stop>();
 
-    let posible_handle = match mode_config.clone() {
+    let posible_handle = match mode_config {
         ModeConfig::Server(server_config) => connection::establish_connection_with_clients(
             server_config,
             receiver_stop,
@@ -133,13 +133,11 @@ where
                 Level::ERROR,
                 ErrorUI::ErrorFromPeer("Fail to stop potential connections".to_string()),
             );
-        } else {
-            if handle.join().is_err() {
-                let _ = logger.log_data(
-                    Level::ERROR,
-                    ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()),
-                );
-            }
+        } else if handle.join().is_err() {
+            let _ = logger.log_data(
+                Level::ERROR,
+                ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()),
+            );
         }
     }
 
@@ -176,13 +174,12 @@ where
     if reference::get_reference(&broadcasting)?
         .close_connections(notifier)
         .is_ok()
+        && handle_peers.join().is_err()
     {
-        if handle_peers.join().is_err() {
-            let _ = logger.log_data(
-                Level::ERROR,
-                ErrorUI::ErrorFromPeer("Failed to remove notifications".to_string()),
-            );
-        }
+        let _ = logger.log_data(
+            Level::ERROR,
+            ErrorUI::ErrorFromPeer("Failed to remove notifications".to_string()),
+        );
     }
 
     Ok(SaveSystem::new(
@@ -209,11 +206,11 @@ fn broadcasting<N: Notifier + 'static>(
     let handle = broadcasting::handle_peers(
         receiver_response,
         broadcasting.clone(),
-        wallet.clone(),
-        utxo_set.clone(),
-        block_chain.clone(),
-        notifier.clone(),
-        logger.clone(),
+        wallet,
+        utxo_set,
+        block_chain,
+        notifier,
+        logger,
     );
 
     (handle, broadcasting)

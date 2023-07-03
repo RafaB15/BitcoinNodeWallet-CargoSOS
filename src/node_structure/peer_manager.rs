@@ -221,7 +221,7 @@ where
 
         if self
             .sender
-            .send(MessageResponse::Block(block_message.block, self.id.clone()))
+            .send(MessageResponse::Block(block_message.block, self.id))
             .is_err()
         {
             return Err(ErrorNode::WhileSendingMessage(
@@ -250,7 +250,7 @@ where
             .sender
             .send(MessageResponse::Transaction(
                 tx_message.transaction,
-                self.id.clone(),
+                self.id,
             ))
             .is_err()
         {
@@ -307,7 +307,7 @@ where
 
     /// Creates a response to a get headers message
     fn replay_to_get_headers_message(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
-        let magic_numbers = header.magic_numbers.clone();
+        let magic_numbers = header.magic_numbers;
         let get_headers = GetHeadersMessage::deserialize_message(&mut self.peer, header)?;
         let headers = self.generate_headers_message(get_headers)?;
         HeadersMessage::serialize_message(&mut self.peer, magic_numbers, &headers)?;
@@ -357,7 +357,7 @@ where
 
     /// Creates a response to a get data message
     fn reply_to_get_data_message(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
-        let magic_numbers = header.magic_numbers.clone();
+        let magic_numbers = header.magic_numbers;
         let get_data_message = GetDataMessage::deserialize_message(&mut self.peer, header)?;
 
         for inventory_vector in get_data_message.inventory_vectors.iter() {

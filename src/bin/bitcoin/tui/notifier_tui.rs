@@ -167,7 +167,7 @@ impl Notifier for NotifierTUI {
             Notification::SuccessfulMerkleProof(path, root) => {
                 let mut message_path = "".to_string();
 
-                for hash in path.clone() {
+                for hash in path {
                     message_path.push_str(&format!("{}\n", from_hashtype_to_string(&hash)));
                 }
 

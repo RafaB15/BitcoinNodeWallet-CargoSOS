@@ -93,7 +93,7 @@ impl Notifier for NotifierGUI {
             Notification::RegisterWalletAccount(account) => {
                 if self
                     .tx_to_front
-                    .send(SignalToFront::RegisterAccount(account.account_name.clone()))
+                    .send(SignalToFront::RegisterAccount(account.account_name))
                     .is_err()
                 {
                     let _ = self

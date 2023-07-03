@@ -58,13 +58,7 @@ pub fn create_account<N: Notifier>(
     };
 
     let mut wallet = reference::get_reference(&wallet)?;
-    account::create_account(
-        &mut wallet,
-        account_name,
-        private_key,
-        public_key,
-        notifier.clone(),
-    )
+    account::create_account(&mut wallet, account_name, private_key, public_key, notifier)
 }
 
 /// This function sets up the main window
@@ -320,7 +314,7 @@ fn show_merkle_proof_success_window(
 
     let mut message_path = "".to_string();
 
-    for hash in merkle_path.clone() {
+    for hash in merkle_path {
         message_path.push_str(&format!("{}\n", from_hashtype_to_string(hash)));
     }
 

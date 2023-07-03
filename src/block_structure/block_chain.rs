@@ -281,12 +281,12 @@ impl BlockChain {
             None => return Err(ErrorBlock::NodeChainReferenceNotFound),
         };
 
-        let mut index_temp = main_chain_update_index.clone();
+        let mut index_temp = main_chain_update_index;
         for node in main_chain_values.iter_mut() {
             node.index_previous_node = Some(index_temp);
             index_temp += 1;
         }
-        main_chain_values.insert(0, self.get_block_at_mut(main_chain_update_index)?.clone());
+        main_chain_values.insert(0, self.get_block_at_mut(main_chain_update_index)?);
         self.blocks
             .splice(main_chain_update_index.., main_chain_values);
         self.last_blocks = vec![index_temp];
@@ -343,7 +343,7 @@ impl BlockChain {
                 continue;
             }
             if save {
-                headers.push(node.block.header.clone());
+                headers.push(node.block.header);
                 if (node.header_hash == *stop_hash) || (headers.len() >= 2000) {
                     break;
                 }
