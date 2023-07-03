@@ -23,10 +23,13 @@ pub enum SignalToFront {
     TransactionOfAccountReceived(String),
 
     /// Signal to notify that we received a transaction from one of our accounts in a block.
-    BlockWithUnconfirmedTransactionReceived,
+    BlockWithUnconfirmedTransactionReceived(String, String),
 
     /// Signal to transmit the information of the transactions of an account.
     AccountTransactions(Vec<(u32, HashType, i64)>),
+
+    /// Signal to transmit the success in sending a transaction.
+    SuccessfullySentTransaction(String),
 
     /// Signal to indicate that an error occurred while trying to get the merkle proof of inclusion
     ErrorInMerkleProof(String),

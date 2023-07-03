@@ -486,8 +486,8 @@ has been identified but is still unconfirmed</property>
       </object>
     </child>
   </object>
-  <object class="GtkWindow" id="TransactionSentNotificationWIndow">
-    <property name="name">TransactionSentNotificationWIndow</property>
+  <object class="GtkWindow" id="TransactionSentNotificationWindow">
+    <property name="name">TransactionSentNotificationWindow</property>
     <property name="can-focus">False</property>
     <child>
       <object class="GtkFixed" id="TransactionSentNotificationFrame">
