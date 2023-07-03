@@ -9,13 +9,14 @@ use crate::{
 
 use cargosos_bitcoin::{
     block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
+    concurrency::stop::Stop,
     configurations::{
         connection_config::ConnectionConfig, download_config::DownloadConfig,
         mode_config::ModeConfig,
     },
-    logs::logger_sender::LoggerSender,
+    logs::{level::Level, logger_sender::LoggerSender},
     node_structure::{
-        broadcasting::Broadcasting, connection_event::ConnectionEvent,
+        broadcasting::Broadcasting, connection_event::ConnectionEvent, connection_id::ConnectionId,
         message_response::MessageResponse,
     },
     notifications::{notification::Notification, notifier::Notifier},
@@ -53,9 +54,13 @@ where
     I: InputHandler<TcpStream>,
     N: Notifier + 'static,
 {
-    let (handle_process_connection, receiver_confirm_connection, sender_potential_connections) =
+    let (sender_confirm_connection, receiver_confirm_connection) =
+        channel::<(TcpStream, ConnectionId)>();
+
+    let (handle_process_connection, sender_potential_connections) =
         connection::create_process_connection(
             connection_config.clone(),
+            sender_confirm_connection,
             notifier.clone(),
             logger.clone(),
         );
@@ -97,11 +102,23 @@ where
         logger.clone(),
     );
 
-    connection::establish_connection(
+    connection::establish_connection_to_peers(
         mode_config.clone(),
         sender_potential_connections.clone(),
         logger.clone(),
     )?;
+
+    let (sender_stop, receiver_stop) = channel::<Stop>();
+
+    let posible_handle = match mode_config.clone() {
+        ModeConfig::Server(server_config) => connection::establish_connection_with_clients(
+            server_config,
+            receiver_stop,
+            sender_potential_connections.clone(),
+            logger.clone(),
+        ),
+        ModeConfig::Client(_) => None,
+    };
 
     input_handler.handle_input(
         broadcasting.clone(),
@@ -110,35 +127,62 @@ where
         block_chain.clone(),
     )?;
 
+    if let Some(handle) = posible_handle {
+        if sender_stop.send(Stop::Stop).is_err() {
+            let _ = logger.log_data(
+                Level::ERROR,
+                ErrorUI::ErrorFromPeer("Fail to stop potential connections".to_string()),
+            );
+        } else {
+            if handle.join().is_err() {
+                let _ = logger.log_data(
+                    Level::ERROR,
+                    ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()),
+                );
+            }
+        }
+    }
+
     if sender_potential_connections
         .send(ConnectionEvent::Stop)
         .is_err()
     {
-        return Err(
-            ErrorUI::ErrorFromPeer("Fail to stop potential connections".to_string()).into(),
+        let _ = logger.log_data(
+            Level::ERROR,
+            ErrorUI::ErrorFromPeer("Failed to stop potential connections".to_string()),
         );
-    }
+    } else {
+        match handle_process_connection.join() {
+            Ok(Ok(())) => {}
+            Ok(Err(error)) => {
+                let _ = logger.log_data(Level::ERROR, error);
+            }
+            Err(_) => {
+                let _ = logger.log_data(
+                    Level::ERROR,
+                    ErrorUI::ErrorFromPeer("Failed to close confirmed connections".to_string()),
+                );
+            }
+        }
 
-    match handle_process_connection.join() {
-        Ok(Ok(())) => {}
-        Ok(Err(error)) => return Err(error.into()),
-        Err(_) => {
-            return Err(
-                ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()).into(),
-            )
+        if handle_confirmed_connection.join().is_err() {
+            let _ = logger.log_data(
+                Level::ERROR,
+                ErrorUI::ErrorFromPeer("Failed to close confirmed connections".to_string()),
+            );
         }
     }
 
-    if handle_confirmed_connection.join().is_err() {
-        return Err(
-            ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()).into(),
-        );
-    }
-
-    reference::get_reference(&broadcasting)?.close_connections(notifier)?;
-
-    if handle_peers.join().is_err() {
-        return Err(ErrorUI::ErrorFromPeer("Fail to remove notifications".to_string()).into());
+    if reference::get_reference(&broadcasting)?
+        .close_connections(notifier)
+        .is_ok()
+    {
+        if handle_peers.join().is_err() {
+            let _ = logger.log_data(
+                Level::ERROR,
+                ErrorUI::ErrorFromPeer("Failed to remove notifications".to_string()),
+            );
+        }
     }
 
     Ok(SaveSystem::new(

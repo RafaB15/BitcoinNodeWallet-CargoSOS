@@ -1,6 +1,5 @@
 use cargosos_bitcoin::{
-    node_structure::connection_id::ConnectionId,
-    block_structure::hash::HashType,
+    block_structure::hash::HashType, node_structure::connection_id::ConnectionId,
 };
 
 /// This enum represents the signal that the back sends to the front.

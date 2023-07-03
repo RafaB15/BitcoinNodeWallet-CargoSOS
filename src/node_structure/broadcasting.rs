@@ -53,15 +53,17 @@ where
     /// ### Error
     ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to a peer
     pub fn send_transaction(&mut self, transaction: Transaction) -> Result<(), ErrorNode> {
-        let _ = self.logger.log_broadcasting(format!(
-            "Broadcasting own transaction: {transaction}"
-        ));
+        let _ = self
+            .logger
+            .log_broadcasting(format!("Broadcasting own transaction: {transaction}"));
         for (_, sender) in self.peers.iter() {
             if sender
                 .send(MessageToPeer::SendTransaction(transaction.clone(), None))
                 .is_err()
             {
-                let _ = self.logger.log_error("Sending transaction message to peer".to_string());
+                let _ = self
+                    .logger
+                    .log_error("Sending transaction message to peer".to_string());
             }
         }
 
@@ -88,7 +90,9 @@ where
                 ))
                 .is_err()
             {
-                let _ = self.logger.log_error("Sending transaction message to peer".to_string());
+                let _ = self
+                    .logger
+                    .log_error("Sending transaction message to peer".to_string());
             }
         }
 
@@ -108,7 +112,9 @@ where
                 .send(MessageToPeer::SendBlock(block.clone(), from))
                 .is_err()
             {
-                let _ = self.logger.log_error("Sending block message to peer".to_string());
+                let _ = self
+                    .logger
+                    .log_error("Sending block message to peer".to_string());
             }
         }
 
@@ -124,9 +130,9 @@ where
         notifier.notify(Notification::ClosingPeers);
         for (_, sender) in self.peers.iter() {
             if sender.send(MessageToPeer::Stop).is_err() {
-                return Err(ErrorNode::WhileSendingMessage(
-                    "Sending transaction message to peer".to_string(),
-                ));
+                let _ = self
+                    .logger
+                    .log_error("Sending closing message to peer".to_string());
             }
         }
 
@@ -142,9 +148,9 @@ where
                 Ok(Ok((peer_stream, _))) => peers_streams.push(peer_stream),
                 Ok(Err(error)) => return Err(error),
                 Err(_) => {
-                    return Err(ErrorNode::NodeNotResponding(
-                        "Thread could not finish correctly".to_string(),
-                    ))
+                    let _ = self
+                        .logger
+                        .log_error("Thread could not finish correctly".to_string());
                 }
             }
         }

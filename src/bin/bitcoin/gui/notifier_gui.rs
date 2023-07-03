@@ -38,7 +38,11 @@ impl Notifier for NotifierGUI {
                 println!("Failed handshake with peer {}", peer)
             }
             Notification::ConnectionUpdated(connection_id) => {
-                if self.tx_to_front.send(SignalToFront::UpdateConnection(connection_id)).is_err(){
+                if self
+                    .tx_to_front
+                    .send(SignalToFront::UpdateConnection(connection_id))
+                    .is_err()
+                {
                     let _ = self
                         .logger
                         .log_error("Error updating connection".to_string());
@@ -248,21 +252,29 @@ impl Notifier for NotifierGUI {
                 println!("Received message of type {:?}", message)
             }
             Notification::ProblemVerifyingTransactionMerkleProofOfInclusion(error) => {
-                if self.tx_to_front.send(SignalToFront::ErrorInMerkleProof(error)).is_err() {
+                if self
+                    .tx_to_front
+                    .send(SignalToFront::ErrorInMerkleProof(error))
+                    .is_err()
+                {
                     let _ = self.logger.log_error(
                         "Failed to send error signal for a problem verifying a transaction merkle proof of inclusion"
                             .to_string(),
                     );
                 }
-            },
+            }
             Notification::SuccessfulMerkleProof(merkle_path, root) => {
-                if self.tx_to_front.send(SignalToFront::DisplayMerklePath(merkle_path, root)).is_err() {
+                if self
+                    .tx_to_front
+                    .send(SignalToFront::DisplayMerklePath(merkle_path, root))
+                    .is_err()
+                {
                     let _ = self.logger.log_error(
                         "Failed to send error signal for a problem verifying a transaction merkle proof of inclusion"
                             .to_string(),
                     );
                 }
-            },
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
 use super::logger::MessageLog;
+use std::fmt::Debug;
 use std::sync::mpsc::Sender;
 
 use super::error_log::ErrorLog;
@@ -24,6 +25,10 @@ impl LoggerSender {
             return Err(ErrorLog::ReceiverNotFound);
         }
         Ok(())
+    }
+
+    pub fn log_data<D: Debug>(&self, level: Level, data: D) -> Result<(), ErrorLog> {
+        self.log(level, format!("{:?}", data))
     }
 
     /// Sends the desired message with level: `Level::NODE`

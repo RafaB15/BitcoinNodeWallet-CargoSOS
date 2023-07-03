@@ -12,8 +12,6 @@ const PEER_COUNT_MAX: &str = "peer_count_max";
 const PORT: &str = "own_port";
 const ADDRESS: &str = "address";
 
-pub type ConnectionAddress = Vec<Ipv4Addr>;
-
 /// Configuration for the server process
 #[derive(Debug, PartialEq, Clone)]
 pub struct ServerConfig {
@@ -27,7 +25,7 @@ pub struct ServerConfig {
     pub own_port: u16,
 
     /// The address' where the server will be listening
-    pub address: ConnectionAddress,
+    pub address: Ipv4Addr,
 }
 
 impl Parsable for ServerConfig {
@@ -39,7 +37,7 @@ impl Parsable for ServerConfig {
             dns_seeder: DNSSeeder::parse(DNS_SEEDER, &map)?,
             peer_count_max: usize::parse(PEER_COUNT_MAX, &map)?,
             own_port: u16::parse(PORT, &map)?,
-            address: ConnectionAddress::parse(ADDRESS, &map)?,
+            address: Ipv4Addr::parse(ADDRESS, &map)?,
         })
     }
 }
@@ -59,7 +57,7 @@ mod tests {
             }
             peer_count_max = 8
             own_port = 18333
-            address = [127.0.0.1, 127.0.0.1]
+            address = 127.0.0.1
         }";
 
         let name = "server";
@@ -71,7 +69,7 @@ mod tests {
             dns_seeder: DNSSeeder::new("seed.testnet.bitcoin.sprovoost.nl", 18333),
             peer_count_max: 8,
             own_port: 18333,
-            address: vec![Ipv4Addr::new(127, 0, 0, 1), Ipv4Addr::new(127, 0, 0, 1)],
+            address: Ipv4Addr::new(127, 0, 0, 1),
         };
 
         assert_eq!(Ok(config_server), server_result);
@@ -86,7 +84,7 @@ mod tests {
         }
                       peer_count_max = 8
             own_port = 18333
-            address = [127.0.0.1,127.0.0.1]
+            address = 127.0.0.1
         }";
 
         let name = "server";
@@ -98,7 +96,7 @@ mod tests {
             dns_seeder: DNSSeeder::new("seed.testnet.bitcoin.sprovoost.nl", 18333),
             peer_count_max: 8,
             own_port: 18333,
-            address: vec![Ipv4Addr::new(127, 0, 0, 1), Ipv4Addr::new(127, 0, 0, 1)],
+            address: Ipv4Addr::new(127, 0, 0, 1),
         };
 
         assert_eq!(Ok(server_config), server_result);
@@ -112,7 +110,7 @@ mod tests {
                 port = 18333
             }
             own_port = 18333
-            address = [127.0.0.1,127.0.0.1]
+            address = 127.0.0.1
         }";
 
         let name = "server";
@@ -133,7 +131,7 @@ mod tests {
             peer_count_max = 8
             peer_count_max = 8
             own_port = 18333
-            address = [127.0.0.1]
+            address = 127.0.0.1
         }";
 
         let name = "server";
@@ -145,7 +143,7 @@ mod tests {
             dns_seeder: DNSSeeder::new("seed.testnet.bitcoin.sprovoost.nl", 18333),
             peer_count_max: 8,
             own_port: 18333,
-            address: vec![Ipv4Addr::new(127, 0, 0, 1)],
+            address: Ipv4Addr::new(127, 0, 0, 1),
         };
 
         assert_eq!(Ok(server_config), server_result);

@@ -76,10 +76,35 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
 
         for connection_event in &self.receiver_potential_connections {
             match connection_event {
-                ConnectionEvent::PotentialConnection(connection) => {
+                ConnectionEvent::PotentialPeer(socket_address) => {
                     let (sender, receiver) = channel::<Stop>();
 
-                    let handler = self.handle_connection_event(connection, receiver);
+                    let stream = match Self::create_stream(socket_address, self.logger.clone()) {
+                        Some(stream) => stream,
+                        None => {
+                            let _ = self
+                                .logger
+                                .log_connection(format!("Cannot connecto to {socket_address}"));
+                            continue;
+                        }
+                    };
+
+                    let handler = self.handle_connection_event(
+                        stream,
+                        ConnectionId::new(socket_address, ConnectionType::Peer),
+                        receiver,
+                    );
+
+                    pending_connection_handlers.push((handler, sender));
+                }
+                ConnectionEvent::PotentialClient(stream, socket_address) => {
+                    let (sender, receiver) = channel::<Stop>();
+
+                    let handler = self.handle_connection_event(
+                        stream,
+                        ConnectionId::new(socket_address, ConnectionType::Client),
+                        receiver,
+                    );
 
                     pending_connection_handlers.push((handler, sender));
                 }
@@ -103,6 +128,7 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
     /// Create a thread to handle the new potential connection to establish the handshake
     fn handle_connection_event(
         &self,
+        mut stream: TcpStream,
         connection: ConnectionId,
         receiver: Receiver<Stop>,
     ) -> JoinHandle<()> {
@@ -112,12 +138,9 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
         let notifier = self.notifier.clone();
 
         thread::spawn(move || {
-            let mut stream = match Self::create_stream(connection, logger.clone()) {
-                Some(stream) => stream,
-                None => {
-                    return;
-                }
-            };
+            notifier.notify(Notification::AttemptingHandshakeWithPeer(
+                connection.address.clone(),
+            ));
 
             let local_socket = match stream.local_addr() {
                 Ok(addr) => addr,
@@ -127,10 +150,6 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
                     return;
                 }
             };
-
-            notifier.notify(Notification::AttemptingHandshakeWithPeer(
-                connection.address.clone(),
-            ));
 
             let result = match connection {
                 ConnectionId {
@@ -271,16 +290,13 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
     }
 
     /// Create a stream to connect to a potential connection
-    fn create_stream(
-        potential_connection: ConnectionId,
-        logger: LoggerSender,
-    ) -> Option<TcpStream> {
-        let stream = match TcpStream::connect(potential_connection.address) {
+    fn create_stream(potential_address: SocketAddr, logger: LoggerSender) -> Option<TcpStream> {
+        let stream = match TcpStream::connect(potential_address) {
             Ok(stream) => stream,
             Err(error) => {
                 let _ = logger.log_connection(format!(
                     "Cannot connect to address: {:?}, it appear {:?}",
-                    potential_connection.address, error
+                    potential_address, error
                 ));
                 return None;
             }
@@ -289,7 +305,7 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
         if let Err(error) = stream.set_read_timeout(Some(Duration::from_secs(1))) {
             let _ = logger.log_connection(format!(
                 "Cannot connect to address: {:?}, it appear {:?}",
-                potential_connection.address, error
+                potential_address, error
             ));
             return None;
         };

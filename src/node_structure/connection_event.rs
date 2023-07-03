@@ -1,7 +1,8 @@
-use super::connection_id::ConnectionId;
+use std::net::{SocketAddr, TcpStream};
 
 #[derive(Debug)]
 pub enum ConnectionEvent {
-    PotentialConnection(ConnectionId),
+    PotentialClient(TcpStream, SocketAddr),
+    PotentialPeer(SocketAddr),
     Stop,
 }

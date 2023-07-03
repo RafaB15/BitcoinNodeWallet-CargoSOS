@@ -6,7 +6,9 @@ mod test_integration {
     use super::common::{creation, serialize_message, stream::Stream};
 
     use cargosos_bitcoin::{
-        block_structure::{block::Block, block_chain::BlockChain, hash::HashType, merkle_tree::MerkleTree},
+        block_structure::{
+            block::Block, block_chain::BlockChain, hash::HashType, merkle_tree::MerkleTree,
+        },
         connections::{p2p_protocol::ProtocolVersionP2P, supported_services::SupportedServices},
         logs::logger,
         messages::{
@@ -156,15 +158,19 @@ mod test_integration {
             sender.clone(),
         );
 
-        handshake.send_version_message(&mut stream, &local_socket, &potential_peer).unwrap();
+        handshake
+            .send_version_message(&mut stream, &local_socket, &potential_peer)
+            .unwrap();
 
         let _ = read_message::<VersionMessage>(&mut stream, CommandName::Version);
-        
-        handshake.send_verack_message(&mut stream, &potential_peer).unwrap();
-        
-        let _ = read_message::<VerackMessage>(&mut stream, CommandName::Verack);        
 
-        handshake.send_sendheaders_message(&mut stream).unwrap();        
+        handshake
+            .send_verack_message(&mut stream, &potential_peer)
+            .unwrap();
+
+        let _ = read_message::<VerackMessage>(&mut stream, CommandName::Verack);
+
+        handshake.send_sendheaders_message(&mut stream).unwrap();
 
         let initial_headers_download =
             InitialHeaderDownload::new(p2p_protocol, magic_numbers.clone(), sender.clone());

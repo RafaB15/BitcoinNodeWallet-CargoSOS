@@ -9,14 +9,11 @@ use crate::{
 };
 
 use cargosos_bitcoin::{
+    block_structure::{block_chain::BlockChain, hash::HashType},
+    logs::logger_sender::LoggerSender,
+    node_structure::connection_id::ConnectionId,
     notifications::{notification::Notification, notifier::Notifier},
     wallet_structure::{private_key::PrivateKey, public_key::PublicKey, wallet::Wallet},
-    node_structure::connection_id::ConnectionId,
-    logs::logger_sender::LoggerSender,
-    block_structure::{
-        hash::HashType,
-        block_chain::BlockChain,
-    },
 };
 
 use gtk::{
@@ -117,10 +114,6 @@ fn login_main_window(
     window.show_all();
     Ok(())
 }
-
-
-
-
 
 /// This function sets up the registration window
 fn login_registration_window(
@@ -256,7 +249,11 @@ fn login_merkle_error_window(builder: &Builder) -> Result<(), ErrorUI> {
     };
     let merkle_error_button: Button = match builder.object("OkMerkleProofErrorButton") {
         Some(merkle_error_button) => merkle_error_button,
-        None => return Err(ErrorUI::MissingElement("OkMerkleProofErrorButton".to_string())),
+        None => {
+            return Err(ErrorUI::MissingElement(
+                "OkMerkleProofErrorButton".to_string(),
+            ))
+        }
     };
     merkle_error_button.connect_clicked(move |_| {
         merkle_error_window.set_visible(false);
@@ -265,7 +262,7 @@ fn login_merkle_error_window(builder: &Builder) -> Result<(), ErrorUI> {
 }
 
 /// Function that makes the error window for the merkle proof of inclusion visible
-fn show_merkle_error_window(builder: &Builder, error: String) -> Result<(), ErrorUI>{
+fn show_merkle_error_window(builder: &Builder, error: String) -> Result<(), ErrorUI> {
     let merkle_error_window: Window = match builder.object("MerkleProofErrorWindow") {
         Some(merkle_error_window) => merkle_error_window,
         None => {
@@ -292,7 +289,11 @@ fn from_hashtype_to_string(hash: HashType) -> String {
     hash_string
 }
 
-fn show_merkle_proof_success_window(builder: &Builder, merkle_path: Vec<HashType>, root: HashType) -> Result<(), ErrorUI>{
+fn show_merkle_proof_success_window(
+    builder: &Builder,
+    merkle_path: Vec<HashType>,
+    root: HashType,
+) -> Result<(), ErrorUI> {
     let merkle_success_window: Window = match builder.object("MerkleProofSuccessfulWindow") {
         Some(merkle_success_window) => merkle_success_window,
         None => {
@@ -303,17 +304,24 @@ fn show_merkle_proof_success_window(builder: &Builder, merkle_path: Vec<HashType
     };
     let merkle_success_label: Label = match builder.object("MerkleProofNotificationLabel") {
         Some(merkle_success_label) => merkle_success_label,
-        None => return Err(ErrorUI::MissingElement("MerkleProofNotificationLabel".to_string())),
+        None => {
+            return Err(ErrorUI::MissingElement(
+                "MerkleProofNotificationLabel".to_string(),
+            ))
+        }
     };
 
-    
     let mut message_path = "".to_string();
-    
+
     for hash in merkle_path.clone() {
         message_path.push_str(&format!("{}\n", from_hashtype_to_string(hash)));
     }
-    
-    let message = format!("Merkle root: \n{}\n Merkle path:\n{}", from_hashtype_to_string(root), message_path);
+
+    let message = format!(
+        "Merkle root: \n{}\n Merkle path:\n{}",
+        from_hashtype_to_string(root),
+        message_path
+    );
 
     merkle_success_label.set_text(&message);
     merkle_success_window.set_visible(true);
@@ -332,7 +340,11 @@ fn login_merkle_proof_successful_window(builder: &Builder) -> Result<(), ErrorUI
     };
     let merkle_success_button: Button = match builder.object("OkMerkleProofNotificationButton") {
         Some(merkle_success_button) => merkle_success_button,
-        None => return Err(ErrorUI::MissingElement("OkMerkleProofNotificationButton".to_string())),
+        None => {
+            return Err(ErrorUI::MissingElement(
+                "OkMerkleProofNotificationButton".to_string(),
+            ))
+        }
     };
     merkle_success_button.connect_clicked(move |_| {
         merkle_success_window.set_visible(false);
@@ -395,7 +407,6 @@ pub fn request_merkle_proof<N: Notifier>(
     transaction_id: &str,
     notifier: N,
     logger: LoggerSender,
-
 ) -> Result<(), ErrorUI> {
     let block_hash_bytes: HashType = match from_hexa::from(block_hash.to_string())?.try_into() {
         Ok(block_hash_bytes) => block_hash_bytes,
@@ -405,29 +416,31 @@ pub fn request_merkle_proof<N: Notifier>(
         }
     };
 
-    let transaction_id_bytes: HashType = match from_hexa::from(transaction_id.to_string())?.try_into() {
-        Ok(transaction_id_bytes) => transaction_id_bytes,
-        Err(_) => {
-            let _ = logger.log_error("Error reading block hash".to_string());
-            return Err(ErrorUI::ErrorReading("Block hash".to_string()));
-        }
-    };
+    let transaction_id_bytes: HashType =
+        match from_hexa::from(transaction_id.to_string())?.try_into() {
+            Ok(transaction_id_bytes) => transaction_id_bytes,
+            Err(_) => {
+                let _ = logger.log_error("Error reading block hash".to_string());
+                return Err(ErrorUI::ErrorReading("Block hash".to_string()));
+            }
+        };
 
     transaction::verify_transaction_merkle_proof_of_inclusion(
         block_chain,
         block_hash_bytes,
         transaction_id_bytes,
         notifier,
-        logger
+        logger,
     );
 
     Ok(())
 }
 
-
 /// This function sets up the notification window for merkle proof
-fn login_merkle_proof_window(builder: &Builder, tx_to_back: Sender<SignalToBack>) -> Result<(), ErrorUI> {
-
+fn login_merkle_proof_window(
+    builder: &Builder,
+    tx_to_back: Sender<SignalToBack>,
+) -> Result<(), ErrorUI> {
     let validation_button: Button = match builder.object("MerkleProofValidateButton") {
         Some(validation_button) => validation_button,
         None => {
@@ -437,7 +450,7 @@ fn login_merkle_proof_window(builder: &Builder, tx_to_back: Sender<SignalToBack>
         }
     };
     let cloned_builder = builder.clone();
-    validation_button.connect_clicked(move |_|{
+    validation_button.connect_clicked(move |_| {
         let block_hash: Entry = match cloned_builder.object("BlockHeaderHashEntry") {
             Some(entry) => entry,
             None => {
@@ -453,14 +466,18 @@ fn login_merkle_proof_window(builder: &Builder, tx_to_back: Sender<SignalToBack>
             }
         };
 
-        if tx_to_back.send(SignalToBack::RequestMerkleProof(block_hash.text().to_string(), transaction_id.text().to_string())).is_err() {
+        if tx_to_back
+            .send(SignalToBack::RequestMerkleProof(
+                block_hash.text().to_string(),
+                transaction_id.text().to_string(),
+            ))
+            .is_err()
+        {
             println!("Error sending merkle proof signal");
         }
-
     });
 
     Ok(())
-
 }
 
 /// This function makes the error window visible and sets the error message
@@ -668,7 +685,10 @@ fn show_transactions_in_tree_view(
 }
 
 /// Function that displays the tree view with the connections
-fn show_connections_in_tree_view(builder: &Builder, connection: ConnectionId ) -> Result<(), ErrorUI> {
+fn show_connections_in_tree_view(
+    builder: &Builder,
+    connection: ConnectionId,
+) -> Result<(), ErrorUI> {
     let connections_tree_store: TreeStore = match builder.object("ConnectionsTreeStore") {
         Some(list_store) => list_store,
         None => return Err(ErrorUI::MissingElement("ConnectionsTreeStore".to_string())),
@@ -678,7 +698,11 @@ fn show_connections_in_tree_view(builder: &Builder, connection: ConnectionId ) -
     let port = connection.address.port().to_string();
 
     let tree_iter = connections_tree_store.append(None);
-    connections_tree_store.set_value(&tree_iter, 0, &glib::Value::from(connection.connection_type.to_string()));
+    connections_tree_store.set_value(
+        &tree_iter,
+        0,
+        &glib::Value::from(connection.connection_type.to_string()),
+    );
     connections_tree_store.set_value(&tree_iter, 1, &glib::Value::from(ip_address));
     connections_tree_store.set_value(&tree_iter, 2, &glib::Value::from(port));
 
@@ -839,9 +863,11 @@ fn spawn_local_handler(
                         error
                     );
                 };
-            },
+            }
             SignalToFront::DisplayMerklePath(merkle_path, root) => {
-                if let Err(error) = show_merkle_proof_success_window(&cloned_builder, merkle_path, root) {
+                if let Err(error) =
+                    show_merkle_proof_success_window(&cloned_builder, merkle_path, root)
+                {
                     println!(
                         "Error showing merkle proof success window, with error {:?}",
                         error
