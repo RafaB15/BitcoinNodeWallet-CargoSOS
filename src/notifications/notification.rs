@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use crate::{
-    block_structure::{block::Block, transaction::Transaction},
+    block_structure::{block::Block, transaction::Transaction, hash::HashType},
     messages::command_name::CommandName,
     wallet_structure::account::Account,
     node_structure::connection_id::ConnectionId,
@@ -24,11 +24,17 @@ pub enum Notification {
     /// Notifies that we have received a transaction for an account in the wallet.
     TransactionOfAccountReceived(Vec<Account>, Transaction),
 
+    /// Notifies that there was a problem while trying to obtain the merkle proof of inclusion.
+    ProblemVerifyingTransactionMerkleProofOfInclusion(String),
+
     /// Notifies that we have received a transaction for an account in the wallet in a block.
     TransactionOfAccountInNewBlock(Transaction),
 
     /// Notifies that we have successfully sent a transaction.
     SuccessfullySentTransaction(Transaction),
+
+    /// Notifies that we successfully obtained the merkle poof of inclusion.
+    SuccessfulMerkleProof(Vec<HashType>, HashType),
 
     /// Notifies that we have received an amount of headers.
     HeadersReceived(u32),

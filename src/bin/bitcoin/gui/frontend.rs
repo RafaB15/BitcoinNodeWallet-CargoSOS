@@ -1,15 +1,22 @@
 use super::{signal_to_back::SignalToBack, signal_to_front::SignalToFront};
 
 use crate::{
-    process::reference::{self, MutArc},
-    ui::{account, error_ui::ErrorUI},
+    process::{
+        reference::{self, MutArc},
+        transaction,
+    },
+    ui::{account, error_ui::ErrorUI, from_hexa},
 };
 
-use bs58::alphabet::Error;
 use cargosos_bitcoin::{
     notifications::{notification::Notification, notifier::Notifier},
     wallet_structure::{private_key::PrivateKey, public_key::PublicKey, wallet::Wallet},
     node_structure::connection_id::ConnectionId,
+    logs::logger_sender::LoggerSender,
+    block_structure::{
+        hash::HashType,
+        block_chain::BlockChain,
+    },
 };
 
 use gtk::{
@@ -236,6 +243,102 @@ fn login_transaction_error_window(builder: &Builder) -> Result<(), ErrorUI> {
     Ok(())
 }
 
+/// This function sets up the error window
+fn login_merkle_error_window(builder: &Builder) -> Result<(), ErrorUI> {
+    let merkle_error_window: Window = match builder.object("MerkleProofErrorWindow") {
+        Some(merkle_error_window) => merkle_error_window,
+        None => {
+            return Err(ErrorUI::MissingElement(
+                "MerkleProofErrorWindow".to_string(),
+            ))
+        }
+    };
+    let merkle_error_button: Button = match builder.object("OKMerkleProofErrorButton") {
+        Some(merkle_error_button) => merkle_error_button,
+        None => return Err(ErrorUI::MissingElement("OKMerkleProofErrorButton".to_string())),
+    };
+    merkle_error_button.connect_clicked(move |_| {
+        merkle_error_window.set_visible(false);
+    });
+    Ok(())
+}
+
+/// Function that makes the error window for the merkle proof of inclusion visible
+fn show_merkle_error_window(builder: &Builder, error: String) -> Result<(), ErrorUI>{
+    let merkle_error_window: Window = match builder.object("MerkleProofErrorWindow") {
+        Some(merkle_error_window) => merkle_error_window,
+        None => {
+            return Err(ErrorUI::MissingElement(
+                "MerkleProofErrorWindow".to_string(),
+            ))
+        }
+    };
+    let merkle_error_label: Label = match builder.object("MerkleProofErrorLabel") {
+        Some(merkle_error_label) => merkle_error_label,
+        None => return Err(ErrorUI::MissingElement("MerkleProofErrorLabel".to_string())),
+    };
+    merkle_error_label.set_text(&error);
+    merkle_error_window.set_visible(true);
+    Ok(())
+}
+
+/// Turns a hashtype to a string
+fn from_hashtype_to_string(hash: HashType) -> String {
+    let mut hash_string = "".to_string();
+    for byte in hash.iter() {
+        hash_string.push_str(&format!("{:02x}", byte));
+    }
+    hash_string
+}
+
+fn show_merkle_proof_success_window(builder: &Builder, merkle_path: Vec<HashType>, root: HashType) -> Result<(), ErrorUI>{
+    let merkle_success_window: Window = match builder.object("MerkleProofSuccessfulWindow") {
+        Some(merkle_success_window) => merkle_success_window,
+        None => {
+            return Err(ErrorUI::MissingElement(
+                "MerkleProofSuccessfulWindow".to_string(),
+            ))
+        }
+    };
+    let merkle_success_label: Label = match builder.object("MerkleProofNotificationfulLabel") {
+        Some(merkle_success_label) => merkle_success_label,
+        None => return Err(ErrorUI::MissingElement("MerkleProofNotificationfulLabel".to_string())),
+    };
+
+    
+    let mut message_path = "".to_string();
+    
+    for hash in merkle_path.clone() {
+        message_path.push_str(&format!("{}\n", from_hashtype_to_string(hash)));
+    }
+    
+    let message = format!("Merkle root: \n{}\n Merkle path:\n{}", from_hashtype_to_string(root), message_path);
+
+    merkle_success_label.set_text(&message);
+    merkle_success_window.set_visible(true);
+    Ok(())
+}
+
+/// This function sets up the error window
+fn login_merkle_proof_successful_window(builder: &Builder) -> Result<(), ErrorUI> {
+    let merkle_success_window: Window = match builder.object("MerkleProofSuccessfulWindow") {
+        Some(merkle_success_window) => merkle_success_window,
+        None => {
+            return Err(ErrorUI::MissingElement(
+                "MerkleProofSuccessfulWindow".to_string(),
+            ))
+        }
+    };
+    let merkle_success_button: Button = match builder.object("OkMerkleProofNotificationButton") {
+        Some(merkle_success_button) => merkle_success_button,
+        None => return Err(ErrorUI::MissingElement("OkMerkleProofNotificationButton".to_string())),
+    };
+    merkle_success_button.connect_clicked(move |_| {
+        merkle_success_window.set_visible(false);
+    });
+    Ok(())
+}
+
 /// This function sets up the notification window for transactions
 fn login_transaction_notification_window(builder: &Builder) -> Result<(), ErrorUI> {
     let transaction_notification_window: Window =
@@ -293,8 +396,29 @@ pub fn request_merkle_proof<N: Notifier>(
     logger: LoggerSender,
 
 ) -> Result<(), ErrorUI> {
+    let block_hash_bytes: HashType = match from_hexa::from(block_hash.to_string())?.try_into() {
+        Ok(block_hash_bytes) => block_hash_bytes,
+        Err(_) => {
+            let _ = logger.log_error("Error reading block hash".to_string());
+            return Err(ErrorUI::ErrorReading("Block hash".to_string()));
+        }
+    };
 
-    
+    let transaction_id_bytes: HashType = match from_hexa::from(transaction_id.to_string())?.try_into() {
+        Ok(transaction_id_bytes) => transaction_id_bytes,
+        Err(_) => {
+            let _ = logger.log_error("Error reading block hash".to_string());
+            return Err(ErrorUI::ErrorReading("Block hash".to_string()));
+        }
+    };
+
+    transaction::verify_transaction_merkle_proof_of_inclusion(
+        block_chain,
+        block_hash_bytes,
+        transaction_id_bytes,
+        notifier,
+        logger
+    );
 
     Ok(())
 }
@@ -707,6 +831,10 @@ fn spawn_local_handler(
                     );
                 };
             }
+            SignalToFront::ErrorInMerkleProof(error) => {
+                show_merkle_error_window(&cloned_builder, error);
+            },
+            SignalToFront::DisplayMerklePath(_, _) => todo!(),
         }
         glib::Continue(true)
     });
@@ -737,7 +865,7 @@ pub fn build_ui(
     login_combo_box(&builder, tx_to_back)?;
 
     login_transaction_error_window(&builder)?;
-
+    login_merkle_error_window(&builder)?;
     login_transaction_notification_window(&builder)?;
 
     Ok(())

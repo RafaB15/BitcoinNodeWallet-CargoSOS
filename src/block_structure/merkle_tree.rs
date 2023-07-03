@@ -91,6 +91,20 @@ impl MerkleTree {
     pub fn get_merkle_path(
         &self,
         target_transaction_id: HashType,
+    ) -> Result<Vec<HashType>, ErrorBlock> {
+        match self.get_merkle_path_for_verification(target_transaction_id) {
+            Ok(merkle_path) => Ok(merkle_path
+                .iter()
+                .map(|(hash, _)| hash.clone())
+                .collect::<Vec<HashType>>()),
+            Err(error) => Err(error),
+        }
+    }
+
+    /// Returns the merkle path and some information of the given transaction
+    fn get_merkle_path_for_verification(
+        &self,
+        target_transaction_id: HashType,
     ) -> Result<Vec<(HashType, bool)>, ErrorBlock> {
         let size = self.levels.len();
 
@@ -127,7 +141,7 @@ impl MerkleTree {
         transaction_id: &HashType,
     ) -> Result<bool, ErrorBlock> {
         let merkle_tree = MerkleTree::new(&block.transactions)?;
-        let merkle_path = merkle_tree.get_merkle_path(transaction_id.clone())?;
+        let merkle_path = merkle_tree.get_merkle_path_for_verification(transaction_id.clone())?;
         let mut potential_root = transaction_id.clone();
 
         for (sibling, is_left) in merkle_path {

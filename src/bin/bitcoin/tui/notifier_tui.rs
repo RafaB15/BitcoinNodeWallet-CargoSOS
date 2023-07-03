@@ -155,6 +155,8 @@ impl Notifier for NotifierTUI {
             Notification::ReceivedMessage(message) => {
                 println!("Received message of type {:?}", message)
             }
+            Notification::ProblemVerifyingTransactionMerkleProofOfInclusion(_) => todo!(),
+            Notification::SuccessfulMerkleProof(_, _) => todo!(),
         }
     }
 }

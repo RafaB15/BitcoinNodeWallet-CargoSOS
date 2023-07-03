@@ -247,6 +247,22 @@ impl Notifier for NotifierGUI {
             Notification::ReceivedMessage(message) => {
                 println!("Received message of type {:?}", message)
             }
+            Notification::ProblemVerifyingTransactionMerkleProofOfInclusion(error) => {
+                if self.tx_to_front.send(SignalToFront::ErrorInMerkleProof(error)).is_err() {
+                    let _ = self.logger.log_error(
+                        "Failed to send error signal for a problem verifying a transaction merkle proof of inclusion"
+                            .to_string(),
+                    );
+                }
+            },
+            Notification::SuccessfulMerkleProof(merkle_path, root) => {
+                if self.tx_to_front.send(SignalToFront::DisplayMerklePath(merkle_path, root)).is_err() {
+                    let _ = self.logger.log_error(
+                        "Failed to send error signal for a problem verifying a transaction merkle proof of inclusion"
+                            .to_string(),
+                    );
+                }
+            },
         }
     }
 }
