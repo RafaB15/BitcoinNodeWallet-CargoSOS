@@ -143,7 +143,7 @@ where
         .send(ConnectionEvent::Stop)
         .is_err()
     {
-        let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to stop potential connections".to_string()));
+        let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Failed to stop potential connections".to_string()));
     } else {
 
         match handle_process_connection.join() {
@@ -152,20 +152,20 @@ where
                 let _ = logger.log_data(Level::ERROR, error);
             },
             Err(_) => {
-                let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()));
+                let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Failed to close confirmed connections".to_string()));
             }
         }
 
         if handle_confirmed_connection.join().is_err() {
-            let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()));
+            let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Failed to close confirmed connections".to_string()));
         }
     }
 
     if reference::get_reference(&broadcasting)?.close_connections(notifier).is_ok() {
         if handle_peers.join().is_err() {
-            let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to remove notifications".to_string()));
+            let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Failed to remove notifications".to_string()));
         }
-    }    
+    } 
 
     Ok(SaveSystem::new(
         reference::get_inner(block_chain)?,

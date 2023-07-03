@@ -101,7 +101,7 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
 
                     let handler = self.handle_connection_event(
                         stream,
-                        ConnectionId::new(socket_address, ConnectionType::Peer), 
+                        ConnectionId::new(socket_address, ConnectionType::Client), 
                         receiver
                     );
 

@@ -124,9 +124,9 @@ where
         notifier.notify(Notification::ClosingPeers);
         for (_, sender) in self.peers.iter() {
             if sender.send(MessageToPeer::Stop).is_err() {
-                return Err(ErrorNode::WhileSendingMessage(
-                    "Sending transaction message to peer".to_string(),
-                ));
+                let _ = self.logger.log_error(
+                    "Sending closing message to peer".to_string(),
+                );
             }
         }
 
@@ -142,9 +142,9 @@ where
                 Ok(Ok((peer_stream, _))) => peers_streams.push(peer_stream),
                 Ok(Err(error)) => return Err(error),
                 Err(_) => {
-                    return Err(ErrorNode::NodeNotResponding(
+                    let _ = self.logger.log_error(
                         "Thread could not finish correctly".to_string(),
-                    ))
+                    );
                 }
             }
         }
