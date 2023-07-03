@@ -70,7 +70,7 @@ fn headers_first<N: Notifier + 'static, RW: Read + Write + Send + Debug + 'stati
 
     let peer_download_handle = get_blocks(
         peer_stream,
-        block_download.clone(),
+        block_download,
         list_of_blocks,
         notifier.clone(),
         logger.clone(),
@@ -80,7 +80,7 @@ fn headers_first<N: Notifier + 'static, RW: Read + Write + Send + Debug + 'stati
         block_chain,
         utxo_set,
         peer_download_handle,
-        notifier.clone(),
+        notifier,
         logger.clone(),
     )?;
 
@@ -230,7 +230,7 @@ fn updating_block_chain<N: Notifier, RW: Read + Write + Send>(
                     continue;
                 }
 
-                utxo_set.update_utxo_with_block(&block);
+                utxo_set.update_utxo_with_block(block);
 
                 if i % 50 == 0 {
                     let _ = logger.log_connection(format!("Loading [{i}] blocks to blockchain",));

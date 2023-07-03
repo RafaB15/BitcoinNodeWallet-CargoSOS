@@ -35,10 +35,10 @@ pub fn add_peer_to_broadcasting<N: Notifier + 'static, RW: Read + Write + Send +
 ) {
     let peer_manager = create_peer_manager(
         connection,
-        sender_response.clone(),
-        blockchain.clone(),
+        sender_response,
+        blockchain,
         magic_numbers,
-        notifier.clone(),
+        notifier,
         logger.clone(),
     );
 
@@ -190,7 +190,8 @@ fn receive_block<N: Notifier>(
                 .iter()
                 .any(|account| account.verify_transaction_ownership(transaction))
         {
-            notifier.notify(Notification::TransactionOfAccountInNewBlock(block.clone(),
+            notifier.notify(Notification::TransactionOfAccountInNewBlock(
+                block.clone(),
                 transaction.clone(),
             ));
         }

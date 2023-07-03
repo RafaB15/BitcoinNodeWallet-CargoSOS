@@ -14,8 +14,8 @@ use crate::serialization::{
 use crate::configurations::try_default::TryDefault;
 
 use std::{
-    io::{Read, Write},
     cmp,
+    io::{Read, Write},
 };
 
 /// It's the internal representation of the block chain
@@ -173,13 +173,12 @@ impl BlockChain {
             };
 
             let previous_index = cmp::max(0, *index_last_block as i32 - go_back as i32) as usize;
-            
+
             match self.get_block_at(previous_index) {
                 Ok(last_block) => latest.push(last_block.block),
                 Err(_) => continue,
             };
         }
-
 
         latest
     }
@@ -282,12 +281,12 @@ impl BlockChain {
             None => return Err(ErrorBlock::NodeChainReferenceNotFound),
         };
 
-        let mut index_temp = main_chain_update_index.clone();
+        let mut index_temp = main_chain_update_index;
         for node in main_chain_values.iter_mut() {
             node.index_previous_node = Some(index_temp);
             index_temp += 1;
         }
-        main_chain_values.insert(0, self.get_block_at_mut(main_chain_update_index)?.clone());
+        main_chain_values.insert(0, self.get_block_at_mut(main_chain_update_index)?);
         self.blocks
             .splice(main_chain_update_index.., main_chain_values);
         self.last_blocks = vec![index_temp];
@@ -344,7 +343,7 @@ impl BlockChain {
                 continue;
             }
             if save {
-                headers.push(node.block.header.clone());
+                headers.push(node.block.header);
                 if (node.header_hash == *stop_hash) || (headers.len() >= 2000) {
                     break;
                 }

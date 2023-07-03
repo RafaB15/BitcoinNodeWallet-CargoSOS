@@ -87,7 +87,7 @@ impl Handshake {
                 "Error while sending version message to peer {}: {:?}",
                 potential_peer, error
             ));
-            return Err(error);
+            Err(error)
         } else {
             let _ = self
                 .sender_log
@@ -135,7 +135,7 @@ impl Handshake {
                 "Error while sending verack message to peer {}: {:?}",
                 potential_peer, error
             ));
-            return Err(error);
+            Err(error)
         } else {
             let _ = self
                 .sender_log
@@ -161,7 +161,7 @@ impl Handshake {
                 "Error while receiving verack message from peer {}: {:?}",
                 potential_peer, error
             ));
-            return Err(error.into());
+            return Err(error);
         }
 
         Ok(())

@@ -38,7 +38,7 @@ fn create_transaction(
         address.clone(),
         fron_tbtc_to_satoshi(amount),
         fron_tbtc_to_satoshi(fee),
-        &utxo_set,
+        utxo_set,
     ) {
         Ok(transaction) => Ok(transaction),
         Err(ErrorWallet::NotEnoughFunds(error_string)) => {
@@ -86,7 +86,7 @@ pub fn sending_transaction<N: Notifier, RW: Read + Write + Send + 'static>(
     };
 
     let transaction =
-        match create_transaction(&utxo_set, account, logger.clone(), &address, amount, fee) {
+        match create_transaction(utxo_set, account, logger.clone(), &address, amount, fee) {
             Ok(transaction) => transaction,
             Err(error) => {
                 notifier.notify(Notification::NotEnoughFunds);
@@ -171,6 +171,6 @@ pub fn verify_transaction_merkle_proof_of_inclusion<N: Notifier>(
 
     notifier.notify(Notification::SuccessfulMerkleProof(
         merkle_path,
-        merkle_tree.root.clone(),
+        merkle_tree.root,
     ));
 }

@@ -158,10 +158,8 @@ pub fn establish_connection_to_peers(
     sender_potential_connections: Sender<ConnectionEvent>,
     logger: LoggerSender,
 ) -> Result<(), ErrorExecution> {
-    let potential_sockets = match mode_config.clone() {
-        ModeConfig::Server(server_config) => {
-            get_potential_peers(server_config.clone(), logger.clone())?
-        }
+    let potential_sockets = match mode_config {
+        ModeConfig::Server(server_config) => get_potential_peers(server_config, logger.clone())?,
         ModeConfig::Client(client_config) => {
             vec![SocketAddr::new(
                 IpAddr::V4(client_config.address),

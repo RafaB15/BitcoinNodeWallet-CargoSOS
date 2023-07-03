@@ -4,10 +4,13 @@ use crate::process::transaction;
 
 use cargosos_bitcoin::{
     block_structure::utxo_set::UTXOSet,
+    block_structure::{
+        block_chain::BlockChain,
+        hash::{HashType, HASH_TYPE_SIZE},
+    },
     logs::logger_sender::LoggerSender,
     node_structure::broadcasting::Broadcasting,
     notifications::{notification::Notification, notifier::Notifier},
-    block_structure::{block_chain::BlockChain, hash::{HashType, HASH_TYPE_SIZE}},
     wallet_structure::{
         account::Account, address::Address, private_key::PrivateKey, public_key::PublicKey,
         wallet::Wallet,
@@ -149,7 +152,11 @@ fn get_hash_id<N: Notifier>(
                 return Ok(result);
             }
             _ => {
-                notifier.notify(Notification::ProblemVerifyingTransactionMerkleProofOfInclusion(format!("Invalid {hash_type} entered")));
+                notifier.notify(
+                    Notification::ProblemVerifyingTransactionMerkleProofOfInclusion(format!(
+                        "Invalid {hash_type} entered"
+                    )),
+                );
 
                 hash.clear();
                 println!("Error, please enter a valid {hash_type}:");
@@ -193,7 +200,7 @@ pub fn create_account<N: Notifier>(
     let _ = logger.log_wallet("Creating a new account".to_string());
 
     let private_key = get_private_key(notifier.clone(), logger.clone())?;
-    let public_key = get_public_key(notifier.clone(), logger.clone())?;
+    let public_key = get_public_key(notifier.clone(), logger)?;
     let account_name = get_account_name()?;
 
     account::create_account(wallet, &account_name, private_key, public_key, notifier)
@@ -205,7 +212,7 @@ pub fn create_account<N: Notifier>(
 ///  * `ErrorUI::TerminalReadFail`: It will appear when the terminal read fails
 ///  * `ErrorUI::CannotUnwrapArc`: It will appear when we try to unwrap an Arc
 pub fn remove_account(wallet: &mut Wallet, logger: LoggerSender) -> Result<(), ErrorUI> {
-    let account = select_account(&wallet, logger)?;
+    let account = select_account(wallet, logger)?;
     wallet.remove_account(account);
 
     Ok(())

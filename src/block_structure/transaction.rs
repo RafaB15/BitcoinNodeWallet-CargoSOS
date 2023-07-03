@@ -48,7 +48,7 @@ impl Transaction {
         }
         match hash256d(&buffer) {
             Ok(txid) => Ok(txid),
-            Err(_) => return Err(ErrorBlock::CouldNotGetTxId),
+            Err(_) => Err(ErrorBlock::CouldNotGetTxId),
         }
     }
 

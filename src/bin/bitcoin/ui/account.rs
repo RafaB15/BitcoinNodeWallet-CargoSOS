@@ -96,7 +96,7 @@ pub fn give_account_transactions<N: Notifier>(
         }
     };
 
-    let transactions = get_account_transactions(&account, &blockchain);
+    let transactions = get_account_transactions(&account, blockchain);
     notifier.notify(Notification::AccountTransactions(account, transactions));
 
     Ok(())

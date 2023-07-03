@@ -71,7 +71,7 @@ impl Block {
     /// * `ErrorBlock::CouldNotGetTxId`: It will appear when there is an error hashing the transaction
     pub fn merkle_proof_of_inclusion(&self, transaction: &Transaction) -> Result<bool, ErrorBlock> {
         let transaction_id = transaction.get_tx_id()?;
-        MerkleTree::merkle_proof_of_inclusion(&self, &transaction_id)
+        MerkleTree::merkle_proof_of_inclusion(self, &transaction_id)
     }
 }
 

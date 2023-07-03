@@ -60,7 +60,7 @@ impl MerkleTree {
         }
 
         let root = match current_level.first() {
-            Some(root) => root.clone(),
+            Some(root) => *root,
             None => {
                 return Err(ErrorBlock::CouldNotWriteTxId(
                     "Could not get root".to_string(),
@@ -74,11 +74,9 @@ impl MerkleTree {
     /// Makes a valid level for the Merkle Tree
     fn make_valid_level(transaction_hashes: &mut Vec<HashType>) {
         if (transaction_hashes.len() % 2 != 0) && (transaction_hashes.len() != 1) {
-            let last_element = match transaction_hashes.last() {
-                Some(last_element) => last_element.clone(),
-                None => return,
-            };
-            transaction_hashes.push(last_element);
+            if let Some(last_element) = transaction_hashes.last() {
+                transaction_hashes.push(*last_element);
+            }
         }
     }
 
@@ -95,7 +93,7 @@ impl MerkleTree {
         match self.get_merkle_path_for_verification(target_transaction_id) {
             Ok(merkle_path) => Ok(merkle_path
                 .iter()
-                .map(|(hash, _)| hash.clone())
+                .map(|(hash, _)| *hash)
                 .collect::<Vec<HashType>>()),
             Err(error) => Err(error),
         }
@@ -119,7 +117,7 @@ impl MerkleTree {
 
         let mut merkle_path: Vec<(HashType, bool)> = Vec::new();
 
-        for level in self.levels[..size - 1].to_vec() {
+        for level in self.levels[..size - 1].iter().cloned() {
             let sibling_index = match target_index % 2 == 0 {
                 true => target_index + 1,
                 false => target_index - 1,
@@ -141,8 +139,8 @@ impl MerkleTree {
         transaction_id: &HashType,
     ) -> Result<bool, ErrorBlock> {
         let merkle_tree = MerkleTree::new(&block.transactions)?;
-        let merkle_path = merkle_tree.get_merkle_path_for_verification(transaction_id.clone())?;
-        let mut potential_root = transaction_id.clone();
+        let merkle_path = merkle_tree.get_merkle_path_for_verification(*transaction_id)?;
+        let mut potential_root = *transaction_id;
 
         for (sibling, is_left) in merkle_path {
             let mut combined = potential_root.to_vec();

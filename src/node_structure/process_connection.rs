@@ -139,7 +139,7 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
 
         thread::spawn(move || {
             notifier.notify(Notification::AttemptingHandshakeWithPeer(
-                connection.address.clone(),
+                connection.address,
             ));
 
             let local_socket = match stream.local_addr() {
@@ -211,7 +211,7 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
         handshake.send_version_message(stream, local_socket, potential_socket)?;
 
         loop {
-            match Work::listen(stream, &receiver) {
+            match Work::listen(stream, receiver) {
                 Work::Message(header) => {
                     handshake.receive_version_message(stream, header, potential_socket)?;
                     break;
@@ -226,7 +226,7 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
         handshake.send_verack_message(stream, potential_socket)?;
 
         loop {
-            match Work::listen(stream, &receiver) {
+            match Work::listen(stream, receiver) {
                 Work::Message(header) => {
                     handshake.receive_verack_message(stream, header, potential_socket)?;
                     break;
@@ -257,7 +257,7 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
         receiver: &Receiver<Stop>,
     ) -> Result<bool, ErrorSerialization> {
         loop {
-            match Work::listen(stream, &receiver) {
+            match Work::listen(stream, receiver) {
                 Work::Message(header) => {
                     handshake.receive_version_message(stream, header, potential_socket)?;
                     break;
@@ -272,7 +272,7 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
         handshake.send_version_message(stream, local_socket, potential_socket)?;
 
         loop {
-            match Work::listen(stream, &receiver) {
+            match Work::listen(stream, receiver) {
                 Work::Message(header) => {
                     handshake.receive_verack_message(stream, header, potential_socket)?;
                     break;

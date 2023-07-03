@@ -145,7 +145,7 @@ impl UTXOSet {
         let mut pending: i64 = 0;
         for transaction in self.pending.iter() {
             for output in transaction.tx_out.iter() {
-                if address.verify_transaction_ownership(&output) {
+                if address.verify_transaction_ownership(output) {
                     pending += output.value;
                 }
             }
