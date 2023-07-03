@@ -1,4 +1,4 @@
-use super::work::Work;
+use super::{work::Work, listener::Listener};
 
 use std::convert::From;
 
@@ -12,6 +12,14 @@ impl From<Stop> for Work<()> {
     fn from(stop: Stop) -> Self {
         match stop {
             Stop::Stop => Work::Stop,
+        }
+    }
+}
+
+impl From<Stop> for Listener<()> {
+    fn from(stop: Stop) -> Self {
+        match stop {
+            Stop::Stop => Listener::Stop,
         }
     }
 }

@@ -28,7 +28,7 @@ impl<I> Work<I> {
             }
 
             match receiver.try_recv() {
-                Ok(message_to_peer) => return message_to_peer.into(),
+                Ok(message) => return message.into(),
                 Err(TryRecvError::Disconnected) => return Work::Stop,
                 Err(_) => {}
             }

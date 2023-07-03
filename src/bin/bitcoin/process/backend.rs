@@ -13,10 +13,11 @@ use cargosos_bitcoin::{
         connection_config::ConnectionConfig, download_config::DownloadConfig,
         mode_config::ModeConfig,
     },
+    concurrency::stop::Stop,
     logs::{logger_sender::LoggerSender, level::Level},
     node_structure::{
         broadcasting::Broadcasting, connection_event::ConnectionEvent,
-        message_response::MessageResponse,
+        message_response::MessageResponse, connection_id::ConnectionId,
     },
     notifications::{notification::Notification, notifier::Notifier},
     wallet_structure::wallet::Wallet,
@@ -53,9 +54,12 @@ where
     I: InputHandler<TcpStream>,
     N: Notifier + 'static,
 {
-    let (handle_process_connection, receiver_confirm_connection, sender_potential_connections) =
+    let (sender_confirm_connection, receiver_confirm_connection) = channel::<(TcpStream, ConnectionId)>();
+
+    let (handle_process_connection, sender_potential_connections) =
         connection::create_process_connection(
             connection_config.clone(),
+            sender_confirm_connection.clone(),
             notifier.clone(),
             logger.clone(),
         );
@@ -97,11 +101,25 @@ where
         logger.clone(),
     );
 
-    connection::establish_connection(
+    connection::establish_connection_to_peers(
         mode_config.clone(),
         sender_potential_connections.clone(),
         logger.clone(),
     )?;
+
+    let (sender_stop, receiver_stop) = channel::<Stop>();
+
+    let posible_handle = match mode_config.clone() {
+        ModeConfig::Server(server_config) => {
+            connection::establish_connection_with_clients(
+                server_config,
+                receiver_stop,
+                sender_potential_connections.clone(),
+                logger.clone(),
+            )
+        },
+        ModeConfig::Client(_) => None,
+    };
 
     input_handler.handle_input(
         broadcasting.clone(),
@@ -137,6 +155,17 @@ where
             let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to remove notifications".to_string()));
         }
     }    
+
+    if let Some(handle) = posible_handle {
+
+        if sender_stop.send(Stop::Stop).is_err() {
+            let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to stop potential connections".to_string()));
+        } else {
+            if handle.join().is_err() {
+                let _ = logger.log_data(Level::ERROR, ErrorUI::ErrorFromPeer("Fail to close confirmed connections".to_string()));
+            }
+        }
+    }
 
     Ok(SaveSystem::new(
         reference::get_inner(block_chain)?,
