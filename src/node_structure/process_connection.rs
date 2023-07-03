@@ -82,7 +82,8 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
                     let stream = match Self::create_stream(socket_address, self.logger.clone()) {
                         Some(stream) => stream,
                         None => {
-                            let _ = self.logger
+                            let _ = self
+                                .logger
                                 .log_connection(format!("Cannot connecto to {socket_address}"));
                             continue;
                         }
@@ -90,19 +91,19 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
 
                     let handler = self.handle_connection_event(
                         stream,
-                        ConnectionId::new(socket_address, ConnectionType::Peer), 
-                        receiver
+                        ConnectionId::new(socket_address, ConnectionType::Peer),
+                        receiver,
                     );
 
                     pending_connection_handlers.push((handler, sender));
-                },
+                }
                 ConnectionEvent::PotentialClient(stream, socket_address) => {
                     let (sender, receiver) = channel::<Stop>();
 
                     let handler = self.handle_connection_event(
                         stream,
-                        ConnectionId::new(socket_address, ConnectionType::Client), 
-                        receiver
+                        ConnectionId::new(socket_address, ConnectionType::Client),
+                        receiver,
                     );
 
                     pending_connection_handlers.push((handler, sender));
@@ -289,10 +290,7 @@ impl<N: Notifier + Send + 'static> ProcessConnection<N> {
     }
 
     /// Create a stream to connect to a potential connection
-    fn create_stream(
-        potential_address: SocketAddr,
-        logger: LoggerSender,
-    ) -> Option<TcpStream> {
+    fn create_stream(potential_address: SocketAddr, logger: LoggerSender) -> Option<TcpStream> {
         let stream = match TcpStream::connect(potential_address) {
             Ok(stream) => stream,
             Err(error) => {

@@ -86,7 +86,7 @@ impl Display for Block {
         for byte in block_id.iter() {
             block_id_string.push_str(&format!("{:02x}", byte));
         }
-        
+
         write!(f, "{block_id_string}")
     }
 }

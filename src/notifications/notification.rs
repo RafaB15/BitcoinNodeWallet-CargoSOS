@@ -1,10 +1,10 @@
 use std::net::SocketAddr;
 
 use crate::{
-    block_structure::{block::Block, transaction::Transaction, hash::HashType},
+    block_structure::{block::Block, hash::HashType, transaction::Transaction},
     messages::command_name::CommandName,
-    wallet_structure::account::Account,
     node_structure::connection_id::ConnectionId,
+    wallet_structure::account::Account,
 };
 
 /// The different types of notifications that the notifier can send.

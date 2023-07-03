@@ -1,6 +1,6 @@
 use std::{
     convert::Into,
-    net::{TcpStream, TcpListener, SocketAddr},
+    net::{SocketAddr, TcpListener, TcpStream},
     sync::mpsc::{Receiver, TryRecvError},
 };
 
@@ -21,8 +21,8 @@ impl<I> Listener<I> {
                 Ok((stream, socket_address)) => return Listener::Stream(stream, socket_address),
                 Err(error) => {
                     if error.kind() != std::io::ErrorKind::WouldBlock {
-                        return Listener::Stop
-                    } 
+                        return Listener::Stop;
+                    }
                 }
             }
 

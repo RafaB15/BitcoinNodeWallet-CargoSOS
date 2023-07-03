@@ -7,12 +7,12 @@ use crate::error_execution::ErrorExecution;
 
 use cargosos_bitcoin::{
     block_structure::{block_chain::BlockChain, utxo_set::UTXOSet},
+    concurrency::{listener::Listener, stop::Stop},
     configurations::{
         connection_config::ConnectionConfig, download_config::DownloadConfig,
         mode_config::ModeConfig, server_config::ServerConfig,
     },
     connections::error_connection::ErrorConnection,
-    concurrency::{stop::Stop, listener::Listener},
     logs::logger_sender::LoggerSender,
     node_structure::{
         broadcasting::Broadcasting,
@@ -27,7 +27,7 @@ use cargosos_bitcoin::{
 };
 
 use std::{
-    net::{IpAddr, SocketAddr, TcpStream, TcpListener},
+    net::{IpAddr, SocketAddr, TcpListener, TcpStream},
     sync::mpsc::{channel, Receiver, Sender},
     thread::{self, JoinHandle},
     time::Duration,
@@ -62,10 +62,7 @@ pub fn create_process_connection<N: Notifier + Send + 'static>(
     sender_confirm_connection: Sender<(TcpStream, ConnectionId)>,
     notifier: N,
     logger: LoggerSender,
-) -> (
-    JoinHandle<Result<(), ErrorNode>>,
-    SenderPotential,
-) {
+) -> (JoinHandle<Result<(), ErrorNode>>, SenderPotential) {
     let (sender_potential_connections, receiver_potential_connections) =
         channel::<ConnectionEvent>();
 
@@ -79,10 +76,7 @@ pub fn create_process_connection<N: Notifier + Send + 'static>(
 
     let handle = thread::spawn(|| process_connection.execution());
 
-    (
-        handle,
-        sender_potential_connections,
-    )
+    (handle, sender_potential_connections)
 }
 
 /// Creates a thread to manage the confirmed connections and update the block chain if the connection is a peer
@@ -169,7 +163,10 @@ pub fn establish_connection_to_peers(
             get_potential_peers(server_config.clone(), logger.clone())?
         }
         ModeConfig::Client(client_config) => {
-            vec![SocketAddr::new(IpAddr::V4(client_config.address), client_config.port)]
+            vec![SocketAddr::new(
+                IpAddr::V4(client_config.address),
+                client_config.port,
+            )]
         }
     };
 
@@ -191,7 +188,6 @@ pub fn establish_connection_with_clients(
     sender_potential_connections: Sender<ConnectionEvent>,
     logger: LoggerSender,
 ) -> Option<JoinHandle<()>> {
-
     let mut listener = match TcpListener::bind(SocketAddr::new(
         IpAddr::V4(server_config.address),
         server_config.own_port,
@@ -200,30 +196,27 @@ pub fn establish_connection_with_clients(
         Err(_) => {
             let _ = logger.log_error("Could not bind port".to_string());
             return None;
-        },
-    }; 
+        }
+    };
 
     if listener.set_nonblocking(true).is_err() {
         let _ = logger.log_error("Could not set non blocking".to_string());
         return None;
     }
 
-    let handle = thread::spawn(move || {
-
-        loop {
-            match Listener::listen(&mut listener, &receiver_stop) {
-                Listener::Stream(stream, socket_address) => {
-                    if sender_potential_connections.send(
-                        ConnectionEvent::PotentialClient(stream, socket_address)
-                    ).is_err() {
-                        let _ = logger.log_error("Could not send client to connect".to_string());
-                    }
-                },
-                Listener::Information(_) => {},
-                Listener::Stop => break,
+    let handle = thread::spawn(move || loop {
+        match Listener::listen(&mut listener, &receiver_stop) {
+            Listener::Stream(stream, socket_address) => {
+                if sender_potential_connections
+                    .send(ConnectionEvent::PotentialClient(stream, socket_address))
+                    .is_err()
+                {
+                    let _ = logger.log_error("Could not send client to connect".to_string());
+                }
             }
+            Listener::Information(_) => {}
+            Listener::Stop => break,
         }
-
     });
 
     Some(handle)

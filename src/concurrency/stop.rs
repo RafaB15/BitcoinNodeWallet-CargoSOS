@@ -1,4 +1,4 @@
-use super::{work::Work, listener::Listener};
+use super::{listener::Listener, work::Work};
 
 use std::convert::From;
 

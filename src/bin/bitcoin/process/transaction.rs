@@ -3,7 +3,10 @@ use super::error_process::ErrorProcess;
 use crate::ui::error_ui::ErrorUI;
 
 use cargosos_bitcoin::{
-    block_structure::{transaction::Transaction, utxo_set::UTXOSet, block_chain::BlockChain, hash::HashType, merkle_tree::MerkleTree},
+    block_structure::{
+        block_chain::BlockChain, hash::HashType, merkle_tree::MerkleTree, transaction::Transaction,
+        utxo_set::UTXOSet,
+    },
     logs::logger_sender::LoggerSender,
     node_structure::{broadcasting::Broadcasting, error_node::ErrorNode},
     notifications::{notification::Notification, notifier::Notifier},
@@ -106,10 +109,9 @@ pub fn sending_transaction<N: Notifier, RW: Read + Write + Send + 'static>(
     }
 }
 
-
 pub fn verify_transaction_merkle_proof_of_inclusion<N: Notifier>(
     block_chain: &BlockChain,
-    block_hash: HashType ,
+    block_hash: HashType,
     mut transaction_id: HashType,
     notifier: N,
     logger: LoggerSender,
@@ -122,34 +124,53 @@ pub fn verify_transaction_merkle_proof_of_inclusion<N: Notifier>(
         Some(block) => block,
         None => {
             let _ = logger.log_transaction("Error verifying transaction merkle proof of inclusion, with error: Block not found".to_string());
-            notifier.notify(Notification::ProblemVerifyingTransactionMerkleProofOfInclusion("Block not found in the local blockchain".to_string()));
+            notifier.notify(
+                Notification::ProblemVerifyingTransactionMerkleProofOfInclusion(
+                    "Block not found in the local blockchain".to_string(),
+                ),
+            );
             return;
         }
     };
-    
+
     if let Ok(false) | Err(_) = MerkleTree::merkle_proof_of_inclusion(&block, &transaction_id) {
-        let _ = logger.log_transaction("Transaction merkle proof of inclusion verified".to_string());
-        notifier.notify(Notification::ProblemVerifyingTransactionMerkleProofOfInclusion("Transaction merkle proof of inclusion failed".to_string()));
+        let _ =
+            logger.log_transaction("Transaction merkle proof of inclusion verified".to_string());
+        notifier.notify(
+            Notification::ProblemVerifyingTransactionMerkleProofOfInclusion(
+                "Transaction merkle proof of inclusion failed".to_string(),
+            ),
+        );
         return;
     }
     let merkle_tree = match MerkleTree::new(&block.transactions) {
         Ok(merkle_tree) => merkle_tree,
         Err(_) => {
             let _ = logger.log_transaction("Error verifying transaction merkle proof of inclusion, with error: Merkle tree creation failed".to_string());
-            notifier.notify(Notification::ProblemVerifyingTransactionMerkleProofOfInclusion("Merkle tree creation failed".to_string()));
+            notifier.notify(
+                Notification::ProblemVerifyingTransactionMerkleProofOfInclusion(
+                    "Merkle tree creation failed".to_string(),
+                ),
+            );
             return;
         }
     };
-
 
     let merkle_path = match merkle_tree.get_merkle_path(transaction_id) {
         Ok(merkle_path) => merkle_path,
         Err(_) => {
             let _ = logger.log_transaction("Error verifying transaction merkle proof of inclusion, with error: Merkle path creation failed".to_string());
-            notifier.notify(Notification::ProblemVerifyingTransactionMerkleProofOfInclusion("Merkle path creation failed".to_string()));
+            notifier.notify(
+                Notification::ProblemVerifyingTransactionMerkleProofOfInclusion(
+                    "Merkle path creation failed".to_string(),
+                ),
+            );
             return;
         }
     };
 
-    notifier.notify(Notification::SuccessfulMerkleProof(merkle_path, merkle_tree.root.clone()));
+    notifier.notify(Notification::SuccessfulMerkleProof(
+        merkle_path,
+        merkle_tree.root.clone(),
+    ));
 }
