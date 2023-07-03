@@ -111,8 +111,9 @@ fn login_main_window(
         account_registration_window.set_visible(true);
     });
 
-    login_send_page(builder, tx_to_back)?;
+    login_send_page(builder, tx_to_back.clone())?;
     login_block_notification_window(builder)?;
+    login_merkle_proof_window(builder, tx_to_back)?;
     window.show_all();
     Ok(())
 }
@@ -253,9 +254,9 @@ fn login_merkle_error_window(builder: &Builder) -> Result<(), ErrorUI> {
             ))
         }
     };
-    let merkle_error_button: Button = match builder.object("OKMerkleProofErrorButton") {
+    let merkle_error_button: Button = match builder.object("OkMerkleProofErrorButton") {
         Some(merkle_error_button) => merkle_error_button,
-        None => return Err(ErrorUI::MissingElement("OKMerkleProofErrorButton".to_string())),
+        None => return Err(ErrorUI::MissingElement("OkMerkleProofErrorButton".to_string())),
     };
     merkle_error_button.connect_clicked(move |_| {
         merkle_error_window.set_visible(false);
@@ -300,9 +301,9 @@ fn show_merkle_proof_success_window(builder: &Builder, merkle_path: Vec<HashType
             ))
         }
     };
-    let merkle_success_label: Label = match builder.object("MerkleProofNotificationfulLabel") {
+    let merkle_success_label: Label = match builder.object("MerkleProofNotificationLabel") {
         Some(merkle_success_label) => merkle_success_label,
-        None => return Err(ErrorUI::MissingElement("MerkleProofNotificationfulLabel".to_string())),
+        None => return Err(ErrorUI::MissingElement("MerkleProofNotificationLabel".to_string())),
     };
 
     
@@ -425,7 +426,7 @@ pub fn request_merkle_proof<N: Notifier>(
 
 
 /// This function sets up the notification window for merkle proof
-fn login_markle_proof_window(builder: &Builder, tx_to_back: Sender<SignalToBack>) -> Result<(), ErrorUI> {
+fn login_merkle_proof_window(builder: &Builder, tx_to_back: Sender<SignalToBack>) -> Result<(), ErrorUI> {
 
     let validation_button: Button = match builder.object("MerkleProofValidateButton") {
         Some(validation_button) => validation_button,
@@ -832,9 +833,21 @@ fn spawn_local_handler(
                 };
             }
             SignalToFront::ErrorInMerkleProof(error) => {
-                show_merkle_error_window(&cloned_builder, error);
+                if let Err(error) = show_merkle_error_window(&cloned_builder, error) {
+                    println!(
+                        "Error showing merkle proof error window, with error {:?}",
+                        error
+                    );
+                };
             },
-            SignalToFront::DisplayMerklePath(_, _) => todo!(),
+            SignalToFront::DisplayMerklePath(merkle_path, root) => {
+                if let Err(error) = show_merkle_proof_success_window(&cloned_builder, merkle_path, root) {
+                    println!(
+                        "Error showing merkle proof success window, with error {:?}",
+                        error
+                    );
+                };
+            }
         }
         glib::Continue(true)
     });
@@ -867,6 +880,7 @@ pub fn build_ui(
     login_transaction_error_window(&builder)?;
     login_merkle_error_window(&builder)?;
     login_transaction_notification_window(&builder)?;
+    login_merkle_proof_successful_window(&builder)?;
 
     Ok(())
 }

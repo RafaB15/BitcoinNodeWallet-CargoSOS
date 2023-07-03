@@ -283,6 +283,8 @@ There was an error in the process of verifying the merkle proof</property>
     <child>
       <object class="GtkFixed" id="TransactionSentNotificationFrame1">
         <property name="name">TransactionSentNotificationFrame</property>
+        <property name="width-request">550</property>
+        <property name="height-request">400</property>
         <property name="visible">True</property>
         <property name="can-focus">False</property>
         <child>
@@ -294,7 +296,7 @@ There was an error in the process of verifying the merkle proof</property>
             <property name="icon_size">6</property>
           </object>
           <packing>
-            <property name="x">197</property>
+            <property name="x">250</property>
             <property name="y">11</property>
           </packing>
         </child>
@@ -309,7 +311,7 @@ There was an error in the process of verifying the merkle proof</property>
             <property name="justify">center</property>
           </object>
           <packing>
-            <property name="x">4</property>
+            <property name="x">58</property>
             <property name="y">49</property>
           </packing>
         </child>
@@ -338,8 +340,8 @@ There was an error in the process of verifying the merkle proof</property>
             <property name="receives-default">True</property>
           </object>
           <packing>
-            <property name="x">174</property>
-            <property name="y">182</property>
+            <property name="x">230</property>
+            <property name="y">350</property>
           </packing>
         </child>
       </object>
