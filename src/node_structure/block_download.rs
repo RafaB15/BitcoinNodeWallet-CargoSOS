@@ -8,6 +8,8 @@ use crate::messages::{
     message_header::MagicType,
 };
 
+use crate::notifications::{notification::Notification, notifier::Notifier};
+
 use crate::logs::logger_sender::LoggerSender;
 
 use crate::block_structure::{block::Block, hash::HashType};
@@ -54,10 +56,11 @@ impl BlockDownload {
     /// ### Error
     ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
     ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
-    fn receive_blocks<RW: Read + Write>(
+    fn receive_blocks<N: Notifier, RW: Read + Write>(
         &self,
         peer_stream: &mut RW,
         headers_count: usize,
+        notifier: N,
     ) -> Result<Vec<Block>, ErrorNode> {
         let mut blocks: Vec<Block> = Vec::new();
         for i in 0..headers_count {
@@ -65,6 +68,10 @@ impl BlockDownload {
                 let _ = self
                     .sender_log
                     .log_connection(format!("Getting blocks [{i}]"));
+                notifier.notify(Notification::ProgressDownloadingBlocks(
+                    i as u32,
+                    headers_count as u32,
+                ));
             }
 
             let header = message::deserialize_until_found(peer_stream, CommandName::Block)?;
@@ -78,6 +85,10 @@ impl BlockDownload {
 
             blocks.push(block_message.block);
         }
+        notifier.notify(Notification::ProgressDownloadingBlocks(
+            headers_count as u32,
+            headers_count as u32,
+        ));
 
         Ok(blocks)
     }
@@ -88,10 +99,11 @@ impl BlockDownload {
     ///  * `ErrorNode::WhileSerializing`: It will appear when there is an error in the serialization
     ///  * `ErrorNode::WhileDeserialization`: It will appear when there is an error in the deserialization
     ///  * `ErrorNode::RequestedDataTooBig`: It will appear when the headers count is bigger than the maximum headers count of 50_000
-    pub fn get_data<RW: Read + Write>(
+    pub fn get_data<N: Notifier, RW: Read + Write>(
         &self,
         peer_stream: &mut RW,
         hashed_headers: Vec<HashType>,
+        notifier: N,
     ) -> Result<Vec<Block>, ErrorNode> {
         let headers_count = hashed_headers.len();
 
@@ -108,7 +120,7 @@ impl BlockDownload {
             .sender_log
             .log_connection(format!("Downloading {headers_count} blocks",));
 
-        self.receive_blocks(peer_stream, headers_count)
+        self.receive_blocks(peer_stream, headers_count, notifier)
     }
 }
 
@@ -169,6 +181,13 @@ mod tests {
         fn flush(&mut self) -> std::io::Result<()> {
             Ok(())
         }
+    }
+
+    #[derive(Clone)]
+    struct NotificationMock {}
+
+    impl Notifier for NotificationMock {
+        fn notify(&self, _notification: Notification) {}
     }
 
     fn serialize_block_message<RW: Read + Write>(
@@ -268,8 +287,10 @@ mod tests {
         let (sender, _) = logger::initialize_logger(logger_text, false);
         let block_download = BlockDownload::new(magic_numbers, sender);
 
+        let notifier = NotificationMock {};
+
         let blocks = block_download
-            .get_data(&mut stream, hashed_headers)
+            .get_data(&mut stream, hashed_headers, notifier)
             .unwrap();
 
         assert_eq!(blocks, vec![first_block, second_block]);

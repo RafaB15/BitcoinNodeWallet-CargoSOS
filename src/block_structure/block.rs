@@ -62,12 +62,7 @@ impl Block {
     pub fn get_merkle_path(&self, transaction: &Transaction) -> Result<Vec<HashType>, ErrorBlock> {
         let merkle_tree = MerkleTree::new(&self.transactions)?;
         let transaction_id = transaction.get_tx_id()?;
-        let path: Vec<HashType> = match merkle_tree.get_merkle_path(transaction_id) {
-            Ok(path) => path.iter().map(|(hash, _)| *hash).collect(),
-            Err(_) => return Err(ErrorBlock::CouldNotCalculateMerklePath),
-        };
-
-        Ok(path)
+        merkle_tree.get_merkle_path(transaction_id)
     }
 
     /// Calculate the merkle proof of inclusion for a transaction in the block
