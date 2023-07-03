@@ -190,7 +190,8 @@ fn receive_block<N: Notifier>(
                 .iter()
                 .any(|account| account.verify_transaction_ownership(transaction))
         {
-            notifier.notify(Notification::TransactionOfAccountInNewBlock(block.clone(),
+            notifier.notify(Notification::TransactionOfAccountInNewBlock(
+                block.clone(),
                 transaction.clone(),
             ));
         }

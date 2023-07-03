@@ -4,10 +4,13 @@ use crate::process::transaction;
 
 use cargosos_bitcoin::{
     block_structure::utxo_set::UTXOSet,
+    block_structure::{
+        block_chain::BlockChain,
+        hash::{HashType, HASH_TYPE_SIZE},
+    },
     logs::logger_sender::LoggerSender,
     node_structure::broadcasting::Broadcasting,
     notifications::{notification::Notification, notifier::Notifier},
-    block_structure::{block_chain::BlockChain, hash::{HashType, HASH_TYPE_SIZE}},
     wallet_structure::{
         account::Account, address::Address, private_key::PrivateKey, public_key::PublicKey,
         wallet::Wallet,
@@ -149,7 +152,11 @@ fn get_hash_id<N: Notifier>(
                 return Ok(result);
             }
             _ => {
-                notifier.notify(Notification::ProblemVerifyingTransactionMerkleProofOfInclusion(format!("Invalid {hash_type} entered")));
+                notifier.notify(
+                    Notification::ProblemVerifyingTransactionMerkleProofOfInclusion(format!(
+                        "Invalid {hash_type} entered"
+                    )),
+                );
 
                 hash.clear();
                 println!("Error, please enter a valid {hash_type}:");

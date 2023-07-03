@@ -214,8 +214,10 @@ where
     ///  * `ErrorNode::WhileSendingMessage`: It will appear when there is an error while sending a message to others threads
     fn receive_blocks(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
         let block_message = BlockMessage::deserialize_message(&mut self.peer, header)?;
-        
-        let _ = self.logger.log_connection(format!("Receiving a block: {}", block_message.block));
+
+        let _ = self
+            .logger
+            .log_connection(format!("Receiving a block: {}", block_message.block));
 
         if self
             .sender
@@ -239,9 +241,10 @@ where
     fn receive_transaction(&mut self, header: MessageHeader) -> Result<(), ErrorNode> {
         let tx_message = TxMessage::deserialize_message(&mut self.peer, header)?;
 
-        let _ = self
-            .logger
-            .log_connection(format!("Receiving a transaction: {}", tx_message.transaction));
+        let _ = self.logger.log_connection(format!(
+            "Receiving a transaction: {}",
+            tx_message.transaction
+        ));
 
         if self
             .sender

@@ -9,7 +9,10 @@ use crate::{
 };
 
 use cargosos_bitcoin::{
-    block_structure::{block_chain::BlockChain, hash::{HashType, HASH_TYPE_SIZE}},
+    block_structure::{
+        block_chain::BlockChain,
+        hash::{HashType, HASH_TYPE_SIZE},
+    },
     logs::logger_sender::LoggerSender,
     node_structure::connection_id::ConnectionId,
     notifications::{notification::Notification, notifier::Notifier},
@@ -273,7 +276,11 @@ fn show_merkle_error_window(builder: &Builder, error: String) -> Result<(), Erro
     };
     let merkle_error_label: Label = match builder.object("MerkleProofErrorLabelMessage") {
         Some(merkle_error_label) => merkle_error_label,
-        None => return Err(ErrorUI::MissingElement("MerkleProofErrorLabelMessage".to_string())),
+        None => {
+            return Err(ErrorUI::MissingElement(
+                "MerkleProofErrorLabelMessage".to_string(),
+            ))
+        }
     };
     merkle_error_label.set_text(&error);
     merkle_error_window.set_visible(true);
@@ -363,20 +370,22 @@ fn login_transaction_sent_notification_window(builder: &Builder) -> Result<(), E
                 ))
             }
         };
-    let transaction_sent_notification_button: Button = match builder.object("OkSentNotificationButton") {
-        Some(transaction_sent_notification_button) => transaction_sent_notification_button,
-        None => return Err(ErrorUI::MissingElement("OkSentNotificationButton".to_string())),
-    };
+    let transaction_sent_notification_button: Button =
+        match builder.object("OkSentNotificationButton") {
+            Some(transaction_sent_notification_button) => transaction_sent_notification_button,
+            None => {
+                return Err(ErrorUI::MissingElement(
+                    "OkSentNotificationButton".to_string(),
+                ))
+            }
+        };
     transaction_sent_notification_button.connect_clicked(move |_| {
         transaction_sent_notification_window.set_visible(false);
     });
     Ok(())
 }
 
-fn show_new_transaction_sent_notification(
-    builder: &Builder,
-    tx_id: String,
-) -> Result<(), ErrorUI> {
+fn show_new_transaction_sent_notification(builder: &Builder, tx_id: String) -> Result<(), ErrorUI> {
     let transaction_sent_notification_window: Window =
         match builder.object("TransactionSentNotificationWindow") {
             Some(transaction_notification_window) => transaction_notification_window,
@@ -401,7 +410,6 @@ fn show_new_transaction_sent_notification(
     transaction_sent_notification_window.set_visible(true);
     Ok(())
 }
-
 
 /// This function sets up the notification window for transactions
 fn login_transaction_notification_window(builder: &Builder) -> Result<(), ErrorUI> {
@@ -565,7 +573,11 @@ fn show_new_transaction_notification(
 }
 
 /// This function makes the notification window visible and sets the notification message
-fn show_new_block_notification(builder: &Builder, block_hash: String, transaction: String) -> Result<(), ErrorUI> {
+fn show_new_block_notification(
+    builder: &Builder,
+    block_hash: String,
+    transaction: String,
+) -> Result<(), ErrorUI> {
     let block_notification_window: Window = match builder.object("BlockNotificationWindow") {
         Some(block_notification_window) => block_notification_window,
         None => {
@@ -834,7 +846,9 @@ fn spawn_local_handler(
                 };
             }
             SignalToFront::BlockWithUnconfirmedTransactionReceived(block_hash, transaction_id) => {
-                if let Err(error) = show_new_block_notification(&cloned_builder, block_hash, transaction_id) {
+                if let Err(error) =
+                    show_new_block_notification(&cloned_builder, block_hash, transaction_id)
+                {
                     println!(
                         "Error showing new block notification, with error {:?}",
                         error

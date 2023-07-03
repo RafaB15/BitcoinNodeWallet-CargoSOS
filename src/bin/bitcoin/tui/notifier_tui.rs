@@ -46,7 +46,9 @@ impl Notifier for NotifierTUI {
             }
             Notification::TransactionOfAccountInNewBlock(block, transaction) => show_notification(
                 "Transaction in block",
-                &format!("The transaction {transaction}was added\n    to a block with hash {block}"),
+                &format!(
+                    "The transaction {transaction}was added\n    to a block with hash {block}"
+                ),
                 &self.logger,
             ),
             Notification::NewBlockAddedToTheBlockchain(block) => {
@@ -161,7 +163,7 @@ impl Notifier for NotifierTUI {
                     &format!("There was an error in the process of verifying the merkle proof\n the error was: {error_message}"),
                     &self.logger,
                 );
-            },
+            }
             Notification::SuccessfulMerkleProof(path, root) => {
                 let mut message_path = "".to_string();
 
@@ -177,7 +179,7 @@ impl Notifier for NotifierTUI {
                     ),
                     &self.logger,
                 );
-            },
+            }
         }
     }
 }

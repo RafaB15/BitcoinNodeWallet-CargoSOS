@@ -14,8 +14,8 @@ use crate::serialization::{
 use crate::configurations::try_default::TryDefault;
 
 use std::{
-    io::{Read, Write},
     cmp,
+    io::{Read, Write},
 };
 
 /// It's the internal representation of the block chain
@@ -173,13 +173,12 @@ impl BlockChain {
             };
 
             let previous_index = cmp::max(0, *index_last_block as i32 - go_back as i32) as usize;
-            
+
             match self.get_block_at(previous_index) {
                 Ok(last_block) => latest.push(last_block.block),
                 Err(_) => continue,
             };
         }
-
 
         latest
     }

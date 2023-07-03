@@ -67,7 +67,8 @@ impl Notifier for NotifierGUI {
                     .tx_to_front
                     .send(SignalToFront::BlockWithUnconfirmedTransactionReceived(
                         block.to_string(),
-                        transaction.to_string()))
+                        transaction.to_string(),
+                    ))
                     .is_err()
                 {
                     let _ = self
@@ -212,8 +213,14 @@ impl Notifier for NotifierGUI {
                     );
                 }
             }
-            Notification::SuccessfullySentTransaction(transaction) => {   
-                if self.tx_to_front.send(SignalToFront::SuccessfullySentTransaction(transaction.to_string())).is_err() {
+            Notification::SuccessfullySentTransaction(transaction) => {
+                if self
+                    .tx_to_front
+                    .send(SignalToFront::SuccessfullySentTransaction(
+                        transaction.to_string(),
+                    ))
+                    .is_err()
+                {
                     let _ = self
                         .logger
                         .log_error("Failed to send update after sending transaction".to_string());
