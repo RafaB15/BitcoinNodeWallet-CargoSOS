@@ -67,8 +67,9 @@ The programs Graphical User Interface was developed with the GTK-3 library in ru
 
 ![Select one of the loaded wallets](./img_md/SelectLoadedWallet.png)
 
-A wallet is selected and its balance is shown
-./img_md/WalletSelected.png
+#### A wallet is selected and its balance is shown
+
+![A wallet is selected and its balance is shown](./img_md/WalletSelected.png)
 
 Sending a transaction
 ./img_md/SendingATransaction.png
