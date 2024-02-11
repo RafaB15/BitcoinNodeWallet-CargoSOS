@@ -62,30 +62,32 @@ The programs Graphical User Interface was developed with the GTK-3 library in ru
 
 ![The blockchain is up to date and the progress bar is full](./img_md/UpToDate.png)
 
-./img_md/SelectLoadedWallet.png
-Select one of the loaded wallets
 
-./img_md/WalletSelected.png
+#### Select one of the loaded wallets
+
+![Select one of the loaded wallets](./img_md/SelectLoadedWallet.png)
+
 A wallet is selected and its balance is shown
+./img_md/WalletSelected.png
 
-./img_md/SendingATransaction.png
 Sending a transaction
+./img_md/SendingATransaction.png
 
-./img_md/LastTransactionsReceived.png
 Last transactions received
+./img_md/LastTransactionsReceived.png
 
-./img_md/CurrentConnections.png
 Peers to which we are currently connected
+./img_md/CurrentConnections.png
 
-./img_md/MerkleProofOfInclusion.png
 Merkle proof of inclusion
+./img_md/MerkleProofOfInclusion.png
 
 ### Terminal User Interface
 
 In addition to the GUI, we also implemented a TUI to be able to use the program with the command line. It has a menu and depending on what you choose, it will ask for specific information or display the information requested.
 
-./img_md/TUI.png
 Terminal User Interface
+./img_md/TUI.png
 
 
 ## Execution
