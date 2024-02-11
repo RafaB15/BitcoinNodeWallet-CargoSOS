@@ -86,6 +86,9 @@ The programs Graphical User Interface was developed with the GTK-3 library in ru
 ![Peers to which we are currently connected](./img_md/CurrentConnections.png)
 
 
+#### Merkle proof of inclusion
+
+![Merkle proof of inclusion](./img_md/MerkleProofOfInclusion.png)
 
 ### Terminal User Interface
 
