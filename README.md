@@ -48,12 +48,16 @@ Our programs capabilities are as follows:
 
 The programs Graphical User Interface was developed with the GTK-3 library in rust. 
 
-<figure>
-  <img
-  src="./img_md/InitialState.png"
-  alt="Initial State Of The Application">
-  <figcaption>Initial State Of The Application</figcaption>
-</figure>
+#### Initial State Of The appication
+
+
+![Initial State Of The Application](./img_md/InitialState.png)
+
+
+#### The blockchain is not up to date yet
+
+![The blockchain is not up to date yet](./img_md/NotUpToDate.png)
+
 
 <figure>
   <img
@@ -62,12 +66,14 @@ The programs Graphical User Interface was developed with the GTK-3 library in ru
   <figcaption>The blockchain is not up to date yet</figcaption>
 </figure>
 
+
 <figure>
   <img
   src="./img_md/UpToDate.png"
   alt="The blockchain is up to date and the progress bar is full">
   <figcaption>The blockchain is up to date and the progress bar is full</figcaption>
 </figure>
+
 
 <figure>
   <img
@@ -76,12 +82,14 @@ The programs Graphical User Interface was developed with the GTK-3 library in ru
   <figcaption>Select one of the loaded wallets</figcaption>
 </figure>
 
+
 <figure>
   <img
   src="./img_md/WalletSelected.png"
   alt="A wallet is selected and its balance is shown">
   <figcaption>A wallet is selected and its balance is shown</figcaption>
 </figure>
+
 
 <figure>
   <img
@@ -90,12 +98,14 @@ The programs Graphical User Interface was developed with the GTK-3 library in ru
   <figcaption>Sending a transaction</figcaption>
 </figure>
 
+
 <figure>
   <img
   src="./img_md/LastTransactionsReceived.png"
   alt="Last transactions received">
   <figcaption>Last transactions received</figcaption>
 </figure>
+
 
 <figure>
   <img
@@ -104,6 +114,7 @@ The programs Graphical User Interface was developed with the GTK-3 library in ru
   <figcaption>Peers to which we are currently connected</figcaption>
 </figure>
 
+
 <figure>
   <img
   src="./img_md/MerkleProofOfInclusion.png"
@@ -111,9 +122,11 @@ The programs Graphical User Interface was developed with the GTK-3 library in ru
   <figcaption>Merkle proof of inclusion</figcaption>
 </figure>
 
+
 ### Terminal User Interface
 
 In addition to the GUI, we also implemented a TUI to be able to use the program with the command line. It has a menu and depending on what you choose, it will ask for specific information or display the information requested.
+
 
 <figure>
   <img
@@ -121,6 +134,7 @@ In addition to the GUI, we also implemented a TUI to be able to use the program 
   alt="Terminal User Interface">
   <figcaption>Terminal User Interface</figcaption>
 </figure>
+
 
 ## Execution
 
