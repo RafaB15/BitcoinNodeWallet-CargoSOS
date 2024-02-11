@@ -94,9 +94,9 @@ The programs Graphical User Interface was developed with the GTK-3 library in ru
 
 In addition to the GUI, we also implemented a TUI to be able to use the program with the command line. It has a menu and depending on what you choose, it will ask for specific information or display the information requested.
 
-Terminal User Interface
-./img_md/TUI.png
+#### TUI
 
+![TUI](./img_md/TUI.png)
 
 ## Execution
 
