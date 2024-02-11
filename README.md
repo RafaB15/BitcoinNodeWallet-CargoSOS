@@ -71,8 +71,10 @@ The programs Graphical User Interface was developed with the GTK-3 library in ru
 
 ![A wallet is selected and its balance is shown](./img_md/WalletSelected.png)
 
-Sending a transaction
-./img_md/SendingATransaction.png
+#### Sending a transaction
+
+![Sending a transaction](./img_md/SendingATransaction.png)
+
 
 Last transactions received
 ./img_md/LastTransactionsReceived.png
