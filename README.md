@@ -58,22 +58,9 @@ The programs Graphical User Interface was developed with the GTK-3 library in ru
 
 ![The blockchain is not up to date yet](./img_md/NotUpToDate.png)
 
+#### The blockchain is up to date and the progress bar is full
 
-<figure>
-  <img
-  src="./img_md/NotUpToDate.png"
-  alt="The blockchain is not up to date yet">
-  <figcaption>The blockchain is not up to date yet</figcaption>
-</figure>
-
-
-<figure>
-  <img
-  src="./img_md/UpToDate.png"
-  alt="The blockchain is up to date and the progress bar is full">
-  <figcaption>The blockchain is up to date and the progress bar is full</figcaption>
-</figure>
-
+![The blockchain is up to date and the progress bar is full](./img_md/UpToDate.png)
 
 <figure>
   <img
