@@ -81,11 +81,11 @@ The programs Graphical User Interface was developed with the GTK-3 library in ru
 ![Last transactions received](./img_md/LastTransactionsReceived.png)
 
 
-Peers to which we are currently connected
-./img_md/CurrentConnections.png
+#### Peers to which we are currently connected
 
-Merkle proof of inclusion
-./img_md/MerkleProofOfInclusion.png
+![Peers to which we are currently connected](./img_md/CurrentConnections.png)
+
+
 
 ### Terminal User Interface
 
