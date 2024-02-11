@@ -76,8 +76,10 @@ The programs Graphical User Interface was developed with the GTK-3 library in ru
 ![Sending a transaction](./img_md/SendingATransaction.png)
 
 
-Last transactions received
-./img_md/LastTransactionsReceived.png
+#### Last transactions received
+
+![Last transactions received](./img_md/LastTransactionsReceived.png)
+
 
 Peers to which we are currently connected
 ./img_md/CurrentConnections.png
